@@ -1,0 +1,25 @@
+* Cách chạy chương trình MentorUS-Web-Dashboard:
+Bước 1: Điều chỉnh npm legacy-peer-deps để có thể tải các package không tương thích với phiên bản React hiện tại. (Nếu đã điều chỉnh từ trước thì không cần bước này)
+npm config set legacy-peer-deps true
+
+Bước 2: Cài đặt các các thư viện trong node_modules (Nếu đã cài đặt thì không cần bước này)
+npm install 
+
+Bước 3: Chạy chương trình
+npm start
+
+* Cách chạy MentorUS-Server-Backend:
+Bước 1: Bật IDE IntelliJ.
+Bước 2: Mở thư mục MentorUS-server-backend trên IntelliJ và đợi IDE chạy quét dự án xong.
+Bước 3: Cài đặt các thư viện phụ thuộc bằng lệnh: mvn install.
+Bước 4: Copy tập tin credentials.p12 trong thư mục src/main/resources ra thư mục /home/deployer.
+Bước 5: Sử dụng IntelliJ để chạy hàm Main trong SpringSocialApplication.
+
+* Cách chạy MentorUS-Server-Backend:
+Bước 1: Mở máy ảo Android đã cài đặt.
+Bước 2: Mở thư mục MentorUS-mobile-app trên Visual Studio Code.
+Bước 3: Mở terminal chạy lệnh: yarn install.
+Bước 4: Tiếp tục chạy lệnh: yarn all-android.
+Bước 5: Tiếp tục chạy lệnh: yarn start.
+Bước 6: Mở thêm 1 tab terminal và chạy lệnh: yarn android.
+Bước 7: Quay lại máy ảo Android để xem kết quả chạy. 

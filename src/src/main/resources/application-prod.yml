@@ -1,0 +1,96 @@
+server-socket:
+  host: 0.0.0.0
+  port: 8085
+
+server:
+  tomcat:
+    relaxed-query-chars: ['{','}']
+
+springfox:
+  documentation:
+    swagger-ui:
+      base-url: /api-docs
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: mentorus.hcmus@gmail.com
+    password: efvgwfusjkeboldf
+    protocol: smtp
+    tls: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com
+  data:
+    mongodb:
+      user: root
+      password: password
+      uri: mongodb://root:password@localhost:27017/mentordb?authSource=admin
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            clientId: 756803676230-gfcd1ere7426l1sr3soh7t4mvjom2n04.apps.googleusercontent.com
+            clientSecret: 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
+            redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
+            scope:
+              - openid
+              - email
+              - profile
+          azure:
+            clientId: bb2c035d-6cee-4b4c-a66f-46747f900942
+            clientSecret: Ryh8Q~lEe-WMpY~W3ntYTt1lnEOqVTD_P5Z0XdiZ
+            redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
+            authorizationGrantType: authorization_code
+            scope:
+              - openid
+              - profile
+        provider:
+          azure:
+            authorizationUri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize?prompt=select_account
+            tokenUri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+            userInfoUri: https://graph.microsoft.com/oidc/userinfo
+            jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
+            userNameAttribute: name
+            userInfoAuthenticationMethod: header
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
+
+azure:
+  active-directory:
+    jwt-connect-timeout: 6789
+    jwt-read-timeout: 6789
+
+app:
+  goggleDrive:
+    redirectUri: mentor.fit.hcmus.edu.vn
+    redirectUriPath: /api
+    rootId: 1-7y4Ex3mt-EgqHAMkLa1o0McFGitIOKH
+  auth:
+    tokenSecret: 04ca023b39512e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
+    tokenExpirationMsec: 3600000
+    refreshTokenExpirationMsec: 172800000
+    allowedDomains: student.hcmus.edu.vn,fit.hcmus.edu.vn
+  cors:
+    allowedOrigins: http://localhost:3000,http://localhost:8080
+  oauth2:
+    # After successfully authenticating with the OAuth2 Provider,
+    # we'll be generating an auth token for the user and sending the token to the
+    # redirectUri mentioned by the client in the /oauth2/authorize request.
+    # We're not using cookies because they won't work well in mobile clients.
+    authorizedRedirectUris:
+      - http://localhost:3000/oauth2/redirect
+      - http://localhost:8080/
+      - mentorus://oauth2/redirect
+      - https://mentor.fit.hcmus.edu.vn/auth/redirect
