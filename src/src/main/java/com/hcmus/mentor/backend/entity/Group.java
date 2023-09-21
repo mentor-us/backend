@@ -6,8 +6,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Getter
 @Setter
@@ -59,16 +60,13 @@ public class Group implements Serializable {
     private List<String> pinnedMessageIds = new ArrayList<>();
 
     @Builder.Default
-    private Type type = Type.NORMAL;
-
-    @Builder.Default
     private String parentId = null;
 
     @Builder.Default
-    private List<String> channels = new ArrayList<>();
+    private List<String> channelIds = new ArrayList<>();
 
     @Builder.Default
-    private List<String> privates = new ArrayList<>();
+    private List<String> privateIds = new ArrayList<>();
 
     @Builder.Default
     private List<String> faqIds = new ArrayList<>();
@@ -76,11 +74,11 @@ public class Group implements Serializable {
     @Builder.Default
     private String lastMessage = null;
 
-    public enum Type {
-        NORMAL,
-        CHANNEL,
-        PRIVATE,
-    }
+    @Builder.Default
+    private String lastMessageId = null;
+
+    @Builder.Default
+    private List<String> markedMenteeIds = new ArrayList<>();
 
     public enum Status {
         ACTIVE,
@@ -171,12 +169,16 @@ public class Group implements Serializable {
             setFaqIds(new ArrayList<>());
         }
 
-        if (channels == null) {
-            setChannels(new ArrayList<>());
+        if (channelIds == null) {
+            setChannelIds(new ArrayList<>());
         }
 
-        if (privates == null) {
-            setPrivates(new ArrayList<>());
+        if (privateIds == null) {
+            setPrivateIds(new ArrayList<>());
+        }
+
+        if (markedMenteeIds == null) {
+            markedMenteeIds = new ArrayList<>();
         }
     }
     public void pinMessage(String messageId) {
@@ -207,8 +209,30 @@ public class Group implements Serializable {
     }
 
     public void addChannel(String channelId) {
-        channels.add(channelId);
-        setChannels(channels);
+        normalize();
+
+        if (channelIds.contains(channelId)) {
+            return;
+        }
+        channelIds.add(channelId);
+        setChannelIds(channelIds);
+    }
+
+    public void addPrivate(String channelId) {
+        normalize();
+
+        if (privateIds.contains(channelId)) {
+            return;
+        }
+        privateIds.add(channelId);
+        setPrivateIds(privateIds);
+    }
+
+    public void removeChannel(String channelId) {
+        normalize();
+
+        channelIds.remove(channelId);
+        privateIds.remove(channelId);
     }
 
     public void addFaq(String faqId) {
@@ -238,5 +262,46 @@ public class Group implements Serializable {
     public boolean isStopWorking() {
         return Arrays.asList(Status.DISABLED, Status.INACTIVE, Status.DELETED)
                 .contains(status);
+    }
+
+    public List<String> getMembers() {
+        return Stream.concat(mentees.stream(), mentors.stream())
+                .distinct().collect(Collectors.toList());
+    }
+
+    public void markMentee(String menteeId) {
+        normalize();
+
+        if (markedMenteeIds == null) {
+            markedMenteeIds = new ArrayList<>();
+        }
+
+        if (!mentees.contains(menteeId)) {
+            return;
+        }
+
+        if (markedMenteeIds.contains(menteeId)) {
+            return;
+        }
+
+        markedMenteeIds.add(menteeId);
+    }
+
+    public void unmarkMentee(String menteeId) {
+        normalize();
+
+        if (markedMenteeIds == null) {
+            markedMenteeIds = new ArrayList<>();
+        }
+
+        if (!mentees.contains(menteeId)) {
+            return;
+        }
+
+        if (!markedMenteeIds.contains(menteeId)) {
+            return;
+        }
+
+        markedMenteeIds.remove(menteeId);
     }
 }

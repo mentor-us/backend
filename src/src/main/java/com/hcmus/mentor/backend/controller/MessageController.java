@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.corundumstudio.socketio.SocketIOServer;
+import com.hcmus.mentor.backend.entity.Channel;
+import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.entity.Message;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.payload.request.EditMessageRequest;
@@ -10,6 +12,8 @@ import com.hcmus.mentor.backend.payload.request.SendImagesRequest;
 import com.hcmus.mentor.backend.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.payload.response.messages.UpdateMessageResponse;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
+import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
@@ -57,7 +61,11 @@ public class MessageController {
 
     private final SocketIOService socketIOService;
 
-    public MessageController(MessageService messageService, GroupService groupService, SocketIOServer socketServer, UserRepository userRepository, NotificationService notificationService, MessageRepository messageRepository, SocketIOService socketIOService) {
+    private final GroupRepository groupRepository;
+
+    private final ChannelRepository channelRepository;
+
+    public MessageController(MessageService messageService, GroupService groupService, SocketIOServer socketServer, UserRepository userRepository, NotificationService notificationService, MessageRepository messageRepository, SocketIOService socketIOService, GroupRepository groupRepository, ChannelRepository channelRepository) {
         this.messageService = messageService;
         this.groupService = groupService;
         this.socketServer = socketServer;
@@ -65,6 +73,8 @@ public class MessageController {
         this.notificationService = notificationService;
         this.messageRepository = messageRepository;
         this.socketIOService = socketIOService;
+        this.groupRepository = groupRepository;
+        this.channelRepository = channelRepository;
     }
 
     @Operation(summary = "Get messages of group", description = "Retrieve message by paging to display on Chat UI", tags = "Message APIs")
@@ -247,9 +257,26 @@ public class MessageController {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), userPrincipal.getId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
+        if (!groupWrapper.isPresent()) {
+            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
+            if (!channelWrapper.isPresent()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            Channel channel = channelWrapper.get();
+            channel.unpinMessage(messageId);
+            channelRepository.save(channel);
+        } else {
+            Group group = groupWrapper.get();
+            if (!group.isMember(userPrincipal.getId())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            group.unpinMessage(message.getId());
+            groupRepository.save(group);
         }
+
         if (!userPrincipal.getId().equals(message.getSenderId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

@@ -86,6 +86,15 @@ public class GroupCategoryService {
             return new GroupCategoryReturn(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
         if (groupCategoryRepository.existsByName(request.getName())) {
+            GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
+            if(groupCategory.getStatus().equals(GroupCategory.Status.DELETED)) {
+                groupCategory.setStatus(GroupCategory.Status.ACTIVE);
+                groupCategory.setDescription(request.getDescription());
+                groupCategory.setIconUrl(request.getIconUrl());
+                groupCategory.setPermissions(request.getPermissions());
+                groupCategoryRepository.save(groupCategory);
+                return new GroupCategoryReturn(SUCCESS, "", groupCategory);
+            }
             return new GroupCategoryReturn(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 

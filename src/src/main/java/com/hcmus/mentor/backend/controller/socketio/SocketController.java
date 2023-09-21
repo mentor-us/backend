@@ -10,6 +10,8 @@ import com.hcmus.mentor.backend.entity.Vote;
 import com.hcmus.mentor.backend.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.payload.request.JoinOutRoomRequest;
 import com.hcmus.mentor.backend.payload.response.messages.MessageDetailResponse;
+import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
+import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
@@ -80,12 +82,20 @@ public class SocketController {
 
     private DataListener<JoinOutRoomRequest> onJoinRoom() {
         return (client, payload, ackRequest) -> {
+            if (payload.getGroupId() == null
+                    || payload.getGroupId().isEmpty()) {
+                return;
+            }
             client.joinRoom(payload.getGroupId());
         };
     }
 
     private DataListener<JoinOutRoomRequest> onOutRoom() {
         return (client, payload, ackRequest) -> {
+            if (payload.getGroupId() == null
+                    || payload.getGroupId().isEmpty()) {
+                return;
+            }
             client.leaveRoom(payload.getGroupId());
         };
     }
@@ -96,8 +106,13 @@ public class SocketController {
             User user = userRepository.findById(message.getSenderId()).orElse(null);
 
             MessageDetailResponse response = MessageDetailResponse.from(message, user);
+            MessageResponse buffer = MessageResponse.from(message, ProfileResponse.from(user));
+            if (message.getReply() != null) {
+                response = messageService.fulfillTextMessage(buffer);
+            }
             socketIOService.sendMessage(socketIOClient, response, newMessage.getGroupId());
             notificationService.sendNewMessageNotification(response);
+            groupService.updateLastMessageId(message.getGroupId(), message.getId());
         };
     }
 

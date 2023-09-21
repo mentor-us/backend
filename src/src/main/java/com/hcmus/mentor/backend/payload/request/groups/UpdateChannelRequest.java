@@ -10,16 +10,14 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class AddChannelRequest {
+public class UpdateChannelRequest {
+
     private String channelName;
 
     private String description;
 
     private Channel.Type type;
 
-    private String groupId;
-
-    private String creatorId;
-
     private List<String> userIds;
 }
+

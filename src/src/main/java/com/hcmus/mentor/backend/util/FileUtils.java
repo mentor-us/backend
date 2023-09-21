@@ -15,13 +15,7 @@ public class FileUtils {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Data");
 
-        CellStyle headerCellStyle = workbook.createCellStyle();
-        headerCellStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
-        headerCellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        Font headerFont = workbook.createFont();
-        headerFont.setColor(IndexedColors.WHITE.getIndex());
-        headerFont.setBold(true);
-        headerCellStyle.setFont(headerFont);
+        CellStyle headerCellStyle = generateHeaderStyle(workbook);
 
         Row headerRow = sheet.createRow(0);
         int columnIndex = 0;
@@ -78,7 +72,7 @@ public class FileUtils {
         return outputFile;
     }
 
-    static private void autoSizeColumns(Workbook workbook) {
+    public static void autoSizeColumns(Workbook workbook) {
         int numberOfSheets = workbook.getNumberOfSheets();
         for (int i = 0; i < numberOfSheets; i++) {
             Sheet sheet = workbook.getSheetAt(i);
@@ -92,5 +86,48 @@ public class FileUtils {
                 }
             }
         }
+    }
+    public static void formatWorkbook(Workbook workbook) {
+
+        int numberOfSheets = workbook.getNumberOfSheets();
+        for (int i = 0; i < numberOfSheets; i++) {
+            Sheet sheet = workbook.getSheetAt(i);
+
+            // Create cell styles for even and odd rows
+            CellStyle evenRowStyle = workbook.createCellStyle();
+            evenRowStyle.setFillForegroundColor(IndexedColors.WHITE.getIndex());
+            evenRowStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle oddRowStyle = workbook.createCellStyle();
+            oddRowStyle.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE.getIndex());
+            oddRowStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            CellStyle headerCellStyle = generateHeaderStyle(workbook);
+            for (Row row : sheet) {
+                int rowNum = row.getRowNum();
+                CellStyle rowStyle = rowNum % 2 == 0 ? evenRowStyle : oddRowStyle;
+                for (Cell cell : row) {
+                    if(rowNum == 0){
+                        cell.setCellStyle(headerCellStyle);
+                    }
+                    else {
+                        rowStyle.setBorderTop(BorderStyle.THIN);
+                        rowStyle.setBorderBottom(BorderStyle.THIN);
+                        rowStyle.setBorderLeft(BorderStyle.THIN);
+                        rowStyle.setBorderRight(BorderStyle.THIN);
+                        cell.setCellStyle(rowStyle);
+                    }
+                }
+            }
+        }
+    }
+    private static CellStyle generateHeaderStyle(Workbook workbook){
+        CellStyle headerCellStyle = workbook.createCellStyle();
+        headerCellStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
+        headerCellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        Font headerFont = workbook.createFont();
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        headerFont.setBold(true);
+        headerCellStyle.setFont(headerFont);
+        return headerCellStyle;
     }
 }

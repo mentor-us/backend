@@ -42,6 +42,8 @@ public class MessageResponse implements Serializable {
 
     private Message.Status status;
 
+    private String reply;
+
     public static MessageResponse from(Message message, ProfileResponse sender) {
         return MessageResponse.builder()
                 .id(message.getId())
@@ -57,6 +59,7 @@ public class MessageResponse implements Serializable {
                 .images(message.getImages())
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply())
                 .build();
     }
 

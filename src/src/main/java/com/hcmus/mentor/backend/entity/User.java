@@ -88,6 +88,8 @@ public class User implements Serializable {
 
     private double studyingPoint;
 
+    private String initialName;
+
     public boolean isPinnedGroup(String groupId) {
         return pinnedGroupsId.contains(groupId);
     }
@@ -127,12 +129,15 @@ public class User implements Serializable {
     }
 
     public void update(OAuth2UserInfo oAuth2UserInfo) {
-        name = (name == null || name.equals(""))
-                ? oAuth2UserInfo.getName()
-                : name;
-        imageUrl = (imageUrl == null || imageUrl.equals(""))
-                ? oAuth2UserInfo.getImageUrl()
-                : imageUrl;
+        if (name == null || name.equals("") || name.equals(initialName)) {
+            name = oAuth2UserInfo.getName();
+        }
+        if (!("https://graph.microsoft.com/v1.0/me/photo/$value")
+                .equals(oAuth2UserInfo.getImageUrl())) {
+            imageUrl = (imageUrl == null || imageUrl.equals(""))
+                    ? oAuth2UserInfo.getImageUrl()
+                    : imageUrl;
+        }
     }
 
     public void update(UpdateUserRequest request) {
@@ -179,5 +184,13 @@ public class User implements Serializable {
             return;
         }
         setWallpaper(url);
+    }
+
+    public void assignRole(Role role) {
+        if (roles.contains(role)) {
+            return;
+        }
+        roles.add(role);
+        setRoles(roles);
     }
 }

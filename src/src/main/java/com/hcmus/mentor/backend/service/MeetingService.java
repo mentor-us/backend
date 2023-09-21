@@ -61,30 +61,6 @@ public class MeetingService implements IRemindableService {
     }
 
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
-//        Date now = new Date();
-//        MatchOperation recent = Aggregation.match(Criteria
-//                .where("attendees").in(userId)
-//                .and("timeStart").gte(now));
-//        ProjectionOperation toObjectId = Aggregation.project("title", "description", "timeStart", "timeEnd",
-//                        "repeated", "place")
-//                .and(ConvertOperators.ToObjectId.toObjectId("$groupId")).as("groupId")
-//                .and(ConvertOperators.ToObjectId.toObjectId("$organizerId")).as("organizerId");
-//        ProjectionOperation mapGroupAndOrganizer = Aggregation.project("title", "description", "timeStart", "timeEnd",
-//                        "repeated", "place")
-//                .and(ArrayOperators.arrayOf("groups").elementAt(0)).as("group")
-//                .and(ArrayOperators.arrayOf("organizers").elementAt(0)).as("organizer");
-//        Aggregation aggregation = Aggregation.newAggregation(
-//                recent,
-//                toObjectId,
-//                Aggregation.lookup("group", "groupId", "_id", "groups"),
-//                Aggregation.lookup("user", "organizerId", "_id", "organizers"),
-//                Aggregation.sort(Sort.Direction.ASC, "timeStart"),
-//                mapGroupAndOrganizer,
-//                Aggregation.limit(5)
-//        );
-//        List<MeetingResponse> meetings = mongoTemplate.aggregate(aggregation, "meeting", MeetingResponse.class)
-//                .getMappedResults();
-
         List<String> groupIds = groupService.getAllActiveOwnGroups(userId)
                 .stream().map(Group::getId).collect(Collectors.toList());
         Date now = new Date();
@@ -314,35 +290,6 @@ public class MeetingService implements IRemindableService {
         groupService.pingGroup(meeting.getGroupId());
         return meetingRepository.save(meeting);
      }
-      
-//    @Override
-//    public List<Reminder> findReminderToday() {
-//        Date now = new Date();
-//        // Create a Calendar instance and set it to the current date and time
-//        Calendar calendar = Calendar.getInstance();
-//        calendar.setTime(now);
-//
-//        // Add one day to the current date to get tomorrow's date
-//        calendar.add(Calendar.DAY_OF_MONTH, 1);
-//
-//        // Get the date for tomorrow
-//        Date tomorrow = calendar.getTime();
-//        List<Meeting> meetings = meetingRepository.findAllByTimeStartBetween(now, tomorrow);
-//        List<Reminder> reminders = new ArrayList<>();
-//        for(Meeting meeting: meetings){
-//            Reminder reminder = meeting.toReminder();
-//            List<String> emailUsers = new ArrayList<>();
-//            for(String userId: meeting.getAttendees()){
-//                Optional<User> userOptional = userRepository.findById(userId);
-//                if(userOptional.isPresent()){
-//                    emailUsers.add(userOptional.get().getEmail());
-//                }
-//            }
-//            reminder.setRecipients(emailUsers);
-//            reminders.add(reminder);
-//        }
-//        return reminders;
-//    }
 
     @Override
     public void saveToReminder(IRemindable remindable) {
@@ -353,9 +300,7 @@ public class MeetingService implements IRemindableService {
         attendees.add(meeting.getOrganizerId());
         for(String userId: attendees){
             Optional<User> userOptional = userRepository.findById(userId);
-            if(userOptional.isPresent()){
-                emailUsers.add(userOptional.get().getEmail());
-            }
+            userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
         }
         reminder.setRecipients(emailUsers);
         reminder.setSubject("Bạn có 1 lịch hẹn sắp diễn ra");

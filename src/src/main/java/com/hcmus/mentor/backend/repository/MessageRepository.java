@@ -68,4 +68,6 @@ public interface MessageRepository extends MongoRepository<Message, String> {
     List<MessageResponse> getAllGroupMessagesByGroupId(String groupId);
 
     Page<Message> findByGroupId(String groupId, TextCriteria criteria, Pageable pageable);
+
+    void deleteByGroupId(String groupId);
 }

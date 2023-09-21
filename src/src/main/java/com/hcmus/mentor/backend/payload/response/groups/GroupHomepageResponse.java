@@ -45,6 +45,8 @@ public class GroupHomepageResponse {
 
     private String newMessage;
 
+    private String newMessageId;
+
     public GroupHomepageResponse(Group group, String groupCategory, String role) {
         this.id = group.getId();
         this.name = group.getName();
@@ -61,6 +63,7 @@ public class GroupHomepageResponse {
         this.imageUrl = group.getImageUrl();
         this.hasNewMessage = group.getHasNewMessage();
         this.newMessage = group.getLastMessage();
+        this.newMessageId = group.getLastMessageId();
     }
 
     public Integer getTotalMember() {

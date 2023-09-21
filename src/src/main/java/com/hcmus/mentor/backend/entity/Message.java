@@ -55,6 +55,8 @@ public class Message {
 
     private SystemLog systemLog;
 
+    private String reply;
+
     public enum Type {
         TEXT,
         FILE,

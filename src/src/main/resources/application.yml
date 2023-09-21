@@ -1,3 +1,10 @@
+logging:
+  level:
+    root: warn
+    org.springframework.web: warn
+    org.hibernate: error
+    org.quartz: error
+
 server-socket:
   host: 0.0.0.0
   port: 8085
@@ -6,16 +13,11 @@ server:
   tomcat:
     relaxed-query-chars: ['{','}']
 
-springfox:
-  documentation:
-    swagger-ui:
-      base-url: /api-docs
-
 spring:
   servlet:
     multipart:
-      max-file-size: 25MB
-      max-request-size: 25MB
+      max-file-size: 5MB
+      max-request-size: 5MB
   mail:
     host: smtp.gmail.com
     port: 587
@@ -41,31 +43,31 @@ spring:
       client:
         registration:
           google:
-            clientId: 756803676230-gfcd1ere7426l1sr3soh7t4mvjom2n04.apps.googleusercontent.com
-            clientSecret: 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
-            redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
+            clientId: 5014057553-8gm9um6vnli3cle5rgigcdjpdrid14m9.apps.googleusercontent.com
+            clientSecret: tWZKVLxaD_ARWsriiiUFYoIk
+            redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
             scope:
               - openid
               - email
               - profile
           azure:
-            clientId: bb2c035d-6cee-4b4c-a66f-46747f900942
-            clientSecret: Ryh8Q~lEe-WMpY~W3ntYTt1lnEOqVTD_P5Z0XdiZ
-            redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
+            clientId: d1aa2e7d-f499-49eb-890a-4ced56bd35a5
+            clientSecret: ZLS8Q~ldy20YOD6phW__ZjMqw93IC9wZjWQK6b43
+            redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
             authorizationGrantType: authorization_code
             scope:
               - openid
               - profile
         provider:
           azure:
-            authorizationUri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize?prompt=select_account
-            tokenUri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+            authorizationUri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/oauth2/v2.0/authorize?prompt=select_account
+            tokenUri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/oauth2/v2.0/token
             userInfoUri: https://graph.microsoft.com/oidc/userinfo
-            jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
+            jwk-set-uri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/discovery/v2.0/keys
             userNameAttribute: name
             userInfoAuthenticationMethod: header
           google:
-            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
+            authorization-uri:  https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
 
 azure:
   active-directory:
@@ -73,13 +75,11 @@ azure:
     jwt-read-timeout: 6789
 
 app:
-  goggleDrive:
-    redirectUri: mentor.fit.hcmus.edu.vn
-    redirectUriPath: /api
-    rootId: 1-7y4Ex3mt-EgqHAMkLa1o0McFGitIOKH
+  googleDrive:
+    rootId: 1Nz9fca4S7eAVAogMBmLIP1Om0Bp3puIK
   auth:
     tokenSecret: 04ca023b39512e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
-    tokenExpirationMsec: 3600000
+    tokenExpirationMsec: 8640000000
     refreshTokenExpirationMsec: 172800000
     allowedDomains: student.hcmus.edu.vn,fit.hcmus.edu.vn
   cors:
