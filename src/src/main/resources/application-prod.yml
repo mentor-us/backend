@@ -73,7 +73,7 @@ azure:
     jwt-read-timeout: 6789
 
 app:
-  goggleDrive:
+  googleDrive:
     redirectUri: mentor.fit.hcmus.edu.vn
     redirectUriPath: /api
     rootId: 1-7y4Ex3mt-EgqHAMkLa1o0McFGitIOKH
