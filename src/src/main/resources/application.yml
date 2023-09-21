@@ -1,9 +1,9 @@
-logging:
-  level:
-    root: warn
-    org.springframework.web: warn
-    org.hibernate: error
-    org.quartz: error
+#logging:
+#  level:
+#    root: warn
+#    org.springframework.web: warn
+#    org.hibernate: error
+#    org.quartz: error
 
 server-socket:
   host: 0.0.0.0
