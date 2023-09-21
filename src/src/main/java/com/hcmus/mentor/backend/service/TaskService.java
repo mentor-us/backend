@@ -410,7 +410,9 @@ public class TaskService implements IRemindableService{
     public List<Task> getAllOwnTasks(String userId) {
         List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId)
                 .stream().map(Group::getId).collect(Collectors.toList());
-        return taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdIn(joinedGroupIds, Arrays.asList("*", userId));
+        return taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdIn(
+                joinedGroupIds,
+                Arrays.asList("*", userId));
     }
 
     public List<Task> getAllOwnTaskByDate(String userId, Date date) {

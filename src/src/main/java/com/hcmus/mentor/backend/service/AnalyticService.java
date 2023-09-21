@@ -13,8 +13,10 @@ import com.hcmus.mentor.backend.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -1133,7 +1135,7 @@ public class AnalyticService {
         return templateEngine.process("reports/group-report", context);
     }
 
-    public ByteArrayOutputStream getGroupLog(String exporterEmail, String groupId,
+    public byte[] getGroupLog(String exporterEmail, String groupId,
                                              List<AnalyticAttribute> attributes) throws IOException {
         if (attributes.size() == 0) {
             return null;
@@ -1147,30 +1149,114 @@ public class AnalyticService {
             return null;
         }
 
-        ByteArrayOutputStream log = new ByteArrayOutputStream();
-        PrintStream printer = new PrintStream(log);
+        Workbook workbook = new XSSFWorkbook();
+
         if (attributes.contains(AnalyticAttribute.MEETINGS)) {
+            Sheet meetingsSheet = workbook.createSheet("Lịch hẹn");
             List<MeetingResponse> meetings = meetingRepository.findAllByGroupId(groupId);
-            printer.println("* TẤT CẢ CUỘC HẸN:");
-            for (MeetingResponse meeting : meetings) {
-                printer.println(meeting.toString());
-            }
+            addMeetingsData(meetingsSheet, meetings);
         }
         if (attributes.contains(AnalyticAttribute.TASKS)) {
+            Sheet tasksSheet = workbook.createSheet("Công việc");
             List<Task> tasks = taskRepository.findAllByGroupId(groupId);
-            printer.println("* TẤT CẢ CÔNG VIỆC:");
-            for (Task task : tasks) {
-                printer.println(task.toString());
-            }
+            addTasksData(tasksSheet, tasks);
         }
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
+            Sheet messagesSheet = workbook.createSheet("Tin nhắn");
             List<MessageResponse> messages = messageRepository.getAllGroupMessagesByGroupId(groupId);
-            printer.println("* TẤT CẢ TIN NHẮN:");
-            for (MessageResponse message : messages) {
-                printer.println(message.toString());
+            addMessagesData(messagesSheet, messages);
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        FileUtils.formatWorkbook(workbook);
+        FileUtils.autoSizeColumns(workbook);
+        workbook.write(outputStream);
+        byte[] workbookBytes = outputStream.toByteArray();
+        workbook.close();
+        return workbookBytes;
+    }
+
+    private void setHeaders(Row headerRow, List<String> headers){
+        for(int i = 0; i < headers.size(); i++){
+            headerRow.createCell(i).setCellValue(headers.get(i));
+        }
+    }
+
+    private void addMeetingsData(Sheet sheet, List<MeetingResponse> meetings) {
+        Row headerRow = sheet.createRow(0);
+        List<String> headers = Arrays.asList(
+                "ID",
+                "Tiêu đề",
+                "Mô tả",
+                "Thời gian bắt đầu",
+                "Thời gian kết thúc",
+                "Địa điểm",
+                "Người tạo",
+                "Lịch sử cuộc hẹn"
+        );
+        setHeaders(headerRow, headers);
+
+        int rowNum = 1;
+        for (MeetingResponse meeting : meetings) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(meeting.getId());
+            row.createCell(1).setCellValue(meeting.getTitle());
+            row.createCell(2).setCellValue(meeting.getDescription());
+            row.createCell(3).setCellValue(DateUtils.formatDate(meeting.getTimeStart()));
+            row.createCell(4).setCellValue(DateUtils.formatDate(meeting.getTimeEnd()));
+            row.createCell(5).setCellValue(meeting.getPlace());
+            row.createCell(6).setCellValue(meeting.getOrganizer().toString());
+            if(meeting.getHistories() != null) {
+                row.createCell(7).setCellValue(meeting.getHistories().toString());
             }
         }
-
-        return log;
     }
+
+    private void addTasksData(Sheet sheet, List<Task> tasks) {
+        Row headerRow = sheet.createRow(0);
+        List<String> headers = Arrays.asList(
+                "ID",
+                "Tiêu đề",
+                "Mô tả",
+                "Ngày tới hạn",
+                "Ngày tạo"
+        );
+        setHeaders(headerRow, headers);
+
+        int rowNum = 1;
+        for (Task task : tasks) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(task.getId());
+            row.createCell(1).setCellValue(task.getTitle());
+            row.createCell(2).setCellValue(task.getDescription());
+            row.createCell(3).setCellValue(DateUtils.formatDate(task.getDeadline()));
+            row.createCell(4).setCellValue(DateUtils.formatDate(task.getCreatedDate()));
+        }
+    }
+
+    private void addMessagesData(Sheet sheet, List<MessageResponse> messages) {
+        Row headerRow = sheet.createRow(0);
+        List<String> headers = Arrays.asList(
+                "ID",
+                "Người gửi",
+                "Nội dung",
+                "Loại",
+                "Ngày gửi",
+                "Trạng thái"
+        );
+        setHeaders(headerRow, headers);
+
+        int rowNum = 1;
+        for (MessageResponse message : messages) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(message.getId());
+            row.createCell(1).setCellValue(message.getSender().toString());
+            row.createCell(2).setCellValue(message.getContent());
+            row.createCell(3).setCellValue(message.getType().toString());
+            row.createCell(4).setCellValue(DateUtils.formatDate(message.getCreatedDate()));
+            if(message.getStatus() != null) {
+                row.createCell(5).setCellValue(message.getStatus().toString());
+            }
+        }
+    }
+
 }

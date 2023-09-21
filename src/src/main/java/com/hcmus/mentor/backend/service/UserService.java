@@ -98,8 +98,10 @@ public class UserService {
     }
 
     public void addNewAccount(String emailAddress) {
+        String initialName = "User " + randomString(6);
         User data = User.builder()
-                .name("User " + randomString(6))
+                .name(initialName)
+                .initialName(initialName)
                 .email(emailAddress)
                 .build();
         userRepository.save(data);
@@ -218,37 +220,29 @@ public class UserService {
                 request.getRole() == null){
             return new UserReturnService(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
-        String name = request.getName();
+
         String emailAddress = request.getEmailAddress();
-        User.Role role = request.getRole();
         Optional<User> userOptional = userRepository.findByEmail(emailAddress);
         if (userOptional.isPresent()) {
             return new UserReturnService(DUPLICATE_USER, "Duplicate user", null);
         }
 
+        User.Role role = request.getRole();
         User user = User.builder()
-                .name(name)
+                .name(request.getName())
                 .email(emailAddress)
                 .build();
+        user.assignRole(role);
+        userRepository.save(user);
+        sendEmail(emailAddress);
 
         UserDataResponse userDataResponse = UserDataResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .status(user.isStatus())
-                .role(USER)
+                .role(role)
                 .build();
-
-        if(role != null){
-            List<User.Role> roles = user.getRoles();
-            roles.add(request.getRole());
-            user.setRoles(roles);
-            userDataResponse.setRole(role);
-        }
-
-        userRepository.save(user);
-        sendEmail(emailAddress);
-
         return new UserReturnService(SUCCESS, "", userDataResponse);
     }
 
@@ -350,7 +344,7 @@ public class UserService {
                     .role(USER)
                     .build();
 
-            if(role != null){
+            if (role != null) {
                 List<User.Role> roles = user.getRoles();
                 roles.add(role);
                 user.setRoles(roles);
@@ -420,7 +414,7 @@ public class UserService {
         long count = users.size();
 
         List<UserDataResponse> pagedUserResponses = findUserResponses.stream()
-                .skip(page * pageSize)
+                .skip((long) page * pageSize)
                 .limit(pageSize)
                 .collect(Collectors.toList());
 
@@ -439,7 +433,7 @@ public class UserService {
             role = USER;
         }
 
-        UserDataResponse userDataResponse = UserDataResponse.builder()
+        return UserDataResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
@@ -451,7 +445,6 @@ public class UserService {
                 .phone(user.getPhone())
                 .personalEmail(user.getPersonalEmail())
                 .build();
-        return userDataResponse;
     }
 
     private List<UserDataResponse> getUsersData(List<User> users){
@@ -462,12 +455,12 @@ public class UserService {
         });
         return userDataResponses;
     }
-    public UserReturnService deleteMultiple(String emailUser, List<String> ids) {
-        if(!permissionService.isAdmin(emailUser)){
+    public UserReturnService deleteMultiple(String emailUser, List<String> userIds) {
+        if (!permissionService.isAdmin(emailUser)) {
             return new UserReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
-        for(String id: ids){
+        for(String id: userIds){
             Optional<User> userOptional = userRepository.findById(id);
             if (!userOptional.isPresent()) {
                 notFoundIds.add(id);
@@ -476,7 +469,7 @@ public class UserService {
         if (!notFoundIds.isEmpty()) {
             return new UserReturnService(NOT_FOUND, "Not found user", notFoundIds);
         }
-        List<User> users = userRepository.findByIdIn(ids);
+        List<User> users = userRepository.findByIdIn(userIds);
 
         List<String> invalidIds = new ArrayList<>();
         for(User user: users){
@@ -488,17 +481,17 @@ public class UserService {
             return new UserReturnService(INVALID_PERMISSION, "Invalid permission", invalidIds);
         }
 
-        for(String id: ids){
-            List<Group> groupMentees = groupRepository.findAllByMenteesIn(id);
-            List<Group> groupMentors = groupRepository.findAllByMentorsIn(id);
-            for(Group group: groupMentees){
-                deleteMenteeInGroup(group, id);
+        userIds.forEach(userId -> {
+            List<Group> groupMentees = groupRepository.findAllByMenteesIn(userId);
+            List<Group> groupMentors = groupRepository.findAllByMentorsIn(userId);
+            for (Group group : groupMentees) {
+                deleteMenteeInGroup(group, userId);
             }
-            for(Group group: groupMentors){
-                deleteMentorInGroup(group, id);
+            for (Group group : groupMentors) {
+                deleteMentorInGroup(group, userId);
             }
-        }
-        userRepository.deleteAllById(ids);
+        });
+        userRepository.deleteAllById(userIds);
 
         return new UserReturnService(SUCCESS, "", users);
     }

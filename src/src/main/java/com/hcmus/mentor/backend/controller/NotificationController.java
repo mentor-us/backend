@@ -15,11 +15,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import springfox.documentation.annotations.ApiIgnore;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -119,7 +117,7 @@ public class NotificationController {
     })
     @PostMapping("/subscribe")
     public APIResponse<Void> subscribe(@RequestBody SubscribeNotificationRequest request) {
-        notificationService.subscribe(request);
+        notificationService.subscribeNotification(request);
         return APIResponse.success(null);
     }
 

@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -422,9 +423,9 @@ public class AnalyticController {
         List<AnalyticService.AnalyticAttribute> attributes = Stream.of(query)
                 .map(AnalyticService.AnalyticAttribute::valueOf)
                 .collect(Collectors.toList());
-        ByteArrayOutputStream target = analyticService.getGroupLog(userPrincipal.getEmail(),
+        byte[] content = analyticService.getGroupLog(userPrincipal.getEmail(),
                 groupId, attributes);
-        if (target == null) {
+        if (content == null) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -432,10 +433,10 @@ public class AnalyticController {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (groupWrapper.isPresent()) {
             Group group = groupWrapper.get();
-            fileName = "log-" + RequestUtils.toSlug(group.getName()) + ".txt";
+            fileName = "log-" + RequestUtils.toSlug(group.getName()) + ".xlsx";
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .body(target.toByteArray());
+                .body(content);
     }
 }

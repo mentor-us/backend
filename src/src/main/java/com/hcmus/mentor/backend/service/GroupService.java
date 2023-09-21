@@ -1,19 +1,18 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.entity.Group;
-import com.hcmus.mentor.backend.entity.GroupCategory;
-import com.hcmus.mentor.backend.entity.Message;
-import com.hcmus.mentor.backend.entity.User;
+import com.hcmus.mentor.backend.entity.*;
 import com.hcmus.mentor.backend.manager.GoogleDriveManager;
 import com.hcmus.mentor.backend.payload.request.groups.*;
-import com.hcmus.mentor.backend.payload.response.*;
+import com.hcmus.mentor.backend.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
@@ -102,6 +101,8 @@ public class GroupService {
 
     private final NotificationService notificationService;
 
+    private final ChannelRepository channelRepository;
+
     public GroupService(GroupRepository groupRepository,
                         GroupCategoryRepository groupCategoryRepository,
                         UserRepository userRepository,
@@ -114,7 +115,7 @@ public class GroupService {
                         MessageRepository messageRepository,
                         MessageService messageService,
                         SocketIOService socketIOService,
-                        NotificationService notificationService) {
+                        NotificationService notificationService, ChannelRepository channelRepository) {
         this.groupRepository = groupRepository;
         this.groupCategoryRepository = groupCategoryRepository;
         this.userRepository = userRepository;
@@ -129,6 +130,7 @@ public class GroupService {
         this.messageService = messageService;
         this.socketIOService = socketIOService;
         this.notificationService = notificationService;
+        this.channelRepository = channelRepository;
     }
 
     public Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize) {
@@ -156,8 +158,10 @@ public class GroupService {
                     String imageUrl = (group.getImageUrl() == null)
                             ? category.getIconUrl()
                             : group.getImageUrl();
+                    String lastMessage = messageService.getLastGroupMessage(group.getId());
                     GroupHomepageResponse response = new GroupHomepageResponse(group, category.getName(), role);
                     response.setImageUrl(imageUrl);
+                    response.setNewMessage(lastMessage);
                     return response;
                 })
                 .sorted(Comparator.comparing(GroupHomepageResponse::getUpdatedDate).reversed())
@@ -937,7 +941,12 @@ public class GroupService {
     public boolean isGroupMember(String groupId, String userId) {
         Optional<Group> wrapper = groupRepository.findById(groupId);
         if (!wrapper.isPresent()) {
-            return false;
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return false;
+            }
+            Channel channel = channelWrapper.get();
+            return channel.isMember(userId) || isGroupMember(channel.getParentId(), userId);
         }
         Group group = wrapper.get();
         return group.getMentors().contains(userId) || group.getMentees().contains(userId);
@@ -1020,21 +1029,60 @@ public class GroupService {
     }
 
     public GroupReturnService getGroupMembers(String groupId, String userId) {
-        if (!permissionService.isUserIdInGroup(userId, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
-        }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
+        List<String> mentorIds = new ArrayList<>();
+        List<String> menteeIds = new ArrayList<>();
+        Group group = null;
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
 
-        List<ProfileResponse> mentors = userRepository.findAllByIdIn(group.getMentors())
-                .stream().map(ProfileResponse::normalize).collect(Collectors.toList());
-        List<ProfileResponse> mentees = userRepository.findAllByIdIn(group.getMentees())
-                .stream().map(ProfileResponse::normalize).collect(Collectors.toList());
+            Channel channel = channelWrapper.get();
+            group = groupRepository.findById(channel.getParentId()).orElse(null);
+            if (group == null) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
+
+            mentorIds = channel.getUserIds().stream()
+                    .filter(group::isMentor)
+                    .collect(Collectors.toList());
+            menteeIds = channel.getUserIds().stream()
+                    .filter(group::isMentee)
+                    .collect(Collectors.toList());
+        }
+
+        if (groupWrapper.isPresent()) {
+            if (!permissionService.isUserIdInGroup(userId, groupId)) {
+                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            }
+
+            group = groupWrapper.get();
+            mentorIds = group.getMentors();
+            menteeIds = group.getMentees();
+        }
+
+        List<GroupMembersResponse.GroupMember> mentors = userRepository
+                .findAllByIdIn(mentorIds)
+                .stream()
+                .map(ProfileResponse::normalize)
+                .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
+                .collect(Collectors.toList());
+        List<String> markedMentees = group.getMarkedMenteeIds() != null
+                ? group.getMarkedMenteeIds()
+                : new ArrayList<>();
+        List<GroupMembersResponse.GroupMember> mentees = userRepository.findAllByIdIn(menteeIds)
+                .stream()
+                .map(ProfileResponse::normalize)
+                .map(profile -> GroupMembersResponse.GroupMember
+                        .from(profile, "MENTEE",
+                                markedMentees.contains(profile.getId())))
+                .collect(Collectors.toList());
         GroupMembersResponse response = GroupMembersResponse.builder()
-               .mentors(mentors).mentees(mentees).build();
+                .mentors(mentors)
+                .mentees(mentees)
+                .build();
         return new GroupReturnService(SUCCESS, null, response);
     }
 
@@ -1059,30 +1107,84 @@ public class GroupService {
     }
 
     public GroupReturnService getGroupDetail(String userId, String groupId) {
+        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
+        if (groupWrapper.size() == 0) {
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
+            Channel channel = channelWrapper.get();
+            Optional<Group> parentGroupWrapper = groupRepository.findById(channel.getParentId());
+            if (!parentGroupWrapper.isPresent()) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
+
+            Group parentGroup = parentGroupWrapper.get();
+            if (!parentGroup.isMentor(userId)
+                    && !channel.isMember(userId)) {
+                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            }
+            GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, parentGroup);
+            if (channelDetail == null) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
+            GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
+            response.setPermissions(response.getPermissions().contains(GroupCategory.Permission.SEND_FILES)
+                    ? Collections.singletonList(GroupCategory.Permission.SEND_FILES)
+                    : Collections.emptyList());
+            return new GroupReturnService(SUCCESS, null, response);
+        }
+
         if (!permissionService.isUserIdInGroup(userId, groupId)) {
             return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
-        if (groupWrapper.size() == 0) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
-        }
-        GroupDetailResponse response = groupWrapper.get(0);
-        response.setRole(userId);
 
-        Optional<User> userWrapper = userRepository.findById(userId);
-        if (userWrapper.isPresent()){
-            User user = userWrapper.get();
-            response.setPinned(user.isPinnedGroup(groupId));
-        }
-        GroupCategory groupCategory = groupCategoryRepository.findByName(response.getGroupCategory());
-        response.setPermissions(groupCategory.getPermissions());
+        GroupDetailResponse response = fulfillGroupDetail(userId, groupWrapper.get(0));
+        return new GroupReturnService(SUCCESS, null, response);
+    }
 
+    private GroupDetailResponse fulfillChannelDetail(String userId, Channel channel, Group parentGroup) {
+        String channelName = channel.getName();
+        String imageUrl = null;
+        if (Channel.Type.PRIVATE_MESSAGE.equals(channel.getType())) {
+            String penpalId = channel.getUserIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .findFirst().orElse(null);
+            if (userId == null) {
+                return null;
+            }
+            ShortProfile penpal = userRepository.findShortProfile(penpalId);
+            if (penpal == null) {
+                return null;
+            }
+            channelName = penpal.getName();
+            imageUrl = penpal.getImageUrl();
+        }
+        GroupDetailResponse response = GroupDetailResponse.builder()
+                .id(channel.getId())
+                .name(channelName)
+                .description(channel.getDescription())
+                .pinnedMessageIds(channel.getPinnedMessageIds())
+                .imageUrl(imageUrl)
+                .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
+                .parentId(parentGroup.getId())
+                .totalMember(channel.getUserIds().size())
+                .type(channel.getType())
+                .build();
+        GroupCategory groupCategory = groupCategoryRepository
+                .findById(parentGroup.getGroupCategory())
+                .orElse(null);
+        if (groupCategory != null) {
+            response.setPermissions(groupCategory.getPermissions());
+            response.setGroupCategory(groupCategory.getName());
+        }
         List<MessageResponse> messages = new ArrayList<>();
         if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
             messages = response.getPinnedMessageIds().stream()
                     .map(messageRepository::findById)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
+                    .filter(message -> !message.isDeleted())
                     .map(message -> {
                         User user = userRepository.findById(message.getSenderId())
                                 .orElse(null);
@@ -1091,8 +1193,45 @@ public class GroupService {
                     .collect(Collectors.toList());
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        response.setImageUrl((response.getImageUrl() == null) ? groupCategory.getIconUrl() : response.getImageUrl());
-        return new GroupReturnService(SUCCESS, null, response);
+        response.setTotalMember(channel.getUserIds().size());
+        return response;
+    }
+
+    private GroupDetailResponse fulfillGroupDetail(String userId, GroupDetailResponse response) {
+        response.setRole(userId);
+
+        Optional<User> userWrapper = userRepository.findById(userId);
+        if (userWrapper.isPresent()){
+            User user = userWrapper.get();
+            response.setPinned(user.isPinnedGroup(response.getId()));
+        }
+        GroupCategory groupCategory = groupCategoryRepository
+                .findByName(response.getGroupCategory());
+        if (groupCategory != null) {
+            response.setPermissions(groupCategory.getPermissions());
+        }
+
+        List<MessageResponse> messages = new ArrayList<>();
+        if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
+            messages = response.getPinnedMessageIds().stream()
+                    .map(messageRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(message -> !message.isDeleted())
+                    .map(message -> {
+                        User user = userRepository.findById(message.getSenderId())
+                                .orElse(null);
+                        return MessageResponse.from(message, ProfileResponse.from(user));
+                    })
+                    .collect(Collectors.toList());
+        }
+        response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
+        response.setImageUrl((response.getImageUrl() == null)
+                ? groupCategory != null
+                        ? groupCategory.getIconUrl()
+                        : null
+                : response.getImageUrl());
+        return response;
     }
 
     public List<String> findAllMenteeIdsGroup(String groupId) {
@@ -1109,6 +1248,14 @@ public class GroupService {
     public void pingGroup(String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return;
+            }
+
+            Channel channel = channelWrapper.get();
+            channel.ping();
+            channelRepository.save(channel);
             return;
         }
         Group group = groupWrapper.get();
@@ -1118,16 +1265,32 @@ public class GroupService {
 
     public GroupReturnService getGroupMedia(String userId, String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
+        List<String> senderIds = new ArrayList<>();
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            }
+
+            Channel channel = channelWrapper.get();
+            if (!channel.isMember(userId)
+                    && !permissionService.isUserIdInGroup(userId, channel.getParentId())) {
+                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            }
+
+            senderIds = channel.getUserIds();
         }
 
-        List<String> senderIds = Stream.concat(group.getMentees().stream(),
-                group.getMentors().stream()).collect(Collectors.toList());
+        if (groupWrapper.isPresent()) {
+            Group group = groupWrapper.get();
+            if (!group.isMember(userId)) {
+                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            }
+
+            senderIds = Stream.concat(group.getMentees().stream(),
+                    group.getMentors().stream()).collect(Collectors.toList());
+        }
+
         Map<String, ProfileResponse> senders = userRepository.findAllByIdIn(senderIds).stream()
                 .collect(Collectors
                         .toMap(ProfileResponse::getId, sender -> sender, (sender1, sender2) -> sender2));
@@ -1348,7 +1511,7 @@ public class GroupService {
     public boolean pinMessage(String userId, String groupId, String messageId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return false;
+            return pinChannelMessage(userId, groupId, messageId);
         }
         Group group = groupWrapper.get();
         if (!group.isMember(userId)) {
@@ -1382,9 +1545,46 @@ public class GroupService {
         socketIOService.sendNewPinMessage(messageDetail);
 
         Optional<User> pinnerWrapper = userRepository.findById(userId);
-        if (!pinnerWrapper.isPresent()) {
-            notificationService.sendNewPinNotification(messageDetail, pinnerWrapper.get());
+        pinnerWrapper.ifPresent(user -> notificationService.sendNewPinNotification(messageDetail, user));
+        return true;
+    }
+
+    public boolean pinChannelMessage(String userId, String groupId, String messageId) {
+        Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+        if (!channelWrapper.isPresent()) {
+            return false;
         }
+
+        Channel channel = channelWrapper.get();
+        if (channel.isMaximumPinnedMessages()) {
+            return false;
+        }
+
+        Optional<Message> messageWrapper = messageRepository.findById(messageId);
+        if (!messageWrapper.isPresent()) {
+            return false;
+        }
+
+        Message message = messageWrapper.get();
+        if (Message.Status.DELETED.equals(message.getStatus())) {
+            return false;
+        }
+
+        User sender = userRepository.findById(message.getSenderId())
+                .orElse(null);
+        if (sender == null) {
+            return false;
+        }
+        channel.pinMessage(messageId);
+        channel.ping();
+        channelRepository.save(channel);
+
+        MessageDetailResponse messageDetail = MessageDetailResponse.from(message, sender);
+        socketIOService.sendNewPinMessage(messageDetail);
+
+        Optional<User> pinnerWrapper = userRepository.findById(userId);
+        pinnerWrapper.ifPresent(user -> notificationService.sendNewPinNotification(messageDetail, user));
+
         return true;
     }
 
@@ -1395,7 +1595,7 @@ public class GroupService {
         }
         Group group = groupWrapper.get();
         if (!group.isMember(userId)) {
-            return false;
+            return unpinChannelMessage(userId, groupId, messageId);
         }
 
         Optional<Message> messageWrapper = messageRepository.findById(messageId);
@@ -1423,34 +1623,46 @@ public class GroupService {
         return true;
     }
 
-    public Group addChannel(String adderId, AddChannelRequest request) {
-        Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
+    public boolean unpinChannelMessage(String userId, String groupId, String messageId) {
+        Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+        if (!channelWrapper.isPresent()) {
+            return false;
+        }
+
+        Channel channel = channelWrapper.get();
+
+        Optional<Message> messageWrapper = messageRepository.findById(messageId);
+        if (!messageWrapper.isPresent()) {
+            return false;
+        }
+
+        Message message = messageWrapper.get();
+        User sender = userRepository.findById(message.getSenderId())
+                .orElse(null);
+        if (sender == null) {
+            return false;
+        }
+
+        channel.unpinMessage(messageId);
+        channel.ping();
+        channelRepository.save(channel);
+        socketIOService.sendNewUnpinMessage(groupId, messageId);
+
+        Optional<User> pinnerWrapper = userRepository.findById(userId);
+        if (!pinnerWrapper.isPresent()) {
+            notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerWrapper.get());
+        }
+        return true;
+    }
+
+    public void updateLastMessageId(String groupId, String messageId) {
+        Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return null;
+            return;
         }
         Group group = groupWrapper.get();
-        if (!group.isMentor(adderId)) {
-            return null;
-        }
-
-        List<Group> oldChannels = groupRepository.findByIdIn(group.getChannels());
-        boolean isExistedChannel = oldChannels.stream()
-                .anyMatch(channel -> channel.getName().equals(request.getChannelName()));
-        if (isExistedChannel) {
-            return null;
-        }
-
-        Group newChannel = Group.builder()
-                .id(request.getChannelId())
-                .name(request.getChannelName())
-                .type(Group.Type.CHANNEL)
-                .parentId(request.getGroupId())
-                .mentors(Collections.singletonList(adderId))
-                .createdDate(new Date())
-                .build();
-        group.addChannel(request.getChannelId());
+        group.setLastMessageId(messageId);
         groupRepository.save(group);
-        return groupRepository.save(newChannel);
     }
 
     public void updateLastMessage(String groupId, String message) {
@@ -1461,5 +1673,115 @@ public class GroupService {
         Group group = groupWrapper.get();
         group.setLastMessage(message);
         groupRepository.save(group);
+    }
+
+    public GroupDetailResponse getGroupWorkspace(UserPrincipal user, String groupId) {
+        if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
+            return null;
+        }
+        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
+        if (groupWrapper.size() == 0) {
+            return null;
+        }
+        Group group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
+            return null;
+        }
+        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.get(0));
+        detail.setImageUrl(group.getImageUrl() == null ? detail.getImageUrl() : group.getImageUrl());
+
+        List<String> channelIds = group.getChannelIds() != null ? group.getChannelIds() : new ArrayList<>();
+        List<String> privateIds = group.getPrivateIds() != null ? group.getPrivateIds() : new ArrayList<>();
+        List<GroupDetailResponse.GroupChannel> channels = channelRepository
+                .findByIdIn(channelIds)
+                .stream()
+                .map(GroupDetailResponse.GroupChannel::from)
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                .collect(Collectors.toList());
+        detail.setChannels(channels);
+
+        List<GroupDetailResponse.GroupChannel> privates = channelRepository
+                .findByParentIdAndTypeAndUserIdsIn(groupId, Channel.Type.PRIVATE_MESSAGE,
+                        Collections.singletonList(user.getId()))
+                .stream()
+                .map(channel -> {
+                    String userId = channel.getUserIds().stream()
+                            .filter(id -> !id.equals(user.getId()))
+                            .findFirst().orElse(null);
+                    if (userId == null) {
+                        return null;
+                    }
+                    ShortProfile penpal = userRepository.findShortProfile(userId);
+                    if (penpal == null) {
+                        return null;
+                    }
+                    channel.setName(penpal.getName());
+                    channel.setImageUrl(penpal.getImageUrl());
+
+                    List<String> markedMentees = group.getMarkedMenteeIds() != null
+                            ? group.getMarkedMenteeIds()
+                            : new ArrayList<>();
+                    return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
+                .collect(Collectors.toList());
+        detail.setPrivates(privates);
+        return detail;
+    }
+
+    public boolean markMentee(UserPrincipal user, String groupId, String menteeId) {
+        Optional<Group> groupWrapper = groupRepository.findById(groupId);
+        Group group = null;
+        if (!groupWrapper.isPresent()) {
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return false;
+            }
+            Channel channel = channelWrapper.get();
+            Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
+            if (!parentGroup.isPresent()) {
+                return false;
+            }
+            group = parentGroup.get();
+        } else {
+            group = groupWrapper.get();
+        }
+
+        if (!group.isMentor(user.getId())) {
+            return false;
+        }
+
+        group.markMentee(menteeId);
+        groupRepository.save(group);
+        return true;
+    }
+
+    public boolean unmarkMentee(UserPrincipal user, String groupId, String menteeId) {
+        Optional<Group> groupWrapper = groupRepository.findById(groupId);
+        Group group = null;
+        if (!groupWrapper.isPresent()) {
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (!channelWrapper.isPresent()) {
+                return false;
+            }
+            Channel channel = channelWrapper.get();
+            Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
+            if (!parentGroup.isPresent()) {
+                return false;
+            }
+            group = parentGroup.get();
+        } else {
+            group = groupWrapper.get();
+        }
+
+        if (!group.isMentor(user.getId())) {
+            return false;
+        }
+
+        group.unmarkMentee(menteeId);
+        groupRepository.save(group);
+        return true;
     }
 }

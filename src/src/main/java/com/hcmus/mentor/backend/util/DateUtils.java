@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.util;
 
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -101,5 +102,8 @@ public class DateUtils {
 
         return result;
     }
-
+    public static String formatDate(Date date) {
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm, dd/MM/yyyy");
+        return formatter.format(date);
+    }
 }

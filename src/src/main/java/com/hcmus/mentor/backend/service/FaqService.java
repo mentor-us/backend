@@ -181,10 +181,6 @@ public class FaqService {
     }
 
     public void importFAQs(UserPrincipal user, String toGroupId, ImportFAQsRequest request) {
-        if (!permissionService.isMentor(user.getEmail(), request.getFromGroupId())) {
-            return;
-        }
-
         if (!permissionService.isMentor(user.getEmail(), toGroupId)) {
             return;
         }

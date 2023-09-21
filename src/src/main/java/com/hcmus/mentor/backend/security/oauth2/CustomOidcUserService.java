@@ -40,7 +40,6 @@ public class CustomOidcUserService extends OidcUserService {
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser oidcUser = super.loadUser(userRequest);
-        System.out.println(oidcUser);
         try {
             return processOAuth2User(userRequest, oidcUser);
         } catch (AuthenticationException ex) {

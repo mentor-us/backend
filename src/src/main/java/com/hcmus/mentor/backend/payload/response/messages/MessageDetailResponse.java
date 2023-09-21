@@ -44,6 +44,8 @@ public class MessageDetailResponse {
 
     private Message.Status status;
 
+    private ReplyMessage reply;
+
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
@@ -59,6 +61,16 @@ public class MessageDetailResponse {
             type = Message.Type.IMAGE;
             this.url = url;
         }
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class ReplyMessage {
+        private String id;
+        private String senderName;
+        private String content;
     }
 
     public static MessageDetailResponse from(Message message, User user) {
@@ -181,6 +193,7 @@ public class MessageDetailResponse {
                 .images(images)
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply())
                 .build();
     }
 

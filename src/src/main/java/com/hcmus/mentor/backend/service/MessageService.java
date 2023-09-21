@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.repository.*;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Value;
@@ -98,7 +99,8 @@ public class MessageService {
                 .collect(Collectors.toList());
     }
 
-    private MessageDetailResponse fulfillReactions(MessageDetailResponse message, Map<String, User> reactors) {
+    private MessageDetailResponse fulfillReactions(MessageDetailResponse message,
+                                                   Map<String, User> reactors) {
         List<Reaction> reactions = message.getReactions().stream()
                 .map(reaction -> {
                     User reactor = reactors.getOrDefault(reaction.getUserId(), null);
@@ -130,9 +132,40 @@ public class MessageService {
             case VOTE:
                 response = fulfillVotingMessage(message);
                 break;
+            case TEXT:
+                response = fulfillTextMessage(message);
+                break;
             default:
                 response = MessageDetailResponse.from(message);
         }
+        return response;
+    }
+
+    public MessageDetailResponse fulfillTextMessage(MessageResponse message) {
+        MessageDetailResponse response = MessageDetailResponse.from(message);
+        if (message.getReply() != null) {
+            Optional<Message> wrapper = messageRepository.findById(message.getReply());
+            if (!wrapper.isPresent()) {
+                return response;
+            }
+            Message data = wrapper.get();
+            String content = data.getContent();
+            if (data.isDeleted()) {
+                content = "Tin nhắn đã được xoá";
+            }
+            ShortProfile sender = userRepository.findShortProfile(data.getSenderId());
+            String senderName = "Người dùng không tồn tại";
+            if (sender != null) {
+                senderName = sender.getName();
+            }
+            MessageDetailResponse.ReplyMessage replyMessage = MessageDetailResponse.ReplyMessage
+                    .builder()
+                    .id(data.getId())
+                    .senderName(senderName)
+                    .content(content)
+                    .build();
+            response.setReply(replyMessage);
+        };
         return response;
     }
 
@@ -295,12 +328,13 @@ public class MessageService {
         switch (lastMessage.getType()) {
             case TEXT:
                 if (sender == null) {
-                    return "";
+                    return null;
                 }
-                return sender.getName() + ": " + Jsoup.parse(lastMessage.getContent()).text();
+                String content = lastMessage.getContent();
+                return sender.getName() + ": " + Jsoup.parse(content).text();
             case FILE:
                 if (sender == null) {
-                    return "";
+                    return null;
                 }
                 return sender.getName() + " đã gửi tệp đính kèm mới.";
             case IMAGE:

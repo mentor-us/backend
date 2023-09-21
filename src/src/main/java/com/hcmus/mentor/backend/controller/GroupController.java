@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
+import com.hcmus.mentor.backend.entity.Channel;
 import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.payload.APIResponse;
@@ -599,8 +600,7 @@ public class GroupController {
     public APIResponse<GroupDetailResponse> getGroup(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
                                                        @PathVariable("id") String groupId) {
         GroupReturnService groupData = groupService.getGroupDetail(userPrincipal.getId(), groupId);
-        return new APIResponse((GroupDetailResponse)groupData.getData(),
-                groupData.getReturnCode(), groupData.getMessage());
+        return new APIResponse(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
     }
 
     @Operation(summary = "Get group media (Media collection)",
@@ -719,24 +719,6 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Add new group channel (Mobile)",
-            description = "Add new channel in single group", tags = "Group APIs")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Add successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
-            ),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @PostMapping("/{groupId}/channels")
-    public ResponseEntity<Group> addChannel(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                               @RequestBody AddChannelRequest request) {
-        Group channel = groupService.addChannel(userPrincipal.getId(), request);
-        if (channel == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok().build();
-    }
-
     @Operation(summary = "Export groups table by search conditions",
             description = "Export groups table", tags = "Group APIs")
     @ApiResponses({
@@ -763,5 +745,64 @@ public class GroupController {
                                                              @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = groupService.generateExportTableBySearchConditions(userPrincipal.getEmail(), name, mentorEmail, menteeEmail, groupCategory, timeStart1, timeEnd1, timeStart2, timeEnd2, status, remainColumns);
         return response;
+    }
+
+    @Operation(summary = "Get group workspace (Mobile)",
+            description = "Get central workspace of group contains channels and private messages",
+            tags = "Group APIs")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Get successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = GroupDetailResponse.class)))
+            ),
+            @ApiResponse(responseCode = "401", description = "Need authentication")
+    })
+    @GetMapping("/{groupId}/workspace")
+    public ResponseEntity<GroupDetailResponse> getWorkspace(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+                                                 @PathVariable String groupId) {
+        GroupDetailResponse workspace = groupService.getGroupWorkspace(userPrincipal, groupId);
+        if (workspace == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(workspace);
+    }
+
+    @Operation(summary = "Mark mentee in group (Mobile)",
+            description = "Can mark and push them on the list mentees of group",
+            tags = "Group APIs")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Do successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))
+            ),
+            @ApiResponse(responseCode = "401", description = "Need authentication")
+    })
+    @PostMapping("/{groupId}/star")
+    public ResponseEntity<Void> markMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+                                           @PathVariable String groupId,
+                                           @RequestParam String menteeId) {
+        boolean isMarked = groupService.markMentee(userPrincipal, groupId, menteeId);
+        if (!isMarked) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Unark mentee in group (Mobile)",
+            description = "Can unmark mentees of group",
+            tags = "Group APIs")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Do successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))
+            ),
+            @ApiResponse(responseCode = "401", description = "Need authentication")
+    })
+    @DeleteMapping("/{groupId}/star")
+    public ResponseEntity<Void> unmarkMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+                                           @PathVariable String groupId,
+                                           @RequestParam String menteeId) {
+        boolean isMarked = groupService.unmarkMentee(userPrincipal, groupId, menteeId);
+        if (!isMarked) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok().build();
     }
 }
