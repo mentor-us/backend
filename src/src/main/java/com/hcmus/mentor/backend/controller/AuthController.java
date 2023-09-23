@@ -3,9 +3,7 @@ package com.hcmus.mentor.backend.controller;
 import com.hcmus.mentor.backend.payload.request.AuthResponse;
 import com.hcmus.mentor.backend.payload.request.LoginRequest;
 import com.hcmus.mentor.backend.payload.request.RefreshTokenRequest;
-import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.TokenProvider;
-import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -23,9 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import springfox.documentation.annotations.ApiIgnore;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @Tag(name = "Auth APIs", description = "APIs for authentication")
 @RestController
@@ -45,28 +42,22 @@ public class AuthController {
     }
 
     @Operation(summary = "Login by password", description = "", tags = "Auth APIs")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Login successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))
-            )})
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+    })
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         AuthResponse subscription = authService.createToken(authentication.getName());
         return ResponseEntity.ok(subscription);
     }
 
     @Operation(summary = "Request new token", description = "", tags = "Auth APIs")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Get successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))
-            )})
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Get successfully", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))})
     @PostMapping("/refresh-token")
     public ResponseEntity<String> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         String accessToken = authService.generateNewToken(request);

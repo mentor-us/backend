@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.entity.Channel;
-import com.hcmus.mentor.backend.payload.APIResponse;
 import com.hcmus.mentor.backend.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.payload.response.users.ShortProfile;
@@ -9,6 +8,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.ChannelService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -43,7 +42,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = {"", "/"})
-    public ResponseEntity<Channel> addChannel(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Channel> addChannel(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                               @RequestBody AddChannelRequest request) {
         Channel channel = channelService.addChannel(userPrincipal.getId(), request);
         if (channel == null) {
@@ -63,7 +62,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @DeleteMapping("/{channelId}")
-    public ResponseEntity<Void> removeChannel(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> removeChannel(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                               @PathVariable String channelId) {
         boolean isDeleted = channelService.removeChannel(userPrincipal, channelId);
         if (!isDeleted) {
@@ -83,7 +82,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = {"", "/"})
-    public ResponseEntity<List<Channel>> getChannels(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<List<Channel>> getChannels(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                      @RequestParam(required = false) String parentId) {
         List<Channel> channels = channelService.getChannels(userPrincipal, parentId);
         return ResponseEntity.ok(channels);
@@ -100,7 +99,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PatchMapping("/{channelId}")
-    public ResponseEntity<Channel> updateChannel(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Channel> updateChannel(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                  @PathVariable String channelId,
                                                  @RequestBody UpdateChannelRequest request) {
         Channel channel = channelService.updateChannel(userPrincipal, channelId, request);
@@ -121,7 +120,7 @@ public class ChannelController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{channelId}/members")
-    public ResponseEntity<List<ShortProfile>> getChannelMembers(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<List<ShortProfile>> getChannelMembers(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                  @PathVariable String channelId) {
         List<ShortProfile> members = channelService.getChannelMembers(userPrincipal, channelId);
         return ResponseEntity.ok(members);

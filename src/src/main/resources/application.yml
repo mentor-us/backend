@@ -11,9 +11,13 @@ server-socket:
 
 server:
   tomcat:
-    relaxed-query-chars: ['{','}']
+    relaxed-query-chars: [ '{','}' ]
+
 
 spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
   servlet:
     multipart:
       max-file-size: 5MB
@@ -67,7 +71,7 @@ spring:
             userNameAttribute: name
             userInfoAuthenticationMethod: header
           google:
-            authorization-uri:  https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
 
 azure:
   active-directory:
@@ -94,3 +98,5 @@ app:
       - http://localhost:8080/
       - mentorus://oauth2/redirect
       - https://mentor.fit.hcmus.edu.vn/auth/redirect
+springdoc:
+  packages-to-scan: com.hcmus.mentor.backend.controller

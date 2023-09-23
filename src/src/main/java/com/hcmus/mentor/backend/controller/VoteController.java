@@ -12,6 +12,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.VoteService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,7 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -51,7 +51,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @GetMapping(value = {"", "/"})
-    public ResponseEntity<List<VoteDetailResponse>> all(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<List<VoteDetailResponse>> all(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                                         @RequestParam String groupId) {
         List<VoteDetailResponse> votes = voteService.getGroupVotes(user.getId(), groupId);
         if (votes == null || votes.size() == 0) {
@@ -70,7 +70,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @GetMapping("/{voteId}")
-    public ResponseEntity<VoteDetailResponse> get(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<VoteDetailResponse> get(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                                   @PathVariable String voteId) {
         VoteDetailResponse vote = voteService.get(user.getId(), voteId);
         if (vote == null) {
@@ -89,8 +89,8 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @PostMapping(value = {"", "/"})
-    public ResponseEntity<Vote> create(@ApiIgnore @CurrentUser UserPrincipal user,
-                                    @RequestBody CreateVoteRequest request) {
+    public ResponseEntity<Vote> create(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
+                                       @RequestBody CreateVoteRequest request) {
         Vote vote = voteService.createNewVote(user.getId(), request);
         if (vote == null) {
             return ResponseEntity.badRequest().build();
@@ -108,7 +108,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @PatchMapping("/{voteId}")
-    public ResponseEntity<Void> update(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<Void> update(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                        @PathVariable String voteId,
                                        @RequestBody UpdateVoteRequest request) {
         boolean isUpdated = voteService.updateVote(user, voteId, request);
@@ -128,7 +128,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @DeleteMapping("/{voteId}")
-    public ResponseEntity<Void> delete(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<Void> delete(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                        @PathVariable String voteId) {
         boolean isDeleted = voteService.deleteVote(user, voteId);
         if (!isDeleted) {
@@ -148,9 +148,9 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @GetMapping("/{voteId}/choices/{choiceId}")
-    public ResponseEntity<VoteDetailResponse.ChoiceDetail> getChoiceDetail(@ApiIgnore @CurrentUser UserPrincipal user,
-                                                                     @PathVariable String voteId,
-                                                                     @PathVariable String choiceId) {
+    public ResponseEntity<VoteDetailResponse.ChoiceDetail> getChoiceDetail(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
+                                                                           @PathVariable String voteId,
+                                                                           @PathVariable String choiceId) {
         VoteDetailResponse.ChoiceDetail choiceDetail = voteService.getChoiceDetail(user, voteId, choiceId);
         if (choiceDetail == null) {
             return ResponseEntity.notFound().build();
@@ -169,8 +169,8 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @GetMapping("/{voteId}/result")
-    public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(@ApiIgnore @CurrentUser UserPrincipal user,
-                                                                           @PathVariable String voteId) {
+    public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
+                                                                                 @PathVariable String voteId) {
         List<VoteDetailResponse.ChoiceDetail> choiceResult = voteService.getChoiceResults(user, voteId);
         if (choiceResult == null || choiceResult.size() == 0) {
             return ResponseEntity.notFound().build();
@@ -189,7 +189,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @PatchMapping("/{voteId}/close")
-    public ResponseEntity<Void> closeVote(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<Void> closeVote(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                           @PathVariable String voteId) {
         boolean isSuccess = voteService.closeVote(user, voteId);
         if (!isSuccess) {
@@ -209,8 +209,8 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @PatchMapping("/{voteId}/reopen")
-    public ResponseEntity<Void> reopenVote(@ApiIgnore @CurrentUser UserPrincipal user,
-                                          @PathVariable String voteId) {
+    public ResponseEntity<Void> reopenVote(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
+                                           @PathVariable String voteId) {
         boolean isSuccess = voteService.reopenVote(user, voteId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
@@ -229,7 +229,7 @@ public class VoteController {
             @ApiResponse(responseCode = "401", description = "Need authentication"),
     })
     @PostMapping("/{voteId}/voting")
-    public ResponseEntity<Void> doVoting(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<Void> doVoting(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                          @PathVariable String voteId,
                                          @RequestBody DoVotingRequest request) {
         Vote vote = voteService.doVoting(request);

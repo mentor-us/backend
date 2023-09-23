@@ -1,11 +1,14 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.entity.Channel;
 import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.payload.APIResponse;
-import com.hcmus.mentor.backend.payload.request.groups.*;
-import com.hcmus.mentor.backend.payload.response.*;
+import com.hcmus.mentor.backend.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.payload.request.groups.CreateGroupRequest;
+import com.hcmus.mentor.backend.payload.request.groups.UpdateGroupRequest;
+import com.hcmus.mentor.backend.payload.response.HomePageResponse;
+import com.hcmus.mentor.backend.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.payload.response.groups.GroupMembersResponse;
@@ -18,6 +21,7 @@ import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.GroupService.GroupReturnService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,7 +31,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.core.io.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -35,7 +40,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -93,7 +97,7 @@ public class GroupController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping(value = {"/", ""})
-    public APIResponse<Page<Group>> all(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<Group>> all(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                            @RequestParam(defaultValue = "0") int page,
                            @RequestParam(defaultValue = "25") int pageSize,
                            @RequestParam(defaultValue = "") String type) {
@@ -144,7 +148,7 @@ public class GroupController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping("/own")
-    public APIResponse<Page<GroupHomepageResponse>> getOwnGroups(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<GroupHomepageResponse>> getOwnGroups(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                         @RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "25") int pageSize,
                                         @RequestParam(defaultValue = "") String type) {
@@ -185,7 +189,7 @@ public class GroupController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping("/recent")
-    public APIResponse<Page<Group>> recentGroups(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<Group>> recentGroups(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "25") int pageSize) {
         Page<Group> groups = groupService.findRecentGroupsOfUser(userPrincipal.getId(), page, pageSize);
@@ -220,7 +224,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING, description = "Duplicate email"),
     })
     @PostMapping(value = {"", "/"})
-    public APIResponse<Group> create(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Group> create(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @RequestBody CreateGroupRequest request) {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.createNewGroup(email, request);
@@ -245,7 +249,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group name"),
     })
     @PostMapping(value = "/import", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    public APIResponse<List<Group>> importGroups(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<Group>> importGroups(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                     @RequestParam("file") MultipartFile file) throws IOException {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.importGroups(email, file);
@@ -259,7 +263,7 @@ public class GroupController {
             )
     })
     @GetMapping("/find")
-    public APIResponse<Page<Group>> get(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<Group>> get(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                            @RequestParam(defaultValue = "") String name,
                            @RequestParam(defaultValue = "") String mentorEmail,
                            @RequestParam(defaultValue = "") String menteeEmail,
@@ -289,7 +293,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @PostMapping("/{groupId}/mentees")
-    public APIResponse<Group> addMentees(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Group> addMentees(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                   @PathVariable("groupId") String groupId,
                                   @RequestBody AddMenteesRequest request) {
         String email = userPrincipal.getEmail();
@@ -306,7 +310,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @PostMapping("/{groupId}/mentors")
-    public APIResponse<Group> addMentors(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Group> addMentors(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                   @PathVariable("groupId") String groupId,
                                   @RequestBody AddMentorsRequest request) {
         String email = userPrincipal.getEmail();
@@ -323,7 +327,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING, description = "Not found mentee"),
     })
     @DeleteMapping("/{groupId}/mentees/{menteeId}")
-    public APIResponse deleteMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse deleteMentee(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                     @PathVariable("groupId") String groupId,
                                     @PathVariable("menteeId") String menteeId) {
         String email = userPrincipal.getEmail();
@@ -341,7 +345,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING, description = "Not found mentor"),
     })
     @DeleteMapping("/{groupId}/mentors/{mentorId}")
-    public APIResponse deleteMentor(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse deleteMentor(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                     @PathVariable("groupId") String groupId,
                                     @PathVariable("mentorId") String mentorId) {
         String email = userPrincipal.getEmail();
@@ -358,7 +362,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING, description = "Not found mentor"),
     })
     @PatchMapping("/{groupId}/mentors/{menteeId}")
-    public APIResponse promoteToMentor(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse promoteToMentor(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                        @PathVariable("groupId") String groupId,
                                        @PathVariable("menteeId") String menteeId) {
         String email = userPrincipal.getEmail();
@@ -375,7 +379,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING, description = "Not found mentor"),
     })
     @PatchMapping("/{groupId}/mentees/{mentorId}")
-    public APIResponse demoteToMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse demoteToMentee(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                       @PathVariable("groupId") String groupId,
                                       @PathVariable("mentorId") String mentorId) {
         String email = userPrincipal.getEmail();
@@ -452,7 +456,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @DeleteMapping(value = "/{id}")
-    public APIResponse delete(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse delete(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @PathVariable String id) {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.deleteGroup(email, id);
@@ -471,7 +475,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING, description = "Time end can't be before time start"),
     })
     @PatchMapping("/{id}")
-    public APIResponse<Group> update(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Group> update(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @PathVariable String id,
                               @RequestBody UpdateGroupRequest request) {
         String email = userPrincipal.getEmail();
@@ -487,7 +491,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/home")
-    public APIResponse<HomePageResponse> getHomePage(@ApiIgnore @CurrentUser UserPrincipal userPrincipal) {
+    public APIResponse<HomePageResponse> getHomePage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         String userId = userPrincipal.getId();
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
@@ -508,7 +512,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @DeleteMapping(value = {"/", ""})
-    public APIResponse deleteMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse deleteMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.deleteMultiple(email, ids);
@@ -524,7 +528,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @PatchMapping(value = "/disable")
-    public APIResponse disableMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse disableMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                       @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.disableMultiple(email, ids);
@@ -539,7 +543,7 @@ public class GroupController {
             @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
     })
     @PatchMapping(value = "/enable")
-    public APIResponse enableMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse enableMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                        @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
         GroupReturnService groupReturn = groupService.enableMultiple(email, ids);
@@ -554,7 +558,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{id}/members")
-    public APIResponse<GroupMembersResponse> getGroupMembers(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<GroupMembersResponse> getGroupMembers(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                        @PathVariable("id") String groupId) {
         GroupReturnService groupMembers = groupService.getGroupMembers(groupId, userPrincipal.getId());
         return new APIResponse((GroupMembersResponse)groupMembers.getData(),
@@ -569,7 +573,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/{id}/pin")
-    public APIResponse<Object> pinGroup(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Object> pinGroup(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                 @PathVariable("id") String groupId) {
         groupService.pinGroup(userPrincipal.getId(), groupId);
         return new APIResponse(true, "OK", 200);
@@ -583,7 +587,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/{id}/unpin")
-    public APIResponse<Object> unpinGroup(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Object> unpinGroup(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                         @PathVariable("id") String groupId) {
         groupService.unpinGroup(userPrincipal.getId(), groupId);
         return new APIResponse(true, "OK", 200);
@@ -597,7 +601,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{id}/detail")
-    public APIResponse<GroupDetailResponse> getGroup(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<GroupDetailResponse> getGroup(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                        @PathVariable("id") String groupId) {
         GroupReturnService groupData = groupService.getGroupDetail(userPrincipal.getId(), groupId);
         return new APIResponse(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
@@ -612,7 +616,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{id}/media")
-    public APIResponse<ShortMediaMessage> getGroupMedia(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<ShortMediaMessage> getGroupMedia(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                      @PathVariable("id") String groupId) {
         GroupReturnService groupData = groupService.getGroupMedia(userPrincipal.getId(), groupId);
         return new APIResponse(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
@@ -627,7 +631,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public APIResponse<String> updateGroupAvatar(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<String> updateGroupAvatar(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                         @RequestParam String groupId,
                                                         @RequestParam(value = "file", required = false) MultipartFile file) throws GeneralSecurityException, IOException {
         GroupReturnService groupData = groupService.updateAvatar(userPrincipal.getId(), groupId, file);
@@ -643,7 +647,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/export")
-    public ResponseEntity<Resource> export(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> export(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = groupService.generateExportTable(userPrincipal.getEmail(),remainColumns);
         return response;
@@ -658,7 +662,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/{groupId}/mentors/export")
-    public ResponseEntity<Resource> exportMentors(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportMentors(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @PathVariable String groupId,
                                            @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = groupService.generateExportTableMembers(userPrincipal.getEmail(),remainColumns, groupId, "MENTOR");
@@ -674,7 +678,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/{groupId}/mentees/export")
-    public ResponseEntity<Resource> exportMentees(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportMentees(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                   @PathVariable String groupId,
                                                   @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = groupService.generateExportTableMembers(userPrincipal.getEmail(),remainColumns, groupId, "MENTEE");
@@ -690,7 +694,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/{groupId}/pin-message")
-    public ResponseEntity<Void> pinMessage(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> pinMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @PathVariable String groupId,
                                            @RequestParam String messageId) {
         boolean isPinned = groupService.pinMessage(userPrincipal.getId(), groupId, messageId);
@@ -709,7 +713,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/{groupId}/unpin-message")
-    public ResponseEntity<Resource> unpinMessage(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> unpinMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                   @PathVariable String groupId,
                                                   @RequestParam String messageId) {
         boolean isPinned = groupService.unpinMessage(userPrincipal.getId(), groupId, messageId);
@@ -728,7 +732,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/export/search")
-    public ResponseEntity<Resource> exportBySearchConditions(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportBySearchConditions(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                              @RequestParam(defaultValue = "") String name,
                                                              @RequestParam(defaultValue = "") String mentorEmail,
                                                              @RequestParam(defaultValue = "") String menteeEmail,
@@ -757,7 +761,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{groupId}/workspace")
-    public ResponseEntity<GroupDetailResponse> getWorkspace(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<GroupDetailResponse> getWorkspace(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                  @PathVariable String groupId) {
         GroupDetailResponse workspace = groupService.getGroupWorkspace(userPrincipal, groupId);
         if (workspace == null) {
@@ -776,7 +780,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/{groupId}/star")
-    public ResponseEntity<Void> markMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> markMentee(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @PathVariable String groupId,
                                            @RequestParam String menteeId) {
         boolean isMarked = groupService.markMentee(userPrincipal, groupId, menteeId);
@@ -796,7 +800,7 @@ public class GroupController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @DeleteMapping("/{groupId}/star")
-    public ResponseEntity<Void> unmarkMentee(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> unmarkMentee(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @PathVariable String groupId,
                                            @RequestParam String menteeId) {
         boolean isMarked = groupService.unmarkMentee(userPrincipal, groupId, menteeId);

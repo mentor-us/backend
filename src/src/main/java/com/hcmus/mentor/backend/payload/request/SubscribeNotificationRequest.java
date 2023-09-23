@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.payload.request;
 
 import lombok.*;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 @Getter
 @AllArgsConstructor

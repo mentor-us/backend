@@ -19,7 +19,10 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -29,9 +32,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.WebContext;
-import org.thymeleaf.spring5.SpringTemplateEngine;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -472,8 +477,8 @@ public class AnalyticService {
         indexMap.put("lastTimeActive", 7);
         List<Integer> remainColumnIndexes = new ArrayList<>();
         remainColumnIndexes.add(0);
-        remainColumns.forEach(remainColumn->{
-            if(indexMap.containsKey(remainColumn)){
+        remainColumns.forEach(remainColumn -> {
+            if (indexMap.containsKey(remainColumn)) {
                 remainColumnIndexes.add(indexMap.get(remainColumn));
             }
         });
@@ -486,6 +491,7 @@ public class AnalyticService {
                 .body(resource);
         return response;
     }
+
     public ResponseEntity<Resource> generateExportGroupTable(String emailUser, String groupId, List<String> remainColumns) throws IOException {
         Optional<Group> groupOptional = groupRepository.findById(groupId);
         Group group = groupOptional.orElse(null);
@@ -517,8 +523,8 @@ public class AnalyticService {
 
 
             Date lastTimeTaskMember = Optional.ofNullable(taskRepository.findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(groupId, memberId))
-                        .map(Task::getCreatedDate)
-                        .orElse(null);
+                    .map(Task::getCreatedDate)
+                    .orElse(null);
 
             Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(groupId, memberId))
                     .map(Message::getCreatedDate)
@@ -584,7 +590,7 @@ public class AnalyticService {
     }
 
     private GroupGeneralResponse getGroupGeneralAnalytic(Group group) {
-        if(group.getStatus() != Group.Status.DELETED && group.getStatus() != Group.Status.DISABLED){
+        if (group.getStatus() != Group.Status.DELETED && group.getStatus() != Group.Status.DISABLED) {
             if (group.getTimeEnd().before(new Date())) {
                 group.setStatus(Group.Status.OUTDATED);
                 groupRepository.save(group);
@@ -688,7 +694,7 @@ public class AnalyticService {
         return data;
     }
 
-    private ResponseEntity<Resource> generateExportGroupsTable( List<GroupGeneralResponse> groups, List<String> remainColumns) throws IOException {
+    private ResponseEntity<Resource> generateExportGroupsTable(List<GroupGeneralResponse> groups, List<String> remainColumns) throws IOException {
         List<List<String>> data = generateExportDataAllGroupGeneralAnalytic(groups);
         List<String> headers = Arrays.asList("STT", "Tên nhóm", "Loại nhóm", "Trạng thái", "Tổng số mentor", "Tổng số mentee", "Tổng số tin nhắn", "Tổng số công việc", "Tổng số lịch hẹn", "Lần hoạt động gần nhất");
         String fileName = "output.xlsx";
@@ -704,8 +710,8 @@ public class AnalyticService {
         indexMap.put("lastTimeActive", 9);
         List<Integer> remainColumnIndexes = new ArrayList<>();
         remainColumnIndexes.add(0);
-        remainColumns.forEach(remainColumn->{
-            if(indexMap.containsKey(remainColumn)){
+        remainColumns.forEach(remainColumn -> {
+            if (indexMap.containsKey(remainColumn)) {
                 remainColumnIndexes.add(indexMap.get(remainColumn));
             }
         });
@@ -730,8 +736,9 @@ public class AnalyticService {
         ResponseEntity<Resource> response = generateExportGroupsTable(groups, remainColumns);
         return response;
     }
+
     private List<GroupGeneralResponse> getGroupGeneralAnalyticBySearchConditions(String emailUser,
-                                                                                 FindGroupGeneralAnalyticRequest request){
+                                                                                 FindGroupGeneralAnalyticRequest request) {
         String groupName = request.getGroupName();
         String groupCategory = request.getGroupCategory();
         Group.Status status = request.getStatus();
@@ -792,7 +799,7 @@ public class AnalyticService {
 
     private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(String emailUser,
                                                                                   String groupId,
-                                                                                  FindUserAnalyticRequest request){
+                                                                                  FindUserAnalyticRequest request) {
         Query query = new Query();
         String name = request.getName();
         String email = request.getEmail();
@@ -1113,12 +1120,12 @@ public class AnalyticService {
         Map statusMap = Group.getStatusMap();
         String status = (String) statusMap.get(group.getStatus());
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String groupTime = dateFormat.format(group.getTimeStart()) +" - " + dateFormat.format((group.getTimeEnd()));
+        String groupTime = dateFormat.format(group.getTimeStart()) + " - " + dateFormat.format((group.getTimeEnd()));
         context.setVariable("GROUP_NAME", data.getName());
         context.setVariable("GROUP_CATEGORY", data.getCategory());
         context.setVariable("GROUP_STATUS", status);
         context.setVariable("GROUP_TIME", groupTime);
-        if(data.getLastTimeActive() != null){
+        if (data.getLastTimeActive() != null) {
             context.setVariable("LAST_TIME", dateFormat.format(data.getLastTimeActive()));
         }
 
@@ -1136,7 +1143,7 @@ public class AnalyticService {
     }
 
     public byte[] getGroupLog(String exporterEmail, String groupId,
-                                             List<AnalyticAttribute> attributes) throws IOException {
+                              List<AnalyticAttribute> attributes) throws IOException {
         if (attributes.size() == 0) {
             return null;
         }
@@ -1175,8 +1182,8 @@ public class AnalyticService {
         return workbookBytes;
     }
 
-    private void setHeaders(Row headerRow, List<String> headers){
-        for(int i = 0; i < headers.size(); i++){
+    private void setHeaders(Row headerRow, List<String> headers) {
+        for (int i = 0; i < headers.size(); i++) {
             headerRow.createCell(i).setCellValue(headers.get(i));
         }
     }
@@ -1205,7 +1212,7 @@ public class AnalyticService {
             row.createCell(4).setCellValue(DateUtils.formatDate(meeting.getTimeEnd()));
             row.createCell(5).setCellValue(meeting.getPlace());
             row.createCell(6).setCellValue(meeting.getOrganizer().toString());
-            if(meeting.getHistories() != null) {
+            if (meeting.getHistories() != null) {
                 row.createCell(7).setCellValue(meeting.getHistories().toString());
             }
         }
@@ -1253,7 +1260,7 @@ public class AnalyticService {
             row.createCell(2).setCellValue(message.getContent());
             row.createCell(3).setCellValue(message.getType().toString());
             row.createCell(4).setCellValue(DateUtils.formatDate(message.getCreatedDate()));
-            if(message.getStatus() != null) {
+            if (message.getStatus() != null) {
                 row.createCell(5).setCellValue(message.getStatus().toString());
             }
         }

@@ -4,7 +4,10 @@ import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.exception.ResourceNotFoundException;
 import com.hcmus.mentor.backend.payload.APIResponse;
-import com.hcmus.mentor.backend.payload.request.*;
+import com.hcmus.mentor.backend.payload.request.AddUserRequest;
+import com.hcmus.mentor.backend.payload.request.FindUserRequest;
+import com.hcmus.mentor.backend.payload.request.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.payload.returnCode.UserReturnCode;
@@ -14,6 +17,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,7 +33,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -80,7 +83,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping(value = "/all-paging")
-    public APIResponse<Page<User>> allPaging(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<User>> allPaging(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                              @RequestParam(defaultValue = "") String email,
                                              @RequestParam(defaultValue = "0") int page,
                                              @RequestParam(defaultValue = "25") int size) {
@@ -112,7 +115,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping(value = {"/", ""})
-    public APIResponse<Page<User>> listByEmail(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<User>> listByEmail(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                    @RequestParam(defaultValue = "") String email,
                                    @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "25") int size) {
@@ -131,7 +134,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping(value = {"/allByEmail", ""})
-    public APIResponse<List<User>> listAllByEmail(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<User>> listAllByEmail(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                    @RequestParam(defaultValue = "") String email) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.listAllByEmail(emailUser, email);
@@ -163,7 +166,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping("/me")
-    public APIResponse<ProfileResponse> getCurrentUser(@ApiIgnore @CurrentUser UserPrincipal userPrincipal) {
+    public APIResponse<ProfileResponse> getCurrentUser(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         User user = userRepository.findById(userPrincipal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
         ProfileResponse profileResponse = ProfileResponse.from(user);
@@ -200,7 +203,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @PatchMapping (value = "/{id}/admin")
-    public APIResponse<User> update(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<User> update(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                     @PathVariable String id,
                                     @RequestBody UpdateUserForAdminRequest request) {
         String emailUser = userPrincipal.getEmail();
@@ -218,7 +221,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @DeleteMapping(value = "/{id}")
-    public APIResponse delete(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse delete(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.deleteUser(emailUser, id);
@@ -231,7 +234,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @PostMapping (value = {"/", ""})
-    public APIResponse<User> add(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<User> add(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                            @RequestBody AddUserRequest request) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.addUser(emailUser, request);
@@ -247,7 +250,7 @@ public class UserController {
     })
     @PatchMapping("/{userId}/profile")
     public ResponseEntity<UserService.UserReturnService> updateProfile(
-            @ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String userId,
             @RequestBody UpdateUserRequest request) {
         UserService.UserReturnService userReturn = userService.updateUser(userId, request);
@@ -260,7 +263,7 @@ public class UserController {
             )
     })
     @GetMapping("/find")
-    public APIResponse<Page<Group>> get(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Page<Group>> get(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                         @RequestParam(required = false) String name,
                                         @RequestParam(required = false) String emailSearch,
                                         @RequestParam(required = false) Boolean status,
@@ -280,7 +283,7 @@ public class UserController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @DeleteMapping(value = {"/", ""})
-    public APIResponse deleteMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse deleteMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.deleteMultiple(emailUser, ids);
@@ -297,7 +300,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @PatchMapping(value = "/disable")
-    public APIResponse disableMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse disableMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                       @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.disableMultiple(emailUser, ids);
@@ -314,7 +317,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @PatchMapping(value = "/enable")
-    public APIResponse enableMultiple(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse enableMultiple(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                        @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.enableMultiple(emailUser, ids);
@@ -331,7 +334,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @GetMapping("/{id}/detail")
-    public APIResponse<UserDetailResponse> getDetail(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<UserDetailResponse> getDetail(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                         @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.getDetail(emailUser, id);
@@ -348,7 +351,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
 })
     @PostMapping("/avatar")
-    public APIResponse<String> updateAvatar(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<String> updateAvatar(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException {
         UserService.UserReturnService userReturn = userService.updateAvatar(userPrincipal.getId(), file);
@@ -365,7 +368,7 @@ public class UserController {
             @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
     })
     @PostMapping("/wallpaper")
-    public APIResponse<String> updateWallpaper(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<String> updateWallpaper(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException {
         UserService.UserReturnService userReturn = userService.updateWallpaper(userPrincipal.getId(), file);
@@ -381,7 +384,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/export")
-    public ResponseEntity<Resource> export(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> export(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = userService.generateExportTable(userPrincipal.getEmail(), remainColumns);
         return response;
@@ -397,7 +400,7 @@ public class UserController {
             @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
     })
     @PostMapping(value = "/import", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    public APIResponse<List<Group>> importUsers(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<Group>> importUsers(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                  @RequestParam("file") MultipartFile file) throws IOException {
         String email = userPrincipal.getEmail();
         UserService.UserReturnService userReturn = userService.importUsers(email, file);
@@ -413,7 +416,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/{userId}/mentorGroups/export")
-    public ResponseEntity<Resource> exportMentorGroups(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportMentorGroups(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @PathVariable String userId,
                                            @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = userService.generateExportTableMembers(userPrincipal.getEmail(), remainColumns, userId, "MENTOR");
@@ -429,7 +432,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/{userId}/menteeGroups/export")
-    public ResponseEntity<Resource> exportMenteeGroups(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportMenteeGroups(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                        @PathVariable String userId,
                                                        @RequestParam(defaultValue = "") List<String> remainColumns) throws IOException {
         ResponseEntity<Resource> response = userService.generateExportTableMembers(userPrincipal.getEmail(), remainColumns, userId, "MENTEE");
@@ -445,7 +448,7 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = "/export/search")
-    public ResponseEntity<Resource> exportBySearchConditions(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Resource> exportBySearchConditions(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                         @RequestParam(required = false) String name,
                                         @RequestParam(required = false) String emailSearch,
                                         @RequestParam(required = false) Boolean status,

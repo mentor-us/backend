@@ -23,20 +23,20 @@ import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
-import javax.validation.Valid;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -85,7 +85,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = {"/", ""})
-    public ResponseEntity<List<MessageDetailResponse>> getGroupMessages(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<List<MessageDetailResponse>> getGroupMessages(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                            @RequestParam String groupId, @RequestParam int page, @RequestParam int size) {
         String userId = userPrincipal.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
@@ -102,7 +102,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/react")
-    public ResponseEntity<Void> react(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> react(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                       @RequestBody @Valid ReactMessageRequest request) {
         messageService.reactMessage(request);
         return ResponseEntity.ok().build();
@@ -116,7 +116,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @DeleteMapping("/react")
-    public ResponseEntity<Void> removeReact(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> removeReact(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                             @RequestParam String messageId,
                                             @RequestParam String senderId) {
         messageService.removeReaction(messageId, senderId);
@@ -131,7 +131,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> sendImages(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> sendImages(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @RequestParam String id,
                                            @RequestParam String groupId,
                                            @RequestParam String senderId,
@@ -162,7 +162,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> sendFile(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<String> sendFile(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                            @RequestParam String id,
                                            @RequestParam String groupId,
                                            @RequestParam String senderId,
@@ -194,7 +194,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/find")
-    public ResponseEntity<List<MessageResponse>> findGroupMessages(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<List<MessageResponse>> findGroupMessages(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                                    @RequestParam String groupId, @RequestParam String query,
                                                                    @RequestParam int page, @RequestParam int size) {
         String userId = userPrincipal.getId();
@@ -213,7 +213,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping("/edit")
-    public ResponseEntity<Void> editMessage(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> editMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                             @RequestBody EditMessageRequest request) {
         Optional<Message> messageWrapper = messageRepository
                 .findById(request.getMessageId());
@@ -250,7 +250,7 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @DeleteMapping("/{messageId}")
-    public ResponseEntity<Void> deleteMessage(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public ResponseEntity<Void> deleteMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                             @PathVariable String messageId) {
         Optional<Message> messageWrapper = messageRepository.findById(messageId);
         if (!messageWrapper.isPresent()) {

@@ -14,6 +14,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,7 +22,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -51,8 +51,8 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @GetMapping(value = "/{id}")
-    public APIResponse<TaskDetailResponse> get(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                           @PathVariable String id) {
+    public APIResponse<TaskDetailResponse> get(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                               @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.getTask(emailUser, id);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -71,8 +71,8 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @PostMapping(value = "")
-    public APIResponse<Task> add(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                           @RequestBody AddTaskRequest request) {
+    public APIResponse<Task> add(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                 @RequestBody AddTaskRequest request) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.addTask(emailUser, request);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -91,9 +91,9 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @PatchMapping(value = "/{id}")
-    public APIResponse<Task> update(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                              @PathVariable String id,
-                              @RequestBody UpdateTaskRequest request) {
+    public APIResponse<Task> update(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                    @PathVariable String id,
+                                    @RequestBody UpdateTaskRequest request) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.updateTask(userPrincipal, id, request);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -112,9 +112,9 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @PatchMapping(value = "/{id}/{status}")
-    public APIResponse<Task> updateStatus(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                    @PathVariable String id,
-                                    @PathVariable Task.Status status) {
+    public APIResponse<Task> updateStatus(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                          @PathVariable String id,
+                                          @PathVariable Task.Status status) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.updateStatus(emailUser, id, status);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -135,9 +135,9 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @PatchMapping(value = "/mentor/{id}/status")
-    public APIResponse<Task> updateStatusByMentor(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                            @PathVariable String id,
-                                            @RequestBody UpdateStatusByMentorRequest request) {
+    public APIResponse<Task> updateStatusByMentor(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                                  @PathVariable String id,
+                                                  @RequestBody UpdateStatusByMentorRequest request) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.updateStatusByMentor(emailUser, id, request);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -158,7 +158,7 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @DeleteMapping(value = "/{id}")
-    public APIResponse delete(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse delete(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                               @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.deleteTask(userPrincipal, id);
@@ -180,7 +180,7 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @GetMapping(value = "/group/{groupId}")
-    public APIResponse<List<TaskDetailResponse>> getByGroupId(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<TaskDetailResponse>> getByGroupId(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                               @PathVariable String groupId) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.getTasksByGroupId(emailUser, groupId);
@@ -202,11 +202,12 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING, description = "Not enough required field input")
     })
     @GetMapping(value = "/user")
-    public APIResponse<List<TaskDetailResponse>> getByUserId(@ApiIgnore @CurrentUser UserPrincipal userPrincipal) {
+    public APIResponse<List<TaskDetailResponse>> getByUserId(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.getTasksByEmailUser(emailUser);
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
+
     @Operation(summary = "Get task assigner", description = "Get task's assigner", tags = "Task APIs")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Get task's assigner successfully",
@@ -218,7 +219,7 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING, description = "Not found task"),
     })
     @GetMapping(value = "/{id}/assigner")
-    public APIResponse<ProfileResponse> getAssigner(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<ProfileResponse> getAssigner(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                     @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.getTaskAssigner(emailUser, id);
@@ -236,7 +237,7 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING, description = "Not found task"),
     })
     @GetMapping(value = "/{id}/assignees")
-    public APIResponse<List<TaskAssigneeResponse>> getAssignees(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<TaskAssigneeResponse>> getAssignees(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                                 @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
         TaskService.TaskReturnService taskReturn = taskService.getTaskAssigneesWrapper(emailUser, id);
@@ -254,7 +255,7 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING, description = "Not found task"),
     })
     @GetMapping(value = "/own")
-    public APIResponse<List<TaskResponse>> getAllOwnTask(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<List<TaskResponse>> getAllOwnTask(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                                          @RequestParam("groupId") String groupId) {
         TaskService.TaskReturnService taskReturn = taskService.getAllOwnTasks(groupId, userPrincipal.getId());
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -271,8 +272,8 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING, description = "Not found task"),
     })
     @GetMapping(value = "/assigned")
-    public APIResponse<List<TaskResponse>> getAllOwnAssignedTask(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                                               @RequestParam("groupId") String groupId) {
+    public APIResponse<List<TaskResponse>> getAllOwnAssignedTask(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                                                 @RequestParam("groupId") String groupId) {
         TaskService.TaskReturnService taskReturn = taskService.wrapOwnAssignedTasks(groupId, userPrincipal.getId());
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
@@ -288,8 +289,8 @@ public class TaskController {
             @ApiResponse(responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING, description = "Not found task"),
     })
     @GetMapping(value = "/assigning")
-    public APIResponse<List<TaskResponse>> getAllOwnAssignedByMeTask(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                                                 @RequestParam("groupId") String groupId) {
+    public APIResponse<List<TaskResponse>> getAllOwnAssignedByMeTask(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                                                     @RequestParam("groupId") String groupId) {
         TaskService.TaskReturnService taskReturn = taskService.wrapAssignedByMeTasks(groupId, userPrincipal.getId());
         return new APIResponse(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }

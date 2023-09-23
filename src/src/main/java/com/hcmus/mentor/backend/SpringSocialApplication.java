@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend;
 
 import com.hcmus.mentor.backend.config.AppProperties;
-import com.hcmus.mentor.backend.entity.Message;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.repository.MeetingRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
@@ -16,61 +15,60 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.index.TextIndexDefinition;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.*;
+import java.util.Date;
 
 @SpringBootApplication
-@EnableSwagger2
+//@EnableSwagger2
+//@EnableOpenApi
 @EnableConfigurationProperties(AppProperties.class)
 public class SpringSocialApplication implements CommandLineRunner {
 
-	private final StorageService storageService;
-	private final MeetingRepository meetingRepository;
-	private final TaskRepository taskRepository;
-	private final MessageRepository messageRepository;
-	private final UserService userService;
-	private final AppProperties appProperties;
-	private final UserRepository userRepository;
-	private final MongoTemplate mongoTemplate;
+    private final StorageService storageService;
+    private final MeetingRepository meetingRepository;
+    private final TaskRepository taskRepository;
+    private final MessageRepository messageRepository;
+    private final UserService userService;
+    private final AppProperties appProperties;
+    private final UserRepository userRepository;
+    private final MongoTemplate mongoTemplate;
 
-	public SpringSocialApplication(StorageService storageService, MeetingRepository meetingRepository, TaskRepository taskRepository, MessageRepository messageRepository, UserService userService, AppProperties appProperties, UserRepository userRepository, MongoTemplate mongoTemplate) {
-		this.storageService = storageService;
-		this.meetingRepository = meetingRepository;
-		this.taskRepository = taskRepository;
-		this.messageRepository = messageRepository;
-		this.userService = userService;
-		this.appProperties = appProperties;
-		this.userRepository = userRepository;
-		this.mongoTemplate = mongoTemplate;
-	}
+    public SpringSocialApplication(StorageService storageService, MeetingRepository meetingRepository, TaskRepository taskRepository, MessageRepository messageRepository, UserService userService, AppProperties appProperties, UserRepository userRepository, MongoTemplate mongoTemplate) {
+        this.storageService = storageService;
+        this.meetingRepository = meetingRepository;
+        this.taskRepository = taskRepository;
+        this.messageRepository = messageRepository;
+        this.userService = userService;
+        this.appProperties = appProperties;
+        this.userRepository = userRepository;
+        this.mongoTemplate = mongoTemplate;
+    }
 
-	public static void main(String[] args) {
-		SpringApplication.run(SpringSocialApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SpringSocialApplication.class, args);
+    }
 
-	private String genToken(String id, String username, String email) {
-		User data1 = User.builder()
-				.id(id)
-				.name(username)
-				.email(email)
-				.build();
-		User dtn = userRepository.save(data1);
-		Date now = new Date();
-		Date expiryDate = new Date(now.getTime() + appProperties.getAuth().getTokenExpirationMsec());
-		String secret = appProperties.getAuth().getTokenSecret();
-		return Jwts.builder()
-				.setSubject(dtn.getId())
-				.setIssuedAt(new Date())
-				.setExpiration(expiryDate)
-				.signWith(SignatureAlgorithm.HS512, secret)
-				.compact();
-	}
+    private String genToken(String id, String username, String email) {
+        User data1 = User.builder()
+                .id(id)
+                .name(username)
+                .email(email)
+                .build();
+        User dtn = userRepository.save(data1);
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + appProperties.getAuth().getTokenExpirationMsec());
+        String secret = appProperties.getAuth().getTokenSecret();
+        return Jwts.builder()
+                .setSubject(dtn.getId())
+                .setIssuedAt(new Date())
+                .setExpiration(expiryDate)
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
 
-	@Override
-	public void run(String... args) throws Exception {
-		storageService.init();
+    @Override
+    public void run(String... args) throws Exception {
+        storageService.init();
 
 //		Map<String, String> tokens = new HashMap<>();
 //		List<String> emails = Arrays.asList(
@@ -218,5 +216,5 @@ public class SpringSocialApplication implements CommandLineRunner {
 //				.groupId("63fe166d08debb3763bcf59c")
 //				.build();
 //		taskRepository.saveAll(Arrays.asList(task1, task2, task3, task4, task5, task6));
-	}
+    }
 }
