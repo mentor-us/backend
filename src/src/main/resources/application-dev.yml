@@ -34,7 +34,7 @@ spring:
     mongodb:
       user: root
       password: password
-      uri: mongodb://root:password@localhost:27017/mentordb?authSource=admin
+      uri: mongodb://root:password@157.245.152.93:27017/mentordb?authSource=admin
   security:
     oauth2:
       client:
