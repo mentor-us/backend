@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.SystemConfigService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -37,11 +37,12 @@ public class SystemConfigController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))
             )})
     @GetMapping(value = "/all")
-    public APIResponse<List<SystemConfig>> all(@ApiIgnore @CurrentUser UserPrincipal userPrincipal) {
+    public APIResponse<List<SystemConfig>> all(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         String emailUser = userPrincipal.getEmail();
         SystemConfigService.SystemConfigReturnService configReturn = systemConfigService.listAll(emailUser);
         return new APIResponse(configReturn.getData(), configReturn.getReturnCode(), configReturn.getMessage());
     }
+
     @Operation(summary = "Update value of an existing system config",
             description = "Update value of an existing system config",
             tags = "SystemConfig APIs")
@@ -57,9 +58,9 @@ public class SystemConfigController {
 
     })
     @PatchMapping(value = "/{id}")
-    public APIResponse<SystemConfig> updateValue(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
-                                                       @PathVariable String id,
-                                                       @RequestBody Object value) {
+    public APIResponse<SystemConfig> updateValue(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+                                                 @PathVariable String id,
+                                                 @RequestBody Object value) {
         String emailUser = userPrincipal.getEmail();
         SystemConfigService.SystemConfigReturnService configReturn = systemConfigService.updateValue(emailUser, id, value);
         return new APIResponse(configReturn.getData(), configReturn.getReturnCode(), configReturn.getMessage());

@@ -1,15 +1,13 @@
 package com.hcmus.mentor.backend.payload.request.groups;
 
-import com.hcmus.mentor.backend.entity.Group;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.util.Date;
 import java.util.List;
 

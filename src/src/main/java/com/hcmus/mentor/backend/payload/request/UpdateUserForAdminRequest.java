@@ -3,12 +3,10 @@ package com.hcmus.mentor.backend.payload.request;
 import com.hcmus.mentor.backend.entity.User;
 import lombok.*;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-import java.util.ArrayList;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import java.util.Date;
-import java.util.List;
 
 @Getter
 @Setter
