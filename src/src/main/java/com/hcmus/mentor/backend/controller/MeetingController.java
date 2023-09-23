@@ -3,8 +3,8 @@ package com.hcmus.mentor.backend.controller;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.entity.Meeting;
 import com.hcmus.mentor.backend.payload.APIResponse;
-import com.hcmus.mentor.backend.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.payload.request.RescheduleMeetingRequest;
+import com.hcmus.mentor.backend.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.payload.request.meetings.UpdateMeetingRequest;
 import com.hcmus.mentor.backend.payload.response.meetings.MeetingAttendeeResponse;
 import com.hcmus.mentor.backend.payload.response.meetings.MeetingDetailResponse;
@@ -15,6 +15,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,7 +24,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -67,7 +67,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping(value = {"/", ""})
-    public ResponseEntity<List<MeetingResponse>> all(@ApiIgnore @CurrentUser UserPrincipal user,
+    public ResponseEntity<List<MeetingResponse>> all(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                                      @RequestParam String groupId) {
         if (!groupService.isGroupMember(groupId, user.getId())) {
             return ResponseEntity.notFound().build();
@@ -83,7 +83,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = {"/", ""})
-    public APIResponse<Meeting> create(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<Meeting> create(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                           @RequestBody CreateMeetingRequest request) {
         Meeting newMeeting = meetingService.createNewMeeting(request);
         if (newMeeting == null) {
@@ -100,7 +100,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PatchMapping("/{meetingId}")
-    public APIResponse<Meeting> update(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<Meeting> update(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                           @PathVariable String meetingId,
                                           @RequestBody UpdateMeetingRequest request) {
         Meeting meeting = meetingService.updateMeeting(user.getId(), meetingId, request);
@@ -118,7 +118,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @DeleteMapping("/{meetingId}")
-    public APIResponse<String> delete(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<String> delete(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                           @PathVariable String meetingId) {
         if (!meetingRepository.existsById(meetingId)) {
             return APIResponse.notFound(404);
@@ -135,7 +135,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{meetingId}")
-    public APIResponse<MeetingDetailResponse> get(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<MeetingDetailResponse> get(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                                   @PathVariable String meetingId) {
         MeetingDetailResponse response = meetingService.getMeetingById(user.getId(), meetingId);
         return APIResponse.success(response);
@@ -149,7 +149,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/{meetingId}/attendees")
-    public APIResponse<List<MeetingAttendeeResponse>> getAttendees(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<List<MeetingAttendeeResponse>> getAttendees(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                                                    @PathVariable String meetingId) {
         return APIResponse.success(meetingService.getMeetingAttendees(meetingId));
     }
@@ -163,7 +163,7 @@ public class MeetingController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PatchMapping("/{meetingId}/reschedule")
-    public APIResponse<Meeting> reschedule(@ApiIgnore @CurrentUser UserPrincipal user,
+    public APIResponse<Meeting> reschedule(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                                        @PathVariable String meetingId,
                                        @RequestBody RescheduleMeetingRequest request) {
         Meeting meeting = meetingService.rescheduleMeeting(user.getId(), meetingId, request);

@@ -2,12 +2,11 @@ package com.hcmus.mentor.backend.payload.request.meetings;
 
 import com.hcmus.mentor.backend.entity.Meeting;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.util.ArrayList;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.util.Date;
 import java.util.List;
 

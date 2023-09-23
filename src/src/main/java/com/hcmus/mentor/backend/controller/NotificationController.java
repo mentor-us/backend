@@ -9,6 +9,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,12 +17,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hcmus.mentor.backend.payload.returnCode.NotificationReturnCode.*;
+import static com.hcmus.mentor.backend.payload.returnCode.NotificationReturnCode.NOT_FOUND;
 
 @Tag(name = "Notification APIs", description = "REST APIs for Notification collection")
 @RestController
@@ -78,7 +78,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PostMapping(value = {"", "/"})
-    public APIResponse<Notif> create(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Notif> create(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                      @RequestBody AddNotificationRequest request) {
         Notif newNotif = notificationService.createResponseNotification(userPrincipal.getId(), request);
         return APIResponse.success(newNotif);
@@ -95,7 +95,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @PatchMapping("/{id}")
-    public APIResponse<Notif> response(@ApiIgnore @CurrentUser UserPrincipal userPrincipal,
+    public APIResponse<Notif> response(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
                                        @PathVariable String id,
                                        @RequestParam String action) {
         String userId = userPrincipal.getId();
@@ -146,7 +146,7 @@ public class NotificationController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/unread")
-    public APIResponse<Long> getUnreadNumber(@ApiIgnore @CurrentUser UserPrincipal userPrincipal) {
+    public APIResponse<Long> getUnreadNumber(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         String userId = userPrincipal.getId();
         if (userId == null) {
             return APIResponse.notFound(404);

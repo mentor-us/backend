@@ -9,12 +9,14 @@ import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.StorageService;
 import com.hcmus.mentor.backend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
@@ -28,10 +30,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import springfox.documentation.annotations.ApiIgnore;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -114,7 +113,7 @@ public class FileController {
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))
             )})
     @GetMapping("/api/files/{id}")
-    public void downloadFile(@ApiIgnore @CurrentUser UserPrincipal user,
+    public void downloadFile(@Parameter(hidden = true) @CurrentUser UserPrincipal user,
                              @PathVariable String id, HttpServletResponse response)
             throws IOException, GeneralSecurityException {
         File file = googleDriveManager.getFileById(id);

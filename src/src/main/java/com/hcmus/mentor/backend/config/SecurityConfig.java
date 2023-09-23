@@ -30,11 +30,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(
-        securedEnabled = true,
-        jsr250Enabled = true,
-        prePostEnabled = true
-)
+@EnableGlobalMethodSecurity(securedEnabled = true, jsr250Enabled = true, prePostEnabled = true)
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
@@ -49,39 +45,15 @@ public class SecurityConfig {
 
     private final ClientRegistrationRepository clientRegistrationRepository;
 
-    private static final String[] AUTH_WHITELIST = {
-            "/",
-            "/error",
-            "/favicon.ico",
-            "/**/*.png",
-            "/**/*.gif",
-            "/**/*.svg",
-            "/**/*.jpg",
-            "/**/*.html",
-            "/**/*.css",
-            "/**/*.js",
-            "**/api/**",
-            "/logout/**",
-            "/auth/**",
+    private static final String[] AUTH_WHITELIST = {"/", "/error", "/favicon.ico", "/**/*.png", "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.html", "/**/*.css", "/**/*.js", "**/api/**", "/logout/**", "/auth/**",
             // -- Swagger UI v2
-            "/v2/api-docs",
-            "/swagger-resources",
-            "/swagger-resources/**",
-            "/configuration/ui",
-            "/configuration/security",
-            "/swagger-ui.html",
-            "/webjars/**",
+            "/v2/api-docs", "/swagger-resources", "/swagger-resources/**", "/configuration/ui", "/configuration/security", "/swagger-ui.html", "/webjars/**",
             // -- Swagger UI v3 (OpenAPI)
-            "/v3/api-docs/**",
-            "/swagger-ui/**"
+            "/v3/api-docs/**", "/swagger-ui/**"
             // other public endpoints of your API may be appended to this array
     };
 
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
-                          CustomOidcUserService customOidcUserService,
-                          OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
-                          OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
-                          CheckingActivateUser checkingActivateUser, ClientRegistrationRepository clientRegistrationRepository) {
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService, CustomOidcUserService customOidcUserService, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CheckingActivateUser checkingActivateUser, ClientRegistrationRepository clientRegistrationRepository) {
         this.customUserDetailsService = customUserDetailsService;
         this.customOidcUserService = customOidcUserService;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
@@ -126,8 +98,7 @@ public class SecurityConfig {
 
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig)
-            throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
@@ -151,46 +122,42 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors().and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .csrf()
-                .disable()
-                .formLogin()
-                .disable()
-                .httpBasic()
-                .disable()
-                .exceptionHandling()
-                .authenticationEntryPoint(restAuthenticationEntryPoint())
-                .and()
-                .authorizeRequests()
-                .antMatchers(AUTH_WHITELIST).permitAll()
-                .antMatchers("**/oauth2/**", "/actuator").permitAll()
-                .and()
-                .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/test2")
-                .logoutSuccessHandler(oidcLogoutSuccessHandler())
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .deleteCookies("JSESSIONID")
-                .permitAll()
-                .and()
-                .oauth2Login()
-                .authorizationEndpoint()
-                .baseUri("/oauth2/authorize")
-                .authorizationRequestRepository(cookieAuthorizationRequestRepository())
-                .and()
-                .redirectionEndpoint()
-                .baseUri("/oauth2/callback/*")
-                .and()
-                .userInfoEndpoint()
-                .oidcUserService(customOidcUserService)
-                .and()
-                .successHandler(oAuth2AuthenticationSuccessHandler)
-                .failureHandler(oAuth2AuthenticationFailureHandler);
+        http.sessionManagement(s -> {
+            s.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        }).cors(c -> {
+
+        }).csrf(c -> {
+            c.disable();
+        }).formLogin(f -> {
+            f.disable();
+        }).httpBasic(h -> {
+            h.disable();
+        }).exceptionHandling(eh -> {
+            eh.authenticationEntryPoint(restAuthenticationEntryPoint());
+        }).authorizeHttpRequests(ar -> {
+            ar.requestMatchers(AUTH_WHITELIST).permitAll();
+            ar.requestMatchers("**/oauth2/**", "/actuator").permitAll();
+        }).logout(l -> {
+            l.logoutUrl("/logout");
+            l.logoutSuccessUrl("/test2");
+            l.logoutSuccessHandler(oidcLogoutSuccessHandler());
+            l.invalidateHttpSession(true);
+            l.clearAuthentication(true);
+            l.deleteCookies("JSESSIONID");
+            l.permitAll();
+        }).oauth2Login(o2 -> {
+            o2.authorizationEndpoint(e -> {
+                e.baseUri("/oauth2/authorize");
+                e.authorizationRequestRepository(cookieAuthorizationRequestRepository());
+            }).redirectionEndpoint(e -> {
+                e.baseUri("/oauth2/callback/*");
+            }).userInfoEndpoint(e -> {
+                e.oidcUserService(customOidcUserService);
+            }).successHandler(oAuth2AuthenticationSuccessHandler).failureHandler(oAuth2AuthenticationFailureHandler);
+        });
+
+
+//        http.cors().and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().csrf().disable().formLogin().disable().httpBasic().disable().exceptionHandling().authenticationEntryPoint(restAuthenticationEntryPoint()).and().authorizeRequests().dispatcherTypeMatchers(AUTH_WHITELIST).permitAll().dispatcherTypeMatchers("**/oauth2/**", "/actuator").permitAll().and().logout().logoutUrl("/logout").logoutSuccessUrl("/test2").logoutSuccessHandler(oidcLogoutSuccessHandler()).invalidateHttpSession(true).clearAuthentication(true).deleteCookies("JSESSIONID").permitAll().and().oauth2Login().authorizationEndpoint().baseUri("/oauth2/authorize").authorizationRequestRepository(cookieAuthorizationRequestRepository()).and().redirectionEndpoint().baseUri("/oauth2/callback/*").and().userInfoEndpoint().oidcUserService(customOidcUserService).and().successHandler(oAuth2AuthenticationSuccessHandler).failureHandler(oAuth2AuthenticationFailureHandler);
 
         // Add our custom Token based authentication filter
         //http.addFilterBefore(checkingActivateUser, UsernamePasswordAuthenticationFilter.class);
