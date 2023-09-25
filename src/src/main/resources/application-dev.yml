@@ -6,7 +6,6 @@ server:
   tomcat:
     relaxed-query-chars: [ '{','}' ]
 
-
 spring:
   mvc:
     pathmatch:
@@ -34,7 +33,7 @@ spring:
     mongodb:
       user: root
       password: password
-      uri: mongodb://root:password@157.245.152.93:27017/mentordb?authSource=admin
+      uri: mongodb://root:Lamgicopass#1234@172.17.0.1:27017/mentordb?authSource=admin
   security:
     oauth2:
       client:
@@ -89,6 +88,7 @@ app:
     authorizedRedirectUris:
       - http://localhost:3000/oauth2/redirect
       - http://localhost:8080/
+      - http://157.245.155.114:7002/oauth2/redirect
       - mentorus://oauth2/redirect
       - https://mentor.fit.hcmus.edu.vn/auth/redirect
 springdoc:
