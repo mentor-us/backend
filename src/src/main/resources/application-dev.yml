@@ -41,29 +41,26 @@ spring:
           google:
             clientId: 856018113300-ttu1tcagqq87039njp3ljaa1u9djockp.apps.googleusercontent.com
             clientSecret: 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
-            redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
+            redirectUri: "https://mentorus.hieucckha.me/oauth2/callback/{registrationId}"
             scope:
               - openid
               - email
               - profile
           azure:
-            clientId: d1aa2e7d-f499-49eb-890a-4ced56bd35a5
-            clientSecret: ZLS8Q~ldy20YOD6phW__ZjMqw93IC9wZjWQK6b43
-            redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
-            authorizationGrantType: authorization_code
+            clientId: 39b5ccf3-b439-41b5-a9d1-599e7ad9bf90
+            clientSecret: ugr8Q~Ra5CH63Cv9U95WKKCzwGx0NVV83Ok~BbDq
+            redirectUri: "https://mentorus.hieucckha.me/oauth2/callback/{registrationId}"
             scope:
               - openid
+              - email
               - profile
         provider:
-          azure:
-            authorizationUri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/oauth2/v2.0/authorize?prompt=select_account
-            tokenUri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/oauth2/v2.0/token
-            userInfoUri: https://graph.microsoft.com/oidc/userinfo
-            jwk-set-uri: https://login.microsoftonline.com/40127cd4-45f3-49a3-b05d-315a43a9f033/discovery/v2.0/keys
-            userNameAttribute: name
-            userInfoAuthenticationMethod: header
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
+          azure:
+            authorization-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/oauth2/v2.0/authorize
+            token-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/oauth2/v2.0/token
+            issuer-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/v2.0
 
 azure:
   active-directory:
