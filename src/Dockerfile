@@ -1,7 +1,13 @@
+FROM eclipse-temurin:17-jre-alpine AS builder
+COPY ./target/app.jar ./app.jar
+RUN java -Djarmode=layertools -jar ./app.jar extract
+
 FROM eclipse-temurin:17-jre-alpine
-WORKDIR /workspace/
-COPY ./target/backend-0.0.1.jar ./backend-0.0.1.jar
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=dev","./backend-0.0.1.jar"]
+COPY --from=builder /dependencies/ ./
+COPY --from=builder /spring-boot-loader/ ./
+COPY --from=builder /snapshot-dependencies/ ./
+COPY --from=builder /application/ ./
+ENTRYPOINT ["java", "-Dspring.profiles.active=dev", "org.springframework.boot.loader.JarLauncher"]
 
 EXPOSE 8080
 EXPOSE 8085

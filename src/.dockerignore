@@ -1,0 +1,6 @@
+# Excludes all files & folders by default
+*.*
+*/
+
+# Includes necessary files & folders
+!target/app.jar
