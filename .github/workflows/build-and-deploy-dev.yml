@@ -1,13 +1,12 @@
-name: Build and deploy MentorUS backend
+name: Build and deploy MentorUS backend (Development)
 
 on:
   push:
     branches:
-      - main
       - develop
     paths:
       - src
-      - .github/workflows
+      - .github/workflows/build-and-deploy-dev.yml
 
   workflow_dispatch:
 
