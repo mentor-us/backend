@@ -39,7 +39,7 @@ jobs:
       - name: Rename jar file to app.jar
         run: mv "target/$JAR_NAME-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
 
-      - name: Login to Github Packages
+      - name: Login to github package
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -55,10 +55,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: List all file
-        run: ls . && ls ./target
-
-      - name: build and push
+      - name: Build and push to github package
         uses: docker/build-push-action@v4
         with:
           context: ./src
