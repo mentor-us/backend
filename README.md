@@ -1,5 +1,9 @@
 # MentorUS Backend
 
+| Development                                                                                                                                                                                                                  | Production |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [![Build and deploy MentorUS backend](https://github.com/hieucckha/mentorus-backend/actions/workflows/build-and-deploy.yml/badge.svg)](https://github.com/hieucckha/mentorus-backend/actions/workflows/build-and-deploy.yml) |            |
+
 - Please read the file [INSTALL](./INSTALL.md) to setup development environment.
 
 - Swagger link:

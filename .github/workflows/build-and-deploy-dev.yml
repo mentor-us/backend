@@ -1,0 +1,96 @@
+name: Build and deploy development
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - src
+      - .github/workflows/build-and-deploy-dev.yml
+
+  workflow_dispatch:
+
+env:
+  JAR_NAME: backend
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  CONTAINER_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src
+    outputs:
+      image_path: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Rename jar file to app.jar
+        run: mv "target/$JAR_NAME-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
+
+      - name: Login to github package
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push to github package
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Deploy to digital ocean droplet via ssh action
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          script_stop: true
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSHKEY }}
+          envs: ${{ secrets.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
+          script: |
+            # Login to Github Packages
+            echo ${{ secrets.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Stop and remove the container if running
+            docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
+            # Remove image
+            docker image rm ${{ needs.build-and-push.outputs.image_path }} || true
+            # Run container
+            docker run -d \
+              --restart always \
+              --name $(echo ${{ env.CONTAINER_NAME }}) \
+              --add-host host.docker.internal:host-gateway \
+              -p 7000:8080 \
+              -p 7001:8085 \
+              ${{ needs.build-and-push.outputs.image_path }}
