@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -56,6 +57,7 @@ import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.NOT_FOU
 @Tag(name = "Group APIs", description = "REST APIs for Group collections")
 @RestController
 @RequestMapping("/api/groups")
+@SecurityRequirement(name = "bearer")
 public class GroupController {
     private final static Logger LOGGER = LogManager.getLogger(FileController.class);
     private final GroupRepository groupRepository;

@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ import java.util.Map;
 @Tag(name = "Group Category APIs", description = "REST APIs for Group Category collections")
 @RestController
 @RequestMapping("/api/group-categories")
+@SecurityRequirement(name = "bearer")
 public class  GroupCategoryController {
 
     private final GroupCategoryService groupCategoryService;

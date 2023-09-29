@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,6 +62,7 @@ import static com.hcmus.mentor.backend.payload.returnCode.InvalidPermissionCode.
 @Tag(name = "Analytic APIs", description = "REST APIs for Analytic")
 @RestController
 @RequestMapping("/api/analytic")
+@SecurityRequirement(name = "bearer")
 public class AnalyticController {
 
     private final AnalyticService analyticService;
@@ -214,7 +216,7 @@ public class AnalyticController {
         JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(request.getServletContext());
         IWebExchange exchange = application.buildExchange(request, response);
         WebContext context = new WebContext(exchange);
-        
+
         String reportHtml = analyticService.exportGroupReport(userPrincipal.getEmail(), groupId, context);
         if (reportHtml == null) {
             return ResponseEntity.badRequest().build();

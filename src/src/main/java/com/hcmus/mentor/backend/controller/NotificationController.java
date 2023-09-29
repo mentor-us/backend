@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ import static com.hcmus.mentor.backend.payload.returnCode.NotificationReturnCode
 @Tag(name = "Notification APIs", description = "REST APIs for Notification collection")
 @RestController
 @RequestMapping("/api/notifications")
+@SecurityRequirement(name = "bearer")
 public class NotificationController {
 
     private final NotificationService notificationService;
