@@ -5,55 +5,43 @@ import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.TokenAuthenticationFilter;
 import com.hcmus.mentor.backend.security.TokenProvider;
 import com.hcmus.mentor.backend.util.RequestUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
 @Component
-public class CheckingActivateUser extends OncePerRequestFilter {
+@RequiredArgsConstructor
+public class CheckingActivateUserFilter extends OncePerRequestFilter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
-
-    @Autowired
-    private TokenProvider tokenProvider;
-
-    @Autowired
-    private UserRepository userRepository;
-
+    private final TokenProvider tokenProvider;
+    private final UserRepository userRepository;
     private static final String[] AUTH_WHITELIST = {
-            // -- Swagger UI v2
-            "v2/api-docs",
-            "swagger-resources",
-            "swagger-resources",
-            "configuration/ui",
-            "configuration/security",
-            "swagger-ui.html",
-            "webjars",
-            "auth/refresh-token",
             // -- Swagger UI v3 (OpenAPI)
             "v3/api-docs",
             "swagger-ui",
             // other public endpoints of your API may be appended to this array
-            "favicon.ico"
+            "favicon.ico",
+            "auth/login",
+            "auth/refresh-token"
     };
 
-    public CheckingActivateUser() {
-    }
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = RequestUtils.getJwtFromRequest(request);
             String domain = request.getRequestURL().toString();
@@ -67,7 +55,7 @@ public class CheckingActivateUser extends OncePerRequestFilter {
 
                 String userId = tokenProvider.getUserIdFromToken(jwt);
                 Optional<User> userOptional = userRepository.findById(userId);
-                if (!userOptional.isPresent()) {
+                if (userOptional.isEmpty()) {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "No account!");
                     return;
                 }
