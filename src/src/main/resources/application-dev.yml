@@ -87,5 +87,9 @@ app:
       - http://localhost:8080/
       - mentorus://oauth2/redirect
       - https://admin-mentorus.hieucckha.me/auth/redirect
+
 springdoc:
   packages-to-scan: com.hcmus.mentor.backend.controller
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha
