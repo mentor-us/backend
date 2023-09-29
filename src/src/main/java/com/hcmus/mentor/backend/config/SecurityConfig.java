@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.config;
 
-import com.hcmus.mentor.backend.middleware.CheckingActivateUser;
 import com.hcmus.mentor.backend.security.CustomUserDetailsService;
 import com.hcmus.mentor.backend.security.RestAuthenticationEntryPoint;
 import com.hcmus.mentor.backend.security.TokenAuthenticationFilter;
@@ -8,12 +7,13 @@ import com.hcmus.mentor.backend.security.oauth2.CustomOidcUserService;
 import com.hcmus.mentor.backend.security.oauth2.OAuth2AuthenticationFailureHandler;
 import com.hcmus.mentor.backend.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import com.hcmus.mentor.backend.security.oauth2.OAuth2AuthorizationRequestRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,37 +30,34 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(securedEnabled = true, jsr250Enabled = true, prePostEnabled = true)
+@EnableMethodSecurity(jsr250Enabled = true, securedEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
-
     private final CustomOidcUserService customOidcUserService;
-
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
-
-    private final CheckingActivateUser checkingActivateUser;
-
     private final ClientRegistrationRepository clientRegistrationRepository;
 
-    private static final String[] AUTH_WHITELIST = {"/", "/error", "/favicon.ico", "/**/*.png", "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.html", "/**/*.css", "/**/*.js", "**/api/**", "/logout/**", "/auth/**",
-            // -- Swagger UI v2
-            "/v2/api-docs", "/swagger-resources", "/swagger-resources/**", "/configuration/ui", "/configuration/security", "/swagger-ui.html", "/webjars/**",
+    private static final String[] AUTH_WHITELIST = {"/",
+            "/error",
+            "/favicon.ico",
+            "/**/*.png",
+            "/**/*.gif",
+            "/**/*.svg",
+            "/**/*.jpg",
+            "/**/*.html",
+            "/**/*.css",
+            "/**/*.js",
+            "**/api/**",
+            "/logout/**",
+            "/auth/**",
             // -- Swagger UI v3 (OpenAPI)
-            "/v3/api-docs/**", "/swagger-ui/**"
+            "/v3/api-docs/**",
+            "/swagger-ui/**"
             // other public endpoints of your API may be appended to this array
     };
-
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService, CustomOidcUserService customOidcUserService, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CheckingActivateUser checkingActivateUser, ClientRegistrationRepository clientRegistrationRepository) {
-        this.customUserDetailsService = customUserDetailsService;
-        this.customOidcUserService = customOidcUserService;
-        this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
-        this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;
-        this.checkingActivateUser = checkingActivateUser;
-        this.clientRegistrationRepository = clientRegistrationRepository;
-    }
 
     @Bean
     public TokenAuthenticationFilter tokenAuthenticationFilter() {
@@ -95,7 +92,6 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -156,12 +152,6 @@ public class SecurityConfig {
             }).successHandler(oAuth2AuthenticationSuccessHandler).failureHandler(oAuth2AuthenticationFailureHandler);
         });
 
-
-//        http.cors().and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().csrf().disable().formLogin().disable().httpBasic().disable().exceptionHandling().authenticationEntryPoint(restAuthenticationEntryPoint()).and().authorizeRequests().dispatcherTypeMatchers(AUTH_WHITELIST).permitAll().dispatcherTypeMatchers("**/oauth2/**", "/actuator").permitAll().and().logout().logoutUrl("/logout").logoutSuccessUrl("/test2").logoutSuccessHandler(oidcLogoutSuccessHandler()).invalidateHttpSession(true).clearAuthentication(true).deleteCookies("JSESSIONID").permitAll().and().oauth2Login().authorizationEndpoint().baseUri("/oauth2/authorize").authorizationRequestRepository(cookieAuthorizationRequestRepository()).and().redirectionEndpoint().baseUri("/oauth2/callback/*").and().userInfoEndpoint().oidcUserService(customOidcUserService).and().successHandler(oAuth2AuthenticationSuccessHandler).failureHandler(oAuth2AuthenticationFailureHandler);
-
-        // Add our custom Token based authentication filter
-        //http.addFilterBefore(checkingActivateUser, UsernamePasswordAuthenticationFilter.class);
-        //http.addFilterBefore(tokenAuthenticationFilter(), CheckingActivateUser.class);
         return http.build();
     }
 }
