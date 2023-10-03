@@ -4,12 +4,7 @@ server-socket:
 
 server:
   tomcat:
-    relaxed-query-chars: ['{','}']
-
-springfox:
-  documentation:
-    swagger-ui:
-      base-url: /api-docs
+    relaxed-query-chars: [ '{','}' ]
 
 spring:
   servlet:
@@ -94,3 +89,9 @@ app:
       - http://localhost:8080/
       - mentorus://oauth2/redirect
       - https://mentor.fit.hcmus.edu.vn/auth/redirect
+
+springdoc:
+  packages-to-scan: com.hcmus.mentor.backend.controller
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
@@ -42,6 +43,7 @@ import java.util.List;
 
 @Tag(name = "File APIs", description = "APIs for file handling")
 @Controller
+@SecurityRequirement(name = "bearer")
 public class FileController {
 
     private final static Logger LOGGER = LogManager.getLogger(FileController.class);

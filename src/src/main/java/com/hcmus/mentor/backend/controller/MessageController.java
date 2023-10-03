@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,7 @@ import java.util.Optional;
 @Tag(name = "Message APIs", description = "REST APIs for message collections")
 @RestController
 @RequestMapping("/api/messages")
+@SecurityRequirement(name = "bearer")
 public class MessageController {
 
     private final MessageService messageService;
