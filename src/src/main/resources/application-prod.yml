@@ -28,8 +28,6 @@ spring:
             trust: smtp.gmail.com
   data:
     mongodb:
-      user: root
-      password: password
       uri: mongodb://root:password@172.17.0.1:27017/mentordb?authSource=admin
   security:
     oauth2:
@@ -39,26 +37,20 @@ spring:
             clientId: 856018113300-9du0njid2kjj16793lb6ftiiitln4td5.apps.googleusercontent.com
             clientSecret: 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
             redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
-            scope:
-              - openid
-              - email
-              - profile
+            scope: openid,email,profile
           azure:
             clientId: ad9918b8-455a-4277-98cd-285a0b391b8f
             clientSecret: t_W8Q~h8XV2lAbpbfGpIT5Z7UTJ.44fRJm2xfaPJ
             redirectUri: "https://mentor.fit.hcmus.edu.vn/oauth2/callback/{registrationId}"
             authorizationGrantType: authorization_code
-            scope:
-              - openid
-              - email
-              - profile
+          scope: openid,email,profile
         provider:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
           azure:
-            authorization-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/oauth2/v2.0/authorize
-            token-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/oauth2/v2.0/token
-            issuer-uri: https://login.microsoftonline.com/75b895ea-7ab4-4a2e-9d03-624765bf3801/v2.0
+            authorization-uri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+            token-uri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+            jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
 
 azure:
   active-directory:
