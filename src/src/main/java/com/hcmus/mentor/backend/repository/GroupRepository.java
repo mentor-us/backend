@@ -2,108 +2,123 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.payload.response.groups.GroupDetailResponse;
+import java.util.Date;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.Date;
-import java.util.List;
-
 public interface GroupRepository extends MongoRepository<Group, String> {
-    Page<Group> findAllOrderByCreatedDate(Pageable pageable);
-    List<Group> findAllByOrderByCreatedDate();
+  Page<Group> findAllOrderByCreatedDate(Pageable pageable);
 
+  List<Group> findAllByOrderByCreatedDate();
 
-    boolean existsByName(String s);
+  boolean existsByName(String s);
 
-    boolean existsByIdAndMentorsIn(String groupId, String userId);
+  boolean existsByIdAndMentorsIn(String groupId, String userId);
 
-    boolean existsByIdAndMenteesIn(String groupId, String userId);
+  boolean existsByIdAndMenteesIn(String groupId, String userId);
 
-    Group findByName(String name);
+  Group findByName(String name);
 
-    List<Group> findAllByMentorsIn(List<String> mentorIds);
+  List<Group> findAllByMentorsIn(List<String> mentorIds);
 
-    List<Group> findAllByMenteesIn(List<String> menteeIds);
+  List<Group> findAllByMenteesIn(List<String> menteeIds);
 
-    Page<Group> findAllByMentorsIn(List<String> mentorIds, Pageable pageable);
+  Page<Group> findAllByMentorsIn(List<String> mentorIds, Pageable pageable);
 
-    Page<Group> findAllByMentorsInAndStatus(List<String> mentorIds, Group.Status status, Pageable pageable);
+  Page<Group> findAllByMentorsInAndStatus(
+      List<String> mentorIds, Group.Status status, Pageable pageable);
 
-    Page<Group> findAllByMenteesIn(List<String> menteeIds, Pageable pageable);
+  Page<Group> findAllByMenteesIn(List<String> menteeIds, Pageable pageable);
 
-    Page<Group> findAllByMenteesInAndStatus(List<String> menteeIds, Group.Status status, Pageable pageable);
+  Page<Group> findAllByMenteesInAndStatus(
+      List<String> menteeIds, Group.Status status, Pageable pageable);
 
-    Page<Group> findAllByMenteesIn(String menteeId, Pageable pageable);
+  Page<Group> findAllByMenteesIn(String menteeId, Pageable pageable);
 
-    List<Group> findAllByMenteesIn(String menteeId);
+  List<Group> findAllByMenteesIn(String menteeId);
 
-    List<Group> findAllByMentorsIn(String mentorId);
+  List<Group> findAllByMentorsIn(String mentorId);
 
-    List<Group> findAllByMenteesInOrMentorsIn(String userId);
+  List<Group> findAllByMenteesInOrMentorsIn(String userId);
 
-    Page<Group> findAllByMentorsIn(String mentorId, Pageable pageable);
+  Page<Group> findAllByMentorsIn(String mentorId, Pageable pageable);
 
-    Page<Group> findAllByNameLikeIgnoreCase(String name, Pageable pageable);
+  Page<Group> findAllByNameLikeIgnoreCase(String name, Pageable pageable);
 
-    Page<Group> findAllByMentorsInOrMenteesIn(List<String> mentorIds, List<String> menteeIds, Pageable pageable);
+  Page<Group> findAllByMentorsInOrMenteesIn(
+      List<String> mentorIds, List<String> menteeIds, Pageable pageable);
 
-    Slice<Group> findByMentorsInAndStatusOrMenteesInAndStatus(List<String> mentorIds, Group.Status status1, List<String> menteeIds, Group.Status status2, Pageable pageable);
+  Slice<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
+      List<String> mentorIds,
+      Group.Status status1,
+      List<String> menteeIds,
+      Group.Status status2,
+      Pageable pageable);
 
-    List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(List<String> mentorIds, Group.Status status1, List<String> menteeIds, Group.Status status2);
+  List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
+      List<String> mentorIds, Group.Status status1, List<String> menteeIds, Group.Status status2);
 
-    Page<Group> findAllByNameLikeIgnoreCaseAndMentorsIn(String name, String mentorId, Pageable pageable);
+  Page<Group> findAllByNameLikeIgnoreCaseAndMentorsIn(
+      String name, String mentorId, Pageable pageable);
 
-    Page<Group> findAllByNameLikeIgnoreCaseAndMenteesIn(String name, String menteeId, Pageable pageable);
+  Page<Group> findAllByNameLikeIgnoreCaseAndMenteesIn(
+      String name, String menteeId, Pageable pageable);
 
-    Page<Group> findAllByMentorsInAndMenteesIn(String mentorId, String menteeId, Pageable pageable);
+  Page<Group> findAllByMentorsInAndMenteesIn(String mentorId, String menteeId, Pageable pageable);
 
-    Page<Group> findAllByNameLikeIgnoreCaseAndMentorsInAndMenteesIn(String name, String mentorId, String menteeId, Pageable pageable);
+  Page<Group> findAllByNameLikeIgnoreCaseAndMentorsInAndMenteesIn(
+      String name, String mentorId, String menteeId, Pageable pageable);
 
-    boolean existsByMenteesIn(List<String> menteeIds);
+  boolean existsByMenteesIn(List<String> menteeIds);
 
-    List<Group> findByIdIn(List<String> ids);
+  List<Group> findByIdIn(List<String> ids);
 
-    List<Group> findAllByGroupCategory(String groupCategoryId);
+  List<Group> findAllByGroupCategory(String groupCategoryId);
 
-    List<Group> findAllByGroupCategoryIn(List<String> groupCategoryIds);
-    List<Group> findAllByGroupCategoryAndCreatorId(String groupCategoryIds, String creatorId);
+  List<Group> findAllByGroupCategoryIn(List<String> groupCategoryIds);
 
-    List<Group> findAllById(List<String> ids);
-    
-    @Aggregation(pipeline = {
-            "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
-            "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
-            "{$lookup: {from: 'group_category', localField: 'groupCategoryObjectId', foreignField: '_id', as: 'category'}}",
-            "{$unwind: '$category'}",
-            "{$set: {groupCategory: '$category.name'}}",
-            "{$unset: 'category'}",
-            "{$unset: 'groupCategoryObjectId'}"
-    })
-    List<GroupDetailResponse> getGroupDetail(String groupId);
+  List<Group> findAllByGroupCategoryAndCreatorId(String groupCategoryIds, String creatorId);
 
-    long countByStatus(Group.Status status);
+  List<Group> findAllById(List<String> ids);
 
-    long countByGroupCategoryAndStatus(String groupCategoryId, Group.Status status);
+  @Aggregation(
+      pipeline = {
+        "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
+        "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
+        "{$lookup: {from: 'group_category', localField: 'groupCategoryObjectId', foreignField: '_id', as: 'category'}}",
+        "{$unwind: '$category'}",
+        "{$set: {groupCategory: '$category.name'}}",
+        "{$unset: 'category'}",
+        "{$unset: 'groupCategoryObjectId'}"
+      })
+  List<GroupDetailResponse> getGroupDetail(String groupId);
 
-    long countByGroupCategoryAndStatusAndCreatorId(String groupCategoryId, Group.Status status, String creatorId);
+  long countByStatus(Group.Status status);
 
-    long countByCreatedDateBetween(Date start, Date end);
+  long countByGroupCategoryAndStatus(String groupCategoryId, Group.Status status);
 
-    long countByCreatedDateBetweenAndCreatorId(Date start, Date end, String creatorId);
+  long countByGroupCategoryAndStatusAndCreatorId(
+      String groupCategoryId, Group.Status status, String creatorId);
 
-    long countByGroupCategoryAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
+  long countByCreatedDateBetween(Date start, Date end);
 
-    boolean existsByIdAndCreatorId(String groupId, String creatorId);
+  long countByCreatedDateBetweenAndCreatorId(Date start, Date end, String creatorId);
 
-    Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
+  long countByGroupCategoryAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
 
-    long countByCreatorId(String creatorId);
+  boolean existsByIdAndCreatorId(String groupId, String creatorId);
 
-    long countByStatusAndCreatorId(Group.Status status, String creatorId);
+  Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
 
-    List<Group> findAllByCreatorId(String creatorId);
-    List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
+  long countByCreatorId(String creatorId);
+
+  long countByStatusAndCreatorId(Group.Status status, String creatorId);
+
+  List<Group> findAllByCreatorId(String creatorId);
+
+  List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
 }

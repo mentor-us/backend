@@ -9,9 +9,9 @@ import lombok.*;
 @Builder
 public class ShortProfile {
 
-    private String id;
+  private String id;
 
-    private String name;
+  private String name;
 
-    private String imageUrl;
+  private String imageUrl;
 }

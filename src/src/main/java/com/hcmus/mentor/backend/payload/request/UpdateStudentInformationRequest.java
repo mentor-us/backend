@@ -5,14 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
-
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
 public class UpdateStudentInformationRequest {
-    private Integer trainingPoint;
-    private Boolean hasEnglishCert;
-    private Double studyingPoint;
+  private Integer trainingPoint;
+  private Boolean hasEnglishCert;
+  private Double studyingPoint;
 }

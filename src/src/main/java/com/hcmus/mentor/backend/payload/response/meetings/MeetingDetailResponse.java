@@ -3,10 +3,9 @@ package com.hcmus.mentor.backend.payload.response.meetings;
 import com.hcmus.mentor.backend.entity.Group;
 import com.hcmus.mentor.backend.entity.Meeting;
 import com.hcmus.mentor.backend.entity.User;
-import lombok.*;
-
 import java.util.Date;
 import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter
@@ -14,32 +13,31 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class MeetingDetailResponse {
-    private String id;
+  private String id;
 
-    private String title;
+  private String title;
 
-    private String description;
+  private String description;
 
-    private Date timeStart;
+  private Date timeStart;
 
-    private Date timeEnd;
+  private Date timeEnd;
 
-    private Meeting.Repeated repeated;
+  private Meeting.Repeated repeated;
 
-    private String place;
+  private String place;
 
-    private User organizer;
+  private User organizer;
 
-    private Group group;
+  private Group group;
 
-    @Builder.Default
-    private String type = "MEETING";
+  @Builder.Default private String type = "MEETING";
 
-    private boolean isAll;
+  private boolean isAll;
 
-    private boolean canEdit;
+  private boolean canEdit;
 
-    private int totalAttendees;
+  private int totalAttendees;
 
-    private List<MeetingHistoryDetail> histories;
+  private List<MeetingHistoryDetail> histories;
 }

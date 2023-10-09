@@ -3,49 +3,49 @@ package com.hcmus.mentor.backend.repository;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.payload.response.users.ShortProfile;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
 @Repository
 public interface UserRepository extends MongoRepository<User, String> {
 
-    Optional<User> findByEmail(String email);
+  Optional<User> findByEmail(String email);
 
-    Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
+  Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
 
-    List<User> findByEmailLikeIgnoreCase(String email);
-    //Page<User> findByEmailOrNameLikeIgnoreCase(String email, Pageable pageable);
+  List<User> findByEmailLikeIgnoreCase(String email);
 
-    Boolean existsByEmail(String email);
+  // Page<User> findByEmailOrNameLikeIgnoreCase(String email, Pageable pageable);
 
-    Boolean existsByEmailAndRolesIn(String email, User.Role role);
+  Boolean existsByEmail(String email);
 
-    List<User> findByIdIn(List<String> ids);
+  Boolean existsByEmailAndRolesIn(String email, User.Role role);
 
-    List<ProfileResponse> findAllByIdIn(List<String> ids);
+  List<User> findByIdIn(List<String> ids);
 
-    List<User> findAllByRolesIn(List<String> rolesIds);
+  List<ProfileResponse> findAllByIdIn(List<String> ids);
 
-    long countByStatus(Boolean status);
+  List<User> findAllByRolesIn(List<String> rolesIds);
 
-    long countByIdInAndStatus(List<String>userIds, Boolean status);
+  long countByStatus(Boolean status);
 
-    long countByCreatedDateBetween(Date start, Date end);
+  long countByIdInAndStatus(List<String> userIds, Boolean status);
 
-    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
+  long countByCreatedDateBetween(Date start, Date end);
 
-    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
-    ShortProfile findShortProfile(String id);
+  long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
-    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
-    List<ShortProfile> findByIds(List<String> senderIds);
+  @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
+  ShortProfile findShortProfile(String id);
 
-    List<User> findAllByOrderByCreatedDate();
+  @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
+  List<ShortProfile> findByIds(List<String> senderIds);
+
+  List<User> findAllByOrderByCreatedDate();
 }

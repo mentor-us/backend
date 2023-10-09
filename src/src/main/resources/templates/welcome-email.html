@@ -2,16 +2,18 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Document</title>
 </head>
 <body style="align-items: center">
-<table cellspacing="0" cellpadding="0" align="center">
+<table align="center" cellpadding="0" cellspacing="0">
     <tbody>
     <tr>
-        <td valign=“top” style="height: 700px!important;padding: 0 40px;border:1px solid #98A8F8;border-radius:5px;" bgcolor="#ffffff">
-            <table cellspacing="0" cellpadding="0" align="center" style="font-family:'Work Sans',sans-serif;"  >
+        <td bgcolor="#ffffff"
+            style="height: 700px!important;padding: 0 40px;border:1px solid #98A8F8;border-radius:5px;"
+            valign=“top”>
+            <table align="center" cellpadding="0" cellspacing="0" style="font-family:'Work Sans',sans-serif;">
                 <tbody>
                 <tr>
                     <td align="center">
@@ -20,22 +22,28 @@
                 </tr>
                 <tr>
                     <td align="center">
-                        <img src="https://cdn-icons-png.flaticon.com/256/3487/3487761.png" alt="email">
+                        <img alt="email" src="https://cdn-icons-png.flaticon.com/256/3487/3487761.png">
                     </td>
                 </tr>
                 <tr>
                     <td align="center">
-                        <h2 style="margin-top:2rem!important;font-size:30px!important;">Thư mời tham gia nhóm <span th:text="${groupName}"></span></h2>
+                        <h2 style="margin-top:2rem!important;font-size:30px!important;">Thư mời tham gia nhóm <span
+                                th:text="${groupName}"></span></h2>
                     </td>
                 </tr>
                 <tr>
                     <td align="center">
-                        <p style="width:600px!important;font-size:20px!important;text-align:center!important;letter-spacing:1px!important;margin-bottom:2rem!important;">Chào <span th:text="${name}"></span>, bạn được mời tham gia vào <span th:text="${groupName}"></span> trong ứng dụng MentorUS bởi người quản trị. Hãy nhấn vào nút bên dưới để truy cập vào ứng dụng nha!</p>
+                        <p style="width:600px!important;font-size:20px!important;text-align:center!important;letter-spacing:1px!important;margin-bottom:2rem!important;">
+                            Chào <span th:text="${name}"></span>, bạn được mời tham gia vào <span
+                                th:text="${groupName}"></span> trong ứng dụng MentorUS bởi người quản trị. Hãy nhấn vào
+                            nút bên dưới để truy cập vào ứng dụng nha!</p>
                     </td>
                 </tr>
                 <tr>
                     <td align="center" style="height: 60px !important;">
-                        <a th:href="@{https://web-nang-cao-19-3-ymeb.vercel.app/chat(groupId=${groupId})}" style="text-decoration: none!important; border: 1px solid #98A8F8!important; border-radius: 5px!important; background-color: #98A8F8!important; font-size: 25px!important; color: white!important; padding: 10px 15px!important; cursor: pointer!important;">Tham gia nhóm</a>
+                        <a style="text-decoration: none!important; border: 1px solid #98A8F8!important; border-radius: 5px!important; background-color: #98A8F8!important; font-size: 25px!important; color: white!important; padding: 10px 15px!important; cursor: pointer!important;"
+                           th:href="@{https://web-nang-cao-19-3-ymeb.vercel.app/chat(groupId=${groupId})}">Tham
+                            gia nhóm</a>
                     </td>
                 </tr>
                 </tbody>

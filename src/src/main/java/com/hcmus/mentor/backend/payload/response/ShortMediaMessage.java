@@ -3,12 +3,11 @@ package com.hcmus.mentor.backend.payload.response;
 import com.hcmus.mentor.backend.entity.Message;
 import com.hcmus.mentor.backend.payload.FileModel;
 import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
+import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.Date;
 
 @Getter
 @AllArgsConstructor
@@ -16,15 +15,15 @@ import java.util.Date;
 @Builder
 public class ShortMediaMessage {
 
-    private String id;
+  private String id;
 
-    private ProfileResponse sender;
+  private ProfileResponse sender;
 
-    private String imageUrl;
+  private String imageUrl;
 
-    private FileModel file;
+  private FileModel file;
 
-    private Message.Type type;
+  private Message.Type type;
 
-    private Date createdDate;
+  private Date createdDate;
 }

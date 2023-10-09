@@ -10,5 +10,5 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeleteGroupCategoryRequest {
-    private String newGroupCategoryId;
+  private String newGroupCategoryId;
 }

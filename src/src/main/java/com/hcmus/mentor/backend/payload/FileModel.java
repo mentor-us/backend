@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.payload;
 
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
 
 @Getter
 @AllArgsConstructor
@@ -13,21 +12,20 @@ import java.io.Serializable;
 @Builder
 public class FileModel implements Serializable {
 
-    private String id;
+  private String id;
 
-    private String filename;
+  private String filename;
 
-    private long size;
+  private long size;
 
-    private String url;
+  private String url;
 
-    @Builder.Default
-    private UploadStatus uploadStatus = UploadStatus.Success;
+  @Builder.Default private UploadStatus uploadStatus = UploadStatus.Success;
 
-    public enum UploadStatus {
-        Uploading,
-        Success,
-        Standby,
-        Fail
-    }
+  public enum UploadStatus {
+    Uploading,
+    Success,
+    Standby,
+    Fail
+  }
 }

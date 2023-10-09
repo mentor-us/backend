@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.payload.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.validation.constraints.NotNull;
 
 @Getter
 @Setter
@@ -13,12 +12,9 @@ import jakarta.validation.constraints.NotNull;
 @NoArgsConstructor
 public class ReactMessageRequest {
 
-    @NotNull
-    private String messageId;
+  @NotNull private String messageId;
 
-    @NotNull
-    private String emojiId;
+  @NotNull private String emojiId;
 
-    @NotNull
-    private String senderId;
+  @NotNull private String senderId;
 }

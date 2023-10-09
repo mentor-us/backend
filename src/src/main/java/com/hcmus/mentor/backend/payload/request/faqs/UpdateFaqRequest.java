@@ -11,9 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UpdateFaqRequest {
 
-    private String question;
+  private String question;
 
-    private String answer;
+  private String answer;
 
-    private String groupId;
+  private String groupId;
 }

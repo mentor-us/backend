@@ -1,319 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <meta
-      name="viewport"
-      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+            content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+            name="viewport"
     />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta content="ie=edge" http-equiv="X-UA-Compatible"/>
     <title>Group Report</title>
     <style>
-      * {
-        box-sizing: border-box;
-        padding: 0;
-        margin: 0;
-        font-family: "Helvetica" ,sans-serif;
-      }
+        * {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+            font-family: "Helvetica", sans-serif;
+        }
 
-      body {
-        width: 900px;
-        margin: 0 auto;
-      }
+        body {
+            width: 900px;
+            margin: 0 auto;
+        }
 
-      .center {
-        margin-left: auto;
-        margin-right: auto;
-    }
+        .center {
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-      .logo img {
+        .logo img {
             width: 100px;
         }
-    .title {
-        color: #006edd;
-        margin: 50px;
-        text-align: center;
-        text-transform: uppercase;
-    }
 
-    .card__title {
-      display: inline-block;
-      color: #006edd;
-      font-weight: bold;
-      font-size: 18px;
-      width: fit-content;        
-      margin-right: 10px;
-      font-family: "Helvetica" ,sans-serif;
-    }
-
-    .card__text {
-        font-size: 18px;
-        display: inline-block;
-    }
-
-    .section__title {
-        color: #006edd;
-        border-bottom: #006edd 1px solid;
-        width: 100%;
-        margin-bottom: 10px;
-        padding-bottom: 10px;
-        font-size: 22px;
-    }
-
-    .statistic__data {
-        width: calc(100% - 10px);
-        line-height: 1.8;
-        padding: 15px 20px;
-        border: 2px solid #006edd;
-        border-radius: 10px;          
-    }
-
-    .statistic__label {
-        margin-right: 10px;
-        font-size: 22px;
-        color: #006edd;
-    }
-
-    .statistic__value {
-        font-size: 30px;
-        font-weight: 500;
-    }
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact;
-          width: 100%;
-          page-break-inside: avoid;
+        .title {
+            color: #006edd;
+            margin: 50px;
+            text-align: center;
+            text-transform: uppercase;
         }
-      }
 
-      @page {
-        size: a4;
-        margin: 40px;
-      }
+        .card__title {
+            display: inline-block;
+            color: #006edd;
+            font-weight: bold;
+            font-size: 18px;
+            width: fit-content;
+            margin-right: 10px;
+            font-family: "Helvetica", sans-serif;
+        }
+
+        .card__text {
+            font-size: 18px;
+            display: inline-block;
+        }
+
+        .section__title {
+            color: #006edd;
+            border-bottom: #006edd 1px solid;
+            width: 100%;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .statistic__data {
+            width: calc(100% - 10px);
+            line-height: 1.8;
+            padding: 15px 20px;
+            border: 2px solid #006edd;
+            border-radius: 10px;
+        }
+
+        .statistic__label {
+            margin-right: 10px;
+            font-size: 22px;
+            color: #006edd;
+        }
+
+        .statistic__value {
+            font-size: 30px;
+            font-weight: 500;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                width: 100%;
+                page-break-inside: avoid;
+            }
+        }
+
+        @page {
+            size: a4;
+            margin: 40px;
+        }
     </style>
-  </head>
-  <body>
-    <table cellspacing="0" cellpadding="0" style="width: 100%" >
-      <tbody>
-        <tr>
-            <td>
-                <table cellspacing="20" cellpadding="0" class="center" align="center">
-                    <tbody>
-                        <tr align="center">
-                            <td>
+</head>
+<body>
+<table cellpadding="0" cellspacing="0" style="width: 100%">
+    <tbody>
+    <tr>
+        <td>
+            <table align="center" cellpadding="0" cellspacing="20" class="center">
+                <tbody>
+                <tr align="center">
+                    <td>
                                 <span class="logo">
                                     <img
-                                    src="https://mentor.fit.hcmus.edu.vn/static/media/logo_mentorus.5deb6b592119124e81ee.jpg"
+                                            src="https://mentor.fit.hcmus.edu.vn/static/media/logo_mentorus.5deb6b592119124e81ee.jpg"
                                     />
                                 </span>
-                            </td>
-                            <td> 
+                    </td>
+                    <td>
                                 <span class="title">
                                     <h1>Báo cáo hoạt động nhóm</h1>
                                 </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>                             
-            </td>          
-        </tr>
-        <tr>
-            <td>
-                <table cellspacing="0" cellpadding="0" style="width: 100%" >
-                    <tbody>
-                        <tr>
-                            <td style="width: 50%">
-                                <table cellspacing="20" cellpadding="0" style="width: 100%">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <p class="card__title">Tên nhóm:</p>    
-                                                <p class="card__text" th:text="${GROUP_NAME}">scsc</p>                                           
-                                            </td>
-                                            <td>
-                                              
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <p class="card__title">Loại nhóm:</p>   
-                                                <p class="card__text" th:text="${GROUP_CATEGORY}">scsc</p>                                            
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <p class="card__title">Tình trạng:</p>  
-                                                <p class="card__text" th:text="${GROUP_STATUS}">scsc</p>                                              
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td style="width: 50%">
-                                <table cellspacing="20" cellpadding="0" align="left" style="width: 100%">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <p class="card__title">Thời gian tồn tại:</p>                                                
-                                                <p class="card__text" th:text="${GROUP_TIME}">scsc</p>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                              <p class="card__title">Lần cuối hoạt động:</p>                                               
-                                              <p class="card__text" th:text="${LAST_TIME}"></p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>                        
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <table cellspacing="0" cellpadding="0" style="width: 100%; margin-top: 10px;" >
-                    <tbody >
-                        <tr>
-                            <td colspan="2">
-                                <div class="section__title">
-                                    <h3>Số liệu thống kê</h3>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="width: 50%">
-                                <table cellspacing="20" cellpadding="0" align="left" style="width: 100%">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số thành viên:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_MEMBERS}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td> 
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số mentor:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_MENTORS}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số mentee:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_MENTEES}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td style="width: 50%">
-                                <table cellspacing="20" cellpadding="0" align="left" style="width: 100%">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số tin nhắn:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_MESSAGES}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td> 
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số cuộc hẹn:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_MEETINGS}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="statistic__data">
-                                                    <div class="statistic__label">
-                                                      <p>Tổng số công việc:</p>
-                                                    </div>
-                                                    <div class="statistic__value">
-                                                      <p th:text="${TOTAL_TASK}">123123,123</p>
-                                                    </div>
-                                                  </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-      </tbody>
-    </table>
-  </body>
-  <script type="text/javascript" th:inline="javascript">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table cellpadding="0" cellspacing="0" style="width: 100%">
+                <tbody>
+                <tr>
+                    <td style="width: 50%">
+                        <table cellpadding="0" cellspacing="20" style="width: 100%">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <p class="card__title">Tên nhóm:</p>
+                                    <p class="card__text" th:text="${GROUP_NAME}">scsc</p>
+                                </td>
+                                <td>
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p class="card__title">Loại nhóm:</p>
+                                    <p class="card__text" th:text="${GROUP_CATEGORY}">scsc</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p class="card__title">Tình trạng:</p>
+                                    <p class="card__text" th:text="${GROUP_STATUS}">scsc</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td style="width: 50%">
+                        <table align="left" cellpadding="0" cellspacing="20" style="width: 100%">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <p class="card__title">Thời gian tồn tại:</p>
+                                    <p class="card__text" th:text="${GROUP_TIME}">scsc</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p class="card__title">Lần cuối hoạt động:</p>
+                                    <p class="card__text" th:text="${LAST_TIME}"></p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table cellpadding="0" cellspacing="0" style="width: 100%; margin-top: 10px;">
+                <tbody>
+                <tr>
+                    <td colspan="2">
+                        <div class="section__title">
+                            <h3>Số liệu thống kê</h3>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 50%">
+                        <table align="left" cellpadding="0" cellspacing="20" style="width: 100%">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số thành viên:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_MEMBERS}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số mentor:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_MENTORS}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số mentee:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_MENTEES}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td style="width: 50%">
+                        <table align="left" cellpadding="0" cellspacing="20" style="width: 100%">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số tin nhắn:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_MESSAGES}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số cuộc hẹn:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_MEETINGS}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="statistic__data">
+                                        <div class="statistic__label">
+                                            <p>Tổng số công việc:</p>
+                                        </div>
+                                        <div class="statistic__value">
+                                            <p th:text="${TOTAL_TASK}">123123,123</p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+<script th:inline="javascript" type="text/javascript">
     function numberWithCommas(value) {
-      return value.toLocaleString();
+        return value.toLocaleString();
     }
 
     function formatDate(date) {
-      return new Date(date).toLocaleString(
-        "es-ES",
-        {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        },
-        { timeZone: "Asia/Bangkok" }
-      );
+        return new Date(date).toLocaleString(
+            "es-ES",
+            {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+            },
+            {timeZone: "Asia/Bangkok"}
+        );
     }
 
     const groupStatusList = [
-      {
-        label: "Chưa bắt đầu",
-        textValue: "INACTIVE",
-        value: 0,
-        color: "#FFC93C",
-      },
-      {
-        label: "Đang hoạt động",
-        textValue: "ACTIVE",
-        value: 1,
-        color: "green",
-      },
-      { label: "Bị khóa", textValue: "DISABLED", value: 2, color: "#1A73E8" },
-      {
-        label: "Hết thời hạn",
-        textValue: "OUTDATED",
-        value: 3,
-        color: "#7895B2",
-      },
-      { label: "Đã xóa", textValue: "DELETED", value: 4, color: "red" },
+        {
+            label: "Chưa bắt đầu",
+            textValue: "INACTIVE",
+            value: 0,
+            color: "#FFC93C",
+        },
+        {
+            label: "Đang hoạt động",
+            textValue: "ACTIVE",
+            value: 1,
+            color: "green",
+        },
+        {label: "Bị khóa", textValue: "DISABLED", value: 2, color: "#1A73E8"},
+        {
+            label: "Hết thời hạn",
+            textValue: "OUTDATED",
+            value: 3,
+            color: "#7895B2",
+        },
+        {label: "Đã xóa", textValue: "DELETED", value: 4, color: "red"},
     ];
-  </script>
+</script>
 </html>

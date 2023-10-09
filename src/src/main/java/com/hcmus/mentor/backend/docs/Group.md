@@ -107,7 +107,8 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -128,7 +129,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
   "returnCode": 200
 }
 ```
-  - Duplicated group:
+
+- Duplicated group:
+
 ```json
 {
   "success": true,
@@ -137,7 +140,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
   "returnCode": 207
 }
 ```
-  - Group Category not exists:
+
+- Group Category not exists:
+
 ```json
 {
   "success": true,
@@ -146,7 +151,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
   "returnCode": 208
 }
 ```
-  - Time end before time start:
+
+- Time end before time start:
+
 ```json
 {
   "success": true,
@@ -156,7 +163,8 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
 }
 ```
 
-  - Invalid permission:
+- Invalid permission:
+
 ```json
 {
   "success": true,
@@ -166,7 +174,8 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
 }
 ```
 
-  - Not enough required fields:
+- Not enough required fields:
+
 ```json
 {
   "success": true,
@@ -175,7 +184,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
   "returnCode": 211
 }
 ```
-  - Time start is too far from now:
+
+- Time start is too far from now:
+
 ```json
 {
   "success": true,
@@ -186,6 +197,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/' \
 ```
 
 - Time end is too far from time start:
+
 ```json
 {
   "success": true,
@@ -241,6 +253,7 @@ Default value:
 ```
 
 ### Add mentees(Admin)
+
 - Request:
 
 ```bash
@@ -281,6 +294,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 - Not found:
+
 ```json
 {
   "success": false,
@@ -291,6 +305,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -301,6 +316,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 ### Add mentors(Admin)
+
 - Request:
 
 ```bash
@@ -312,8 +328,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 }'
 ```
 
-- Response: 
+- Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -353,6 +370,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -363,7 +381,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 ```
 
 ### Delete mentee(Admin)
+
 - Request:
+
 ```bash
 curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659c7b1a584a2f/mentees/63e1e6e24530646b949d2a1c' \
 --header 'Authorization: Bearer <access_token>' \
@@ -371,6 +391,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -394,7 +415,9 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
   "returnCode": 200
 }
 ```
+
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -425,7 +448,9 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
   "returnCode": 213
 }
 ```
+
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -436,6 +461,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 ### Delete mentor(Admin)
+
 - Request:
 
 ```bash
@@ -445,6 +471,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -491,6 +518,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -501,6 +529,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 ### Promote to mentor(Admin)
+
 - Request:
 
 ```bash
@@ -509,7 +538,8 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -558,6 +588,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -568,6 +599,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 ### Demote to mentee(Admin)
+
 - Request:
 
 ```bash
@@ -576,7 +608,8 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -626,6 +659,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -636,6 +670,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 ### Add mentees(Admin)
+
 - Request:
 
 ```bash
@@ -676,6 +711,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 - Not found:
+
 ```json
 {
   "success": false,
@@ -686,6 +722,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -696,6 +733,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1e6e24530646
 ```
 
 ### Add mentors(Admin)
+
 - Request:
 
 ```bash
@@ -707,8 +745,9 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 }'
 ```
 
-- Response: 
+- Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -748,6 +787,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -758,6 +798,7 @@ curl --location --request POST 'http://localhost:8080/api/groups/63e1ebb1d4659c7
 ```
 
 ### Delete mentee(Admin)
+
 - Request:
 
 ```bash
@@ -767,6 +808,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -791,7 +833,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 }
 ```
 
-  - Not found group:
+- Not found group:
 
 ```json
 {
@@ -814,6 +856,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -824,6 +867,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 ### Delete mentor(Admin)
+
 - Request:
 
 ```bash
@@ -833,6 +877,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -879,6 +924,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -889,6 +935,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63e1ebb1d4659
 ```
 
 ### Promote to mentor(Admin)
+
 - Request:
 
 ```bash
@@ -897,7 +944,8 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -946,6 +994,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 ### Demote to mentee(Admin)
+
 - Request:
 
 ```bash
@@ -954,7 +1003,8 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -1004,6 +1054,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -1014,6 +1065,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63e1ebb1d4659c
 ```
 
 ### Get import-groups template
+
 - Request:
 
 ```bash
@@ -1039,7 +1091,8 @@ curl --location --request GET 'http://localhost:8080/api/groups/import' \
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -1085,6 +1138,7 @@ curl --location --request GET 'http://localhost:8080/api/groups/import' \
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -1093,6 +1147,7 @@ curl --location --request GET 'http://localhost:8080/api/groups/import' \
   "returnCode": 100
 }
 ```
+
 Beside that, it has some failure case like creating group(duplicated name, not found group category)(
 
 ### Update group(Admin)
@@ -1113,7 +1168,8 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -1134,7 +1190,9 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
   "returnCode": 200
 }
 ```
-  - Group not found:
+
+- Group not found:
+
 ```json
 {
   "success": true,
@@ -1143,7 +1201,9 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
   "returnCode": 404
 }
 ```
-  - Group category not exists:
+
+- Group category not exists:
+
 ```json
 {
   "success": true,
@@ -1152,7 +1212,9 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
   "returnCode": 208
 }
 ```
-  - Time end before time start:
+
+- Time end before time start:
+
 ```json
 {
   "success": true,
@@ -1161,7 +1223,9 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
   "returnCode": 209
 }
 ```
+
 - Time start is too far from now:
+
 ```json
 {
   "success": true,
@@ -1172,6 +1236,7 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
 ```
 
 - Time end is too far from time start:
+
 ```json
 {
   "success": true,
@@ -1180,7 +1245,9 @@ curl --location --request PATCH 'http://localhost:8080/api/groups/63f03e4260a715
   "returnCode": 215
 }
 ```
+
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -1200,7 +1267,8 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63f03e4260a71
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -1221,7 +1289,9 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63f03e4260a71
   "returnCode": 200
 }
 ```
+
 - Group not found:
+
 ```json
 {
   "success": true,
@@ -1232,6 +1302,7 @@ curl --location --request DELETE 'http://localhost:8080/api/groups/63f03e4260a71
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,

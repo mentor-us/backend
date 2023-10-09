@@ -1,13 +1,12 @@
 package com.hcmus.mentor.backend.payload.request;
 
 import com.hcmus.mentor.backend.entity.Vote;
+import java.util.Date;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.Date;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -15,9 +14,9 @@ import java.util.List;
 @Setter
 public class UpdateVoteRequest {
 
-    private String question;
+  private String question;
 
-    private List<Vote.Choice> choices;
+  private List<Vote.Choice> choices;
 
-    private Date timeEnd;
+  private Date timeEnd;
 }

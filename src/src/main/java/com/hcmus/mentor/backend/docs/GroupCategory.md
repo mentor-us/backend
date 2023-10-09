@@ -70,7 +70,8 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -85,7 +86,9 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
   "returnCode": 200
 }
 ```
+
 - Duplicated (by name):
+
 ```json
 {
   "success": true,
@@ -96,6 +99,7 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -106,6 +110,7 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 ```
 
 - Not enough required fields:
+
 ```json
 {
   "success": true,
@@ -133,6 +138,7 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -147,7 +153,9 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
   "returnCode": 200
 }
 ```
+
 - Not found:
+
 ```json
 {
   "success": true,
@@ -158,6 +166,7 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 ``` 
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -168,6 +177,7 @@ curl --location --request POST 'http://localhost:8080/api/group-categories' \
 ```
 
 - Not enough required fields:
+
 ```json
 {
   "success": true,
@@ -187,7 +197,8 @@ curl --location --request DELETE 'http://localhost:8080/api/group-categories/63e
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -202,7 +213,9 @@ curl --location --request DELETE 'http://localhost:8080/api/group-categories/63e
   "returnCode": 200
 }
 ```
+
 - Not found:
+
 ```json
 {
   "success": true,
@@ -213,6 +226,7 @@ curl --location --request DELETE 'http://localhost:8080/api/group-categories/63e
 ``` 
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -223,6 +237,7 @@ curl --location --request DELETE 'http://localhost:8080/api/group-categories/63e
 ```
 
 - Not enough required fields:
+
 ```json
 {
   "success": true,

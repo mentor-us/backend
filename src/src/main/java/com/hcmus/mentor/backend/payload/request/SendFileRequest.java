@@ -1,9 +1,8 @@
 package com.hcmus.mentor.backend.payload.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.validation.constraints.NotNull;
 
 @Getter
 @Setter
@@ -12,13 +11,11 @@ import jakarta.validation.constraints.NotNull;
 @Builder
 public class SendFileRequest {
 
-    private String id;
+  private String id;
 
-    @NotNull
-    private String groupId;
+  @NotNull private String groupId;
 
-    @NotNull
-    private String senderId;
+  @NotNull private String senderId;
 
-    private MultipartFile file;
+  private MultipartFile file;
 }

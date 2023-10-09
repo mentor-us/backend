@@ -10,11 +10,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class SystemAnalyticResponse {
-    private long totalGroups;
-    private long activeGroups;
-    private long totalTasks;
-    private long totalMessages;
-    private long totalMeetings;
-    private long totalUsers;
-    private long activeUsers;
+  private long totalGroups;
+  private long activeGroups;
+  private long totalTasks;
+  private long totalMessages;
+  private long totalMeetings;
+  private long totalUsers;
+  private long activeUsers;
 }

@@ -10,8 +10,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ImportGeneralInformationResponse {
-    private String email;
-    private String trainingPoint;
-    private String hasEnglishCert;
-    private String studyingPoint;
+  private String email;
+  private String trainingPoint;
+  private String hasEnglishCert;
+  private String studyingPoint;
 }

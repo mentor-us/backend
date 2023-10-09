@@ -11,6 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class UpdateStatusByMentorRequest {
-    private String emailUserAssigned;
-    private Task.Status status;
+  private String emailUserAssigned;
+  private Task.Status status;
 }

@@ -44,7 +44,8 @@ Default value:
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -70,7 +71,6 @@ Default value:
 }
 ```
 
-
 ### Delete User:
 
 - Request:
@@ -81,7 +81,8 @@ curl --location --request DELETE 'http://localhost:8080/api/users/63db731f158549
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -101,6 +102,7 @@ curl --location --request DELETE 'http://localhost:8080/api/users/63db731f158549
 ```
 
 - Not Found:
+
 ```json
 {
   "success": false,
@@ -124,7 +126,8 @@ curl --location --request PATCH 'http://localhost:8080/api/users/63db731f1585497
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -142,7 +145,9 @@ curl --location --request PATCH 'http://localhost:8080/api/users/63db731f1585497
   "returnCode": 200
 }
 ```
-  - Not Found:
+
+- Not Found:
+
 ```json
 {
   "success": false,
@@ -174,7 +179,8 @@ P/s: role admin = 1
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -196,7 +202,9 @@ P/s: role admin = 1
 >>>>>>> main
 }
 ```
+
 - Duplicate user (duplicate email):
+
 ```json
 {
   "success": false,
