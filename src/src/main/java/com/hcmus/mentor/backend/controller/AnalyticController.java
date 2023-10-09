@@ -90,7 +90,7 @@ public class AnalyticController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
     @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
   })
-  @GetMapping({"/", ""})
+  @GetMapping({""})
   public APIResponse<SystemAnalyticResponse> get(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(required = false) String groupCategoryId) {

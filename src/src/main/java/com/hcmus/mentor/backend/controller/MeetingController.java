@@ -79,7 +79,7 @@ public class MeetingController {
         content = @Content(array = @ArraySchema(schema = @Schema(implementation = Meeting.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @GetMapping(value = {"/", ""})
+  @GetMapping(value = {""})
   public ResponseEntity<List<MeetingResponse>> all(
       @Parameter(hidden = true) @CurrentUser UserPrincipal user, @RequestParam String groupId) {
     if (!groupService.isGroupMember(groupId, user.getId())) {
@@ -100,7 +100,7 @@ public class MeetingController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @PostMapping(value = {"/", ""})
+  @PostMapping(value = {""})
   public APIResponse<Meeting> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal user,
       @RequestBody CreateMeetingRequest request) {

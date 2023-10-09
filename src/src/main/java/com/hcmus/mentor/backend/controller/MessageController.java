@@ -100,7 +100,7 @@ public class MessageController {
                 array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @GetMapping(value = {"/", ""})
+  @GetMapping(value = {""})
   public ResponseEntity<List<MessageDetailResponse>> getGroupMessages(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam String groupId,

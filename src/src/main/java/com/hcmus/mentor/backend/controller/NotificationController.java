@@ -51,7 +51,7 @@ public class NotificationController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @GetMapping(value = {"", "/"})
+  @GetMapping(value = {""})
   public APIResponse all(
       @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(defaultValue = "0") int page,
@@ -88,7 +88,7 @@ public class NotificationController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @PostMapping(value = {"", "/"})
+  @PostMapping(value = {""})
   public APIResponse<Notif> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody AddNotificationRequest request) {

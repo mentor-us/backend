@@ -109,7 +109,7 @@ public class GroupController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
-  @GetMapping(value = {"/", ""})
+  @GetMapping(value = { ""})
   public APIResponse<Page<Group>> all(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(defaultValue = "0") int page,
@@ -278,7 +278,7 @@ public class GroupController {
         responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING,
         description = "Duplicate email"),
   })
-  @PostMapping(value = {"", "/"})
+  @PostMapping(value = {""})
   public APIResponse<Group> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody CreateGroupRequest request) {
@@ -689,7 +689,7 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication"),
     @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
-  @DeleteMapping(value = {"/", ""})
+  @DeleteMapping(value = { ""})
   public APIResponse deleteMultiple(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody List<String> ids) {

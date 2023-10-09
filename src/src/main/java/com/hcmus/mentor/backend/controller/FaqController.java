@@ -44,7 +44,7 @@ public class FaqController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
-  @GetMapping(value = {"/", ""})
+  @GetMapping(value = {""})
   public ResponseEntity<List<FAQ>> all(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam String groupId) {
@@ -82,7 +82,7 @@ public class FaqController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
-  @PostMapping(value = {"/", ""})
+  @PostMapping(value = {""})
   public ResponseEntity<String> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody CreateFaqRequest request) {

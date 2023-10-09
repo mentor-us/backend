@@ -55,7 +55,7 @@ public class VoteController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication"),
   })
-  @GetMapping(value = {"", "/"})
+  @GetMapping(value = {""})
   public ResponseEntity<List<VoteDetailResponse>> all(
       @Parameter(hidden = true) @CurrentUser UserPrincipal user, @RequestParam String groupId) {
     List<VoteDetailResponse> votes = voteService.getGroupVotes(user.getId(), groupId);
@@ -99,7 +99,7 @@ public class VoteController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication"),
   })
-  @PostMapping(value = {"", "/"})
+  @PostMapping(value = {""})
   public ResponseEntity<Vote> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal user,
       @RequestBody CreateVoteRequest request) {

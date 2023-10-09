@@ -43,7 +43,7 @@ public class ChannelController {
         content = @Content(array = @ArraySchema(schema = @Schema(implementation = Channel.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @PostMapping(value = {"", "/"})
+  @PostMapping(value = {""})
   public ResponseEntity<Channel> addChannel(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody AddChannelRequest request) {
@@ -87,7 +87,7 @@ public class ChannelController {
         content = @Content(array = @ArraySchema(schema = @Schema(implementation = Channel.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
-  @GetMapping(value = {"", "/"})
+  @GetMapping(value = {""})
   public ResponseEntity<List<Channel>> getChannels(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(required = false) String parentId) {

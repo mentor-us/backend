@@ -133,7 +133,7 @@ public class UserController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
-  @GetMapping(value = {"/", ""})
+  @GetMapping(value = {""})
   public APIResponse<Page<User>> listByEmail(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(defaultValue = "") String email,
@@ -294,7 +294,7 @@ public class UserController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
-  @PostMapping(value = {"/", ""})
+  @PostMapping(value = {""})
   public APIResponse<User> add(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody AddUserRequest request) {
@@ -369,7 +369,7 @@ public class UserController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
-  @DeleteMapping(value = {"/", ""})
+  @DeleteMapping(value = {""})
   public APIResponse deleteMultiple(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody List<String> ids) {

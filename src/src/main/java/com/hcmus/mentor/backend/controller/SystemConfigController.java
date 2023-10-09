@@ -97,7 +97,7 @@ public class SystemConfigController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
   })
-  @PostMapping(value = {"/", ""})
+  @PostMapping(value = {""})
   public void add() {
     systemConfigService.add();
   }

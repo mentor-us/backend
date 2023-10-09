@@ -81,7 +81,7 @@ public class RoleController {
         responseCode = RoleReturnCode.NOT_FOUND_PERMISSION_STRING,
         description = "Not found permissions"),
   })
-  @PostMapping("/")
+  @PostMapping("")
   public APIResponse<Role> create(
       @CurrentUser UserPrincipal userPrincipal, @RequestBody CreateRoleRequest request) {
     String emailUser = userPrincipal.getEmail();
@@ -129,7 +129,7 @@ public class RoleController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
     @ApiResponse(responseCode = RoleReturnCode.NOT_FOUND_STRING, description = "Not found role"),
   })
-  @DeleteMapping("/")
+  @DeleteMapping("")
   public APIResponse<Role> delete(
       @CurrentUser UserPrincipal userPrincipal, @RequestBody List<String> ids) {
     String emailUser = userPrincipal.getEmail();

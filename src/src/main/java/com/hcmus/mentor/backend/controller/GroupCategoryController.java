@@ -57,7 +57,7 @@ public class GroupCategoryController {
         content =
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
-  @GetMapping
+  @GetMapping(value = {""})
   public APIResponse<List<GroupCategory>> findAll() {
     return APIResponse.success(groupCategoryService.findAll());
   }
@@ -94,7 +94,7 @@ public class GroupCategoryController {
         responseCode = GroupCategoryReturnCode.DUPLICATE_GROUP_CATEGORY_STRING,
         description = "Duplicate group category"),
   })
-  @PostMapping
+  @PostMapping(value = {""})
   public APIResponse<GroupCategory> create(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody CreateGroupCategoryRequest request) {
@@ -212,7 +212,7 @@ public class GroupCategoryController {
         responseCode = GroupCategoryReturnCode.NOT_FOUND_STRING,
         description = "Not found group category"),
   })
-  @DeleteMapping(value = {"/", ""})
+  @DeleteMapping(value = {""})
   public APIResponse deleteMultiple(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody DeleteMultipleGroupCategoryRequest request) {
