@@ -12,7 +12,7 @@ import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.payload.returnCode.TaskReturnCode;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import com.hcmus.mentor.backend.service.TaskService;
+import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -31,9 +31,9 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearer")
 public class TaskController {
 
-  private final TaskService taskService;
+  private final TaskServiceImpl taskService;
 
-  public TaskController(TaskService taskService) {
+  public TaskController(TaskServiceImpl taskService) {
     this.taskService = taskService;
   }
 
@@ -68,7 +68,7 @@ public class TaskController {
   public APIResponse<TaskDetailResponse> get(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.getTask(emailUser, id);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.getTask(emailUser, id);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -105,7 +105,7 @@ public class TaskController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody AddTaskRequest request) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.addTask(emailUser, request);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.addTask(emailUser, request);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -143,7 +143,7 @@ public class TaskController {
       @PathVariable String id,
       @RequestBody UpdateTaskRequest request) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.updateTask(userPrincipal, id, request);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(userPrincipal, id, request);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -181,7 +181,7 @@ public class TaskController {
       @PathVariable String id,
       @PathVariable Task.Status status) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.updateStatus(emailUser, id, status);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.updateStatus(emailUser, id, status);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -219,7 +219,7 @@ public class TaskController {
       @PathVariable String id,
       @RequestBody UpdateStatusByMentorRequest request) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn =
+    TaskServiceImpl.TaskReturnService taskReturn =
         taskService.updateStatusByMentor(emailUser, id, request);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -256,7 +256,7 @@ public class TaskController {
   public APIResponse delete(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.deleteTask(userPrincipal, id);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.deleteTask(userPrincipal, id);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -293,7 +293,7 @@ public class TaskController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @PathVariable String groupId) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.getTasksByGroupId(emailUser, groupId);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByGroupId(emailUser, groupId);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -329,7 +329,7 @@ public class TaskController {
   public APIResponse<List<TaskDetailResponse>> getByUserId(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.getTasksByEmailUser(emailUser);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByEmailUser(emailUser);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -350,7 +350,7 @@ public class TaskController {
   public APIResponse<ProfileResponse> getAssigner(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.getTaskAssigner(emailUser, id);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.getTaskAssigner(emailUser, id);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -371,7 +371,7 @@ public class TaskController {
   public APIResponse<List<TaskAssigneeResponse>> getAssignees(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    TaskService.TaskReturnService taskReturn = taskService.getTaskAssigneesWrapper(emailUser, id);
+    TaskServiceImpl.TaskReturnService taskReturn = taskService.getTaskAssigneesWrapper(emailUser, id);
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
   }
@@ -395,7 +395,7 @@ public class TaskController {
   public APIResponse<List<TaskResponse>> getAllOwnTask(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam("groupId") String groupId) {
-    TaskService.TaskReturnService taskReturn =
+    TaskServiceImpl.TaskReturnService taskReturn =
         taskService.getAllOwnTasks(groupId, userPrincipal.getId());
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -420,7 +420,7 @@ public class TaskController {
   public APIResponse<List<TaskResponse>> getAllOwnAssignedTask(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam("groupId") String groupId) {
-    TaskService.TaskReturnService taskReturn =
+    TaskServiceImpl.TaskReturnService taskReturn =
         taskService.wrapOwnAssignedTasks(groupId, userPrincipal.getId());
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
@@ -445,7 +445,7 @@ public class TaskController {
   public APIResponse<List<TaskResponse>> getAllOwnAssignedByMeTask(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam("groupId") String groupId) {
-    TaskService.TaskReturnService taskReturn =
+    TaskServiceImpl.TaskReturnService taskReturn =
         taskService.wrapAssignedByMeTasks(groupId, userPrincipal.getId());
     return new APIResponse(
         taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());

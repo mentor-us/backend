@@ -20,6 +20,7 @@ import com.hcmus.mentor.backend.util.DateUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,46 +28,18 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MeetingService implements IRemindableService {
 
   private final MeetingRepository meetingRepository;
-
   private final UserRepository userRepository;
-
   private final GroupRepository groupRepository;
-
   private final MongoTemplate mongoTemplate;
-
   private final GroupService groupService;
-
   private final MessageService messageService;
-
   private final SocketIOService socketIOService;
-
   private final ReminderRepository reminderRepository;
-
   private final NotificationService notificationService;
-
-  public MeetingService(
-      MeetingRepository meetingRepository,
-      UserRepository userRepository,
-      GroupRepository groupRepository,
-      MongoTemplate mongoTemplate,
-      GroupService groupService,
-      MessageService messageService,
-      SocketIOService socketIOService,
-      ReminderRepository reminderRepository,
-      NotificationService notificationService) {
-    this.meetingRepository = meetingRepository;
-    this.userRepository = userRepository;
-    this.groupRepository = groupRepository;
-    this.mongoTemplate = mongoTemplate;
-    this.groupService = groupService;
-    this.messageService = messageService;
-    this.socketIOService = socketIOService;
-    this.reminderRepository = reminderRepository;
-    this.notificationService = notificationService;
-  }
 
   public List<MeetingResponse> getMostRecentMeetings(String userId) {
     List<String> groupIds =

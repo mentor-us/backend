@@ -39,7 +39,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TaskService implements IRemindableService {
+public class TaskServiceImpl implements IRemindableService {
   private final TaskRepository taskRepository;
   private final PermissionService permissionService;
   private final GroupRepository groupRepository;
@@ -51,7 +51,7 @@ public class TaskService implements IRemindableService {
   private final ReminderRepository reminderRepository;
   private final NotificationService notificationService;
 
-  public TaskService(
+  public TaskServiceImpl(
       TaskRepository taskRepository,
       PermissionService permissionService,
       GroupRepository groupRepository,
@@ -455,7 +455,7 @@ public class TaskService implements IRemindableService {
     return getAllOwnTasksBetween(userId, startTime, endTime);
   }
 
-  public TaskService.TaskReturnService getAllOwnTasks(String groupId, String userId) {
+  public TaskServiceImpl.TaskReturnService getAllOwnTasks(String groupId, String userId) {
     if (!userRepository.existsById(userId)) {
       return new TaskReturnService(NOT_FOUND, "Not found user", null);
     }

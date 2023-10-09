@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.payload.APIResponse;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.EventService;
+import com.hcmus.mentor.backend.service.impl.EventServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -45,7 +46,7 @@ public class EventController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/own")
-  public APIResponse<List<EventService.Event>> getOwnEvents(
+  public APIResponse<List<EventServiceImpl.Event>> getOwnEvents(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
     return APIResponse.success(eventService.getAllOwnEvents(userPrincipal.getId()));
   }
@@ -62,7 +63,7 @@ public class EventController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/own/date")
-  public APIResponse<List<EventService.Event>> getAllByDate(
+  public APIResponse<List<EventServiceImpl.Event>> getAllByDate(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
     return APIResponse.success(eventService.getAllEventsByDate(userPrincipal.getId(), date));
@@ -80,7 +81,7 @@ public class EventController {
             @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/own/month")
-  public APIResponse<List<EventService.Event>> getAllByMonth(
+  public APIResponse<List<EventServiceImpl.Event>> getAllByMonth(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
     return APIResponse.success(eventService.getAllEventsByMonth(userPrincipal.getId(), date));

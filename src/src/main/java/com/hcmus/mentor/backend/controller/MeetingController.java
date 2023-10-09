@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.entity.Meeting;
 import com.hcmus.mentor.backend.payload.APIResponse;
 import com.hcmus.mentor.backend.payload.request.RescheduleMeetingRequest;
@@ -10,7 +9,6 @@ import com.hcmus.mentor.backend.payload.response.meetings.MeetingAttendeeRespons
 import com.hcmus.mentor.backend.payload.response.meetings.MeetingDetailResponse;
 import com.hcmus.mentor.backend.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.*;
@@ -24,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,42 +30,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/meetings")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class MeetingController {
 
   private final MeetingService meetingService;
-
   private final GroupService groupService;
-
   private final MeetingRepository meetingRepository;
-
-  private final PermissionService permissionService;
-
-  private final MessageService messageService;
-
-  private final SocketIOServer socketServer;
-
-  private final UserRepository userRepository;
-
   private final NotificationService notificationService;
-
-  public MeetingController(
-      MeetingService meetingService,
-      GroupService groupService,
-      MeetingRepository meetingRepository,
-      PermissionService permissionService,
-      MessageService messageService,
-      SocketIOServer socketServer,
-      UserRepository userRepository,
-      NotificationService notificationService) {
-    this.meetingService = meetingService;
-    this.groupService = groupService;
-    this.meetingRepository = meetingRepository;
-    this.permissionService = permissionService;
-    this.messageService = messageService;
-    this.socketServer = socketServer;
-    this.userRepository = userRepository;
-    this.notificationService = notificationService;
-  }
 
   @Operation(
       summary = "All Meetings of Group",
