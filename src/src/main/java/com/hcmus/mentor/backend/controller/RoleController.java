@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.payload.returnCode.RoleReturnCode;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.RoleService;
+import com.hcmus.mentor.backend.service.impl.RoleServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,7 +42,7 @@ public class RoleController {
   @GetMapping("/all")
   public APIResponse<List<Role>> all(@CurrentUser UserPrincipal userPrincipal) {
     String emailUser = userPrincipal.getEmail();
-    RoleService.RoleServiceReturn roleServiceReturn = roleService.findAll(emailUser);
+    RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findAll(emailUser);
     return new APIResponse(
         roleServiceReturn.getData(),
         roleServiceReturn.getReturnCode(),
@@ -60,7 +61,7 @@ public class RoleController {
   @GetMapping("/{id}")
   public APIResponse<Role> get(@CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    RoleService.RoleServiceReturn roleServiceReturn = roleService.findById(emailUser, id);
+    RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findById(emailUser, id);
     return new APIResponse(
         roleServiceReturn.getData(),
         roleServiceReturn.getReturnCode(),
@@ -85,7 +86,7 @@ public class RoleController {
   public APIResponse<Role> create(
       @CurrentUser UserPrincipal userPrincipal, @RequestBody CreateRoleRequest request) {
     String emailUser = userPrincipal.getEmail();
-    RoleService.RoleServiceReturn roleServiceReturn = roleService.create(emailUser, request);
+    RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.create(emailUser, request);
     return new APIResponse(
         roleServiceReturn.getData(),
         roleServiceReturn.getReturnCode(),
@@ -113,7 +114,7 @@ public class RoleController {
       @PathVariable String id,
       @RequestBody UpdateRoleRequest request) {
     String emailUser = userPrincipal.getEmail();
-    RoleService.RoleServiceReturn roleServiceReturn = roleService.update(emailUser, id, request);
+    RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.update(emailUser, id, request);
     return new APIResponse(
         roleServiceReturn.getData(),
         roleServiceReturn.getReturnCode(),
@@ -133,7 +134,7 @@ public class RoleController {
   public APIResponse<Role> delete(
       @CurrentUser UserPrincipal userPrincipal, @RequestBody List<String> ids) {
     String emailUser = userPrincipal.getEmail();
-    RoleService.RoleServiceReturn roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
+    RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
     return new APIResponse(
         roleServiceReturn.getData(),
         roleServiceReturn.getReturnCode(),

@@ -19,6 +19,7 @@ import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.impl.UserServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -77,7 +78,7 @@ public class UserController {
   })
   @GetMapping(value = "/all")
   public APIResponse<List<User>> all() {
-    UserService.UserReturnService userReturn = userService.listAll();
+    UserServiceImpl.UserReturnService userReturn = userService.listAll();
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -101,7 +102,7 @@ public class UserController {
       @RequestParam(defaultValue = "25") int size) {
     Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.listAllPaging(emailUser, pageRequest);
+    UserServiceImpl.UserReturnService userReturn = userService.listAllPaging(emailUser, pageRequest);
     if (userReturn.getData() != null) {
       return new APIResponse(
           pagingResponse((Page<User>) userReturn.getData()),
@@ -141,7 +142,7 @@ public class UserController {
       @RequestParam(defaultValue = "25") int size) {
     Pageable pageRequest = PageRequest.of(page, size);
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn =
+    UserServiceImpl.UserReturnService userReturn =
         userService.listByEmail(emailUser, email, pageRequest);
     return new APIResponse(
         pagingResponse((Page<User>) userReturn.getData()),
@@ -165,7 +166,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam(defaultValue = "") String email) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.listAllByEmail(emailUser, email);
+    UserServiceImpl.UserReturnService userReturn = userService.listAllByEmail(emailUser, email);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -256,7 +257,7 @@ public class UserController {
       @PathVariable String id,
       @RequestBody UpdateUserForAdminRequest request) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn =
+    UserServiceImpl.UserReturnService userReturn =
         userService.updateUserForAdmin(emailUser, id, request);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -278,7 +279,7 @@ public class UserController {
   public APIResponse delete(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.deleteUser(emailUser, id);
+    UserServiceImpl.UserReturnService userReturn = userService.deleteUser(emailUser, id);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -299,7 +300,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody AddUserRequest request) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.addUser(emailUser, request);
+    UserServiceImpl.UserReturnService userReturn = userService.addUser(emailUser, request);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -316,15 +317,15 @@ public class UserController {
             @Content(
                 array =
                     @ArraySchema(
-                        schema = @Schema(implementation = UserService.UserReturnService.class)))),
+                        schema = @Schema(implementation = UserServiceImpl.UserReturnService.class)))),
     @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PatchMapping("/{userId}/profile")
-  public ResponseEntity<UserService.UserReturnService> updateProfile(
+  public ResponseEntity<UserServiceImpl.UserReturnService> updateProfile(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @PathVariable String userId,
       @RequestBody UpdateUserRequest request) {
-    UserService.UserReturnService userReturn = userService.updateUser(userId, request);
+    UserServiceImpl.UserReturnService userReturn = userService.updateUser(userId, request);
     return ResponseEntity.ok(userReturn);
   }
 
@@ -351,7 +352,7 @@ public class UserController {
       throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
     String email = userPrincipal.getEmail();
     FindUserRequest request = new FindUserRequest(name, emailSearch, status, role);
-    UserService.UserReturnService userReturn = userService.findUsers(email, request, page, size);
+    UserServiceImpl.UserReturnService userReturn = userService.findUsers(email, request, page, size);
     return new APIResponse(
         pagingResponse((Page<User>) userReturn.getData()),
         userReturn.getReturnCode(),
@@ -374,7 +375,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody List<String> ids) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.deleteMultiple(emailUser, ids);
+    UserServiceImpl.UserReturnService userReturn = userService.deleteMultiple(emailUser, ids);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -396,7 +397,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody List<String> ids) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.disableMultiple(emailUser, ids);
+    UserServiceImpl.UserReturnService userReturn = userService.disableMultiple(emailUser, ids);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -418,7 +419,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestBody List<String> ids) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.enableMultiple(emailUser, ids);
+    UserServiceImpl.UserReturnService userReturn = userService.enableMultiple(emailUser, ids);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -439,7 +440,7 @@ public class UserController {
   public APIResponse<UserDetailResponse> getDetail(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
     String emailUser = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.getDetail(emailUser, id);
+    UserServiceImpl.UserReturnService userReturn = userService.getDetail(emailUser, id);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }
@@ -461,7 +462,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam MultipartFile file)
       throws GeneralSecurityException, IOException {
-    UserService.UserReturnService userReturn =
+    UserServiceImpl.UserReturnService userReturn =
         userService.updateAvatar(userPrincipal.getId(), file);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -484,7 +485,7 @@ public class UserController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam MultipartFile file)
       throws GeneralSecurityException, IOException {
-    UserService.UserReturnService userReturn =
+    UserServiceImpl.UserReturnService userReturn =
         userService.updateWallpaper(userPrincipal.getId(), file);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -538,7 +539,7 @@ public class UserController {
       @RequestParam("file") MultipartFile file)
       throws IOException {
     String email = userPrincipal.getEmail();
-    UserService.UserReturnService userReturn = userService.importUsers(email, file);
+    UserServiceImpl.UserReturnService userReturn = userService.importUsers(email, file);
     return new APIResponse(
         userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
   }

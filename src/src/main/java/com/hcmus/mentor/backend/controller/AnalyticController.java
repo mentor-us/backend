@@ -17,6 +17,7 @@ import com.hcmus.mentor.backend.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.service.AnalyticAttribute;
 import com.hcmus.mentor.backend.service.AnalyticService;
 import com.hcmus.mentor.backend.util.RequestUtils;
 import com.itextpdf.html2pdf.ConverterProperties;
@@ -522,10 +523,8 @@ public class AnalyticController {
       @RequestParam String groupId,
       @RequestParam String[] query)
       throws IOException {
-    List<AnalyticService.AnalyticAttribute> attributes =
-        Stream.of(query)
-            .map(AnalyticService.AnalyticAttribute::valueOf)
-            .collect(Collectors.toList());
+    List<AnalyticAttribute> attributes =
+        Stream.of(query).map(AnalyticAttribute::valueOf).collect(Collectors.toList());
     byte[] content = analyticService.getGroupLog(userPrincipal.getEmail(), groupId, attributes);
     if (content == null) {
       return ResponseEntity.badRequest().build();

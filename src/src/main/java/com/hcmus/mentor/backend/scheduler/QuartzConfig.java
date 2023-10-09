@@ -2,8 +2,8 @@ package com.hcmus.mentor.backend.scheduler;
 
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.hcmus.mentor.backend.service.ReminderService;
+import lombok.RequiredArgsConstructor;
 import org.quartz.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -59,8 +59,10 @@ public class QuartzConfig {
   //        }
   //    }
   @Component
+  @RequiredArgsConstructor
   public static class SendRemindersJob implements Job {
-    @Autowired private ReminderService reminderService;
+
+    private final ReminderService reminderService;
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {

@@ -8,7 +8,7 @@ import com.hcmus.mentor.backend.payload.returnCode.GroupCategoryReturnCode;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
-import com.hcmus.mentor.backend.service.GroupCategoryService.GroupCategoryReturn;
+import com.hcmus.mentor.backend.service.GroupCategoryReturn;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;

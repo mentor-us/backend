@@ -22,6 +22,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.GroupService.GroupReturnService;
+import com.hcmus.mentor.backend.service.impl.EventServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -67,7 +68,7 @@ public class GroupController {
 
   private final GroupService groupService;
   private final MeetingService meetingService;
-  private final TaskService taskService;
+  private final TaskServiceImpl taskService;
   private final GroupCategoryRepository groupCategoryRepository;
   private final EventService eventService;
   private final PermissionService permissionService;
@@ -80,7 +81,7 @@ public class GroupController {
       UserService userService,
       GroupService groupService,
       MeetingService meetingService,
-      TaskService taskService,
+      TaskServiceImpl taskService,
       GroupCategoryRepository groupCategoryRepository,
       EventService eventService,
       PermissionService permissionService) {
@@ -673,7 +674,7 @@ public class GroupController {
     if (user == null) {
       return APIResponse.notFound(404);
     }
-    List<EventService.Event> events = eventService.getMostRecentEvents(userId);
+    List<EventServiceImpl.Event> events = eventService.getMostRecentEvents(userId);
     List<GroupHomepageResponse> pinnedGroups = groupService.getUserPinnedGroups(userId);
     Slice<GroupHomepageResponse> groups = groupService.getHomePageRecentGroupsOfUser(userId, 0, 25);
     return APIResponse.success(new HomePageResponse(events, pinnedGroups, groups));
