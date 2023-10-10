@@ -17,6 +17,7 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
 
 - Response:
     - Success:
+
 ```json
 {
   "success": true,
@@ -39,7 +40,9 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
   "returnCode": 200
 }
 ```
+
 - Not found group:
+
 ```json
 {
   "success": true,
@@ -48,7 +51,9 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
   "returnCode": 501
 }
 ```
+
 - Not found parent task:
+
 ```json
 {
   "success": true,
@@ -57,7 +62,9 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
   "returnCode": 502
 }
 ```
+
 - Not found user in group:
+
 ```json
 {
   "success": true,
@@ -68,6 +75,7 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -78,6 +86,7 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
 ```
 
 - Not enough required fields(title, deadline):
+
 ```json
 {
   "success": true,
@@ -93,8 +102,10 @@ curl --location --request POST 'http://localhost:8080/api/tasks' \
 curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
 --header 'Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2M2RiNzMxZjE1ODU0OTdiMDIwMTUyZDUiLCJpYXQiOjE2NzUzMjYyMzksImV4cCI6MTY4Mzk2NjIzOX0.kWxu4moS5awB1tLylutgwvrDYxYFf9wr83lI62VFve0LPWRAwola5D9zhJVIZq_lvizuOoCO4M6C4nQ4IA7VXg' \
 ```
+
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -117,7 +128,9 @@ curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
   "returnCode": 200
 }
 ```
-  - Not found task:
+
+- Not found task:
+
 ```json
 {
   "success": true,
@@ -127,7 +140,8 @@ curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
 }
 ```
 
-  - Invalid permission:
+- Invalid permission:
+
 ```json
 {
   "success": true,
@@ -143,8 +157,10 @@ curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
 curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
 --header 'Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2M2RiNzMxZjE1ODU0OTdiMDIwMTUyZDUiLCJpYXQiOjE2NzUzMjYyMzksImV4cCI6MTY4Mzk2NjIzOX0.kWxu4moS5awB1tLylutgwvrDYxYFf9wr83lI62VFve0LPWRAwola5D9zhJVIZq_lvizuOoCO4M6C4nQ4IA7VXg' \
 ```
+
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -167,7 +183,9 @@ curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
   "returnCode": 200
 }
 ```
+
 - Not found task:
+
 ```json
 {
   "success": true,
@@ -178,6 +196,7 @@ curl --location --request DELETE 'http://localhost:8080/api/tasks/abc' \
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -204,7 +223,8 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -227,7 +247,9 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
   "returnCode": 200
 }
 ```
+
 - Not found parent task:
+
 ```json
 {
   "success": true,
@@ -236,7 +258,9 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
   "returnCode": 502
 }
 ```
+
 - Not found user in group:
+
 ```json
 {
   "success": true,
@@ -247,6 +271,7 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -257,6 +282,7 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
 ```
 
 - Not enough required fields(title, deadline):
+
 ```json
 {
   "success": true,
@@ -265,8 +291,6 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
   "returnCode": 511
 }
 ```
-
-
 
 ### Update status(assignee: TO_DO, IN_PROGRESS, DONE)
 
@@ -279,7 +303,8 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -302,7 +327,9 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
   "returnCode": 200
 }
 ```
+
 - Not found task:
+
 ```json
 {
   "success": true,
@@ -313,6 +340,7 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -321,8 +349,6 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/63ff67648dd7fd1
   "returnCode": 100
 }
 ```
-
-
 
 ### Update status by mentor(assignee: TO_DO, IN_PROGRESS, DONE)
 
@@ -339,7 +365,8 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/mentor/63ff6764
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,
@@ -362,7 +389,9 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/mentor/63ff6764
   "returnCode": 200
 }
 ```
+
 - Not found task:
+
 ```json
 {
   "success": true,
@@ -373,6 +402,7 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/mentor/63ff6764
 ```
 
 - Invalid permission:
+
 ```json
 {
   "success": true,
@@ -381,8 +411,6 @@ curl --location --request PATCH 'http://localhost:8080/api/tasks/mentor/63ff6764
   "returnCode": 100
 }
 ```
-
-
 
 ### Get task of current user
 
@@ -394,7 +422,8 @@ curl --location --request GET 'http://localhost:8080/api/tasks/user' \
 ```
 
 - Response:
-  - Success:
+    - Success:
+
 ```json
 {
   "success": true,

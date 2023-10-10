@@ -1,13 +1,11 @@
 package com.hcmus.mentor.backend.entity;
 
 import com.hcmus.mentor.backend.payload.request.UpdateRoleRequest;
-import com.hcmus.mentor.backend.payload.request.UpdateUserForAdminRequest;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
@@ -17,18 +15,17 @@ import java.util.List;
 @Document("role")
 public class Role {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String name;
+  private String name;
 
-    private String description;
+  private String description;
 
-    @Builder.Default
-    private List<String> permissions = new ArrayList<>();
-    public void update(UpdateRoleRequest request) {
-       name = request.getName();
-       description = request.getDescription();
-       permissions = request.getPermissions();
-    }
+  @Builder.Default private List<String> permissions = new ArrayList<>();
+
+  public void update(UpdateRoleRequest request) {
+    name = request.getName();
+    description = request.getDescription();
+    permissions = request.getPermissions();
+  }
 }

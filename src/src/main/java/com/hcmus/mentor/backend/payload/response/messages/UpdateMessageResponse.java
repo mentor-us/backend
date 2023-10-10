@@ -11,14 +11,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UpdateMessageResponse {
 
-    private String messageId;
+  private String messageId;
 
-    private String newContent;
+  private String newContent;
 
-    private Action action;
+  private Action action;
 
-    public enum Action {
-        update,
-        delete
-    }
+  public enum Action {
+    update,
+    delete
+  }
 }

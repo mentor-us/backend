@@ -30,41 +30,57 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final AuthService authService;
+  private final AuthenticationManager authenticationManager;
+  private final AuthService authService;
 
-    public AuthController(AuthenticationManager authenticationManager, AuthService authService) {
-        this.authenticationManager = authenticationManager;
-        this.authService = authService;
+  public AuthController(AuthenticationManager authenticationManager, AuthService authService) {
+    this.authenticationManager = authenticationManager;
+    this.authService = authService;
+  }
+
+  @Operation(summary = "Login by password")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Success",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = AuthResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Not found user",
+        content = @Content(schema = @Schema))
+  })
+  @PostMapping("/login")
+  public ResponseEntity<AuthResponse> authenticateUser(@Valid @RequestBody LoginRequest request) {
+    UsernamePasswordAuthenticationToken authRequest =
+        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+
+    Authentication authentication = authenticationManager.authenticate(authRequest);
+    SecurityContext securityContext = SecurityContextHolder.getContext();
+    securityContext.setAuthentication(authentication);
+
+    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+    AuthResponse response = authService.createToken(userPrincipal.getId());
+
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Request new token", description = "", tags = "Auth APIs")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Get successfully",
+        content =
+            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+  })
+  @PostMapping("/refresh-token")
+  public ResponseEntity<String> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+    String accessToken = authService.generateNewToken(request);
+    if (accessToken == null) {
+      return ResponseEntity.badRequest().build();
     }
-
-    @Operation(summary = "Login by password")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = AuthResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Not found user", content = @Content(schema = @Schema))
-    })
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> authenticateUser(@Valid @RequestBody LoginRequest request) {
-        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-
-        Authentication authentication = authenticationManager.authenticate(authRequest);
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        securityContext.setAuthentication(authentication);
-
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        AuthResponse response = authService.createToken(userPrincipal.getId());
-
-        return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "Request new token", description = "", tags = "Auth APIs")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "Get successfully", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))})
-    @PostMapping("/refresh-token")
-    public ResponseEntity<String> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        String accessToken = authService.generateNewToken(request);
-        if (accessToken == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok(accessToken);
-    }
+    return ResponseEntity.ok(accessToken);
+  }
 }

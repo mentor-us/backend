@@ -11,8 +11,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FindUserRequest {
-    private String name;
-    private String email;
-    private Boolean status;
-    private User.Role role;
+  private String name;
+  private String email;
+  private Boolean status;
+  private User.Role role;
 }

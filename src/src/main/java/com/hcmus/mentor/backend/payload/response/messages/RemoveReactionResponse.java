@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.payload.response.messages;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.validation.constraints.NotNull;
 
 @Getter
 @Setter
@@ -13,11 +12,9 @@ import jakarta.validation.constraints.NotNull;
 @NoArgsConstructor
 public class RemoveReactionResponse {
 
-    @NotNull
-    private String messageId;
+  @NotNull private String messageId;
 
-    @NotNull
-    private String senderId;
+  @NotNull private String senderId;
 
-    private MessageDetailResponse.TotalReaction totalReaction;
+  private MessageDetailResponse.TotalReaction totalReaction;
 }

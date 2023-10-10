@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.payload.request.faqs;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter
@@ -13,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ImportFAQsRequest {
 
-    private String fromGroupId;
+  private String fromGroupId;
 
-    private List<String> faqIds;
+  private List<String> faqIds;
 }

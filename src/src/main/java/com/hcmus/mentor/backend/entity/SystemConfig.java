@@ -4,8 +4,6 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
-
 @Getter
 @Setter
 @Builder
@@ -13,15 +11,14 @@ import java.util.Date;
 @NoArgsConstructor
 @Document("system-config")
 public class SystemConfig {
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String name;
+  private String name;
 
-    private String description;
+  private String description;
 
-    private String type;
-    private String key;
+  private String type;
+  private String key;
 
-    private Object value;
+  private Object value;
 }

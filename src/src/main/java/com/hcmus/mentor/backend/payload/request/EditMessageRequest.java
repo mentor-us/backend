@@ -9,7 +9,7 @@ import lombok.*;
 @Setter
 public class EditMessageRequest {
 
-    private String messageId;
+  private String messageId;
 
-    private String newContent;
+  private String newContent;
 }

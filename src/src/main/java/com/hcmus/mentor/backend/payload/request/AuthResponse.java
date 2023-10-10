@@ -9,10 +9,9 @@ import lombok.*;
 @Builder
 public class AuthResponse {
 
-    private String refreshToken;
+  private String refreshToken;
 
-    private String accessToken;
+  private String accessToken;
 
-    @Builder.Default
-    private String tokenType = "Bearer";
+  @Builder.Default private String tokenType = "Bearer";
 }

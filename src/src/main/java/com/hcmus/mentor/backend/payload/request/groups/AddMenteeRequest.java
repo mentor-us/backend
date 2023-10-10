@@ -11,5 +11,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AddMenteeRequest {
 
-    private String email;
+  private String email;
 }

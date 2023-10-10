@@ -1,10 +1,9 @@
 package com.hcmus.mentor.backend.entity;
 
+import java.util.Date;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.Date;
 
 @Getter
 @AllArgsConstructor
@@ -14,12 +13,11 @@ import java.util.Date;
 @Document("topic")
 public class Topic {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String name;
+  private String name;
 
-    private String description;
+  private String description;
 
-    private Date createdDate;
+  private Date createdDate;
 }

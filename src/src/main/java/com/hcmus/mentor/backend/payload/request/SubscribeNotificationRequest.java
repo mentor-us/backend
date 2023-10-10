@@ -1,8 +1,7 @@
 package com.hcmus.mentor.backend.payload.request;
 
-import lombok.*;
-
 import jakarta.validation.constraints.NotEmpty;
+import lombok.*;
 
 @Getter
 @AllArgsConstructor
@@ -11,8 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
 @Builder
 public class SubscribeNotificationRequest {
 
-    @NotEmpty
-    private String userId;
+  @NotEmpty private String userId;
 
-    private String token;
+  private String token;
 }

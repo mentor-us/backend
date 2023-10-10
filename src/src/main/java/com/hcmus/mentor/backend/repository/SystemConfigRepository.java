@@ -1,11 +1,8 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.entity.SystemConfig;
-import com.hcmus.mentor.backend.entity.Task;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.List;
-
 public interface SystemConfigRepository extends MongoRepository<SystemConfig, String> {
-    SystemConfig findByKey(String key);
+  SystemConfig findByKey(String key);
 }

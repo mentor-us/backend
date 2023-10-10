@@ -11,25 +11,24 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document("user_profile")
 public class Profile {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String studentId;
+  private String studentId;
 
-    private String schoolYear;
+  private String schoolYear;
 
-    private String major;
+  private String major;
 
-    private String className;
+  private String className;
 
-    private String description;
+  private String description;
 
-    private String phone;
+  private String phone;
 
-    private String email;
+  private String email;
 
-    private String facebook;
+  private String facebook;
 
-    @Indexed(unique = true)
-    private String userId;
+  @Indexed(unique = true)
+  private String userId;
 }

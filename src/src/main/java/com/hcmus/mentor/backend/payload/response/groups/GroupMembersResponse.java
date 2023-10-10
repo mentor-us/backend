@@ -1,9 +1,8 @@
 package com.hcmus.mentor.backend.payload.response.groups;
 
 import com.hcmus.mentor.backend.payload.response.users.ProfileResponse;
-import lombok.*;
-
 import java.util.List;
+import lombok.*;
 
 @Getter
 @Setter
@@ -12,36 +11,36 @@ import java.util.List;
 @Builder
 public class GroupMembersResponse {
 
-    private List<GroupMember> mentors;
+  private List<GroupMember> mentors;
 
-    private List<GroupMember> mentees;
+  private List<GroupMember> mentees;
 
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class GroupMember {
-        private String id;
-        private String name;
-        private String email;
-        private String imageUrl;
-        private String role;
-        private Boolean marked;
+  @Getter
+  @Setter
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  public static class GroupMember {
+    private String id;
+    private String name;
+    private String email;
+    private String imageUrl;
+    private String role;
+    private Boolean marked;
 
-        public static GroupMember from(ProfileResponse profile, String role) {
-            return from(profile, role, null);
-        }
-
-        public static GroupMember from(ProfileResponse profile, String role, Boolean marked) {
-            return GroupMember.builder()
-                    .id(profile.getId())
-                    .name(profile.getName())
-                    .email(profile.getEmail())
-                    .imageUrl(profile.getImageUrl())
-                    .role(role)
-                    .marked(marked)
-                    .build();
-        }
+    public static GroupMember from(ProfileResponse profile, String role) {
+      return from(profile, role, null);
     }
+
+    public static GroupMember from(ProfileResponse profile, String role, Boolean marked) {
+      return GroupMember.builder()
+          .id(profile.getId())
+          .name(profile.getName())
+          .email(profile.getEmail())
+          .imageUrl(profile.getImageUrl())
+          .role(role)
+          .marked(marked)
+          .build();
+    }
+  }
 }
