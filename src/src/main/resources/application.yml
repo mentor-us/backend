@@ -6,6 +6,14 @@ server:
   tomcat:
     relaxed-query-chars: [ '{','}' ]
 
+s3-settings:
+  access-key: E0vaqEMRIWlmaboTZwNU
+  secret-key: 7ORquEkhUqggcKcWrgZNmDOd3ItVSPsCDdzeJ0oF
+  bucket-name: image
+  service-url: http://localhost:9000/
+  force-path-style: true
+  region-name: us-east-1
+
 
 spring:
   mvc:
@@ -13,8 +21,8 @@ spring:
       matching-strategy: ant_path_matcher
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: 20MB
+      max-request-size: 20MB
   mail:
     host: smtp.gmail.com
     port: 587
