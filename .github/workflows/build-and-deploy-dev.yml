@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/MU-22-imporove-documentation
     paths:
       - src
       - .github/workflows/build-and-deploy-dev.yml
@@ -33,6 +34,23 @@ jobs:
           distribution: "temurin"
           cache: "maven"
 
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+
+      - name: Load secret
+        id: op-load-secret
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+
+      - name: Inject secret with 1Password
+        run: |
+          export OP_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          APP_ENV=dev op inject -i ./src/main/resources/application.yml.tpl -o ./src/main/resources/application.yml
+
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
@@ -44,7 +62,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.PAT_GITHUB_TOKEN }}
+          password: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -71,17 +89,29 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
+      - name: Load secret
+        id: op-load-secret
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          SERVER_HOST: "op://mentorus/secret/server/dev-server-host"
+          SERVER_USERNAME: "op://mentorus/secret/server/dev-server-username"
+          SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
+          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+
       - name: Deploy to digital ocean droplet via ssh action
         uses: appleboy/ssh-action@v1.0.0
         with:
           script_stop: true
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSHKEY }}
-          envs: ${{ secrets.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
+          host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
+          username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
+          key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
+          envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
           script: |
             # Login to Github Packages
-            echo ${{ secrets.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             # Stop and remove the container if running
             docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
             # Remove image
@@ -89,7 +119,7 @@ jobs:
             # Run container
             docker run -d \
               --restart always \
-              --name $(echo ${{ env.CONTAINER_NAME }}) \
+              --name $(echo ${{ env.CONTAINER_NAME }}-test) \
               --add-host host.docker.internal:host-gateway \
               -p 7000:8080 \
               -p 7001:8085 \
