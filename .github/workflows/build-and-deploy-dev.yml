@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - feature/MU-22-imporove-documentation
     paths:
       - src
       - .github/workflows/build-and-deploy-dev.yml
@@ -119,7 +118,7 @@ jobs:
             # Run container
             docker run -d \
               --restart always \
-              --name $(echo ${{ env.CONTAINER_NAME }}-test) \
+              --name $(echo ${{ env.CONTAINER_NAME }}) \
               --add-host host.docker.internal:host-gateway \
               -p 7000:8080 \
               -p 7001:8085 \

@@ -4,7 +4,8 @@ server-socket:
 
 server:
   tomcat:
-    relaxed-query-chars: ["{", "}"]
+    relaxed-query-chars: [ "{", "}" ]
+  forward-headers-strategy: framework
 
 spring:
   mvc:
