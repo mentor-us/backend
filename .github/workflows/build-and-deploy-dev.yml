@@ -85,42 +85,42 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: build-and-push
-  #   steps:
-  #     - name: Load secret
-  #       id: op-load-secret
-  #       uses: 1password/load-secrets-action@v1
-  #       with:
-  #         export-env: false
-  #       env:
-  #         OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-  #         SERVER_HOST: "op://mentorus/secret/server/dev-server-host"
-  #         SERVER_USERNAME: "op://mentorus/secret/server/dev-server-username"
-  #         SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
-  #         PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Load secret
+        id: op-load-secret
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          SERVER_HOST: "op://mentorus/secret/server/dev-server-host"
+          SERVER_USERNAME: "op://mentorus/secret/server/dev-server-username"
+          SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
+          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
 
-  #     - name: Deploy to digital ocean droplet via ssh action
-  #       uses: appleboy/ssh-action@v1.0.0
-  #       with:
-  #         script_stop: true
-  #         host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
-  #         username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
-  #         key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
-  #         envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
-  #         script: |
-  #           # Login to Github Packages
-  #           echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-  #           # Stop and remove the container if running
-  #           docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
-  #           # Remove image
-  #           docker image rm ${{ needs.build-and-push.outputs.image_path }} || true
-  #           # Run container
-  #           docker run -d \
-  #             --restart always \
-  #             --name $(echo ${{ env.CONTAINER_NAME }}-test) \
-  #             --add-host host.docker.internal:host-gateway \
-  #             -p 7000:8080 \
-  #             -p 7001:8085 \
-  #             ${{ needs.build-and-push.outputs.image_path }}
+      - name: Deploy to digital ocean droplet via ssh action
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          script_stop: true
+          host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
+          username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
+          key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
+          envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
+          script: |
+            # Login to Github Packages
+            echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Stop and remove the container if running
+            docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
+            # Remove image
+            docker image rm ${{ needs.build-and-push.outputs.image_path }} || true
+            # Run container
+            docker run -d \
+              --restart always \
+              --name $(echo ${{ env.CONTAINER_NAME }}-test) \
+              --add-host host.docker.internal:host-gateway \
+              -p 7000:8080 \
+              -p 7001:8085 \
+              ${{ needs.build-and-push.outputs.image_path }}
