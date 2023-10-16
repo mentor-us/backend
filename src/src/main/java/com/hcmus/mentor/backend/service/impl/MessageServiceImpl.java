@@ -1,8 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.google.api.services.drive.model.File;
 import com.hcmus.mentor.backend.entity.*;
-import com.hcmus.mentor.backend.manager.GoogleDriveManager;
+import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.payload.FileModel;
 import com.hcmus.mentor.backend.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.payload.request.SendFileRequest;
@@ -16,11 +15,13 @@ import com.hcmus.mentor.backend.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.*;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,7 +32,6 @@ public class MessageServiceImpl implements MessageService {
 
   private final GroupService groupService;
   private final MessageRepository messageRepository;
-  private final GoogleDriveManager googleDriveManager;
   private final MeetingRepository meetingRepository;
   private final TaskRepository taskRepository;
   private final VoteRepository voteRepository;
@@ -39,6 +39,7 @@ public class MessageServiceImpl implements MessageService {
   private final UserRepository userRepository;
   private final NotificationService notificationService;
   private final TaskServiceImpl taskService;
+  private final BlobStorage blobStorage;
 
   @Value("${app.googleDrive.rootId}")
   private String rootId;
@@ -244,13 +245,19 @@ public class MessageServiceImpl implements MessageService {
   }
 
   @Override
-  public Message saveImageMessage(SendImagesRequest request)
-      throws GeneralSecurityException, IOException {
+  public Message saveImageMessage(SendImagesRequest request) throws IOException {
     List<String> images = new ArrayList<>();
-    for (MultipartFile file : request.getFiles()) {
-      File uploadedFile = googleDriveManager.uploadToFolder(request.getGroupId(), file);
-      //            images.add("https://lh3.google.com/u/0/d/" + uploadedFile.getId());
-      images.add("https://drive.google.com/uc?export=view&id=" + uploadedFile.getId());
+    for (MultipartFile multipartFile : request.getFiles()) {
+      File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+      try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+        fileOutputStream.write(multipartFile.getBytes());
+      }
+      String mimeType = new Tika().detect(file);
+
+      String key = blobStorage.generateBlobKey(mimeType);
+
+      blobStorage.post(key, file);
+      images.add(key);
     }
     Message message =
         Message.builder()
@@ -266,17 +273,25 @@ public class MessageServiceImpl implements MessageService {
   }
 
   @Override
-  public Message saveFileMessage(SendFileRequest request)
-      throws GeneralSecurityException, IOException {
-    File uploadedFile = googleDriveManager.uploadToFolder(request.getGroupId(), request.getFile());
-    String url = "https://drive.google.com/uc?export=download&id=" + uploadedFile.getId();
+  public Message saveFileMessage(SendFileRequest request) throws IOException {
+    var multipartFile = request.getFile();
+
+    File tempfile = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+    try (FileOutputStream fileOutputStream = new FileOutputStream(tempfile)) {
+      fileOutputStream.write(multipartFile.getBytes());
+    }
+    String mimeType = new Tika().detect(tempfile);
+
+    String key = blobStorage.generateBlobKey(mimeType);
+
+    blobStorage.post(key, tempfile);
 
     FileModel file =
         FileModel.builder()
-            .id(uploadedFile.getId())
+            .id(key)
             .filename(request.getFile().getOriginalFilename())
             .size(request.getFile().getSize())
-            .url(url)
+            .url(key)
             .build();
     Message message =
         Message.builder()

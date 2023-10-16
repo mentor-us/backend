@@ -6,9 +6,8 @@ import static com.hcmus.mentor.backend.payload.returnCode.InvalidPermissionCode.
 import static com.hcmus.mentor.backend.payload.returnCode.SuccessCode.SUCCESS;
 import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.*;
 
-import com.google.api.services.drive.model.File;
 import com.hcmus.mentor.backend.entity.*;
-import com.hcmus.mentor.backend.manager.GoogleDriveManager;
+import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.payload.request.UpdateUserForAdminRequest;
@@ -22,6 +21,8 @@ import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.util.FileUtils;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
@@ -32,6 +33,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -54,7 +56,7 @@ public class UserServiceImpl implements UserService {
   private final PermissionService permissionService;
   private final MongoTemplate mongoTemplate;
   private final GroupCategoryRepository groupCategoryRepository;
-  private final GoogleDriveManager googleDriveManager;
+  private final BlobStorage blobStorage;
 
   @Override
   public String getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -386,7 +388,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserReturnService findUsers(
-          String emailUser, FindUserRequest request, int page, int pageSize) {
+      String emailUser, FindUserRequest request, int page, int pageSize) {
     if (!permissionService.isAdmin(emailUser)) {
       return new UserReturnService(INVALID_PERMISSION, "Invalid permission", null);
     }
@@ -610,7 +612,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserReturnService updateUserForAdmin(
-          String emailUser, String userId, UpdateUserForAdminRequest request) {
+      String emailUser, String userId, UpdateUserForAdminRequest request) {
     if (!permissionService.isAdmin(emailUser)) {
       return new UserReturnService(INVALID_PERMISSION, "Invalid permission", null);
     }
@@ -643,39 +645,53 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public UserReturnService updateAvatar(String userId, MultipartFile file)
+  public UserReturnService updateAvatar(String userId, MultipartFile multipartFile)
       throws GeneralSecurityException, IOException {
     Optional<User> userWrapper = userRepository.findById(userId);
     if (!userWrapper.isPresent()) {
       return new UserReturnService(NOT_FOUND, "Not found user", null);
     }
 
-    File uploadedFile = googleDriveManager.uploadToFolder("avatars", file);
-    String imageUrl = "https://drive.google.com/uc?export=view&id=" + uploadedFile.getId();
+    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+      fileOutputStream.write(multipartFile.getBytes());
+    }
+    String mimeType = new Tika().detect(file);
+
+    String key = blobStorage.generateBlobKey(mimeType);
+
+    blobStorage.post(key, file);
 
     User user = userWrapper.get();
-    user.updateAvatar(imageUrl);
+    user.updateAvatar(key);
     userRepository.save(user);
 
-    return new UserReturnService(SUCCESS, "", imageUrl);
+    return new UserReturnService(SUCCESS, "", key);
   }
 
   @Override
-  public UserReturnService updateWallpaper(String userId, MultipartFile file)
-      throws GeneralSecurityException, IOException {
+  public UserReturnService updateWallpaper(String userId, MultipartFile multipartFile)
+      throws IOException {
     Optional<User> userWrapper = userRepository.findById(userId);
     if (!userWrapper.isPresent()) {
       return new UserReturnService(NOT_FOUND, "Not found user", null);
     }
 
-    File uploadedFile = googleDriveManager.uploadToFolder("wallpapers", file);
-    String imageUrl = "https://drive.google.com/uc?export=view&id=" + uploadedFile.getId();
+    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+      fileOutputStream.write(multipartFile.getBytes());
+    }
+    String mimeType = new Tika().detect(file);
+
+    String key = blobStorage.generateBlobKey(mimeType);
+
+    blobStorage.post(key, file);
 
     User user = userWrapper.get();
-    user.updateWallpaper(imageUrl);
+    user.updateWallpaper(key);
     userRepository.save(user);
 
-    return new UserReturnService(SUCCESS, "", imageUrl);
+    return new UserReturnService(SUCCESS, "", key);
   }
 
   private List<List<String>> generateExportData(List<User> users) {
@@ -746,7 +762,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public ResponseEntity<Resource> generateExportTableBySearchConditions(
-          String emailUser, FindUserRequest request, List<String> remainColumns) throws IOException {
+      String emailUser, FindUserRequest request, List<String> remainColumns) throws IOException {
     List<User> users = getUsersByConditions(emailUser, request, 0, Integer.MAX_VALUE);
     ResponseEntity<Resource> response = generateExportTable(users, remainColumns);
     return response;
@@ -782,7 +798,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public ResponseEntity<Resource> generateExportTableMembers(
-          String emailUser, List<String> remainColumns, String userId, String type) throws IOException {
+      String emailUser, List<String> remainColumns, String userId, String type) throws IOException {
     List<List<String>> data = generateExportDataMembers(userId, type);
     List<String> headers = Arrays.asList("STT", "Tên nhóm", "Loại nhóm");
     String fileName = "output.xlsx";
@@ -809,5 +825,4 @@ public class UserServiceImpl implements UserService {
             .body(resource);
     return response;
   }
-
 }

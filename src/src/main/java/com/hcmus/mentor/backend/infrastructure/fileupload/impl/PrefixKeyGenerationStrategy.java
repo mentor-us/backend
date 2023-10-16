@@ -2,19 +2,25 @@ package com.hcmus.mentor.backend.infrastructure.fileupload.impl;
 
 import com.hcmus.mentor.backend.infrastructure.fileupload.KeyGenerationStrategy;
 import java.util.UUID;
+import org.apache.tika.mime.MimeTypeException;
+import org.apache.tika.mime.MimeTypes;
 import org.springframework.stereotype.Service;
 
+/** {@inheritDoc} */
 @Service
 public class PrefixKeyGenerationStrategy implements KeyGenerationStrategy {
-  /**
-   * generateBlobKey
-   *
-   * @param MimeType MimeType
-   * @return String
-   */
+
+  /** {@inheritDoc} */
   @Override
-  public String generateBlobKey(String MimeType) {
-    String key = UUID.randomUUID().toString();
-    return String.format("%s.%s", key, MimeType);
+  public String generateBlobKey(String mimeType) {
+    String extension;
+    try {
+      extension = MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
+    } catch (MimeTypeException e) {
+      extension = ".bin";
+    }
+
+    String fileName = UUID.randomUUID().toString().replace("-", "");
+    return String.format("%s/%s%s", fileName.substring(0, 2), fileName.substring(2), extension);
   }
 }

@@ -1,17 +1,20 @@
 package com.hcmus.mentor.backend.infrastructure.fileupload;
 
-import com.hcmus.mentor.backend.payload.response.file.DownloadFileResponse;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 
+/** Blob storage service. */
 public interface BlobStorage {
-  String bucket = null;
 
-  void post(String key, InputStream stream, Long contentLength, String contentType);
-
-  DownloadFileResponse get(String key) throws IOException;
-
-  String getLink(String key);
+  File get(String key) throws IOException;
 
   void remove(String key);
+
+  void post(String key, File file);
+
+  String generateBlobKey(String mimeType);
+
+  Boolean exists(String key);
+
+  String getUrl(String key);
 }
