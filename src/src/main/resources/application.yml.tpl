@@ -4,8 +4,16 @@ server-socket:
 
 server:
   tomcat:
-    relaxed-query-chars: [ "{", "}" ]
+    relaxed-query-chars: ["{", "}"]
   forward-headers-strategy: framework
+
+s3-settings:
+  bucket-name: "op://mentorus/secret/$APP_ENV/s3-bucket-name"
+  access-key: "op://mentorus/secret/$APP_ENV/s3-access-key"
+  secret-key: "op://mentorus/secret/$APP_ENV/s3-secret-key"
+  region-name: "op://mentorus/secret/$APP_ENV/s3-region-name"
+  service-url: "op://mentorus/secret/$APP_ENV/s3-service-url"
+  force-path-style: "op://mentorus/secret/$APP_ENV/s3-force-path-style"
 
 spring:
   mvc:

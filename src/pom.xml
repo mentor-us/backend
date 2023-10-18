@@ -49,6 +49,9 @@
         <commonio.version>2.11.0</commonio.version>
         <common-csv.version>1.8</common-csv.version>
         <poi.version>5.2.0</poi.version>
+        <minio.version>8.5.6</minio.version>
+
+        <aws.sdk.version>2.20.45</aws.sdk.version>
 
     </properties>
 
@@ -246,7 +249,48 @@
         </dependency>
         <!-- End utility -->
 
+        <!-- Begin minio-->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>${minio.version}</version>
+        </dependency>
+        <!-- End minio -->
+
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3-transfer-manager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk.crt</groupId>
+            <artifactId>aws-crt</artifactId>
+            <version>0.25.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -260,6 +304,7 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+
                 </configuration>
             </plugin>
         </plugins>

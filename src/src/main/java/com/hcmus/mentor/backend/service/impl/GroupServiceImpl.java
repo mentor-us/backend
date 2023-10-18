@@ -4,7 +4,7 @@ import static com.hcmus.mentor.backend.payload.returnCode.GroupReturnCode.*;
 import static com.hcmus.mentor.backend.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 
 import com.hcmus.mentor.backend.entity.*;
-import com.hcmus.mentor.backend.manager.GoogleDriveManager;
+import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.payload.request.groups.*;
 import com.hcmus.mentor.backend.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.payload.response.groups.GroupDetailResponse;
@@ -37,6 +37,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -63,12 +64,12 @@ public class GroupServiceImpl implements GroupService {
   private final MailUtils mailUtils;
   private final SystemConfigRepository systemConfigRepository;
   private final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
-  private final GoogleDriveManager googleDriveManager;
   private final MessageRepository messageRepository;
   private final MessageService2 messageService2;
   private final SocketIOService socketIOService;
   private final NotificationService notificationService;
   private final ChannelRepository channelRepository;
+  private final BlobStorage blobStorage;
 
   private static Date changeGroupTime(Date time, String type) {
     LocalDateTime timeInstant =
@@ -1372,7 +1373,7 @@ public class GroupServiceImpl implements GroupService {
   }
 
   @Override
-  public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile file)
+  public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile multipartFile)
       throws GeneralSecurityException, IOException {
     Optional<Group> groupWrapper = groupRepository.findById(groupId);
     if (!groupWrapper.isPresent()) {
@@ -1383,12 +1384,20 @@ public class GroupServiceImpl implements GroupService {
       return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
     }
 
-    com.google.api.services.drive.model.File uploadedFile =
-        googleDriveManager.uploadToFolder("avatars", file);
-    String imageUrl = "https://drive.google.com/uc?export=view&id=" + uploadedFile.getId();
-    group.setImageUrl(imageUrl);
+    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
+    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+      fileOutputStream.write(multipartFile.getBytes());
+    }
+    String mimeType = new Tika().detect(file);
+
+    String key = blobStorage.generateBlobKey(mimeType);
+
+    blobStorage.post(key, file);
+
+    // #TODO: Current save the link of google drive
+    group.setImageUrl(key);
     groupRepository.save(group);
-    return new GroupReturnService(SUCCESS, "", imageUrl);
+    return new GroupReturnService(SUCCESS, "", key);
   }
 
   private List<Group> getGroupsForAdmin(String emailUser) {
