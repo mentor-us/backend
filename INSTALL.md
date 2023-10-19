@@ -109,7 +109,3 @@ db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","R
 
 - Developing the application locally: [Development](docs/Development.md)
 - Deploying the application to the server: [Deploy](docs/Deploy.md)
-
-```
-
-```

@@ -5,8 +5,8 @@ on:
     branches:
       - develop
     paths:
-      - src
-      - .github/workflows/build-and-deploy-dev.yml
+      - "src"
+      - ".github/workflows/build-and-deploy-dev.yml"
 
   workflow_dispatch:
 
