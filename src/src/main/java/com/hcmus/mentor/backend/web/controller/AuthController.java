@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
   private final Pipeline pipeline;
@@ -31,17 +31,15 @@ public class AuthController {
    *
    * @param command Command hold email and password.
    * @return The response hold access token and expire time.
+   * @throws ValidationException Username or password wrong.
    */
   @PostMapping("/login")
   @ApiResponses({
-    @ApiResponse(responseCode = "200"),
-    @ApiResponse(
-        responseCode = "400",
-        description = "Username or password wrong",
-        content = @Content(schema = @Schema()))
+      @ApiResponse(responseCode = "200"),
+      @ApiResponse(responseCode = "400", description = "Username or password wrong", content = @Content(schema = @Schema()))
   })
-  public LoginUserCommandResult authenticate(
-      @Validated @RequestBody LoginUserCommand command, BindingResult errors)
+
+  public LoginUserCommandResult authenticate(@RequestBody LoginUserCommand command, BindingResult errors)
       throws ValidationException {
     if (errors.hasErrors()) {
       throw new ValidationException(errors);
@@ -53,11 +51,21 @@ public class AuthController {
   /**
    * Get new token by refresh token.
    *
-   * @param command Something.
-   * @return Something.
+   * @param command Command hold user token.
+   * @return The response hold access token and expire time.
+   * @throws ValidationException Token is invalid.
    */
   @PostMapping("/refresh-token")
-  public TokenModel refreshToken(@Valid @RequestBody RefreshTokenCommand command) {
+  @ApiResponses({
+      @ApiResponse(responseCode = "200"),
+      @ApiResponse(responseCode = "400", description = "Token is invalid", content = @Content(schema = @Schema()))
+  })
+  public TokenModel refreshToken(@RequestBody RefreshTokenCommand command, BindingResult errors)
+      throws ValidationException {
+    if (errors.hasErrors()) {
+      throw new ValidationException(errors);
+    }
+
     return command.execute(pipeline);
   }
 }
