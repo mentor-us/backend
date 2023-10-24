@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.manager;
 
 import com.google.firebase.messaging.*;
 import com.hcmus.mentor.backend.entity.NotificationSubscriber;
-import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
+import com.hcmus.mentor.backend.usercase.common.repository.NotificationSubscriberRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

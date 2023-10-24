@@ -5,7 +5,7 @@ import static com.hcmus.mentor.backend.entity.User.Role.USER;
 import com.hcmus.mentor.backend.payload.request.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.payload.request.UpdateUserRequest;
-import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfo;
+import com.hcmus.mentor.backend.web.infrastructure.security.oauth2.user.OAuth2UserInfo;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
@@ -17,8 +17,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Getter
-@Setter
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
