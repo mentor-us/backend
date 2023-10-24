@@ -1,10 +1,10 @@
 package com.hcmus.mentor.backend.web.infrastructure.security;
 
+import com.hcmus.mentor.backend.web.infrastructure.middlewares.JwtFilterMiddleware;
 import com.hcmus.mentor.backend.web.infrastructure.security.oauth2.CustomOidcUserService;
 import com.hcmus.mentor.backend.web.infrastructure.security.oauth2.OAuth2AuthenticationFailureHandler;
 import com.hcmus.mentor.backend.web.infrastructure.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import com.hcmus.mentor.backend.web.infrastructure.security.oauth2.OAuth2AuthorizationRequestRepository;
-import com.hcmus.mentor.backend.web.infrastructure.middlewares.JwtFilterMiddleware;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -79,6 +79,7 @@ public class SecurityConfig {
     return http.csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
+        .cors(c -> {})
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
