@@ -56,6 +56,7 @@ db.createUser({
   ]
 })
 db.createCollection("mentordb")
+use mentordb
 db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","ROLE_USER"]})
 ```
 
