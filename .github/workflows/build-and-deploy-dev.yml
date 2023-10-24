@@ -95,8 +95,8 @@ jobs:
           export-env: false
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          SERVER_HOST: "op://mentorus/secret/server/dev-server-host"
-          SERVER_USERNAME: "op://mentorus/secret/server/dev-server-username"
+          SERVER_HOST: op://mentorus/backend-general/server/dev-server-host
+          SERVER_USERNAME: op://mentorus/backend-general/server/dev-server-username
           SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
           PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
 

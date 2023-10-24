@@ -8,7 +8,7 @@ server:
   forward-headers-strategy: framework
 
 springdoc:
-  packages-to-scan: com.hcmus.mentor.backend.controller
+  packages-to-scan: com.hcmus.mentor.backend.web.controller
   swagger-ui:
     operations-sorter: alpha
     tags-sorter: alpha
