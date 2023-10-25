@@ -57,6 +57,26 @@ db.createUser({
 })
 db.createCollection("mentordb")
 use mentordb
+db['system-config'].insertMany([
+  {
+    "_id": "650fa417608f687c69b69b71",
+    "name": "Domain hợp lệ",
+    "description": "Các domain cho phép đăng nhập trên hệ thống",
+    "type": "java.util.ArrayList",
+    "key": "valid_domain",
+    "value": "[ \"fit.hcmus.edu.vn\", \"student.hcmus.edu.vn\", \"fit.gmail.com.vn\" ]",
+    "_class": "com.hcmus.mentor.backend.entity.SystemConfig"
+  },
+  {
+    "_id": "650fa417608f687c69b69b72",
+    "name": "Thời gian học tối đa",
+    "description": "Thời gian học tối đa của sinh viên",
+    "type": "java.lang.Integer",
+    "key": "valid_max_year",
+    "value": "7",
+    "_class": "com.hcmus.mentor.backend.entity.SystemConfig"
+  }
+])
 db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","ROLE_USER"]})
 ```
 
