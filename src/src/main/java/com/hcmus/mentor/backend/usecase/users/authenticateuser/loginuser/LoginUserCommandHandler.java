@@ -2,9 +2,9 @@ package com.hcmus.mentor.backend.usecase.users.authenticateuser.loginuser;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.exception.DomainException;
-import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
 import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -36,6 +36,7 @@ public class LoginUserCommandHandler
       UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
       var claims = new HashMap<String, Object>();
+      claims.put("sub", principal.getId());
       claims.put("nameidentifier", principal.getEmail());
       claims.put("name", principal.getEmail());
       claims.put("emailaddress", principal.getEmail());

@@ -3,11 +3,11 @@ package com.hcmus.mentor.backend.usecase.users.authenticateuser.refreshtoken;
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.exception.DomainException;
-import com.hcmus.mentor.backend.usercase.common.repository.UserRepository;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.TokenModel;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.usercase.common.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -46,6 +46,7 @@ public class RefreshTokenCommandHandler
     }
 
     var claims = new HashMap<String, Object>();
+    claims.put("sub", user.get().getId());
     claims.put("nameidentifier", user.get().getEmail());
     claims.put("name", user.get().getEmail());
     claims.put("emailaddress", user.get().getEmail());

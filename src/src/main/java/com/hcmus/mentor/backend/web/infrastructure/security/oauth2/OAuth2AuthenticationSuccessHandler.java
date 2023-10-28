@@ -3,12 +3,12 @@ package com.hcmus.mentor.backend.web.infrastructure.security.oauth2;
 import com.hcmus.mentor.backend.exception.BadRequestException;
 import com.hcmus.mentor.backend.exception.OAuth2AuthenticationProcessingException;
 import com.hcmus.mentor.backend.payload.returnCode.AuthenticationErrorCode;
-import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
-import com.hcmus.mentor.backend.usercase.common.service.PermissionService;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.usecase.users.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.usercase.common.service.PermissionService;
 import com.hcmus.mentor.backend.usercase.common.util.CookieUtils;
+import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -73,6 +73,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     var claims = new HashMap<String, Object>();
+    claims.put("sub", userPrincipal.getId());
     claims.put("nameidentifier", userPrincipal.getEmail());
     claims.put("name", userPrincipal.getEmail());
     claims.put("emailaddress", userPrincipal.getEmail());

@@ -18,10 +18,10 @@ public class TokenModelGenerator {
     long epoch = System.currentTimeMillis() / 1000;
     claims.put("iat", epoch);
 
+    var accessToken = authenticationTokenService.generateToken(claims, AuthenticateConstant.accessTokenExpirationTime);
+
     return TokenModel.builder()
-        .accessToken(
-            authenticationTokenService.generateToken(
-                claims, AuthenticateConstant.accessTokenExpirationTime))
+        .accessToken(accessToken)
         .expiresIn(AuthenticateConstant.accessTokenExpirationTime.getSeconds())
         .build();
   }
