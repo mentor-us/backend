@@ -5,9 +5,9 @@
 - Go to `/src/src/main/resources`
 - Choose one of the following options to set up your environment:
 
-  1. Using 1Password Cli:
+  1. Using 1Password Cli (for the developer team only):
 
-  - Linux and macOS: command `ENV=<env> op inject -i application.yml.tpl -o application.yml`
+  - Linux and macOS: command `APP_ENV=<env> op inject -i application.yml.tpl -o application.yml`
   - PowerShell: `$Env:APP_ENV = "<env>" && op inject -i application.yml.tpl -o application.yml`
   - For more information, refer to: [Inject credentials using the 1Password CLI in different environments](https://developer.1password.com/docs/cli/secrets-config-files/#step-3-differentiate-between-environments)
 
