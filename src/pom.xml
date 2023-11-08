@@ -12,7 +12,7 @@
 
     <groupId>com.hcmus.mentor</groupId>
     <artifactId>backend</artifactId>
-    <version>0.0.1</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
 
     <name>mentor-backend</name>
