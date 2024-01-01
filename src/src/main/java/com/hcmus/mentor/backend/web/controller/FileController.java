@@ -28,7 +28,11 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "File APIs", description = "APIs for file handling")
@@ -51,11 +55,11 @@ public class FileController {
    */
   @Operation(summary = "Get file from server", tags = "File APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get file successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get file successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
   @GetMapping("")
   public ResponseEntity<Resource> getFile(@ParameterObject DownloadFileReq request)
@@ -71,11 +75,11 @@ public class FileController {
 
   @Operation(summary = "Upload file to server", tags = "File APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Upload file successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Upload file successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
   @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<UploadFileResponse> uploadFile(
@@ -97,11 +101,11 @@ public class FileController {
 
   @Operation(summary = "Remove file from server", tags = "File APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Delete file successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Delete file successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
   @DeleteMapping(value = "")
   public ResponseEntity<String> removeFile(@ParameterObject DeleteFileRequest request) {
@@ -118,18 +122,26 @@ public class FileController {
 
   @Operation(summary = "Get direct url to file in server", tags = "File APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get URL of file successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get URL of file successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
   @GetMapping(value = "/url")
   public ResponseEntity<ShareFileResponse> getFileUrl(@ParameterObject ShareFileRequest request) {
-    String link = blobStorage.getUrl(request.getKey());
+    try {
+      String link = blobStorage.getUrl(request.getKey());
 
-    ShareFileResponse response = new ShareFileResponse(link);
+      ShareFileResponse response = new ShareFileResponse(link);
 
-    return ResponseEntity.ok(response);
+      return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+      logger.error("Error: " + e.getMessage());
+
+      return ResponseEntity.internalServerError().build();
+    }
+
   }
 }
