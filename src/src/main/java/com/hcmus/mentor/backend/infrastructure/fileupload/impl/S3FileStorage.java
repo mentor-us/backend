@@ -34,7 +34,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * {@inheritDoc}
@@ -43,12 +42,11 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 public class S3FileStorage implements BlobStorage {
 
   private final S3Client s3Client;
-  private final S3Presigner s3Presigner;
+  private final MinioClient minioClient;
+
   private final S3Settings s3Settings;
   private final KeyGenerationStrategy keyGenerationStrategy;
   private final Logger logger = LogManager.getLogger(this.getClass());
-
-  private final MinioClient minioClient;
 
   /**
    * Constructor.
@@ -59,10 +57,6 @@ public class S3FileStorage implements BlobStorage {
   public S3FileStorage(S3Settings s3Settings, KeyGenerationStrategy keyGenerationStrategy) {
     this.s3Settings = s3Settings;
     this.keyGenerationStrategy = keyGenerationStrategy;
-    this.minioClient = MinioClient.builder()
-        .endpoint(s3Settings.ServiceUrl)
-        .credentials(s3Settings.AccessKey, s3Settings.SecretKey)
-        .build();
 
     AwsCredentialsProvider credentials = StaticCredentialsProvider.create(
         AwsBasicCredentials.create(s3Settings.AccessKey, s3Settings.SecretKey));
@@ -71,9 +65,11 @@ public class S3FileStorage implements BlobStorage {
         .region(Region.of(s3Settings.RegionName))
         .endpointOverride(URI.create(s3Settings.ServiceUrl))
         .forcePathStyle(s3Settings.ForcePathStyle).build();
-    this.s3Presigner = S3Presigner.builder().credentialsProvider(credentials)
-        .region(Region.of(s3Settings.RegionName))
-        .endpointOverride(URI.create(s3Settings.ServiceUrl)).build();
+
+    this.minioClient = MinioClient.builder()
+        .endpoint(s3Settings.ServiceUrl)
+        .credentials(s3Settings.AccessKey, s3Settings.SecretKey)
+        .build();
 
     this.bucket = s3Settings.BucketName;
   }
