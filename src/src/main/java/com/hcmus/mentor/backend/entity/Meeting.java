@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import lombok.*;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -20,7 +21,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document("meeting")
 public class Meeting implements IRemindable, Serializable {
 
-  @Id private String id;
+  @Id
+  private String id;
 
   private String title;
 
@@ -36,13 +38,16 @@ public class Meeting implements IRemindable, Serializable {
 
   private String organizerId;
 
-  @Builder.Default private List<String> attendees = new ArrayList<>();
+  @Builder.Default
+  private List<String> attendees = new ArrayList<>();
 
   private String groupId;
 
-  @Builder.Default private Date createdDate = new Date();
+  @Builder.Default
+  private Date createdDate = new Date();
 
-  @Builder.Default private List<MeetingHistory> histories = new ArrayList<>();
+  @Builder.Default
+  private List<MeetingHistory> histories = new ArrayList<>();
 
   public static Meeting from(CreateMeetingRequest request) {
     Meeting meeting = new Meeting();
@@ -52,10 +57,12 @@ public class Meeting implements IRemindable, Serializable {
 
   @Override
   public Reminder toReminder() {
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("name", title);
     SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
-    String formattedTime = sdf.format(timeStart);
+    String formattedTime = sdf.format(DateUtils.addHours(timeStart, 7));
+
+    Map<String, Object> properties = new HashMap<>();
+
+    properties.put("name", title);
     properties.put("dueDate", formattedTime);
     properties.put("id", id);
 
@@ -151,7 +158,8 @@ public class Meeting implements IRemindable, Serializable {
   @Builder
   public static class MeetingHistory implements Serializable {
 
-    @Builder.Default private String id = UUID.randomUUID().toString();
+    @Builder.Default
+    private String id = UUID.randomUUID().toString();
 
     private Date timeStart;
 
@@ -161,7 +169,8 @@ public class Meeting implements IRemindable, Serializable {
 
     private String modifierId;
 
-    @Builder.Default private Date modifyDate = new Date();
+    @Builder.Default
+    private Date modifyDate = new Date();
 
     @Override
     public String toString() {
