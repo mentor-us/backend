@@ -6,6 +6,12 @@ import com.hcmus.mentor.backend.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.payload.request.SendImagesRequest;
 import com.hcmus.mentor.backend.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.payload.response.messages.MessageResponse;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -31,9 +37,11 @@ public interface MessageService {
 
   MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message);
 
-  Message saveImageMessage(SendImagesRequest request) throws GeneralSecurityException, IOException;
+  Message saveImageMessage(SendImagesRequest request)
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
 
-  Message saveFileMessage(SendFileRequest request) throws GeneralSecurityException, IOException;
+  Message saveFileMessage(SendFileRequest request)
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
 
   Message saveTaskMessage(Task task);
 

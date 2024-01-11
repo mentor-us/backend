@@ -3,8 +3,11 @@ package com.hcmus.mentor.backend.infrastructure.fileupload.impl;
 import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.infrastructure.fileupload.KeyGenerationStrategy;
 import com.hcmus.mentor.backend.infrastructure.fileupload.S3Settings;
+import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -14,6 +17,7 @@ import io.minio.errors.XmlParserException;
 import io.minio.http.Method;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -22,29 +26,22 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
  * {@inheritDoc}
  */
 @Service
 public class S3FileStorage implements BlobStorage {
+//  private final S3Client s3Client;
+//  private final S3Settings s3Settings;
 
-  private final S3Client s3Client;
   private final MinioClient minioClient;
-
-  private final S3Settings s3Settings;
   private final KeyGenerationStrategy keyGenerationStrategy;
   private final Logger logger = LogManager.getLogger(this.getClass());
 
@@ -54,17 +51,10 @@ public class S3FileStorage implements BlobStorage {
    * @param s3Settings            S3Settings
    * @param keyGenerationStrategy Key generation strategy.
    */
-  public S3FileStorage(S3Settings s3Settings, KeyGenerationStrategy keyGenerationStrategy) {
-    this.s3Settings = s3Settings;
+  public S3FileStorage(S3Settings s3Settings,
+      KeyGenerationStrategy keyGenerationStrategy) {
     this.keyGenerationStrategy = keyGenerationStrategy;
 
-    AwsCredentialsProvider credentials = StaticCredentialsProvider.create(
-        AwsBasicCredentials.create(s3Settings.AccessKey, s3Settings.SecretKey));
-
-    this.s3Client = S3Client.builder().credentialsProvider(credentials)
-        .region(Region.of(s3Settings.RegionName))
-        .endpointOverride(URI.create(s3Settings.ServiceUrl))
-        .forcePathStyle(s3Settings.ForcePathStyle).build();
 
     this.minioClient = MinioClient.builder()
         .endpoint(s3Settings.ServiceUrl)
@@ -79,41 +69,71 @@ public class S3FileStorage implements BlobStorage {
   /**
    * {@inheritDoc}
    */
-  public File get(String key) throws IOException {
-    var request = GetObjectRequest.builder().bucket(bucket).key(key).build();
-    ResponseInputStream<GetObjectResponse> object = s3Client.getObject(request);
+  public File get(String key)
+      throws IOException,
+      ServerException,
+      InternalException,
+      XmlParserException,
+      InvalidKeyException,
+      ErrorResponseException,
+      InvalidResponseException,
+      NoSuchAlgorithmException,
+      InsufficientDataException {
+    try (InputStream stream = minioClient.getObject(
+        GetObjectArgs.builder()
+            .bucket(bucket)
+            .object(key)
+            .build())) {
 
-    File file = new File(key);
-    FileUtils.copyInputStreamToFile(object, file);
+      File file = new File(key);
+      FileUtils.copyInputStreamToFile(stream, file);
 
-    logger.log(Level.INFO, "File {} is received successfully.", key);
+      logger.log(Level.INFO, "File {} is received successfully.", key);
+      return file;
+    }
 
-    return file;
   }
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void remove(String key) {
-    if (exists(key)) {
-      var request = DeleteObjectRequest.builder().bucket(bucket).key(key).build();
-
-      s3Client.deleteObject(request);
-    }
+  public void remove(String key)
+      throws
+      IOException,
+      ServerException,
+      InternalException,
+      XmlParserException,
+      InvalidKeyException,
+      ErrorResponseException,
+      NoSuchAlgorithmException,
+      InvalidResponseException,
+      InsufficientDataException {
+    minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
 
     logger.log(Level.INFO, "File '{}' is removed successfully.", key);
   }
 
-  /**
-   * {@inheritDoc}
-   */
+
   @Override
-  public void post(String key, File file) {
-    var request = PutObjectRequest.builder().bucket(bucket).key(key).build();
-
-    s3Client.putObject(request, RequestBody.fromFile(file));
-
+  public void post(MultipartFile file, String key)
+      throws
+      IOException,
+      ServerException,
+      InternalException,
+      XmlParserException,
+      InvalidKeyException,
+      ErrorResponseException,
+      InvalidResponseException,
+      NoSuchAlgorithmException,
+      InsufficientDataException {
+    minioClient.putObject(
+        PutObjectArgs.builder()
+            .bucket(bucket)
+            .object(key)
+            .contentType(file.getContentType())
+            .stream(file.getInputStream(), file.getSize(), -1)
+            .build());
     logger.log(Level.INFO, "File {} is uploaded successfully", key);
   }
 
@@ -129,12 +149,20 @@ public class S3FileStorage implements BlobStorage {
    * {@inheritDoc}
    */
   @Override
-  public Boolean exists(String key) {
-    var request = HeadObjectRequest.builder().bucket(bucket).key(key).build();
+  public Boolean exists(String key)
+      throws
+      IOException,
+      ServerException,
+      InternalException,
+      XmlParserException,
+      InvalidKeyException,
+      ErrorResponseException,
+      InvalidResponseException,
+      NoSuchAlgorithmException,
+      InsufficientDataException {
+    minioClient.getObject(GetObjectArgs.builder().bucket(bucket).object(key).build());
 
-    var response = s3Client.headObject(request);
-
-    return response != null;
+    return true;
   }
 
   /**
@@ -142,15 +170,16 @@ public class S3FileStorage implements BlobStorage {
    */
   @Override
   public String getUrl(String key)
-      throws ServerException,
-      InsufficientDataException,
-      ErrorResponseException,
+      throws
       IOException,
-      NoSuchAlgorithmException,
-      InvalidKeyException,
-      InvalidResponseException,
+      ServerException,
+      InternalException,
       XmlParserException,
-      InternalException {
+      InvalidKeyException,
+      ErrorResponseException,
+      InvalidResponseException,
+      NoSuchAlgorithmException,
+      InsufficientDataException {
 
     GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs.builder()
         .method(Method.GET)
@@ -158,8 +187,6 @@ public class S3FileStorage implements BlobStorage {
         .object(key)
         .build();
 
-    String url = minioClient.getPresignedObjectUrl(args);
-
-    return url;
+    return minioClient.getPresignedObjectUrl(args);
   }
 }

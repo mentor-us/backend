@@ -22,6 +22,12 @@ import com.hcmus.mentor.backend.usercase.common.service.GroupService;
 import com.hcmus.mentor.backend.usercase.common.service.MessageService;
 import com.hcmus.mentor.backend.usercase.common.service.NotificationService;
 import com.hcmus.mentor.backend.usercase.common.service.SocketIOService;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -176,7 +182,7 @@ public class MessageController {
       @RequestParam String groupId,
       @RequestParam String senderId,
       @RequestParam(value = "files", required = false) MultipartFile[] files)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     SendImagesRequest request =
         SendImagesRequest.builder()
             .id(id)
@@ -214,7 +220,7 @@ public class MessageController {
       @RequestParam String groupId,
       @RequestParam String senderId,
       @RequestParam(value = "file", required = false) MultipartFile file)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     SendFileRequest request =
         SendFileRequest.builder()
             .id(id)
@@ -320,15 +326,15 @@ public class MessageController {
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @PathVariable String messageId) {
     Optional<Message> messageWrapper = messageRepository.findById(messageId);
-    if (!messageWrapper.isPresent()) {
+    if (messageWrapper.isEmpty()) {
       return ResponseEntity.notFound().build();
     }
     Message message = messageWrapper.get();
 
     Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-    if (!groupWrapper.isPresent()) {
+    if (groupWrapper.isEmpty()) {
       Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-      if (!channelWrapper.isPresent()) {
+      if (channelWrapper.isEmpty()) {
         return ResponseEntity.badRequest().build();
       }
 

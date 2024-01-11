@@ -31,6 +31,12 @@ import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
 import com.hcmus.mentor.backend.usercase.common.util.DateUtils;
 import com.hcmus.mentor.backend.usercase.common.util.FileUtils;
 import com.hcmus.mentor.backend.usercase.common.util.MailUtils;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -1385,7 +1391,7 @@ public class GroupServiceImpl implements GroupService {
 
   @Override
   public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile multipartFile)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     Optional<Group> groupWrapper = groupRepository.findById(groupId);
     if (!groupWrapper.isPresent()) {
       return new GroupReturnService(NOT_FOUND, "Group not found", null);
@@ -1395,15 +1401,8 @@ public class GroupServiceImpl implements GroupService {
       return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
     }
 
-    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-      fileOutputStream.write(multipartFile.getBytes());
-    }
-    String mimeType = new Tika().detect(file);
-
-    String key = blobStorage.generateBlobKey(mimeType);
-
-    blobStorage.post(key, file);
+    String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+    blobStorage.post(multipartFile, key);
 
     // #TODO: Current save the link of google drive
     group.setImageUrl(key);

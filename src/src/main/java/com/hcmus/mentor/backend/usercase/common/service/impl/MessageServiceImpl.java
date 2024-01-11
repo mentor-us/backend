@@ -1,6 +1,12 @@
 package com.hcmus.mentor.backend.usercase.common.service.impl;
 
-import com.hcmus.mentor.backend.entity.*;
+import com.hcmus.mentor.backend.entity.Emoji;
+import com.hcmus.mentor.backend.entity.Meeting;
+import com.hcmus.mentor.backend.entity.Message;
+import com.hcmus.mentor.backend.entity.Reaction;
+import com.hcmus.mentor.backend.entity.Task;
+import com.hcmus.mentor.backend.entity.User;
+import com.hcmus.mentor.backend.entity.Vote;
 import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.payload.FileModel;
 import com.hcmus.mentor.backend.payload.request.ReactMessageRequest;
@@ -23,10 +29,24 @@ import com.hcmus.mentor.backend.usercase.common.service.MessageService;
 import com.hcmus.mentor.backend.usercase.common.service.NotificationService;
 import com.hcmus.mentor.backend.usercase.common.service.SocketIOService;
 import com.hcmus.mentor.backend.usercase.common.service.TaskServiceImpl;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.tika.Tika;
@@ -249,18 +269,12 @@ public class MessageServiceImpl implements MessageService {
   }
 
   @Override
-  public Message saveImageMessage(SendImagesRequest request) throws IOException {
+  public Message saveImageMessage(SendImagesRequest request)
+      throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
     List<String> images = new ArrayList<>();
     for (MultipartFile multipartFile : request.getFiles()) {
-      File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-      try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-        fileOutputStream.write(multipartFile.getBytes());
-      }
-      String mimeType = new Tika().detect(file);
-
-      String key = blobStorage.generateBlobKey(mimeType);
-
-      blobStorage.post(key, file);
+      String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+      blobStorage.post(multipartFile, key);
       images.add(key);
     }
     Message message =
@@ -277,18 +291,12 @@ public class MessageServiceImpl implements MessageService {
   }
 
   @Override
-  public Message saveFileMessage(SendFileRequest request) throws IOException {
+  public Message saveFileMessage(SendFileRequest request)
+      throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
     var multipartFile = request.getFile();
 
-    File tempfile = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(tempfile)) {
-      fileOutputStream.write(multipartFile.getBytes());
-    }
-    String mimeType = new Tika().detect(tempfile);
-
-    String key = blobStorage.generateBlobKey(mimeType);
-
-    blobStorage.post(key, tempfile);
+    String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+    blobStorage.post(multipartFile, key);
 
     FileModel file =
         FileModel.builder()

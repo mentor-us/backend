@@ -24,6 +24,12 @@ import com.hcmus.mentor.backend.usercase.common.service.PermissionService;
 import com.hcmus.mentor.backend.usercase.common.service.impl.EventServiceImpl;
 import com.hcmus.mentor.backend.web.infrastructure.security.CurrentUser;
 import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -41,18 +47,36 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Group APIs", description = "REST APIs for Group collections")
@@ -60,6 +84,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/groups")
 @SecurityRequirement(name = "bearer")
 public class GroupController {
+
   private static final Logger LOGGER = LogManager.getLogger(FileController.class);
   private final GroupRepository groupRepository;
 
@@ -92,11 +117,11 @@ public class GroupController {
               + "User: Get mentee groups or mentor groups (Paging)",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping(value = {""})
   public APIResponse<Page<Group>> all(
@@ -150,11 +175,11 @@ public class GroupController {
               + "mentee: Get all groups as you do mentee (Paging)",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/own")
   public APIResponse<Page<GroupHomepageResponse>> getOwnGroups(
@@ -196,11 +221,11 @@ public class GroupController {
       description = "Get recent updated groups of any user",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/recent")
   public APIResponse<Page<Group>> recentGroups(
@@ -216,11 +241,11 @@ public class GroupController {
       description = "Get existing group information by groupp id",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/{id}")
   public APIResponse<Group> get(@PathVariable("id") String id) {
@@ -233,39 +258,39 @@ public class GroupController {
       description = "Create new group (Only Admin)",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
-        description = "Group name has been duplicated"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
-        description = "Group category not exists"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
-        description = "Time end can't be before time start"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_BEFORE_NOW_STRING,
-        description = "Time end can't be before now"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_TOO_FAR_FROM_TIME_START_STRING,
-        description = "Time end is too far from time start"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_START_TOO_FAR_FROM_NOW_STRING,
-        description = "Time start is too far from now"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.INVALID_EMAILS_STRING,
-        description = "Invalid emails"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.INVALID_DOMAINS_STRING,
-        description = "Invalid domains"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING,
-        description = "Duplicate email"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
+          description = "Group name has been duplicated"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
+          description = "Group category not exists"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
+          description = "Time end can't be before time start"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_BEFORE_NOW_STRING,
+          description = "Time end can't be before now"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_TOO_FAR_FROM_TIME_START_STRING,
+          description = "Time end is too far from time start"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_START_TOO_FAR_FROM_NOW_STRING,
+          description = "Time start is too far from now"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.INVALID_EMAILS_STRING,
+          description = "Invalid emails"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.INVALID_DOMAINS_STRING,
+          description = "Invalid domains"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING,
+          description = "Duplicate email"),
   })
   @PostMapping(value = {""})
   public APIResponse<Group> create(
@@ -282,44 +307,44 @@ public class GroupController {
       description = "Import multiple groups by template file",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Import successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(
-        responseCode = GroupReturnCode.INVALID_TEMPLATE_STRING,
-        description = "Invalid Template"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
-        description = "Group name has been duplicated"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
-        description = "Group category not exists"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
-        description = "Time end can't be before time start"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_BEFORE_NOW_STRING,
-        description = "Time end can't be before now"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_TOO_FAR_FROM_TIME_START_STRING,
-        description = "Time end is too far from time start"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_START_TOO_FAR_FROM_NOW_STRING,
-        description = "Time start is too far from now"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.INVALID_EMAILS_STRING,
-        description = "Invalid emails"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.INVALID_DOMAINS_STRING,
-        description = "Invalid domains"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING,
-        description = "Duplicate email"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.NOT_FOUND_STRING,
-        description = "Not found group name"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Import successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(
+          responseCode = GroupReturnCode.INVALID_TEMPLATE_STRING,
+          description = "Invalid Template"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
+          description = "Group name has been duplicated"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
+          description = "Group category not exists"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
+          description = "Time end can't be before time start"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_BEFORE_NOW_STRING,
+          description = "Time end can't be before now"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_TOO_FAR_FROM_TIME_START_STRING,
+          description = "Time end is too far from time start"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_START_TOO_FAR_FROM_NOW_STRING,
+          description = "Time start is too far from now"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.INVALID_EMAILS_STRING,
+          description = "Invalid emails"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.INVALID_DOMAINS_STRING,
+          description = "Invalid domains"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.DUPLICATE_EMAIL_STRING,
+          description = "Duplicate email"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.NOT_FOUND_STRING,
+          description = "Not found group name"),
   })
   @PostMapping(
       value = "/import",
@@ -339,11 +364,11 @@ public class GroupController {
       description = "Find groups with multiple filters",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
   })
   @GetMapping("/find")
   public APIResponse<Page<Group>> get(
@@ -353,17 +378,17 @@ public class GroupController {
       @RequestParam(defaultValue = "") String menteeEmail,
       @RequestParam(defaultValue = "") String groupCategory,
       @RequestParam(defaultValue = "1970-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeStart1,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeStart1,
       @RequestParam(defaultValue = "2300-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeEnd1,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeEnd1,
       @RequestParam(defaultValue = "1970-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeStart2,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeStart2,
       @RequestParam(defaultValue = "2300-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeEnd2,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeEnd2,
       @RequestParam(required = false) String status,
       @RequestParam(defaultValue = "0") Integer page,
       @RequestParam(defaultValue = "25") Integer size)
@@ -391,13 +416,13 @@ public class GroupController {
 
   @Operation(summary = "Add mentees to group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @PostMapping("/{groupId}/mentees")
   public APIResponse<Group> addMentees(
@@ -412,13 +437,13 @@ public class GroupController {
 
   @Operation(summary = "Add mentors to group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @PostMapping("/{groupId}/mentors")
   public APIResponse<Group> addMentors(
@@ -433,16 +458,16 @@ public class GroupController {
 
   @Operation(summary = "delete mentee from group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING,
-        description = "Not found mentee"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING,
+          description = "Not found mentee"),
   })
   @DeleteMapping("/{groupId}/mentees/{menteeId}")
   public APIResponse deleteMentee(
@@ -457,16 +482,16 @@ public class GroupController {
 
   @Operation(summary = "delete mentor from group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING,
-        description = "Not found mentor"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING,
+          description = "Not found mentor"),
   })
   @DeleteMapping("/{groupId}/mentors/{mentorId}")
   public APIResponse deleteMentor(
@@ -481,16 +506,16 @@ public class GroupController {
 
   @Operation(summary = "Promote a mentee to mentor in group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING,
-        description = "Not found mentor"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.MENTEE_NOT_FOUND_STRING,
+          description = "Not found mentor"),
   })
   @PatchMapping("/{groupId}/mentors/{menteeId}")
   public APIResponse promoteToMentor(
@@ -505,16 +530,16 @@ public class GroupController {
 
   @Operation(summary = "Demote a mentor to mentee in group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING,
-        description = "Not found mentor"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.MENTOR_NOT_FOUND_STRING,
+          description = "Not found mentor"),
   })
   @PatchMapping("/{groupId}/mentees/{mentorId}")
   public APIResponse demoteToMentee(
@@ -529,11 +554,11 @@ public class GroupController {
 
   @Operation(summary = "Get template import file", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
   })
   @GetMapping("/import")
   public ResponseEntity<Resource> getTemplate() throws Exception {
@@ -594,13 +619,13 @@ public class GroupController {
 
   @Operation(summary = "Delete a group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @DeleteMapping(value = "/{id}")
   public APIResponse delete(
@@ -613,22 +638,22 @@ public class GroupController {
 
   @Operation(summary = "Update a group", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
-        description = "Group name has been duplicated"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
-        description = "Group category not exists"),
-    @ApiResponse(
-        responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
-        description = "Time end can't be before time start"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.DUPLICATE_GROUP_STRING,
+          description = "Group name has been duplicated"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.GROUP_CATEGORY_NOT_FOUND_STRING,
+          description = "Group category not exists"),
+      @ApiResponse(
+          responseCode = GroupReturnCode.TIME_END_BEFORE_TIME_START_STRING,
+          description = "Time end can't be before time start"),
   })
   @PatchMapping("/{id}")
   public APIResponse<Group> update(
@@ -647,12 +672,12 @@ public class GroupController {
           "Contains data for homepage of mobile app, contains: Recent tasks, meetings, pinned groups and recent groups",
       tags = "Homepage Mobile APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping("/home")
   public APIResponse<HomePageResponse> getHomePage(
@@ -670,13 +695,13 @@ public class GroupController {
 
   @Operation(summary = "Delete multiple groups", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Delete successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Delete successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @DeleteMapping(value = {""})
   public APIResponse deleteMultiple(
@@ -690,13 +715,13 @@ public class GroupController {
 
   @Operation(summary = "Disable multiple groups", description = "", tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Disable successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Disable successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @PatchMapping(value = "/disable")
   public APIResponse disableMultiple(
@@ -713,13 +738,13 @@ public class GroupController {
       description = "",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Enable successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication"),
-    @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
+      @ApiResponse(
+          responseCode = "200",
+          description = "Enable successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication"),
+      @ApiResponse(responseCode = GroupReturnCode.NOT_FOUND_STRING, description = "Not found group"),
   })
   @PatchMapping(value = "/enable")
   public APIResponse enableMultiple(
@@ -736,12 +761,12 @@ public class GroupController {
       description = "Get all members(mentor, mentee) of a group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping("/{id}/members")
   public APIResponse<GroupMembersResponse> getGroupMembers(
@@ -759,12 +784,12 @@ public class GroupController {
       description = "Member of group can pin this one on their homepage",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Pin successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Pin successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping("/{id}/pin")
   public APIResponse<Object> pinGroup(
@@ -779,12 +804,12 @@ public class GroupController {
       description = "Member of group can unpin this one on their homepage",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Unpin successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Unpin successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping("/{id}/unpin")
   public APIResponse<Object> unpinGroup(
@@ -799,12 +824,12 @@ public class GroupController {
       description = "Get detail infomation of a group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping("/{id}/detail")
   public APIResponse<GroupDetailResponse> getGroup(
@@ -819,12 +844,12 @@ public class GroupController {
       description = "Get all images and files uploaded on group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Retrieve successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Retrieve successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping("/{id}/media")
   public APIResponse<ShortMediaMessage> getGroupMedia(
@@ -839,19 +864,19 @@ public class GroupController {
       description = "Update avatar of group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Update successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Update successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public APIResponse<String> updateGroupAvatar(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam String groupId,
       @RequestParam(value = "file", required = false) MultipartFile file)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     GroupReturnService groupData = groupService.updateAvatar(userPrincipal.getId(), groupId, file);
     return new APIResponse(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
   }
@@ -861,12 +886,12 @@ public class GroupController {
       description = "Export group table",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Update successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Update successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping(value = "/export")
   public ResponseEntity<Resource> export(
@@ -883,12 +908,12 @@ public class GroupController {
       description = "Export mentor's group table",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Update successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Update successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping(value = "/{groupId}/mentors/export")
   public ResponseEntity<Resource> exportMentors(
@@ -907,12 +932,12 @@ public class GroupController {
       description = "Export mentee's group table",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Update successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Update successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping(value = "/{groupId}/mentees/export")
   public ResponseEntity<Resource> exportMentees(
@@ -931,12 +956,12 @@ public class GroupController {
       description = "Pin message on top of group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Pin successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Pin successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping("/{groupId}/pin-message")
   public ResponseEntity<Void> pinMessage(
@@ -955,12 +980,12 @@ public class GroupController {
       description = "Unpin message on top of group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Pin successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = Resource.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Pin successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = Resource.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping("/{groupId}/unpin-message")
   public ResponseEntity<Resource> unpinMessage(
@@ -979,12 +1004,12 @@ public class GroupController {
       description = "Export groups table",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Update successfully",
-        content =
-            @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Update successfully",
+          content =
+          @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping(value = "/export/search")
   public ResponseEntity<Resource> exportBySearchConditions(
@@ -994,17 +1019,17 @@ public class GroupController {
       @RequestParam(defaultValue = "") String menteeEmail,
       @RequestParam(defaultValue = "") String groupCategory,
       @RequestParam(defaultValue = "1970-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeStart1,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeStart1,
       @RequestParam(defaultValue = "2300-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeEnd1,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeEnd1,
       @RequestParam(defaultValue = "1970-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeStart2,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeStart2,
       @RequestParam(defaultValue = "2300-01-01T00:00:00")
-          @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-          Date timeEnd2,
+      @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+      Date timeEnd2,
       @RequestParam(required = false) String status,
       @RequestParam(defaultValue = "") List<String> remainColumns)
       throws IOException {
@@ -1029,14 +1054,14 @@ public class GroupController {
       description = "Get central workspace of group contains channels and private messages",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Get successfully",
-        content =
-            @Content(
-                array =
-                    @ArraySchema(schema = @Schema(implementation = GroupDetailResponse.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Get successfully",
+          content =
+          @Content(
+              array =
+              @ArraySchema(schema = @Schema(implementation = GroupDetailResponse.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @GetMapping("/{groupId}/workspace")
   public ResponseEntity<GroupDetailResponse> getWorkspace(
@@ -1054,11 +1079,11 @@ public class GroupController {
       description = "Can mark and push them on the list mentees of group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Do successfully",
-        content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Do successfully",
+          content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @PostMapping("/{groupId}/star")
   public ResponseEntity<Void> markMentee(
@@ -1077,11 +1102,11 @@ public class GroupController {
       description = "Can unmark mentees of group",
       tags = "Group APIs")
   @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "Do successfully",
-        content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))),
-    @ApiResponse(responseCode = "401", description = "Need authentication")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Do successfully",
+          content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))),
+      @ApiResponse(responseCode = "401", description = "Need authentication")
   })
   @DeleteMapping("/{groupId}/star")
   public ResponseEntity<Void> unmarkMentee(

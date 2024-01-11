@@ -20,6 +20,12 @@ import com.hcmus.mentor.backend.web.infrastructure.security.CurrentUser;
 import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
 import com.hcmus.mentor.backend.usercase.common.service.UserService;
 import com.hcmus.mentor.backend.usercase.common.service.impl.UserServiceImpl;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -464,7 +470,7 @@ public class UserController {
   public APIResponse<String> updateAvatar(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam MultipartFile file)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     UserServiceImpl.UserReturnService userReturn =
         userService.updateAvatar(userPrincipal.getId(), file);
     return new APIResponse(
@@ -487,7 +493,7 @@ public class UserController {
   public APIResponse<String> updateWallpaper(
       @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
       @RequestParam MultipartFile file)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     UserServiceImpl.UserReturnService userReturn =
         userService.updateWallpaper(userPrincipal.getId(), file);
     return new APIResponse(

@@ -5,6 +5,12 @@ import com.hcmus.mentor.backend.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.payload.request.UpdateUserRequest;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -59,10 +65,10 @@ public interface UserService {
       String emailUser, String userId, UpdateUserForAdminRequest request);
 
   UserReturnService updateAvatar(String userId, MultipartFile file)
-      throws GeneralSecurityException, IOException;
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
 
   UserReturnService updateWallpaper(String userId, MultipartFile file)
-      throws GeneralSecurityException, IOException;
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
 
   ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
       throws IOException;

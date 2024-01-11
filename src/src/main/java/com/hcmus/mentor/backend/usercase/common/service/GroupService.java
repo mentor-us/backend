@@ -8,6 +8,12 @@ import com.hcmus.mentor.backend.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.web.infrastructure.security.UserPrincipal;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -104,7 +110,7 @@ public interface GroupService {
   GroupReturnService getGroupMedia(String userId, String groupId);
 
   GroupReturnService updateAvatar(String userId, String groupId, MultipartFile file)
-      throws GeneralSecurityException, IOException;
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
 
   ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
       throws IOException;
