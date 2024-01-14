@@ -6,6 +6,12 @@ import com.hcmus.mentor.backend.payload.request.FileStorage.DownloadFileReq;
 import com.hcmus.mentor.backend.payload.request.FileStorage.ShareFileRequest;
 import com.hcmus.mentor.backend.payload.response.file.ShareFileResponse;
 import com.hcmus.mentor.backend.payload.response.file.UploadFileResponse;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,10 +20,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Objects;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +68,7 @@ public class FileController {
   })
   @GetMapping("")
   public ResponseEntity<Resource> getFile(@ParameterObject DownloadFileReq request)
-      throws IOException {
+      throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
     java.io.File file = blobStorage.get(request.getKey());
 
     Resource resource = new FileSystemResource(file);
@@ -83,17 +88,12 @@ public class FileController {
   })
   @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<UploadFileResponse> uploadFile(
-      @RequestParam("file") MultipartFile multipartFile) throws IOException {
-    // convert multipart file  to a file
-    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-      fileOutputStream.write(multipartFile.getBytes());
-    }
-    String mimeType = new Tika().detect(file);
+      @RequestParam("file") MultipartFile multipartFile)
+      throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
 
-    String key = blobStorage.generateBlobKey(mimeType);
+    String key = blobStorage.generateBlobKey(multipartFile.getContentType());
 
-    blobStorage.post(key, file);
+    blobStorage.post(multipartFile, key);
     UploadFileResponse response = new UploadFileResponse(key);
 
     return ResponseEntity.ok(response);

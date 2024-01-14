@@ -1,12 +1,20 @@
 package com.hcmus.mentor.backend.usercase.common.service.impl;
 
-import static com.hcmus.mentor.backend.entity.User.Role.*;
+import static com.hcmus.mentor.backend.entity.User.Role.ADMIN;
+import static com.hcmus.mentor.backend.entity.User.Role.ROLE_USER;
+import static com.hcmus.mentor.backend.entity.User.Role.SUPER_ADMIN;
+import static com.hcmus.mentor.backend.entity.User.Role.USER;
 import static com.hcmus.mentor.backend.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
 import static com.hcmus.mentor.backend.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.*;
+import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.DUPLICATE_USER;
+import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.NOT_ENOUGH_FIELDS;
+import static com.hcmus.mentor.backend.payload.returnCode.UserReturnCode.NOT_FOUND;
 
-import com.hcmus.mentor.backend.entity.*;
+import com.hcmus.mentor.backend.entity.Email;
+import com.hcmus.mentor.backend.entity.Group;
+import com.hcmus.mentor.backend.entity.GroupCategory;
+import com.hcmus.mentor.backend.entity.User;
 import com.hcmus.mentor.backend.infrastructure.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.payload.request.FindUserRequest;
@@ -21,12 +29,27 @@ import com.hcmus.mentor.backend.usercase.common.service.MailService;
 import com.hcmus.mentor.backend.usercase.common.service.PermissionService;
 import com.hcmus.mentor.backend.usercase.common.service.UserService;
 import com.hcmus.mentor.backend.usercase.common.util.FileUtils;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
-import java.util.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
@@ -36,7 +59,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -49,6 +76,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
   private final Integer ADMIN_ROLE = 1;
   private final UserRepository userRepository;
   private final MailService mailService;
@@ -646,21 +674,14 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserReturnService updateAvatar(String userId, MultipartFile multipartFile)
-      throws GeneralSecurityException, IOException {
+      throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
     Optional<User> userWrapper = userRepository.findById(userId);
     if (!userWrapper.isPresent()) {
       return new UserReturnService(NOT_FOUND, "Not found user", null);
     }
 
-    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-      fileOutputStream.write(multipartFile.getBytes());
-    }
-    String mimeType = new Tika().detect(file);
-
-    String key = blobStorage.generateBlobKey(mimeType);
-
-    blobStorage.post(key, file);
+    String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+    blobStorage.post(multipartFile, key);
 
     User user = userWrapper.get();
     user.updateAvatar(key);
@@ -671,21 +692,14 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserReturnService updateWallpaper(String userId, MultipartFile multipartFile)
-      throws IOException {
+      throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
     Optional<User> userWrapper = userRepository.findById(userId);
-    if (!userWrapper.isPresent()) {
+    if (userWrapper.isEmpty()) {
       return new UserReturnService(NOT_FOUND, "Not found user", null);
     }
 
-    File file = new File(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-    try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-      fileOutputStream.write(multipartFile.getBytes());
-    }
-    String mimeType = new Tika().detect(file);
-
-    String key = blobStorage.generateBlobKey(mimeType);
-
-    blobStorage.post(key, file);
+    String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+    blobStorage.post(multipartFile, key);
 
     User user = userWrapper.get();
     user.updateWallpaper(key);
