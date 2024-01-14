@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.*;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -19,7 +20,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document("task")
 public class Task implements IRemindable, Serializable {
 
-  @Id private String id;
+  @Id
+  private String id;
 
   private String title;
 
@@ -29,13 +31,16 @@ public class Task implements IRemindable, Serializable {
 
   private String assignerId;
 
-  @Builder.Default private List<Assignee> assigneeIds = new ArrayList<>();
+  @Builder.Default
+  private List<Assignee> assigneeIds = new ArrayList<>();
 
-  @Builder.Default private String parentTask = "";
+  @Builder.Default
+  private String parentTask = "";
 
   private String groupId;
 
-  @Builder.Default private Date createdDate = new Date();
+  @Builder.Default
+  private Date createdDate = new Date();
 
   public static Task.Assignee newTask(String userId) {
     return new Task.Assignee(userId, Task.Status.TO_DO);
@@ -43,10 +48,12 @@ public class Task implements IRemindable, Serializable {
 
   @Override
   public Reminder toReminder() {
-    Map<String, Object> properties = new HashMap<>();
-    properties.put("name", title);
     SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
-    String formattedTime = sdf.format(deadline);
+    String formattedTime = sdf.format(DateUtils.addHours(deadline, 7));
+
+    Map<String, Object> properties = new HashMap<>();
+
+    properties.put("name", title);
     properties.put("dueDate", formattedTime);
     properties.put("id", id);
 
@@ -130,8 +137,10 @@ public class Task implements IRemindable, Serializable {
   @NoArgsConstructor
   @Builder
   public static class Assignee implements Serializable {
+
     private String userId;
 
-    @Builder.Default private Status status = Status.TO_DO;
+    @Builder.Default
+    private Status status = Status.TO_DO;
   }
 }
