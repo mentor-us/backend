@@ -8,13 +8,12 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReact
 import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.service.SocketIOService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -24,17 +23,16 @@ public class SocketIOServiceImpl implements SocketIOService {
 
     @Override
     public void sendMessage(SocketIOClient client, MessageDetailResponse message, String groupId) {
-        client
-                .getNamespace()
+        client.getNamespace()
                 .getRoomOperations(groupId)
                 .getClients()
-                .forEach(
-                        receiver -> {
-                            if (receiver.getSessionId().equals(client.getSessionId())) {
-                                return;
-                            }
-                            receiver.sendEvent("receive_message", message);
-                        });
+                .forEach(receiver -> {
+                    if (receiver.getSessionId().equals(client.getSessionId())) {
+                        return;
+                    }
+
+                    receiver.sendEvent("receive_message", message);
+                });
     }
 
     @Override
@@ -43,19 +41,17 @@ public class SocketIOServiceImpl implements SocketIOService {
                 .getNamespace()
                 .getRoomOperations(vote.getGroupId())
                 .getClients()
-                .forEach(
-                        receiver -> {
-                            if (receiver.getSessionId().equals(client.getSessionId())) {
-                                return;
-                            }
-                            receiver.sendEvent("receive_voting", vote);
-                        });
+                .forEach(receiver -> {
+                    if (receiver.getSessionId().equals(client.getSessionId())) {
+                        return;
+                    }
+                    receiver.sendEvent("receive_voting", vote);
+                });
     }
 
     @Override
     public void sendBroadcastMessage(MessageDetailResponse message, String groupId) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("receive_message", message));
     }
 
@@ -68,14 +64,13 @@ public class SocketIOServiceImpl implements SocketIOService {
 
     private List<SocketIOClient> getOthers(String groupId, String senderId) {
         return socketServer.getRoomOperations(groupId).getClients().stream()
-                .filter(
-                        client -> {
-                            String userId = client.getHandshakeData().getSingleUrlParam("userId");
-                            if (userId == null) {
-                                return true;
-                            }
-                            return !userId.equals(senderId);
-                        })
+                .filter(client -> {
+                    String userId = client.getHandshakeData().getSingleUrlParam("userId");
+                    if (userId == null) {
+                        return true;
+                    }
+                    return !userId.equals(senderId);
+                })
                 .collect(Collectors.toList());
     }
 

@@ -1,12 +1,8 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
+import com.hcmus.mentor.backend.domain.Message;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +11,13 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
 public interface MessageRepository extends MongoRepository<Message, String> {
+
+    Optional<Message> findById(@NotNull String id);
 
     Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
 

@@ -23,7 +23,7 @@ public interface RoleService {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class RoleServiceReturn {
+    class RoleServiceReturn {
         Integer returnCode;
         String message;
         Object data;

@@ -84,7 +84,7 @@ public interface UserService {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class UserReturnService {
+    class UserReturnService {
         Integer returnCode;
         String message;
         Object data;

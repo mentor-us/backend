@@ -272,10 +272,7 @@ public class UserServiceImpl implements UserService {
         }
 
         Row row = sheet.getRow(0);
-        if (!isValidHeader(row)) {
-            return false;
-        }
-        return true;
+        return isValidHeader(row);
     }
 
     private Boolean isValidHeader(Row row) {

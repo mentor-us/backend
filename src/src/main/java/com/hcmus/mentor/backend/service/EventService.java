@@ -26,7 +26,7 @@ public interface EventService {
     @NoArgsConstructor
     @Setter
     @Builder
-    public static class Event {
+    class Event {
         private String id;
         private String title;
         private String groupName;

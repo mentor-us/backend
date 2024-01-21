@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.controller.payload.APIResponse;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
@@ -8,12 +7,13 @@ import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetin
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingAttendeeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
+import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.repository.MeetingRepository;
+import com.hcmus.mentor.backend.security.CurrentUser;
+import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.MeetingService;
 import com.hcmus.mentor.backend.service.NotificationService;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -54,10 +54,12 @@ public class MeetingController {
     })
     @GetMapping(value = {""})
     public ResponseEntity<List<MeetingResponse>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @RequestParam String groupId) {
+            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @RequestParam String groupId) {
         if (!groupService.isGroupMember(groupId, user.getId())) {
             return ResponseEntity.notFound().build();
         }
+
         return ResponseEntity.ok(meetingService.getMeetingGroup(groupId));
     }
 
