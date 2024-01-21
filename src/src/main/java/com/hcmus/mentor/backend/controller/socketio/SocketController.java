@@ -4,18 +4,18 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.JoinOutRoomRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
-import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
+import com.hcmus.mentor.backend.service.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -73,8 +73,9 @@ public class SocketController {
     }
 
     private ConnectListener onConnected() {
-        return client ->
-                client.sendEvent("receive_message", Message.builder().content("Hello from server").build());
+        return client -> {
+            client.sendEvent("receive_message", Message.builder().content("Hello from server").build());
+        };
     }
 
     private DisconnectListener onDisconnected() {
