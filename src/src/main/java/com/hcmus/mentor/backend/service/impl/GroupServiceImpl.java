@@ -1,14 +1,9 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
-import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
@@ -17,41 +12,15 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MessageRepository;
-import com.hcmus.mentor.backend.repository.SystemConfigRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.MailService;
-import com.hcmus.mentor.backend.service.MessageService2;
-import com.hcmus.mentor.backend.service.NotificationService;
-import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.SocketIOService;
-import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
-
-import java.io.*;
-import java.security.GeneralSecurityException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import io.minio.errors.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.ss.usermodel.*;
@@ -71,6 +40,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.*;
+import java.security.GeneralSecurityException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
@@ -86,7 +69,7 @@ public class GroupServiceImpl implements GroupService {
     private final SystemConfigRepository systemConfigRepository;
     private final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
     private final MessageRepository messageRepository;
-    private final MessageService2 messageService2;
+    private final MessageService messageService;
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
@@ -130,25 +113,22 @@ public class GroupServiceImpl implements GroupService {
     }
 
     private List<GroupHomepageResponse> mappingGroupHomepageResponse(
-            List<Group> groups, String userId) {
-        Map<String, GroupCategory> categories =
-                groupCategoryRepository.findAll().stream()
-                        .collect(
-                                Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
+            List<Group> groups,
+            String userId) {
+        Map<String, GroupCategory> categories = groupCategoryRepository.findAll().stream()
+                .collect(Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
         return groups.stream()
-                .map(
-                        group -> {
-                            String role = group.isMentee(userId) ? "MENTEE" : "MENTOR";
-                            GroupCategory category = categories.get(group.getGroupCategory());
-                            String imageUrl =
-                                    (group.getImageUrl() == null) ? category.getIconUrl() : group.getImageUrl();
-                            String lastMessage = messageService2.getLastGroupMessage(group.getId());
-                            GroupHomepageResponse response =
-                                    new GroupHomepageResponse(group, category.getName(), role);
-                            response.setImageUrl(imageUrl);
-                            response.setNewMessage(lastMessage);
-                            return response;
-                        })
+                .map(group -> {
+                    String role = group.isMentee(userId) ? "MENTEE" : "MENTOR";
+                    GroupCategory category = categories.get(group.getGroupCategory());
+                    String imageUrl = (group.getImageUrl() == null) ? category.getIconUrl() : group.getImageUrl();
+                    String lastMessage = messageService.getLastGroupMessage(group.getId());
+                    GroupHomepageResponse response =
+                            new GroupHomepageResponse(group, category.getName(), role);
+                    response.setImageUrl(imageUrl);
+                    response.setNewMessage(lastMessage);
+                    return response;
+                })
                 .sorted(Comparator.comparing(GroupHomepageResponse::getUpdatedDate).reversed())
                 .collect(Collectors.toList());
     }
@@ -157,8 +137,7 @@ public class GroupServiceImpl implements GroupService {
     public List<Group> getAllActiveOwnGroups(String userId) {
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
-        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                mentorIds, Group.Status.ACTIVE, menteeIds, Group.Status.ACTIVE);
+        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, Group.Status.ACTIVE, menteeIds, Group.Status.ACTIVE);
     }
 
     @Override
@@ -429,10 +408,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         Row row = sheet.getRow(0);
-        if (!isValidHeader(row)) {
-            return false;
-        }
-        return true;
+        return isValidHeader(row);
     }
 
     private Boolean isValidHeader(Row row) {
@@ -982,17 +958,20 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public boolean isGroupMember(String groupId, String userId) {
-        Optional<Group> wrapper = groupRepository.findById(groupId);
-        if (!wrapper.isPresent()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
-                return false;
-            }
-            Channel channel = channelWrapper.get();
+        var groupOpt = groupRepository.findById(groupId);
+
+        if (groupOpt.isPresent()) {
+            var group = groupOpt.get();
+            return group.getMentors().contains(userId) || group.getMentees().contains(userId);
+        }
+
+        var channelOpt = channelRepository.findById(groupId);
+        if (channelOpt.isPresent()) {
+            var channel = channelOpt.get();
             return channel.isMember(userId) || isGroupMember(channel.getParentId(), userId);
         }
-        Group group = wrapper.get();
-        return group.getMentors().contains(userId) || group.getMentees().contains(userId);
+
+        return false;
     }
 
     @Override
@@ -1193,12 +1172,17 @@ public class GroupServiceImpl implements GroupService {
     }
 
     private GroupDetailResponse fulfillChannelDetail(
-            String userId, Channel channel, Group parentGroup) {
+            String userId,
+            Channel channel,
+            Group parentGroup) {
         String channelName = channel.getName();
         String imageUrl = null;
+
         if (Channel.Type.PRIVATE_MESSAGE.equals(channel.getType())) {
-            String penpalId =
-                    channel.getUserIds().stream().filter(id -> !id.equals(userId)).findFirst().orElse(null);
+            String penpalId = channel.getUserIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .findFirst()
+                    .orElse(null);
             if (userId == null) {
                 return null;
             }
@@ -1209,40 +1193,43 @@ public class GroupServiceImpl implements GroupService {
             channelName = penpal.getName();
             imageUrl = penpal.getImageUrl();
         }
-        GroupDetailResponse response =
-                GroupDetailResponse.builder()
-                        .id(channel.getId())
-                        .name(channelName)
-                        .description(channel.getDescription())
-                        .pinnedMessageIds(channel.getPinnedMessageIds())
-                        .imageUrl(imageUrl)
-                        .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
-                        .parentId(parentGroup.getId())
-                        .totalMember(channel.getUserIds().size())
-                        .type(channel.getType())
-                        .build();
-        GroupCategory groupCategory =
-                groupCategoryRepository.findById(parentGroup.getGroupCategory()).orElse(null);
+
+        GroupDetailResponse response = GroupDetailResponse.builder()
+                .id(channel.getId())
+                .name(channelName)
+                .description(channel.getDescription())
+                .pinnedMessageIds(channel.getPinnedMessageIds())
+                .imageUrl(imageUrl)
+                .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
+                .parentId(parentGroup.getId())
+                .totalMember(channel.getUserIds().size())
+                .type(channel.getType())
+                .build();
+
+        GroupCategory groupCategory = groupCategoryRepository
+                .findById(parentGroup.getGroupCategory())
+                .orElse(null);
+
         if (groupCategory != null) {
             response.setPermissions(groupCategory.getPermissions());
             response.setGroupCategory(groupCategory.getName());
         }
+
         List<MessageResponse> messages = new ArrayList<>();
+
         if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
-            messages =
-                    response.getPinnedMessageIds().stream()
-                            .map(messageRepository::findById)
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .filter(message -> !message.isDeleted())
-                            .map(
-                                    message -> {
-                                        User user = userRepository.findById(message.getSenderId()).orElse(null);
-                                        return MessageResponse.from(message, ProfileResponse.from(user));
-                                    })
-                            .collect(Collectors.toList());
+            messages = response.getPinnedMessageIds().stream()
+                    .map(messageRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(message -> !message.isDeleted())
+                    .map(message -> {
+                        User user = userRepository.findById(message.getSenderId()).orElse(null);
+                        return MessageResponse.from(message, ProfileResponse.from(user));
+                    })
+                    .collect(Collectors.toList());
         }
-        response.setPinnedMessages(messageService2.fulfillMessages(messages, userId));
+        response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
         response.setTotalMember(channel.getUserIds().size());
         return response;
     }
@@ -1262,20 +1249,18 @@ public class GroupServiceImpl implements GroupService {
 
         List<MessageResponse> messages = new ArrayList<>();
         if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
-            messages =
-                    response.getPinnedMessageIds().stream()
-                            .map(messageRepository::findById)
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .filter(message -> !message.isDeleted())
-                            .map(
-                                    message -> {
-                                        User user = userRepository.findById(message.getSenderId()).orElse(null);
-                                        return MessageResponse.from(message, ProfileResponse.from(user));
-                                    })
-                            .collect(Collectors.toList());
+            messages = response.getPinnedMessageIds().stream()
+                    .map(messageRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(message -> !message.isDeleted())
+                    .map(message -> {
+                        User user = userRepository.findById(message.getSenderId()).orElse(null);
+                        return MessageResponse.from(message, ProfileResponse.from(user));
+                    })
+                    .collect(Collectors.toList());
         }
-        response.setPinnedMessages(messageService2.fulfillMessages(messages, userId));
+        response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
         response.setImageUrl(
                 (response.getImageUrl() == null)
                         ? groupCategory != null ? groupCategory.getIconUrl() : null
@@ -1298,21 +1283,19 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public void pingGroup(String groupId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
-                return;
-            }
+        var groupOpt = groupRepository.findById(groupId);
+        if (groupOpt.isPresent()) {
+            var group = groupOpt.get();
+            group.ping();
+            groupRepository.save(group);
+        }
 
-            Channel channel = channelWrapper.get();
+        var channelOpt = channelRepository.findById(groupId);
+        if (channelOpt.isPresent()) {
+            var channel = channelOpt.get();
             channel.ping();
             channelRepository.save(channel);
-            return;
         }
-        Group group = groupWrapper.get();
-        group.ping();
-        groupRepository.save(group);
     }
 
     @Override

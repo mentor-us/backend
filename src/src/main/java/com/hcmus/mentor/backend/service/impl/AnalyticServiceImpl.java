@@ -711,7 +711,6 @@ public class AnalyticServiceImpl implements AnalyticService {
         Page<Group> groups;
         if (permissionService.isSuperAdmin(emailUser)) {
             groups = groupRepository.findAll(pageRequest);
-            ;
         } else {
             Optional<User> userOptional = userRepository.findByEmail(emailUser);
             String adminId = null;

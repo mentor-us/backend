@@ -14,10 +14,10 @@ import java.util.*;
 
 @ToString
 public class UserPrincipal implements OAuth2User, OidcUser, UserDetails {
-    private String id;
-    private String email;
-    private String password;
-    private Collection<? extends GrantedAuthority> authorities;
+    private final String id;
+    private final String email;
+    private final String password;
+    private final Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
     private OidcUserInfo oidcUserInfo;
     private OidcIdToken oidcIdToken;
