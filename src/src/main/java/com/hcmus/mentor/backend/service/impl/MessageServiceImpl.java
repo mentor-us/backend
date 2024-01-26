@@ -14,23 +14,26 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageRes
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.repository.*;
-import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.service.MessageService;
+import com.hcmus.mentor.backend.service.NotificationService;
+import com.hcmus.mentor.backend.service.SocketIOService;
+import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
-import io.minio.errors.*;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
-    private final GroupService groupService;
+    private final ChannelRepository channelRepository;
+    private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
     private final MeetingRepository meetingRepository;
     private final TaskRepository taskRepository;
@@ -40,18 +43,256 @@ public class MessageServiceImpl implements MessageService {
     private final NotificationService notificationService;
     private final TaskServiceImpl taskService;
     private final BlobStorage blobStorage;
-    private final ChannelRepository channelRepository;
 
+    /**
+     * {@inheritDoc}
+     */
+    @SneakyThrows
+    @Override
+    public Message find(String id) {
+        var message = messageRepository.findById(id);
+
+        return message.orElse(null);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<MessageDetailResponse> getGroupMessages(
-            String viewerId, String groupId, int page, int size) {
-        List<MessageResponse> responses =
-                messageRepository.getGroupMessagesByGroupId(groupId, page * size, size);
+            String viewerId,
+            String groupId,
+            int page,
+            int size) {
+        List<MessageResponse> responses = messageRepository.getGroupMessagesByGroupId(groupId, page * size, size);
+
         return fulfillMessages(responses, viewerId);
     }
 
-    private List<MessageDetailResponse> fulfillMessages(
-            List<MessageResponse> messages, String viewerId) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<MessageResponse> findGroupMessagesByText(
+            String groupId, String query, int page, int size) {
+        List<MessageResponse> responses =
+                messageRepository.findGroupMessages(groupId, query, page * size, size);
+        return responses;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getLastGroupMessage(String groupId) {
+        Message lastMessage = messageRepository.findTopByGroupIdOrderByCreatedDateDesc(groupId).orElse(null);
+        if (lastMessage == null) {
+            return null;
+        }
+        if (Message.Status.DELETED.equals(lastMessage.getStatus())) {
+            return "Tin nhắn đã được thu hồi.";
+        }
+        User sender = userRepository.findById(lastMessage.getSenderId()).orElse(null);
+        switch (lastMessage.getType()) {
+            case TEXT:
+                if (sender == null) {
+                    return null;
+                }
+                String content = lastMessage.getContent();
+                return sender.getName() + ": " + Jsoup.parse(content).text();
+            case FILE:
+                if (sender == null) {
+                    return null;
+                }
+                return sender.getName() + " đã gửi tệp đính kèm mới.";
+            case IMAGE:
+                return lastMessage.getImages().size() + " ảnh mới.";
+            case VIDEO:
+                break;
+            case MEETING:
+                return "1 lịch hẹn mới.";
+            case TASK:
+                return "1 công việc mới.";
+            case VOTE:
+                return "1 cuộc bình chọn mới.";
+            case NOTIFICATION:
+                return "1 thông báo mới cần phản hồi.";
+            case SYSTEM:
+                return "";
+        }
+        return "";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void reactMessage(ReactMessageRequest request) {
+        Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
+        if (!messageWrapper.isPresent()) {
+            return;
+        }
+
+        Message message = messageWrapper.get();
+        if (!isMemberGroup(message.getSenderId(), message.getGroupId())) {
+            return;
+        }
+
+        Emoji.Type emoji = Emoji.Type.valueOf(request.getEmojiId());
+        Reaction newReaction = message.react(request.getSenderId(), emoji);
+        messageRepository.save(message);
+
+        pingGroup(message.getGroupId());
+
+        User reactor = userRepository.findById(request.getSenderId()).orElse(null);
+        ReactMessageResponse response = ReactMessageResponse.from(request, reactor);
+        socketIOService.sendReact(response, message.getGroupId());
+        notificationService.sendNewReactNotification(message, response, request.getSenderId());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeReaction(String messageId, String senderId) {
+        Optional<Message> messageWrapper = messageRepository.findById(messageId);
+        if (!messageWrapper.isPresent()) {
+            return;
+        }
+
+        Message message = messageWrapper.get();
+        if (!isMemberGroup(senderId, message.getGroupId())) {
+            return;
+        }
+
+        message.removeReact(senderId);
+        Message updatedMessage = messageRepository.save(message);
+
+        MessageDetailResponse.TotalReaction newTotalReaction =
+                calculateTotalReactionMessage(updatedMessage);
+        socketIOService.sendRemoveReact(
+                new RemoveReactionResponse(messageId, senderId, newTotalReaction),
+                updatedMessage.getGroupId());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message) {
+        List<Emoji> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
+        int total = MessageDetailResponse.calculateTotalReactionAmount(message.getReactions());
+        return MessageDetailResponse.TotalReaction.builder()
+                .data(data)
+                .ownerReacted(Collections.emptyList())
+                .total(total)
+                .build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Message saveMessage(Message data) {
+        pingGroup(data.getGroupId());
+
+        return messageRepository.save(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Message saveTaskMessage(Task task) {
+        var message = Message.builder()
+                .senderId(task.getAssignerId())
+                .groupId(task.getGroupId())
+                .createdDate(task.getCreatedDate())
+                .type(Message.Type.TASK)
+                .taskId(task.getId())
+                .build();
+
+        return messageRepository.save(message);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Message saveVoteMessage(Vote vote) {
+        var message = Message.builder()
+                .senderId(vote.getCreatorId())
+                .groupId(vote.getGroupId())
+                .createdDate(new Date())
+                .type(Message.Type.VOTE)
+                .voteId(vote.getId())
+                .build();
+        return messageRepository.save(message);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SneakyThrows
+    @Override
+    public Message saveImageMessage(SendImagesRequest request) {
+        List<String> imageKeys = new ArrayList<>();
+
+        for (MultipartFile file : request.getFiles()) {
+            String key = blobStorage.generateBlobKey(file.getContentType());
+            blobStorage.post(file, key);
+            imageKeys.add(key);
+        }
+
+        Message message = Message.builder()
+                .id(request.getId())
+                .senderId(request.getSenderId())
+                .groupId(request.getGroupId())
+                .createdDate(new Date())
+                .type(Message.Type.IMAGE)
+                .images(imageKeys)
+                .build();
+
+        pingGroup(request.getGroupId());
+        return messageRepository.save(message);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @SneakyThrows
+    @Override
+    public Message saveFileMessage(SendFileRequest request) {
+        var multipartFile = request.getFile();
+
+        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
+        blobStorage.post(multipartFile, key);
+
+        FileModel file = FileModel.builder()
+                .id(key)
+                .filename(request.getFile().getOriginalFilename())
+                .size(request.getFile().getSize())
+                .url(key)
+                .build();
+        Message message = Message.builder()
+                .id(request.getId())
+                .senderId(request.getSenderId())
+                .groupId(request.getGroupId())
+                .createdDate(new Date())
+                .type(Message.Type.FILE)
+                .file(file)
+                .build();
+        pingGroup(request.getGroupId());
+        return messageRepository.save(message);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<MessageDetailResponse> fulfillMessages(
+            List<MessageResponse> messages,
+            String viewerId) {
         List<String> userIds =
                 messages.stream()
                         .flatMap(response -> response.getReactions().stream())
@@ -69,59 +310,9 @@ public class MessageServiceImpl implements MessageService {
                 .collect(Collectors.toList());
     }
 
-    private MessageDetailResponse fulfillReactions(
-            MessageDetailResponse message, Map<String, User> reactors) {
-        List<Reaction> reactions =
-                message.getReactions().stream()
-                        .map(
-                                reaction -> {
-                                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
-                                    return fulfillReaction(reaction, reactor);
-                                })
-                        .filter(reaction -> reaction.getUserId() != null)
-                        .collect(Collectors.toList());
-        message.setReactions(reactions);
-        return message;
-    }
-
-    private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        MessageDetailResponse response;
-        switch (message.getType()) {
-            case MEETING:
-                response = fulfillMeetingMessage(message);
-                break;
-            case TASK:
-                response = fulfillTaskMessage(message);
-                break;
-            case VOTE:
-                response = fulfillVotingMessage(message);
-                break;
-            case TEXT:
-                response = fulfillTextMessage(message);
-                break;
-            default:
-                response = MessageDetailResponse.from(message);
-        }
-        return response;
-    }
-
-    private MessageDetailResponse fulfillVotingMessage(MessageResponse message) {
-        Vote vote = voteRepository.findById(message.getVoteId()).orElse(null);
-        if (vote != null) {
-            vote.sortChoicesDesc();
-        }
-        return MessageDetailResponse.from(message, vote);
-    }
-
-    @Override
-    public Reaction fulfillReaction(Reaction reaction, User reactor) {
-        if (reactor == null) {
-            return new Reaction();
-        }
-        reaction.update(reactor);
-        return reaction;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MessageDetailResponse fulfillTextMessage(MessageResponse message) {
         MessageDetailResponse response = MessageDetailResponse.from(message);
@@ -151,12 +342,18 @@ public class MessageServiceImpl implements MessageService {
         return response;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MessageDetailResponse fulfillMeetingMessage(MessageResponse message) {
         Optional<Meeting> meeting = meetingRepository.findById(message.getMeetingId());
         return MessageDetailResponse.from(message, meeting.orElse(null));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public MessageDetailResponse fulfillTaskMessage(MessageResponse message) {
         Optional<Task> taskWrapper = taskRepository.findById(message.getTaskId());
@@ -170,154 +367,85 @@ public class MessageServiceImpl implements MessageService {
         return MessageDetailResponse.from(message, taskDetail);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public List<MessageResponse> findGroupMessagesByText(
-            String groupId, String query, int page, int size) {
-        List<MessageResponse> responses =
-                messageRepository.findGroupMessages(groupId, query, page * size, size);
-        return responses;
+    public Reaction fulfillReaction(Reaction reaction, User reactor) {
+        if (reactor == null) {
+            return new Reaction();
+        }
+        reaction.update(reactor);
+        return reaction;
     }
 
-    @Override
-    public Message saveMessage(Message data) {
-        groupService.pingGroup(data.getGroupId());
-
-        return messageRepository.save(data);
+    private MessageDetailResponse fulfillReactions(
+            MessageDetailResponse message,
+            Map<String, User> reactors) {
+        List<Reaction> reactions =
+                message.getReactions().stream()
+                        .map(
+                                reaction -> {
+                                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
+                                    return fulfillReaction(reaction, reactor);
+                                })
+                        .filter(reaction -> reaction.getUserId() != null)
+                        .collect(Collectors.toList());
+        message.setReactions(reactions);
+        return message;
     }
 
-    @Override
-    public void reactMessage(ReactMessageRequest request) {
-        Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
-        if (!messageWrapper.isPresent()) {
-            return;
+    private MessageDetailResponse fulfillMessage(MessageResponse message) {
+        return switch (message.getType()) {
+            case MEETING -> fulfillMeetingMessage(message);
+            case TASK -> fulfillTaskMessage(message);
+            case VOTE -> fulfillVotingMessage(message);
+            case TEXT -> fulfillTextMessage(message);
+            default -> MessageDetailResponse.from(message);
+        };
+    }
+
+    private MessageDetailResponse fulfillVotingMessage(MessageResponse message) {
+        Vote vote = voteRepository.findById(message.getVoteId()).orElse(null);
+        if (vote != null) {
+            vote.sortChoicesDesc();
+        }
+        return MessageDetailResponse.from(message, vote);
+    }
+
+    private Boolean isMemberGroup(String userId, String groupId) {
+        var groupOpt = groupRepository.findById(groupId);
+
+        if (groupOpt.isPresent()) {
+            var group = groupOpt.get();
+            return group.getMentors().contains(userId) || group.getMentees().contains(userId);
         }
 
-        Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), request.getSenderId())) {
-            return;
+        var channelOpt = channelRepository.findById(groupId);
+        if (channelOpt.isPresent()) {
+            var channel = channelOpt.get();
+            return channel.isMember(userId) || isMemberGroup(userId, channel.getParentId());
         }
 
-        Emoji.Type emoji = Emoji.Type.valueOf(request.getEmojiId());
-        Reaction newReaction = message.react(request.getSenderId(), emoji);
-        messageRepository.save(message);
-
-        groupService.pingGroup(message.getGroupId());
-
-        User reactor = userRepository.findById(request.getSenderId()).orElse(null);
-        ReactMessageResponse response = ReactMessageResponse.from(request, reactor);
-        socketIOService.sendReact(response, message.getGroupId());
-        notificationService.sendNewReactNotification(message, response, request.getSenderId());
+        return false;
     }
 
-    @Override
-    public void removeReaction(String messageId, String senderId) {
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (!messageWrapper.isPresent()) {
-            return;
+    private void pingGroup(String groupId) {
+        var groupOpt = groupRepository.findById(groupId);
+        if (groupOpt.isPresent()) {
+            var group = groupOpt.get();
+            group.ping();
+            groupRepository.save(group);
         }
 
-        Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), senderId)) {
-            return;
+        var channelOpt = channelRepository.findById(groupId);
+        if (channelOpt.isPresent()) {
+            var channel = channelOpt.get();
+            channel.ping();
+            channelRepository.save(channel);
         }
-
-        message.removeReact(senderId);
-        Message updatedMessage = messageRepository.save(message);
-
-        MessageDetailResponse.TotalReaction newTotalReaction =
-                calculateTotalReactionMessage(updatedMessage);
-        socketIOService.sendRemoveReact(
-                new RemoveReactionResponse(messageId, senderId, newTotalReaction),
-                updatedMessage.getGroupId());
     }
 
-    @Override
-    public MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message) {
-        List<Emoji> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
-        int total = MessageDetailResponse.calculateTotalReactionAmount(message.getReactions());
-        return MessageDetailResponse.TotalReaction.builder()
-                .data(data)
-                .ownerReacted(Collections.emptyList())
-                .total(total)
-                .build();
-    }
-
-    @Override
-    public Message saveImageMessage(SendImagesRequest request)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        List<String> images = new ArrayList<>();
-        for (MultipartFile multipartFile : request.getFiles()) {
-            String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-            blobStorage.post(multipartFile, key);
-            images.add(key);
-        }
-        Message message =
-                Message.builder()
-                        .id(request.getId())
-                        .senderId(request.getSenderId())
-                        .groupId(request.getGroupId())
-                        .createdDate(new Date())
-                        .type(Message.Type.IMAGE)
-                        .images(images)
-                        .build();
-        groupService.pingGroup(request.getGroupId());
-        return messageRepository.save(message);
-    }
-
-    @Override
-    public Message saveFileMessage(SendFileRequest request)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        var multipartFile = request.getFile();
-
-        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-        blobStorage.post(multipartFile, key);
-
-        FileModel file =
-                FileModel.builder()
-                        .id(key)
-                        .filename(request.getFile().getOriginalFilename())
-                        .size(request.getFile().getSize())
-                        .url(key)
-                        .build();
-        Message message =
-                Message.builder()
-                        .id(request.getId())
-                        .senderId(request.getSenderId())
-                        .groupId(request.getGroupId())
-                        .createdDate(new Date())
-                        .type(Message.Type.FILE)
-                        .file(file)
-                        .build();
-        groupService.pingGroup(request.getGroupId());
-        return messageRepository.save(message);
-    }
-
-    @Override
-    public Message saveTaskMessage(Task task) {
-        Message message =
-                Message.builder()
-                        .senderId(task.getAssignerId())
-                        .groupId(task.getGroupId())
-                        .createdDate(task.getCreatedDate())
-                        .type(Message.Type.TASK)
-                        .taskId(task.getId())
-                        .build();
-
-        return messageRepository.save(message);
-    }
-
-    @Override
-    public Message saveVoteMessage(Vote vote) {
-        Message message =
-                Message.builder()
-                        .senderId(vote.getCreatorId())
-                        .groupId(vote.getGroupId())
-                        .createdDate(new Date())
-                        .type(Message.Type.VOTE)
-                        .voteId(vote.getId())
-                        .build();
-        return messageRepository.save(message);
-    }
 
     /**
      * @param userId String

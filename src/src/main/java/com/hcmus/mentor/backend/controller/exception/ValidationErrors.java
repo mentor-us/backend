@@ -22,7 +22,7 @@ public class ValidationErrors extends HashMap<String, List<String>> {
     /**
      * Default summary validation key. Should contain the overall message.
      */
-    private String summaryKey = "";
+    private final String summaryKey = "";
 
     /**
      * Constructor.

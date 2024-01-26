@@ -756,7 +756,7 @@ public class GroupController {
             @PathVariable("id") String groupId) {
         GroupReturnService groupMembers = groupService.getGroupMembers(groupId, userPrincipal.getId());
         return new APIResponse(
-                (GroupMembersResponse) groupMembers.getData(),
+                groupMembers.getData(),
                 groupMembers.getReturnCode(),
                 groupMembers.getMessage());
     }

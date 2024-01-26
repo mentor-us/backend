@@ -75,7 +75,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 }
             case "valid_max_year":
                 if ((int) value < 0) {
-                    return new SystemConfigReturnService(INVALID_MAX_YEAR, "Invalid max year", (int) value);
+                    return new SystemConfigReturnService(INVALID_MAX_YEAR, "Invalid max year", value);
                 }
             default:
                 break;

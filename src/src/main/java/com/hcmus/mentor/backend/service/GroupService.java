@@ -161,7 +161,7 @@ public interface GroupService {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class GroupReturnService {
+    class GroupReturnService {
         Integer returnCode;
         String message;
         Object data;

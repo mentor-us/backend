@@ -78,7 +78,7 @@ public class User implements Serializable {
     private List<String> pinnedGroupsId = new ArrayList<>();
 
     @Builder.Default
-    private List<Role> roles = new ArrayList<>(Arrays.asList(USER));
+    private List<Role> roles = new ArrayList<>(List.of(USER));
 
     @Builder.Default
     private Date createdDate = new Date();

@@ -506,7 +506,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public long getUnreadNumber(String userId) {
-        return notificationRepository.countDistinctByReceiverIdsIn(Arrays.asList(userId));
+        return notificationRepository.countDistinctByReceiverIdsIn(Collections.singletonList(userId));
     }
 
     @Override
