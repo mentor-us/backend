@@ -1,17 +1,10 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.Emoji;
-import com.hcmus.mentor.backend.domain.Meeting;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.Reaction;
-import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
@@ -19,35 +12,16 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReact
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.MessageRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.repository.VoteRepository;
-import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.MessageService;
-import com.hcmus.mentor.backend.service.NotificationService;
-import com.hcmus.mentor.backend.service.SocketIOService;
-import com.hcmus.mentor.backend.service.TaskServiceImpl;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
-
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
+import io.minio.errors.*;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -66,6 +40,7 @@ public class MessageServiceImpl implements MessageService {
     private final NotificationService notificationService;
     private final TaskServiceImpl taskService;
     private final BlobStorage blobStorage;
+    private final ChannelRepository channelRepository;
 
     @Override
     public List<MessageDetailResponse> getGroupMessages(
@@ -342,5 +317,32 @@ public class MessageServiceImpl implements MessageService {
                         .voteId(vote.getId())
                         .build();
         return messageRepository.save(message);
+    }
+
+    /**
+     * @param userId String
+     * @param request ForwardRequest
+     */
+    @Override
+    public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
+        List<Channel> channels = channelRepository.findByIdIn(request.getChannelIds());
+        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
+
+        if (message == null) {
+            throw new RuntimeException("Message not found");
+        }
+        List<Message> messages = new ArrayList<>();
+        channels.forEach(ch -> {
+            Message m = Message.builder()
+                    .senderId(userId)
+                    .groupId(ch.getParentId())
+                    .createdDate(new Date())
+                    .type(Message.Type.FORWARD)
+                    .content(message.getContent())
+                    .reply(message.getReply())
+                    .build();
+            messages.add(messageRepository.save(m));
+        });
+        return messages;
     }
 }

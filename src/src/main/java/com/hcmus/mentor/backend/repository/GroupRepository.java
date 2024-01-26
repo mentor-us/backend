@@ -123,4 +123,5 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     List<Group> findAllByCreatorId(String creatorId);
 
     List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
+    List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
 }

@@ -1,5 +1,7 @@
 package com.hcmus.mentor.backend.controller;
 
+import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupForwardResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.APIResponse;
@@ -32,6 +34,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -1096,5 +1100,24 @@ public class GroupController {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok().build();
+    }
+
+        @Operation(
+            summary = "Get list group forward",
+            description = "Get list group forward",
+            tags = "Group APIs")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Get successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = GroupForwardResponse.class)))),
+            @ApiResponse(responseCode = "401", description = "Need authentication")
+    })
+    @GetMapping("/forward")
+    public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @RequestParam Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(userPrincipal, name );
+
+        return ResponseEntity.ok(listChannelForward);
     }
 }

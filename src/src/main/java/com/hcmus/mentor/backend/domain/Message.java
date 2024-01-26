@@ -102,7 +102,8 @@ public class Message {
         TASK,
         VOTE,
         NOTIFICATION,
-        SYSTEM
+        SYSTEM,
+        FORWARD
     }
 
     public enum Status {

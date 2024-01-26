@@ -18,4 +18,6 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
     Channel findTopByParentIdAndName(String parentId, String name);
 
     boolean existsByParentIdAndName(String parentId, String name);
+
+    List<Channel> findByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
 }

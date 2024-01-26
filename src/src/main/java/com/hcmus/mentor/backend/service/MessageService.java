@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -47,4 +48,6 @@ public interface MessageService {
     Message saveTaskMessage(Task task);
 
     Message saveVoteMessage(Vote vote);
+
+    List<Message> saveForwardMessage(String userId, ForwardRequest request);
 }

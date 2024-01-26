@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
@@ -18,10 +19,13 @@ import io.minio.errors.XmlParserException;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 
+import java.util.Optional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -151,6 +155,8 @@ public interface GroupService {
     boolean markMentee(UserPrincipal user, String groupId, String menteeId);
 
     boolean unmarkMentee(UserPrincipal user, String groupId, String menteeId);
+
+    List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
     @Getter
     @Setter
