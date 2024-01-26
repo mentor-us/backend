@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessageResponse;
@@ -23,12 +24,20 @@ import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import io.minio.errors.*;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -36,11 +45,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Message controllers.
@@ -353,6 +357,34 @@ public class MessageController {
             @RequestParam String messageId,
             @RequestParam String senderId) {
         messageService.removeReaction(messageId, senderId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(
+            summary = "Forward message",
+            description = "Forward a message to another group",
+            tags = "Message APIs")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Forward successfully",
+                    content =
+                    @Content(
+                            array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))),
+            @ApiResponse(responseCode = "400", description = "Bad request"),
+            @ApiResponse(responseCode = "401", description = "Need authentication")
+    })
+    @PostMapping("/forward")
+    public ResponseEntity<Void> forwardMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @RequestBody ForwardRequest request) {
+        List<Message> messages = messageService.saveForwardMessage(userPrincipal.getId(), request);
+//        messages.forEach(message -> {
+//            User sender = userRepository.findById(message.getSenderId()).orElse(null);
+//            MessageDetailResponse response = MessageDetailResponse.from(message, sender);
+//
+////            socketIOService.sendMessage(socketServer.getClient(message.getSenderId()), response, message.getGroupId());
+////            notificationService.sendNewMessageNotification(response);
+//            groupService.updateLastMessageId(message.getGroupId(), message.getId());
+//        });
         return ResponseEntity.ok().build();
     }
 }

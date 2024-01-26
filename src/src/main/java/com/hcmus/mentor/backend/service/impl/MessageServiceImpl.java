@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
@@ -443,5 +444,33 @@ public class MessageServiceImpl implements MessageService {
             channel.ping();
             channelRepository.save(channel);
         }
+    }
+
+
+    /**
+     * @param userId String
+     * @param request ForwardRequest
+     */
+    @Override
+    public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
+        List<Channel> channels = channelRepository.findByIdIn(request.getChannelIds());
+        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
+
+        if (message == null) {
+            throw new RuntimeException("Message not found");
+        }
+        List<Message> messages = new ArrayList<>();
+        channels.forEach(ch -> {
+            Message m = Message.builder()
+                    .senderId(userId)
+                    .groupId(ch.getParentId())
+                    .createdDate(new Date())
+                    .type(Message.Type.FORWARD)
+                    .content(message.getContent())
+                    .reply(message.getReply())
+                    .build();
+            messages.add(messageRepository.save(m));
+        });
+        return messages;
     }
 }

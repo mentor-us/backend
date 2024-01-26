@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.service;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.domain.*;
@@ -157,4 +158,6 @@ public interface MessageService {
      * @return The fulfilled reaction.
      */
     Reaction fulfillReaction(Reaction reaction, User reactor);
+
+    List<Message> saveForwardMessage(String userId, ForwardRequest request);
 }

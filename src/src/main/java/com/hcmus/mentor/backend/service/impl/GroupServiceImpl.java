@@ -5,13 +5,17 @@ import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequ
 import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
+import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.UserPrincipal;
@@ -21,6 +25,18 @@ import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
 import io.minio.errors.*;
+import java.io.*;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.ss.usermodel.*;
@@ -39,20 +55,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.*;
-import java.security.GeneralSecurityException;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 
 @Service
 @RequiredArgsConstructor
@@ -1887,5 +1889,40 @@ public class GroupServiceImpl implements GroupService {
         group.unmarkMentee(menteeId);
         groupRepository.save(group);
         return true;
+    }
+
+    /**
+     * @param user UserPrincipal
+     * @param name
+     * @return List<GroupForwardResponse>
+     */
+    @Override
+    public List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
+        var groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
+        List<Channel> channels = channelRepository.findByParentIdInAndUserIdsContaining(groupIds, user.getId());
+
+        List<GroupForwardResponse> groupForwardResponses = new ArrayList<>();
+        for (Group group : groups) {
+            GroupForwardResponse groupForwardResponse = GroupForwardResponse.from(group);
+            if (group.getImageUrl() != null && !group.getImageUrl().isEmpty())
+                groupForwardResponse.setImageUrl(blobStorage.getUrl(group.getImageUrl()));
+
+            groupForwardResponses.add(groupForwardResponse);
+        }
+
+        List<ChannelForwardResponse> channelForwardResponses = new ArrayList<>();
+        for (Channel channel : channels) {
+            ChannelForwardResponse channelForwardResponse = ChannelForwardResponse.from(channel);
+
+            channelForwardResponse.setGroup(groupForwardResponses.stream().filter(groupForwardResponse -> groupForwardResponse.getId().equals(channel.getParentId())).findFirst().orElse(null));
+            channelForwardResponses.add(channelForwardResponse);
+        }
+
+        if (name.isPresent() && !name.get().isEmpty()) {
+            channelForwardResponses = channelForwardResponses.stream().filter(channelForwardResponse -> channelForwardResponse.getName().contains(name.get())).collect(Collectors.toList());
+        }
+
+        return channelForwardResponses;
     }
 }
