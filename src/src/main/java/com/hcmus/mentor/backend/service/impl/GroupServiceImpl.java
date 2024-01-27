@@ -44,6 +44,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -1379,7 +1380,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile multipartFile)
+    public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
@@ -1390,8 +1391,8 @@ public class GroupServiceImpl implements GroupService {
             return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-        blobStorage.post(multipartFile, key);
+        String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
+        blobStorage.post(file, key);
 
         // #TODO: Current save the link of google drive
         group.setImageUrl(key);
@@ -1899,8 +1900,9 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
+        groups = groups.stream().filter(group -> group.getStatus() == Group.Status.ACTIVE).toList();
         var groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
-        List<Channel> channels = channelRepository.findByParentIdInAndUserIdsContaining(groupIds, user.getId());
+        List<Channel> channels = channelRepository.findByIdIn(groupIds);
 
         List<GroupForwardResponse> groupForwardResponses = new ArrayList<>();
         for (Group group : groups) {

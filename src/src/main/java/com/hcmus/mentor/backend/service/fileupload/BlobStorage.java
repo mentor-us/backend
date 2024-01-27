@@ -1,19 +1,6 @@
 package com.hcmus.mentor.backend.service.fileupload;
 
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
-import jakarta.mail.Multipart;
-
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -21,20 +8,50 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface BlobStorage {
 
-    File get(String key)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    /**
+     * Retrieves an InputStream of a file from blob storage.
+     *
+     * @param key The key (identifier) of the file to be retrieved.
+     * @return InputStream of the requested file.
+     */
+    InputStream get(String key);
 
-    void remove(String key)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    /**
+     * Removes a file from the blob storage.
+     *
+     * @param key The key (identifier) of the file to be removed.
+     */
+    void remove(String key);
 
-    void post(MultipartFile file, String key)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    /**
+     * Uploads a file to the blob storage.
+     *
+     * @param file The MultipartFile to be uploaded.
+     * @param key  The key (identifier) that will be assigned to the uploaded file.
+     */
+    void post(MultipartFile file, String key);
 
+    /**
+     * Generates a unique blob key for a file based on its MIME type.
+     *
+     * @param mimeType The MIME type of the file.
+     * @return A unique blob key for the file.
+     */
     String generateBlobKey(String mimeType);
 
-    Boolean exists(String key)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    /**
+     * Checks if a file exists in the blob storage.
+     *
+     * @param key The key (identifier) of the file.
+     * @return Boolean value indicating whether the file exists or not.
+     */
+    Boolean exists(String key);
 
-    String getUrl(String key)
-            throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    /**
+     * Retrieves the URL of a file stored in blob storage.
+     *
+     * @param key The key (identifier) of the file.
+     * @return A string representing the URL of the file.
+     */
+    String getUrl(String key);
 }

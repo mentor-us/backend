@@ -19,14 +19,14 @@ import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -237,9 +237,10 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public Message saveImageMessage(SendImagesRequest request) {
         List<String> imageKeys = new ArrayList<>();
+        var tika = new Tika();
 
         for (MultipartFile file : request.getFiles()) {
-            String key = blobStorage.generateBlobKey(file.getContentType());
+            String key = blobStorage.generateBlobKey(tika.detect(file.getBytes()));
             blobStorage.post(file, key);
             imageKeys.add(key);
         }
@@ -263,12 +264,12 @@ public class MessageServiceImpl implements MessageService {
     @SneakyThrows
     @Override
     public Message saveFileMessage(SendFileRequest request) {
-        var multipartFile = request.getFile();
+        var file = request.getFile();
 
-        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-        blobStorage.post(multipartFile, key);
+        String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
+        blobStorage.post(file, key);
 
-        FileModel file = FileModel.builder()
+        FileModel fileModel = FileModel.builder()
                 .id(key)
                 .filename(request.getFile().getOriginalFilename())
                 .size(request.getFile().getSize())
@@ -280,7 +281,7 @@ public class MessageServiceImpl implements MessageService {
                 .groupId(request.getGroupId())
                 .createdDate(new Date())
                 .type(Message.Type.FILE)
-                .file(file)
+                .file(fileModel)
                 .build();
         pingGroup(request.getGroupId());
         return messageRepository.save(message);
@@ -448,7 +449,7 @@ public class MessageServiceImpl implements MessageService {
 
 
     /**
-     * @param userId String
+     * @param userId  String
      * @param request ForwardRequest
      */
     @Override
