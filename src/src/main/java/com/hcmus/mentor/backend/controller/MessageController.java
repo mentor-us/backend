@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.corundumstudio.socketio.SocketIOServer;
-import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
-import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
-import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
-import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
@@ -34,10 +31,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,6 +38,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Message controllers.
@@ -294,8 +292,7 @@ public class MessageController {
     /**
      * Mention users in a message and send notifications to the specified receivers.
      *
-     * @param messageId   The unique identifier of the message.
-     * @param receiverIds The list of user IDs to mention in the message.
+     * @param command Command for mentioning users in a message.
      * @return A ResponseEntity indicating the success of the operation.
      */
     @PostMapping("mention")
@@ -304,11 +301,9 @@ public class MessageController {
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     public ResponseEntity<Void> mentionUser(
-            @RequestParam String messageId,
-            @RequestParam List<String> receiverIds) {
-
-        var message = messageService.find(messageId);
-        for (var receiverId : receiverIds) {
+            @RequestBody MentionUserCommand command) {
+        var message = messageService.find(command.getMessageId());
+        for (var receiverId : command.getReceiverIds()) {
             var receiver = userRepository.findById(receiverId).orElse(null);
             if (receiver == null) {
                 continue;
