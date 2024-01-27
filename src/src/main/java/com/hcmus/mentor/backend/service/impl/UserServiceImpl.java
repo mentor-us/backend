@@ -1,67 +1,45 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.User.Role.ADMIN;
-import static com.hcmus.mentor.backend.domain.User.Role.ROLE_USER;
-import static com.hcmus.mentor.backend.domain.User.Role.SUPER_ADMIN;
-import static com.hcmus.mentor.backend.domain.User.Role.USER;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.DUPLICATE_USER;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_ENOUGH_FIELDS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
-
-import com.hcmus.mentor.backend.domain.Email;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
+import com.hcmus.mentor.backend.domain.Email;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupCategory;
+import com.hcmus.mentor.backend.domain.User;
+import static com.hcmus.mentor.backend.domain.User.Role.*;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
-
+import io.minio.errors.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -668,15 +646,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserReturnService updateAvatar(String userId, MultipartFile multipartFile)
+    public UserReturnService updateAvatar(String userId, MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         Optional<User> userWrapper = userRepository.findById(userId);
         if (!userWrapper.isPresent()) {
             return new UserReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-        blobStorage.post(multipartFile, key);
+        String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
+        blobStorage.post(file, key);
 
         User user = userWrapper.get();
         user.updateAvatar(key);
@@ -686,15 +664,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserReturnService updateWallpaper(String userId, MultipartFile multipartFile)
+    public UserReturnService updateWallpaper(String userId, MultipartFile file)
             throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         Optional<User> userWrapper = userRepository.findById(userId);
         if (userWrapper.isEmpty()) {
             return new UserReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        String key = blobStorage.generateBlobKey(multipartFile.getContentType());
-        blobStorage.post(multipartFile, key);
+        String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
+        blobStorage.post(file, key);
 
         User user = userWrapper.get();
         user.updateWallpaper(key);
