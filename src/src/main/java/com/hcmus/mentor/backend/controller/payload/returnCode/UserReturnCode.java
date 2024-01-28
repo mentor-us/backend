@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.controller.payload.returnCode;
 public final class UserReturnCode {
     public static final Integer DUPLICATE_USER = 107;
     public static final Integer NOT_FOUND = 104;
+    public static final Integer DUPLICATE_EMAIL = 409;
     public static final Integer NOT_ENOUGH_FIELDS = 111;
     public static final Integer INVALID_TEMPLATE = 112;
 

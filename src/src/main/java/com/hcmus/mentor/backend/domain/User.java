@@ -1,26 +1,23 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import static com.hcmus.mentor.backend.domain.User.Role.USER;
+import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfo;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-
-import static com.hcmus.mentor.backend.domain.User.Role.USER;
 
 @Data
 @Builder
@@ -34,9 +31,11 @@ public class User implements Serializable {
 
     @Builder.Default
     private String name = "";
-
     @Email
     private String email;
+
+    @Builder.Default
+    private List<String> additionalEmails = new ArrayList<>();
 
     @Builder.Default
     private String imageUrl = "";

@@ -1,22 +1,24 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.User;
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.ResourceNotFoundException;
 import com.hcmus.mentor.backend.controller.payload.APIResponse;
-import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
 import com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdditionalEmailCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.ProfileRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.UserService;
-import com.hcmus.mentor.backend.service.impl.UserServiceImpl;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.impl.UserServiceImpl;
 import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,16 +29,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.GeneralSecurityException;
@@ -44,14 +36,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "User APIs", description = "REST APIs for User collections")
 @RestController
 @RequestMapping("/api/users")
 @SecurityRequirement(name = "bearer")
+@Validated
 public class UserController {
 
     private final UserRepository userRepository;
@@ -60,11 +60,15 @@ public class UserController {
 
     private final UserService userService;
 
+    private final Pipeline pipeline;
+
+
     public UserController(
-            UserRepository userRepository, ProfileRepository profileRepository, UserService userService) {
+            UserRepository userRepository, ProfileRepository profileRepository, UserService userService, Pipeline pipeline) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.userService = userService;
+        this.pipeline = pipeline;
     }
 
     @Operation(
@@ -623,5 +627,52 @@ public class UserController {
                 userService.generateExportTableBySearchConditions(
                         userPrincipal.getEmail(), request, remainColumns);
         return response;
+    }
+
+    @Operation(
+            summary = "Add additional email",
+            description = "Add additional email to user",
+            tags = "User APIs")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Add successfully",
+                    content =
+                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+            @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
+    })
+
+    @PostMapping("/{userId}/email/add")
+    public APIResponse<User> addAdditionalEmail(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable String userId,
+            @RequestBody AddAdditionEmailRequest request) {
+        var command = new AddAdditionalEmailCommand(userId, request.getAdditionalEmail());
+        var userReturn = command.execute(pipeline);
+        return new APIResponse(
+                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+    }
+
+    @Operation(
+            summary = "Delete additional email",
+            description = "Delete additional email of user",
+            tags = "User APIs")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Delete successfully",
+                    content =
+                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
+            @ApiResponse(responseCode = UserReturnCode.NOT_FOUND_STRING, description = "Not found user"),
+    })
+    @DeleteMapping("/{userId}/email/remove")
+    public APIResponse<User> deleteAdditionalEmail(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable String userId,
+            @RequestBody RemoveAdditionalEmailRequest request) {
+        var command = new RemoveAdditionalEmailCommand(userId, request.getAdditionalEmail());
+        var userReturn = command.execute(pipeline);
+        return new APIResponse(
+                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 }
