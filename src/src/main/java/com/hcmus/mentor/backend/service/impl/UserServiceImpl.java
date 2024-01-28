@@ -812,4 +812,29 @@ public class UserServiceImpl implements UserService {
                         .body(resource);
         return response;
     }
+
+    /**
+     * @param userId id of user
+     * @param email email to add
+     * @return UserReturnService
+     */
+    @Override
+    public UserReturnService addAdditionalEmail(String userId, String email) {
+        if(userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()){
+            return new UserReturnService(DUPLICATE_EMAIL, "Duplicate email", null);
+        }
+
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return new UserReturnService(NOT_FOUND, "Not found user", null);
+        }
+
+        var user = userOptional.get();
+        var additionEmails = user.getAdditionalEmails();
+        additionEmails.add(email);
+        user.setAdditionalEmails(additionEmails);
+        userRepository.save(user);
+
+        return new UserReturnService(SUCCESS, "Add addition email success", user);
+    }
 }

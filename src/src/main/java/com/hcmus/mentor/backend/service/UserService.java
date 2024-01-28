@@ -81,6 +81,8 @@ public interface UserService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String userId, String type) throws IOException;
 
+    UserReturnService addAdditionalEmail(String userId, String email);
+
     @Getter
     @Setter
     @NoArgsConstructor

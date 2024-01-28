@@ -24,6 +24,7 @@ public class CustomUserDetailService implements UserDetailsService {
         User user =
                 userRepository
                         .findByEmail(username)
+                        .or(() -> userRepository.findByAdditionalEmailsContains(username))
                         .orElseThrow(
                                 () ->
                                         new UsernameNotFoundException(
