@@ -402,6 +402,7 @@ public class MessageServiceImpl implements MessageService {
             case TASK -> fulfillTaskMessage(message);
             case VOTE -> fulfillVotingMessage(message);
             case TEXT -> fulfillTextMessage(message);
+            case FORWARD -> fulfillTextMessage(message);
             default -> MessageDetailResponse.from(message);
         };
     }
