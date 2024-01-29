@@ -19,14 +19,15 @@ import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -397,12 +398,13 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
+        if(message.getType() == Message.Type.FORWARD)
+            message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);
             case TASK -> fulfillTaskMessage(message);
             case VOTE -> fulfillVotingMessage(message);
             case TEXT -> fulfillTextMessage(message);
-            case FORWARD -> fulfillTextMessage(message);
             default -> MessageDetailResponse.from(message);
         };
     }
