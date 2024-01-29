@@ -6,15 +6,10 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminReq
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
 import com.hcmus.mentor.backend.domain.Email;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
-import static com.hcmus.mentor.backend.domain.User.Role.*;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -24,13 +19,6 @@ import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -48,6 +36,20 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
+import static com.hcmus.mentor.backend.domain.User.Role.*;
 
 @Service
 @RequiredArgsConstructor
@@ -149,7 +151,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findByEmail(String email) {
         Optional<User> user = userRepository.findByEmail(email);
+
         return user.orElse(null);
+    }
+
+    @Override
+    public Optional<User> findById(String id) {
+        return userRepository.findById(id);
     }
 
     @Override
@@ -815,12 +823,12 @@ public class UserServiceImpl implements UserService {
 
     /**
      * @param userId id of user
-     * @param email email to add
+     * @param email  email to add
      * @return UserReturnService
      */
     @Override
     public UserReturnService addAdditionalEmail(String userId, String email) {
-        if(userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()){
+        if (userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()) {
             return new UserReturnService(DUPLICATE_EMAIL, "Duplicate email", null);
         }
 

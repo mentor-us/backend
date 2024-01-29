@@ -1,21 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
-
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.List;
-
+import com.hcmus.mentor.backend.domain.User;
+import io.minio.errors.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +13,11 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.List;
+import java.util.Optional;
 
 public interface UserService {
     String getOrCreateUserByEmail(String emailAddress, String groupName);
@@ -40,6 +35,8 @@ public interface UserService {
     UserReturnService listAllByEmail(String emailUser, String email);
 
     User findByEmail(String email);
+
+    Optional<User> findById(String id);
 
     UserReturnService updateUser(String emailUser, String id, UpdateUserRequest request);
 

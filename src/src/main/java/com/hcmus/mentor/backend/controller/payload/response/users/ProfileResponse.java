@@ -1,14 +1,14 @@
 package com.hcmus.mentor.backend.controller.payload.response.users;
 
 import com.hcmus.mentor.backend.domain.User;
-
-import java.io.Serializable;
-import java.util.Date;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,6 +21,8 @@ public class ProfileResponse implements Serializable {
     private String name;
 
     private String email;
+
+    private List<String> additionalEmails;
 
     private String phone;
 
@@ -43,6 +45,7 @@ public class ProfileResponse implements Serializable {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .additionalEmails(user.getAdditionalEmails())
                 .gender(user.getGender())
                 .birthDate(user.getBirthDate())
                 .personalEmail(user.getPersonalEmail())

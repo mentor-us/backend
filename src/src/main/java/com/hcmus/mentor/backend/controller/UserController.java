@@ -1,19 +1,16 @@
 package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
-import com.hcmus.mentor.backend.controller.exception.ResourceNotFoundException;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.APIResponse;
 import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
 import com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdditionalEmailCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.repository.ProfileRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
@@ -29,13 +26,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.security.GeneralSecurityException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,29 +39,28 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "User APIs", description = "REST APIs for User collections")
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.security.GeneralSecurityException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+
+@Tag(name = "users")
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("api/users")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 @Validated
 public class UserController {
 
     private final UserRepository userRepository;
-
-    private final ProfileRepository profileRepository;
-
     private final UserService userService;
-
     private final Pipeline pipeline;
-
-
-    public UserController(
-            UserRepository userRepository, ProfileRepository profileRepository, UserService userService, Pipeline pipeline) {
-        this.userRepository = userRepository;
-        this.profileRepository = profileRepository;
-        this.userService = userService;
-        this.pipeline = pipeline;
-    }
 
     @Operation(
             summary = "Retrieve all users",
@@ -199,6 +190,7 @@ public class UserController {
         return APIResponse.success(response);
     }
 
+    @SneakyThrows
     @Operation(
             summary = "Retrieve own profile",
             description = "Retrieve your own profile",
@@ -210,14 +202,14 @@ public class UserController {
                     content =
                     @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
     })
-    @GetMapping("/me")
+    @GetMapping("me")
     public APIResponse<ProfileResponse> getCurrentUser(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        User user =
-                userRepository
-                        .findById(userPrincipal.getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
-        ProfileResponse profileResponse = ProfileResponse.from(user);
+        var user = userService.findById(userPrincipal.getId());
+        if (user.isEmpty()) {
+            throw new DomainException(String.format("User with id %s not found", userPrincipal.getId()));
+        }
+        var profileResponse = ProfileResponse.from(user.get());
         return APIResponse.success(profileResponse);
     }
 
