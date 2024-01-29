@@ -1102,15 +1102,15 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
-        @Operation(
-            summary = "Get list group forward",
-            description = "Get list group forward",
-            tags = "Group APIs")
+    @Operation(
+        summary = "Get list group forward",
+        description = "Get list group forward",
+        tags = "Group APIs")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
                     description = "Get successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = GroupForwardResponse.class)))),
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ChannelForwardResponse.class)))),
             @ApiResponse(responseCode = "401", description = "Need authentication")
     })
     @GetMapping("/forward")

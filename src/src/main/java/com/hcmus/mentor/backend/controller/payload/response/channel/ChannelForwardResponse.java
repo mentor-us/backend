@@ -18,4 +18,8 @@ public class ChannelForwardResponse {
                 .name(channel.getName())
                 .build();
     }
+
+    public String getGroupName(){
+        return group.getName();
+    }
 }
