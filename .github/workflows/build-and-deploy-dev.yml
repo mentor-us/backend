@@ -11,13 +11,11 @@ on:
   workflow_dispatch:
 
 env:
-  JAR_NAME: backend
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  CONTAINER_NAME: ${{ github.event.repository.name }}
+  CONTAINER_NAME: ${{ github.event.repository.name }}-dev
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,7 +52,13 @@ jobs:
         run: mvn -B package --file pom.xml
 
       - name: Rename jar file to app.jar
-        run: mv "target/$JAR_NAME-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
+        run: mv "target/${{ github.event.repository.name }}-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
+
+      - name: Upload app.jar to github
+        uses: actions/upload-artifact@v3
+        with:
+          name: app.jar
+          path: src/target/app.jar
 
       - name: Login to github package
         uses: docker/login-action@v3
@@ -70,7 +74,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/dev
+          tags: |
+            latest
+            type=sha,enable=true,prefix=dev-,suffix=,format=short
 
       - name: Build and push to github package
         uses: docker/build-push-action@v4
@@ -86,7 +94,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: build
     steps:
       - name: Load secret
         id: op-load-secret
@@ -107,19 +115,19 @@ jobs:
           host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
           username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
           key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
-          envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }},
+          envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }}, ${{ env.REGISTRY }}, ${{ github.repository }}
           script: |
             # Login to Github Packages
             echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             # Stop and remove the container if running
             docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
             # Remove image
-            docker image rm ${{ needs.build-and-push.outputs.image_path }} || true
+            docker image rmi ${{ env.REGISTRY }}/${{ github.repository }}/dev:latest || true
             # Run container
             docker run -d \
               --restart always \
-              --name $(echo ${{ env.CONTAINER_NAME }}) \
+              --name ${{ env.CONTAINER_NAME }} \
               --add-host host.docker.internal:host-gateway \
               -p 7000:8080 \
               -p 7001:8085 \
-              ${{ needs.build-and-push.outputs.image_path }}
+              ${{ env.REGISTRY }}/${{ github.repository }}/dev:latest
