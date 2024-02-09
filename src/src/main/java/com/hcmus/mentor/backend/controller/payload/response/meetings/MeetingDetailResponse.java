@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Meeting;
+import com.hcmus.mentor.backend.domain.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.User;
 
 import java.util.Date;
@@ -25,7 +25,7 @@ public class MeetingDetailResponse {
 
     private Date timeEnd;
 
-    private Meeting.Repeated repeated;
+    private MeetingRepeated repeated;
 
     private String place;
 

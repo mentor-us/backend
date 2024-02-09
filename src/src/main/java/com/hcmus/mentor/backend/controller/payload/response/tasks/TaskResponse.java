@@ -1,8 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response.tasks;
 
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.*;
 
 import java.util.Date;
 
@@ -23,10 +21,10 @@ public class TaskResponse {
     private String parentTask;
     private Group group;
     private User assigner;
-    private Task.Status status;
+    private TaskStatus status;
     private Date createdDate;
 
-    public static TaskResponse from(Task task, User assigner, Task.Assignee assignee, Group group) {
+    public static TaskResponse from(Task task, User assigner, Assignee assignee, Group group) {
         return TaskResponse.builder()
                 .id(task.getId())
                 .title(task.getTitle())

@@ -1,10 +1,9 @@
 package com.hcmus.mentor.backend.controller.payload.response.analytic;
 
-import com.hcmus.mentor.backend.domain.Group;
-
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.GroupStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,7 +23,7 @@ public class GroupAnalyticResponse {
     private long totalMeetings;
     private long totalMentees;
     private long totalMentors;
-    private Group.Status status;
+    private GroupStatus status;
 
     private List<Member> members;
 

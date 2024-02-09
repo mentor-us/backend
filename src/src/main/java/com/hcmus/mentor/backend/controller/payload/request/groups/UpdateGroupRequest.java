@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.groups;
 
-import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,7 +22,7 @@ public class UpdateGroupRequest {
     @Size(max = 200)
     private String description;
 
-    private Group.Status status;
+    private GroupStatus status;
     private Date timeStart;
     private Date timeEnd;
     private String groupCategory;

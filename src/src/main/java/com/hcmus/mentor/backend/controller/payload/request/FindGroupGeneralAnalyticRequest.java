@@ -1,9 +1,8 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.Group;
-
 import java.util.Date;
 
+import com.hcmus.mentor.backend.domain.GroupStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +15,7 @@ import lombok.Setter;
 public class FindGroupGeneralAnalyticRequest {
     private String groupName;
     private String groupCategory;
-    private Group.Status status;
+    private GroupStatus status;
     private Date timeStart;
     private Date timeEnd;
 }

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.TaskStatus;
 import lombok.*;
 
 @Getter
@@ -32,7 +33,7 @@ public class TaskMessageResponse {
 
     private Date createdDate;
 
-    private Task.Status status;
+    private TaskStatus status;
 
     public static TaskMessageResponse from(Task task) {
         return TaskMessageResponse.builder()

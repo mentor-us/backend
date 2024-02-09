@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,5 +14,5 @@ public class FindUserRequest {
     private String name;
     private String email;
     private Boolean status;
-    private User.Role role;
+    private UserRole role;
 }

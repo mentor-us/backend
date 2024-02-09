@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.GroupCategory;
+import com.hcmus.mentor.backend.domain.GroupCategoryPermission;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -24,5 +24,5 @@ public class CreateGroupCategoryRequest {
     private String description;
 
     private String iconUrl;
-    private List<GroupCategory.Permission> permissions;
+    private List<GroupCategoryPermission> permissions;
 }

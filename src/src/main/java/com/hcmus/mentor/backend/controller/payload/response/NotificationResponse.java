@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.domain.Notif;
+import com.hcmus.mentor.backend.domain.Notify;
 
 import java.util.Date;
 
@@ -22,7 +22,7 @@ public class NotificationResponse {
 
     private String content;
 
-    private Notif.Type type;
+    private Notify.Type type;
 
     private ShortProfile sender;
 
@@ -30,7 +30,7 @@ public class NotificationResponse {
 
     private String refId;
 
-    public static NotificationResponse from(Notif notif, ShortProfile sender) {
+    public static NotificationResponse from(Notify notif, ShortProfile sender) {
         return NotificationResponse.builder()
                 .id(notif.getId())
                 .title(notif.getTitle())

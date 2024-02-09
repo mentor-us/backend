@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.groups;
 
-import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.ChannelType;
 import lombok.*;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class UpdateChannelRequest {
 
     private String description;
 
-    private Channel.Type type;
+    private ChannelType type;
 
     private List<String> userIds;
 }

@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.tasks;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.domain.Task;
+import com.hcmus.mentor.backend.domain.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,12 +21,12 @@ public class TaskAssigneeResponse {
 
     private String imageUrl;
 
-    private Task.Status status;
+    private TaskStatus status;
 
     private boolean isMentor;
 
     public static TaskAssigneeResponse from(
-            ProfileResponse profile, Task.Status status, boolean isMentor) {
+            ProfileResponse profile, TaskStatus status, boolean isMentor) {
         String imageUrl = profile.getImageUrl();
         if (("https://graph.microsoft.com/v1.0/me/photo/$value").equals(imageUrl)) {
             imageUrl = null;
