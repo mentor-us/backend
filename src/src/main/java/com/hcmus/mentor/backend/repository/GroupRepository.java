@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailRe
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.GroupStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -32,12 +33,12 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     Page<Group> findAllByMentorsIn(List<String> mentorIds, Pageable pageable);
 
     Page<Group> findAllByMentorsInAndStatus(
-            List<String> mentorIds, Group.Status status, Pageable pageable);
+            List<String> mentorIds, GroupStatus status, Pageable pageable);
 
     Page<Group> findAllByMenteesIn(List<String> menteeIds, Pageable pageable);
 
     Page<Group> findAllByMenteesInAndStatus(
-            List<String> menteeIds, Group.Status status, Pageable pageable);
+            List<String> menteeIds, GroupStatus status, Pageable pageable);
 
     Page<Group> findAllByMenteesIn(String menteeId, Pageable pageable);
 
@@ -56,13 +57,13 @@ public interface GroupRepository extends MongoRepository<Group, String> {
 
     Slice<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
             List<String> mentorIds,
-            Group.Status status1,
+            GroupStatus status1,
             List<String> menteeIds,
-            Group.Status status2,
+            GroupStatus status2,
             Pageable pageable);
 
     List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
-            List<String> mentorIds, Group.Status status1, List<String> menteeIds, Group.Status status2);
+            List<String> mentorIds, GroupStatus status1, List<String> menteeIds, GroupStatus status2);
 
     Page<Group> findAllByNameLikeIgnoreCaseAndMentorsIn(
             String name, String mentorId, Pageable pageable);
@@ -99,12 +100,12 @@ public interface GroupRepository extends MongoRepository<Group, String> {
             })
     List<GroupDetailResponse> getGroupDetail(String groupId);
 
-    long countByStatus(Group.Status status);
+    long countByStatus(GroupStatus status);
 
-    long countByGroupCategoryAndStatus(String groupCategoryId, Group.Status status);
+    long countByGroupCategoryAndStatus(String groupCategoryId, GroupStatus status);
 
     long countByGroupCategoryAndStatusAndCreatorId(
-            String groupCategoryId, Group.Status status, String creatorId);
+            String groupCategoryId, GroupStatus status, String creatorId);
 
     long countByCreatedDateBetween(Date start, Date end);
 
@@ -118,7 +119,7 @@ public interface GroupRepository extends MongoRepository<Group, String> {
 
     long countByCreatorId(String creatorId);
 
-    long countByStatusAndCreatorId(Group.Status status, String creatorId);
+    long countByStatusAndCreatorId(GroupStatus status, String creatorId);
 
     List<Group> findAllByCreatorId(String creatorId);
 
