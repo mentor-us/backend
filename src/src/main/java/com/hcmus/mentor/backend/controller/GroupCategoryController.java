@@ -1,44 +1,256 @@
 package com.hcmus.mentor.backend.controller;
 
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
-import com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode;
-import com.hcmus.mentor.backend.service.GroupCategoryReturn;
-import com.hcmus.mentor.backend.service.GroupCategoryService;
+import com.hcmus.mentor.backend.domain.GroupCategoryPermission;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
+import com.hcmus.mentor.backend.service.GroupCategoryReturn;
+import com.hcmus.mentor.backend.service.GroupCategoryService;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "Group Category APIs", description = "REST APIs for Group Category collections")
+/**
+ * Group category controller.
+ */
+@Tag(name = "group categories")
 @RestController
-@RequestMapping("/api/group-categories")
+@RequestMapping("api/group-categories")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class GroupCategoryController {
 
     private final GroupCategoryService groupCategoryService;
 
-    public GroupCategoryController(GroupCategoryService groupCategoryService) {
-        this.groupCategoryService = groupCategoryService;
+    /**
+     * Retrieves all group categories.
+     *
+     * @return ResponseEntity containing a list of all group categories.
+     */
+    @GetMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<GroupCategory>> findAll() {
+        return ApiResponseDto.success(groupCategoryService.findAll());
+    }
+
+    /**
+     * Retrieves a group category by its ID.
+     *
+     * @param id The ID of the group category to retrieve.
+     * @return ResponseEntity containing the group category information.
+     */
+    @GetMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<GroupCategory> findById(@PathVariable String id) {
+        GroupCategoryReturn groupCategoryReturn = groupCategoryService.findById(id);
+        return new ApiResponseDto(
+                groupCategoryReturn.getData(),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Creates a new group category.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param request       The request containing information to create a new group category.
+     * @return ResponseEntity containing the newly created group category information.
+     */
+    @PostMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<GroupCategory> create(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestBody CreateGroupCategoryRequest request) {
+        String email = userPrincipal.getEmail();
+        GroupCategoryReturn groupCategoryReturn = groupCategoryService.create(email, request);
+        return new ApiResponseDto(
+                groupCategoryReturn.getData(),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Updates an existing group category.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param id            The ID of the group category to be updated.
+     * @param request       The request containing updated information for the group category.
+     * @return ResponseEntity containing the updated group category information.
+     */
+    @PatchMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<GroupCategory> update(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable String id,
+            @RequestBody UpdateGroupCategoryRequest request) {
+        String email = userPrincipal.getEmail();
+        GroupCategoryReturn groupCategoryReturn = groupCategoryService.update(email, id, request);
+        return new ApiResponseDto(
+                groupCategoryReturn.getData(),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Deletes an existing group category.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param request       The request containing information to delete the group category.
+     * @param id            The ID of the group category to be deleted.
+     * @return APIResponse indicating the success of the deletion operation.
+     */
+    @DeleteMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto delete(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestBody DeleteGroupCategoryRequest request,
+            @PathVariable String id) {
+        String email = userPrincipal.getEmail();
+        String newGroupCategoryId = request.getNewGroupCategoryId();
+        GroupCategoryReturn groupCategoryReturn =
+                groupCategoryService.delete(email, id, newGroupCategoryId);
+        return new ApiResponseDto(
+                groupCategoryReturn.getData(),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Finds group categories with multiple filters.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param name          The name filter for group categories.
+     * @param description   The description filter for group categories.
+     * @param status        The status filter for group categories.
+     * @param page          The page number for pagination.
+     * @param size          The page size for pagination.
+     * @return APIResponse containing the paginated list of group categories.
+     */
+    @GetMapping("find")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Page<Group>> get(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String description,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "25") Integer size) {
+        String email = userPrincipal.getEmail();
+        FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
+        GroupCategoryReturn groupCategoryReturn =
+                groupCategoryService.findGroupCategories(email, request, page, size);
+        return new ApiResponseDto(
+                pagingResponse((Page<GroupCategory>) groupCategoryReturn.getData()),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Deletes multiple existing group categories.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param request       The request containing information to delete multiple group categories.
+     * @return APIResponse indicating the success of the deletion operation.
+     */
+    @DeleteMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto deleteMultiple(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestBody DeleteMultipleGroupCategoryRequest request) {
+        String email = userPrincipal.getEmail();
+        List<String> ids = request.getIds();
+        String newGroupCategoryId = request.getNewGroupCategoryId();
+        GroupCategoryReturn groupCategoryReturn =
+                groupCategoryService.deleteMultiple(email, ids, newGroupCategoryId);
+        return new ApiResponseDto(
+                groupCategoryReturn.getData(),
+                groupCategoryReturn.getReturnCode(),
+                groupCategoryReturn.getMessage());
+    }
+
+    /**
+     * Exports group categories table based on search conditions.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param name          The name filter for group categories.
+     * @param description   The description filter for group categories.
+     * @param status        The status filter for group categories.
+     * @param remainColumns The columns to include in the export.
+     * @return ResponseEntity containing the exported group categories table as a Resource.
+     * @throws IOException If an I/O error occurs during the export process.
+     */
+    @GetMapping(value = "export/search")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<Resource> exportBySearchConditions(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "") String name,
+            @RequestParam(defaultValue = "") String description,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "") List<String> remainColumns)
+            throws IOException {
+        FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
+        return groupCategoryService.generateExportTableBySearchConditions(userPrincipal.getEmail(), request, remainColumns);
+    }
+
+    /**
+     * Exports the entire group categories table.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param remainColumns The columns to include in the export.
+     * @return ResponseEntity containing the exported group categories table as a Resource.
+     * @throws IOException If an I/O error occurs during the export process.
+     */
+    @GetMapping(value = "export")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<Resource> export(
+            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "") List<String> remainColumns)
+            throws IOException {
+        return groupCategoryService.generateExportTable(userPrincipal.getEmail(), remainColumns);
+    }
+
+    /**
+     * Retrieves all permission systems for group categories.
+     *
+     * @return ResponseEntity containing an array of EnumWithDescription representing all permission systems.
+     */
+    @GetMapping("permissions")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<?> getAllPermissions() {
+        GroupCategoryPermission[] permissions = GroupCategoryPermission.values();
+        EnumWithDescription[] enumsWithDescription = new EnumWithDescription[permissions.length];
+
+        for (int i = 0; i < permissions.length; i++) {
+            GroupCategoryPermission permission = permissions[i];
+            enumsWithDescription[i] = new EnumWithDescription(permission.name(), permission.getDescription());
+        }
+
+        return ResponseEntity.ok(enumsWithDescription);
     }
 
     private Map<String, Object> pagingResponse(Page<GroupCategory> groupCategories) {
@@ -50,258 +262,7 @@ public class GroupCategoryController {
         return response;
     }
 
-    @Operation(summary = "Get all group categories", description = "", tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping(value = {""})
-    public APIResponse<List<GroupCategory>> findAll() {
-        return APIResponse.success(groupCategoryService.findAll());
-    }
-
-    @Operation(summary = "Get group category by ID", description = "", tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping("/{id}")
-    public APIResponse<GroupCategory> findById(@PathVariable String id) {
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.findById(id);
-        return new APIResponse(
-                groupCategoryReturn.getData(),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(summary = "Create new group category", description = "", tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required fields"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.DUPLICATE_GROUP_CATEGORY_STRING,
-                    description = "Duplicate group category"),
-    })
-    @PostMapping(value = {""})
-    public APIResponse<GroupCategory> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestBody CreateGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.create(email, request);
-        return new APIResponse(
-                groupCategoryReturn.getData(),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(
-            summary = "Update an existing group category",
-            description = "",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.NOT_FOUND_STRING,
-                    description = "Not found group category"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.DUPLICATE_GROUP_CATEGORY_STRING,
-                    description = "Duplicate group category"),
-    })
-    @PatchMapping("/{id}")
-    public APIResponse<GroupCategory> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @PathVariable String id,
-            @RequestBody UpdateGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.update(email, id, request);
-        return new APIResponse(
-                groupCategoryReturn.getData(),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(
-            summary = "Delete an existing group category",
-            description = "",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.NOT_FOUND_STRING,
-                    description = "Not found group category"),
-    })
-    @DeleteMapping("/{id}")
-    public APIResponse delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestBody DeleteGroupCategoryRequest request,
-            @PathVariable String id) {
-        String email = userPrincipal.getEmail();
-        String newGroupCategoryId = request.getNewGroupCategoryId();
-        GroupCategoryReturn groupCategoryReturn =
-                groupCategoryService.delete(email, id, newGroupCategoryId);
-        return new APIResponse(
-                groupCategoryReturn.getData(),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(
-            summary = "Find group categories",
-            description = "Find group categories with multiple filters",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping("/find")
-    public APIResponse<Page<Group>> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "") String name,
-            @RequestParam(defaultValue = "") String description,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "25") Integer size)
-            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        String email = userPrincipal.getEmail();
-        FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        GroupCategoryReturn groupCategoryReturn =
-                groupCategoryService.findGroupCategories(email, request, page, size);
-        return new APIResponse(
-                pagingResponse((Page<GroupCategory>) groupCategoryReturn.getData()),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(
-            summary = "Delete multiple existing group categories",
-            description = "",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = GroupCategoryReturnCode.NOT_FOUND_STRING,
-                    description = "Not found group category"),
-    })
-    @DeleteMapping(value = {""})
-    public APIResponse deleteMultiple(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestBody DeleteMultipleGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
-        List<String> ids = request.getIds();
-        String newGroupCategoryId = request.getNewGroupCategoryId();
-        GroupCategoryReturn groupCategoryReturn =
-                groupCategoryService.deleteMultiple(email, ids, newGroupCategoryId);
-        return new APIResponse(
-                groupCategoryReturn.getData(),
-                groupCategoryReturn.getReturnCode(),
-                groupCategoryReturn.getMessage());
-    }
-
-    @Operation(
-            summary = "Export group categories table by search conditions",
-            description = "Export group categories table",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @GetMapping(value = "/export/search")
-    public ResponseEntity<Resource> exportBySearchConditions(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "") String name,
-            @RequestParam(defaultValue = "") String description,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "") List<String> remainColumns)
-            throws IOException {
-        FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        ResponseEntity<Resource> response =
-                groupCategoryService.generateExportTableBySearchConditions(
-                        userPrincipal.getEmail(), request, remainColumns);
-        return response;
-    }
-
-    @Operation(
-            summary = "Export group categories table",
-            description = "Export group categories table",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @GetMapping(value = "/export")
-    public ResponseEntity<Resource> export(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "") List<String> remainColumns)
-            throws IOException {
-        ResponseEntity<Resource> response =
-                groupCategoryService.generateExportTable(userPrincipal.getEmail(), remainColumns);
-        return response;
-    }
-
-    @Operation(
-            summary = "Get all permission's system",
-            description = "Get all permission's system",
-            tags = "Group Category APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-    })
-    @GetMapping("/permissions")
-    public ResponseEntity<?> getAllPermissions() {
-        GroupCategory.Permission[] permissions = GroupCategory.Permission.values();
-        EnumWithDescription[] enumsWithDescription = new EnumWithDescription[permissions.length];
-
-        for (int i = 0; i < permissions.length; i++) {
-            GroupCategory.Permission permission = permissions[i];
-            enumsWithDescription[i] =
-                    new EnumWithDescription(permission.name(), permission.getDescription());
-        }
-
-        return ResponseEntity.ok(enumsWithDescription);
-    }
-
+    @Getter
     private static class EnumWithDescription {
         private final String name;
         private final String description;
@@ -309,14 +270,6 @@ public class GroupCategoryController {
         public EnumWithDescription(String name, String description) {
             this.name = name;
             this.description = description;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getDescription() {
-            return description;
         }
     }
 }

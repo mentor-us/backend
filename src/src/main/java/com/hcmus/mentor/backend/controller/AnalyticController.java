@@ -1,8 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
@@ -11,27 +9,25 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.ImportGener
 import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnalyticChartResponse;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnalyticResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupStatus;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.security.CurrentUser;
+import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.AnalyticAttribute;
 import com.hcmus.mentor.backend.service.AnalyticService;
 import com.hcmus.mentor.backend.util.RequestUtils;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import com.itextpdf.html2pdf.resolver.font.DefaultFontProvider;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,46 +50,32 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
-
-@Tag(name = "Analytic APIs", description = "REST APIs for Analytic")
+/**
+ * Analytic controller.
+ */
+@Tag(name = "analytic")
 @RestController
-@RequestMapping("/api/analytic")
+@RequestMapping("api/analytic")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class AnalyticController {
 
     private final AnalyticService analyticService;
-
-    private final ServletContext servletContext;
     private final GroupRepository groupRepository;
 
-    public AnalyticController(
-            AnalyticService analyticService,
-            ServletContext servletContext,
-            GroupRepository groupRepository) {
-        this.analyticService = analyticService;
-        this.servletContext = servletContext;
-        this.groupRepository = groupRepository;
-    }
-
-    @Operation(
-            summary = "Get general information of system / groupCategory",
-            description = "Get general information of system / groupCategory",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({""})
-    public APIResponse<SystemAnalyticResponse> get(
+    /**
+     * Get general information of the system or a specific group category.
+     *
+     * @param userPrincipal   Current user's principal information.
+     * @param groupCategoryId Optional group category ID to filter the information.
+     * @return APIResponse containing the system or group category general information.
+     */
+    @GetMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<SystemAnalyticResponse> get(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(required = false) String groupCategoryId) {
         String emailUser = userPrincipal.getEmail();
@@ -102,21 +84,22 @@ public class AnalyticController {
                 : analyticService.getGeneralInformationByGroupCategory(emailUser, groupCategoryId);
     }
 
-    @Operation(
-            summary = "Get general information of system / groupCategory(by month)",
-            description = "Get general information of system / groupCategory(by month)",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = INVALID_TIME_RANGE_STRING, description = "Invalid time range"),
-    })
-    @GetMapping({"/chart"})
-    public APIResponse<SystemAnalyticChartResponse> getDataForChart(
+    /**
+     * Get general information of the system or a specific group category for a specified time range.
+     *
+     * @param userPrincipal   Current user's principal information.
+     * @param monthStart      Start month for the time range.
+     * @param yearStart       Start year for the time range.
+     * @param monthEnd        End month for the time range.
+     * @param yearEnd         End year for the time range.
+     * @param groupCategoryId Optional group category ID to filter the information.
+     * @return APIResponse containing the system or group category general information for the specified time range.
+     * @throws ParseException if an error occurs while parsing date information.
+     */
+    @GetMapping("chart")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<SystemAnalyticChartResponse> getDataForChart(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam int monthStart,
             @RequestParam int yearStart,
@@ -131,66 +114,65 @@ public class AnalyticController {
                 emailUser, monthStart, yearStart, monthEnd, yearEnd, groupCategoryId);
     }
 
-    @Operation(
-            summary = "Get group's analytic",
-            description = "Get group's analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/{groupId}"})
-    public APIResponse<GroupAnalyticResponse> getGroupAnalytic(
+    /**
+     * Get analytic information for a specific group.
+     *
+     * @param userPrincipal Current user's principal information.
+     * @param groupId       ID of the group to retrieve analytic information for.
+     * @return APIResponse containing the analytic information for the specified group.
+     */
+    @GetMapping("{groupId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<GroupAnalyticResponse> getGroupAnalytic(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String groupId) {
         String emailUser = userPrincipal.getEmail();
         return analyticService.getGroupAnalytic(emailUser, groupId);
     }
 
-    @Operation(
-            summary = "Export groups general analytic",
-            description = "Export groups general analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/groups/export"})
+    /**
+     * Export groups' general analytic information.
+     *
+     * @param userPrincipal Current user's principal information.
+     * @param remainColumns List of columns to include in the export.
+     * @return ResponseEntity with the exported resource.
+     * @throws IOException if an I/O error occurs.
+     */
+    @GetMapping("groups/export")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> exportGroups(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = userPrincipal.getEmail();
-        ResponseEntity<Resource> response =
-                analyticService.generateExportGroupsTable(emailUser, remainColumns);
-        return response;
+        return analyticService.generateExportGroupsTable(emailUser, remainColumns);
     }
 
-    @Operation(
-            summary = "Export groups general analytic by search conditions",
-            description = "Export groups general analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/groups/export/search"})
+
+    /**
+     * Exports analytic data for groups based on search conditions.
+     *
+     * <p>This operation allows the export of analytic data for groups based on specified search conditions.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param groupName     The name of the group (optional).
+     * @param status        The status of the group (optional).
+     * @param groupCategory The category of the group (optional).
+     * @param timeStart     The start date and time for filtering (optional).
+     * @param timeEnd       The end date and time for filtering (optional).
+     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @return ResponseEntity<Resource> containing the exported groups' analytic data.
+     * @throws IOException If an I/O error occurs during the export process.
+     */
+    @GetMapping("groups/export/search")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> exportGroupsBySearchConditions(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(required = false) String groupName,
-            @RequestParam(required = false) Group.Status status,
+            @RequestParam(required = false) GroupStatus status,
             @RequestParam(required = false) String groupCategory,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
             Date timeStart,
@@ -199,52 +181,54 @@ public class AnalyticController {
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = userPrincipal.getEmail();
-        FindGroupGeneralAnalyticRequest request =
-                new FindGroupGeneralAnalyticRequest(groupName, groupCategory, status, timeStart, timeEnd);
-        ResponseEntity<Resource> response =
-                analyticService.generateExportGroupsTableBySearchConditions(
-                        emailUser, request, remainColumns);
-        return response;
+        var request = new FindGroupGeneralAnalyticRequest(groupName, groupCategory, status, timeStart, timeEnd);
+        return analyticService.generateExportGroupsTableBySearchConditions(emailUser, request, remainColumns);
     }
 
-    @Operation(
-            summary = "Export group's analytic",
-            description = "Export group's analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/{groupId}/export"})
+    /**
+     * Exports analytic data for a specific group.
+     *
+     * <p>This operation allows the export of analytic data for a specific group identified by the provided groupId.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param groupId       The unique identifier of the group.
+     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @return ResponseEntity<Resource> containing the exported group's analytic data.
+     * @throws IOException If an I/O error occurs during the export process.
+     */
+    @GetMapping("{groupId}/export")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> exportGroup(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String groupId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = userPrincipal.getEmail();
-        ResponseEntity<Resource> response =
-                analyticService.generateExportGroupTable(emailUser, groupId, remainColumns);
-        return response;
+        return analyticService.generateExportGroupTable(emailUser, groupId, remainColumns);
     }
 
-    @Operation(
-            summary = "Export group's analytic by search conditions",
-            description = "Export group's analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/{groupId}/export/search"})
-    public ResponseEntity<Resource> exportGroupBySearchCondotions(
+    /**
+     * Exports analytic data for a specific group based on search conditions.
+     *
+     * <p>This operation allows the export of analytic data for a specific group identified by the provided groupId,
+     * considering specified search conditions like user name, email, role, and time range.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param groupId       The unique identifier of the group.
+     * @param name          The name of the user (optional).
+     * @param email         The email of the user (optional).
+     * @param role          The role of the user (optional).
+     * @param timeStart     The start date and time of the time range (optional).
+     * @param timeEnd       The end date and time of the time range (optional).
+     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @return ResponseEntity<Resource> containing the exported group's analytic data based on search conditions.
+     * @throws IOException If an I/O error occurs during the export process.
+     */
+    @GetMapping("{groupId}/export/search")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<Resource> exportGroupBySearchConditions(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String groupId,
             @RequestParam(required = false) String name,
@@ -257,53 +241,47 @@ public class AnalyticController {
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = userPrincipal.getEmail();
-        FindUserAnalyticRequest request =
-                new FindUserAnalyticRequest(name, email, role, timeStart, timeEnd);
-        ResponseEntity<Resource> response =
-                analyticService.generateExportGroupTableBySearchConditions(
-                        emailUser, groupId, request, remainColumns);
-        return response;
+        var request = new FindUserAnalyticRequest(name, email, role, timeStart, timeEnd);
+        return analyticService.generateExportGroupTableBySearchConditions(emailUser, groupId, request, remainColumns);
     }
 
-    @Operation(
-            summary = "Export groups general analytic",
-            description = "Export groups general analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Import successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/groups"})
-    public APIResponse<Page<GroupGeneralResponse>> all(
+    /**
+     * Exports general analytic information for groups.
+     *
+     * <p>This operation allows the export of general analytic information for groups, including details such as
+     * group names, categories, and statuses. The exported data is paginated based on the provided page and pageSize parameters.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param page          The page number for pagination (default is 0).
+     * @param pageSize      The number of items per page for pagination (default is 25).
+     * @return APIResponse<Page < GroupGeneralResponse>> containing the exported groups' general analytic data.
+     */
+    @GetMapping("groups")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Page<GroupGeneralResponse>> all(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize) {
         String emailUser = userPrincipal.getEmail();
-        Pageable pageRequest =
-                PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
         return analyticService.getGroupGeneralAnalytic(emailUser, pageRequest);
     }
 
-    @Operation(
-            summary = "Import multiple training point",
-            description = "Import multiple training point",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Import successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = NOT_FOUND_USER_STRING, description = "Not found user"),
-            @ApiResponse(responseCode = INVALID_VALUE_STRING, description = "Invalid value"),
-    })
-    @PostMapping({"/import-training-point"})
-    public APIResponse<Map<String, String>> importTrainingPoint(
+    /**
+     * Imports multiple training points.
+     *
+     * <p>This operation allows the import of multiple training points from the specified file.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param file          The multipart file containing the data to be imported.
+     * @return APIResponse<Map < String, String>> containing information about the import process.
+     * @throws IOException If an I/O exception occurs during the import process.
+     */
+    @PostMapping("import-training-point")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Map<String, String>> importTrainingPoint(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody MultipartFile file)
             throws IOException {
@@ -311,22 +289,20 @@ public class AnalyticController {
         return analyticService.importData(emailUser, file, "TRAINING_POINT");
     }
 
-    @Operation(
-            summary = "Import multiple has English certs",
-            description = "Import multiple has English certs",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Import successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = NOT_FOUND_USER_STRING, description = "Not found user"),
-            @ApiResponse(responseCode = INVALID_VALUE_STRING, description = "Invalid value"),
-    })
-    @PostMapping({"/import-has-english-cert"})
-    public APIResponse<Map<String, String>> importHasEnglishCert(
+    /**
+     * Import multiple records with English certifications.
+     *
+     * <p>This operation allows the import of multiple records with English certifications from the specified file.</p>
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param file          The multipart file containing the data to be imported.
+     * @return APIResponse containing information about the import process.
+     * @throws IOException If an I/O exception occurs during the import process.
+     */
+    @PostMapping("import-has-english-cert")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Map<String, String>> importHasEnglishCert(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody MultipartFile file)
             throws IOException {
@@ -334,22 +310,20 @@ public class AnalyticController {
         return analyticService.importData(emailUser, file, "HAS_ENGLISH_CERT");
     }
 
-    @Operation(
-            summary = "Import multiple studying points",
-            description = "Import multiple studying points",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = NOT_FOUND_USER_STRING, description = "Not found user"),
-            @ApiResponse(responseCode = INVALID_VALUE_STRING, description = "Invalid value"),
-    })
-    @PostMapping({"/import-studying-point"})
-    public APIResponse<Map<String, String>> importStudyingPoint(
+    /**
+     * Import multiple records representing studying points.
+     *
+     * <p>This operation allows the import of multiple records with English certifications from the specified file.</p>
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param file          The multipart file containing the data to be imported.
+     * @return APIResponse containing information about the import process.
+     * @throws IOException If an I/O exception occurs during the import process.
+     */
+    @PostMapping("import-studying-point")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Map<String, String>> importStudyingPoint(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody MultipartFile file)
             throws IOException {
@@ -357,22 +331,21 @@ public class AnalyticController {
         return analyticService.importData(emailUser, file, "STUDYING_POINT");
     }
 
-    @Operation(
-            summary = "Import multiple training points, has English certs studying points",
-            description = "Import multiple training points, has English certs studying points",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = NOT_FOUND_USER_STRING, description = "Not found user"),
-            @ApiResponse(responseCode = INVALID_VALUE_STRING, description = "Invalid value"),
-    })
-    @PostMapping({"/import-multiple"})
-    public APIResponse<List<ImportGeneralInformationResponse>> importMultiple(
+    /**
+     * Import multiple records representing training points, English certificates, and studying points.
+     * <p>
+     * This operation allows the import of multiple records representing various types of analytics
+     * from the specified file.
+     *
+     * @param userPrincipal The principal information of the current user.
+     * @param file          The multipart file containing the data to be imported.
+     * @return APIResponse containing a list of ImportGeneralInformationResponse for each imported record.
+     * @throws IOException If an I/O exception occurs during the import process.
+     */
+    @PostMapping("import-multiple")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<ImportGeneralInformationResponse>> importMultiple(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody MultipartFile file)
             throws IOException {
@@ -380,22 +353,19 @@ public class AnalyticController {
         return analyticService.importMultipleData(emailUser, file);
     }
 
-    @Operation(
-            summary = "Update training point, has English cert, studying point",
-            description = "Update training point, has English cert, studying point",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-            @ApiResponse(responseCode = NOT_FOUND_USER_STRING, description = "Not found user"),
-            @ApiResponse(responseCode = INVALID_VALUE_STRING, description = "Invalid value"),
-    })
-    @PatchMapping({"/{userId}"})
-    public APIResponse<User> update(
+    /**
+     * Updates the training point, English certification, and studying point for a user.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param userId        The ID of the user to update.
+     * @param request       The request containing the updated student information.
+     * @return An APIResponse containing the updated user information.
+     * @throws IOException If an I/O exception occurs.
+     */
+    @PatchMapping("{userId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<User> update(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String userId,
             @RequestBody UpdateStudentInformationRequest request)
@@ -404,26 +374,30 @@ public class AnalyticController {
         return analyticService.updateStudentInformation(emailUser, userId, request);
     }
 
-    @Operation(
-            summary = "Find groups in analytic",
-            description = "Find groups in analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/find"})
-    public APIResponse<Page<GroupGeneralResponse>> findGroups(
+    /**
+     * Finds groups in analytic based on specified criteria.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param page          The page number for pagination (default is 0).
+     * @param pageSize      The size of each page (default is 25).
+     * @param groupName     The name of the group (optional).
+     * @param groupCategory The category of the group (optional).
+     * @param status        The status of the group (optional).
+     * @param timeStart     The start time for filtering (optional).
+     * @param timeEnd       The end time for filtering (optional).
+     * @return An APIResponse containing a paginated list of GroupGeneralResponse.
+     * @throws IOException If an I/O exception occurs.
+     */
+    @GetMapping("find")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Page<GroupGeneralResponse>> findGroups(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize,
             @RequestParam(required = false) String groupName,
             @RequestParam(required = false) String groupCategory,
-            @RequestParam(required = false) Group.Status status,
+            @RequestParam(required = false) GroupStatus status,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
             Date timeStart,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -438,20 +412,23 @@ public class AnalyticController {
         return analyticService.findGroupGeneralAnalytic(emailUser, pageRequest, request);
     }
 
-    @Operation(
-            summary = "Find users in analytic",
-            description = "Find users in analytic",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get information successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping({"/find/{groupId}"})
-    public APIResponse<List<GroupAnalyticResponse.Member>> findUsers(
+    /**
+     * Finds users in analytic within a specific group based on specified criteria.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param groupId       The ID of the group to search within.
+     * @param name          The name of the user (optional).
+     * @param email         The email of the user (optional).
+     * @param role          The role of the user (optional).
+     * @param timeStart     The start time for filtering (optional).
+     * @param timeEnd       The end time for filtering (optional).
+     * @return An APIResponse containing a list of GroupAnalyticResponse.Member.
+     * @throws IOException If an I/O exception occurs.
+     */
+    @GetMapping("find/{groupId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<GroupAnalyticResponse.Member>> findUsers(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String groupId,
             @RequestParam(required = false) String name,
@@ -468,31 +445,28 @@ public class AnalyticController {
         return analyticService.findUserAnalytic(emailUser, groupId, request);
     }
 
-    @Operation(
-            summary = "Export group report",
-            description = "Export report of analytic information in a group",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping("/report")
+    /**
+     * Exports a group report in PDF format.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param groupId       The ID of the group to export the report for.
+     * @param request       The HTTP servlet request.
+     * @param response      The HTTP servlet response.
+     * @return ResponseEntity containing the exported group report in PDF format.
+     */
+    @GetMapping("report")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<?> getGroupReport(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam String groupId,
             HttpServletRequest request,
             HttpServletResponse response) {
-        JakartaServletWebApplication application =
-                JakartaServletWebApplication.buildApplication(request.getServletContext());
+        JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(request.getServletContext());
         IWebExchange exchange = application.buildExchange(request, response);
         WebContext context = new WebContext(exchange);
 
-        String reportHtml =
-                analyticService.exportGroupReport(userPrincipal.getEmail(), groupId, context);
+        String reportHtml = analyticService.exportGroupReport(userPrincipal.getEmail(), groupId, context);
         if (reportHtml == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -506,26 +480,25 @@ public class AnalyticController {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(target.toByteArray());
     }
 
-    @Operation(
-            summary = "Export group log",
-            description = "Export file log of group",
-            tags = "Analytic APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Export successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = INVALID_PERMISSION_STRING, description = "Invalid permission"),
-    })
-    @GetMapping("/log")
+    /**
+     * Exports a group log in Excel format.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param groupId       The ID of the group to export the log for.
+     * @param query         The array of query parameters for log attributes.
+     * @return ResponseEntity containing the exported group log in Excel format.
+     * @throws IOException If an I/O exception occurs.
+     */
+    @GetMapping("log")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<?> getGroupLog(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam String groupId,
             @RequestParam String[] query)
             throws IOException {
         List<AnalyticAttribute> attributes =
-                Stream.of(query).map(AnalyticAttribute::valueOf).collect(Collectors.toList());
+                Stream.of(query).map(AnalyticAttribute::valueOf).toList();
         byte[] content = analyticService.getGroupLog(userPrincipal.getEmail(), groupId, attributes);
         if (content == null) {
             return ResponseEntity.badRequest().build();

@@ -1,50 +1,44 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.service.ChannelService;
+import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
+import com.hcmus.mentor.backend.service.ChannelService;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Channel APIs", description = "REST APIs for Channel collections")
+/**
+ * Channel controller.
+ */
+@Tag(name = "channels")
 @RestController
 @RequestMapping("/api/channels")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class ChannelController {
 
     private final ChannelService channelService;
 
-    public ChannelController(ChannelService channelService) {
-        this.channelService = channelService;
-    }
-
-    @Operation(
-            summary = "Add new group channel (Mobile)",
-            description = "Add new channel in single group (Channel could be 1 - 1 also)",
-            tags = "Channel APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Channel.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @PostMapping(value = {""})
+    /**
+     * Adds a new channel to a group (Mobile).
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param request       The request containing information to create a new channel.
+     * @return ResponseEntity containing the newly created channel.
+     */
+    @PostMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Channel> addChannel(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody AddChannelRequest request) {
@@ -55,18 +49,16 @@ public class ChannelController {
         return ResponseEntity.ok(channel);
     }
 
-    @Operation(
-            summary = "Remove group channel (Mobile)",
-            description = "Remove channel in single group (Channel could be 1 - 1 also)",
-            tags = "Channel APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Void.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @DeleteMapping("/{channelId}")
+    /**
+     * Removes a channel from a group (Mobile).
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param channelId     The ID of the channel to be removed.
+     * @return ResponseEntity indicating the success of the removal operation.
+     */
+    @DeleteMapping("{channelId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> removeChannel(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String channelId) {
@@ -77,18 +69,16 @@ public class ChannelController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(
-            summary = "Get all channels of group (Mobile)",
-            description = "Get all channels in single group (Channel could be 1 - 1 also)",
-            tags = "Channel APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Channel.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @GetMapping(value = {""})
+    /**
+     * Gets all channels of a group (Mobile).
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param parentId      The ID of the parent channel (optional).
+     * @return ResponseEntity containing a list of channels in the group.
+     */
+    @GetMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<Channel>> getChannels(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(required = false) String parentId) {
@@ -96,18 +86,17 @@ public class ChannelController {
         return ResponseEntity.ok(channels);
     }
 
-    @Operation(
-            summary = "Update group channel (Mobile)",
-            description = "Update a channel in single group (Channel could be 1 - 1 also)",
-            tags = "Channel APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Channel.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @PatchMapping("/{channelId}")
+    /**
+     * Updates a group channel (Mobile).
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param channelId     The ID of the channel to be updated.
+     * @param request       The request containing updated information for the channel.
+     * @return ResponseEntity containing the updated channel.
+     */
+    @PatchMapping("{channelId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Channel> updateChannel(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String channelId,
@@ -119,19 +108,16 @@ public class ChannelController {
         return ResponseEntity.ok(channel);
     }
 
-    @Operation(
-            summary = "Get all members of channel (Mobile)",
-            description = "Get all members of channel in group (Channel could be 1 - 1 also)",
-            tags = "Channel APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ShortProfile.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @GetMapping("/{channelId}/members")
+    /**
+     * Gets all members of a channel (Mobile).
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param channelId     The ID of the channel to get members from.
+     * @return ResponseEntity containing a list of short profiles of channel members.
+     */
+    @GetMapping("{channelId}/members")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ShortProfile>> getChannelMembers(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String channelId) {
