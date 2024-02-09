@@ -36,10 +36,10 @@ public class Channel {
     private List<String> userIds = new ArrayList<>();
 
     @Builder.Default
-    private Status status = Status.ACTIVE;
+    private ChannelStatus status = ChannelStatus.ACTIVE;
 
     @Builder.Default
-    private Type type = Type.PUBLIC;
+    private ChannelType type = ChannelType.PUBLIC;
 
     private String creatorId;
 
@@ -97,17 +97,4 @@ public class Channel {
         updatedDate = new Date();
     }
 
-    public enum Status {
-        ACTIVE,
-        DISABLED,
-        OUTDATED,
-        INACTIVE,
-        DELETED
-    }
-
-    public enum Type {
-        PUBLIC,
-        PRIVATE,
-        PRIVATE_MESSAGE
-    }
 }

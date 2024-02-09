@@ -25,7 +25,7 @@ public class Reaction implements Serializable {
 
     private Integer total;
 
-    public void react(Emoji.Type type) {
+    public void react(EmojiType type) {
         Optional<Emoji> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
         if (!emojiWrapper.isPresent()) {
             Emoji newEmoji = Emoji.builder().id(type).total(1).build();

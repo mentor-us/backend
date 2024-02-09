@@ -57,7 +57,7 @@ public class Message {
 
     private String reply;
 
-    public Reaction react(String userId, Emoji.Type emoji) {
+    public Reaction react(String userId, EmojiType emoji) {
         Optional<Reaction> reactionWrapper =
                 reactions.stream().filter(r -> r.getUserId().equals(userId)).findFirst();
         if (!reactionWrapper.isPresent()) {

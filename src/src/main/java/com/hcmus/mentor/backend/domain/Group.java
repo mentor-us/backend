@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public class Group implements Serializable {
 
     public static final int MAX_PINNED_MESSAGES = 5;
-    private static Map<Status, String> statusMap;
+    private static Map<GroupStatus, String> statusMap;
     @Id
     private String id;
     private String name;
@@ -34,7 +34,7 @@ public class Group implements Serializable {
     private List<String> mentees = new ArrayList<>();
     private String groupCategory;
     @Builder.Default
-    private Status status = Status.ACTIVE;
+    private GroupStatus status = GroupStatus.ACTIVE;
     private Date timeStart;
     private Date timeEnd;
     private Duration duration;
@@ -59,20 +59,20 @@ public class Group implements Serializable {
     private List<String> markedMenteeIds = new ArrayList<>();
 
     public Group() {
-        statusMap = new EnumMap<>(Status.class);
+        statusMap = new EnumMap<>(GroupStatus.class);
         initializeStatusMap();
     }
 
-    public static Map<Status, String> getStatusMap() {
+    public static Map<GroupStatus, String> getStatusMap() {
         return statusMap;
     }
 
     private void initializeStatusMap() {
-        statusMap.put(Status.ACTIVE, "Đang hoạt động");
-        statusMap.put(Status.DISABLED, "Bị khoá");
-        statusMap.put(Status.OUTDATED, "Hết thời hạn");
-        statusMap.put(Status.INACTIVE, "Chưa hoạt động");
-        statusMap.put(Status.DELETED, "Đã xóa");
+        statusMap.put(GroupStatus.ACTIVE, "Đang hoạt động");
+        statusMap.put(GroupStatus.DISABLED, "Bị khoá");
+        statusMap.put(GroupStatus.OUTDATED, "Hết thời hạn");
+        statusMap.put(GroupStatus.INACTIVE, "Chưa hoạt động");
+        statusMap.put(GroupStatus.DELETED, "Đã xóa");
     }
 
     public boolean isMentor(String userId) {
@@ -98,7 +98,7 @@ public class Group implements Serializable {
     public void update(
             String name,
             String description,
-            Status status,
+            GroupStatus status,
             Date timeStart,
             Date timeEnd,
             String groupCategory) {
@@ -235,7 +235,7 @@ public class Group implements Serializable {
     }
 
     public boolean isStopWorking() {
-        return Arrays.asList(Status.DISABLED, Status.INACTIVE, Status.DELETED).contains(status);
+        return Arrays.asList(GroupStatus.DISABLED, GroupStatus.INACTIVE, GroupStatus.DELETED).contains(status);
     }
 
     public List<String> getMembers() {
@@ -280,11 +280,4 @@ public class Group implements Serializable {
         markedMenteeIds.remove(menteeId);
     }
 
-    public enum Status {
-        ACTIVE,
-        DISABLED,
-        OUTDATED,
-        INACTIVE,
-        DELETED
-    }
 }

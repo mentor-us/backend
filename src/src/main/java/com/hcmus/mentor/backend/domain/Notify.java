@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Document("notification")
-public class Notif {
+public class Notify {
 
     @Id
     private String id;

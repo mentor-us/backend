@@ -28,8 +28,4 @@ public class Reminder {
     @Builder.Default
     private Map<String, Object> properties = new HashMap<>();
 
-    public enum ReminderType {
-        TASK,
-        MEETING
-    }
 }

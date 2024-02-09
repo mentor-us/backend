@@ -3,21 +3,23 @@ package com.hcmus.mentor.backend.domain;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
-import static com.hcmus.mentor.backend.domain.User.Role.USER;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfo;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static com.hcmus.mentor.backend.domain.UserRole.USER;
 
 @Data
 @Builder
@@ -68,7 +70,7 @@ public class User implements Serializable {
     private String personalEmail = "";
 
     @Builder.Default
-    private Gender gender = Gender.MALE;
+    private UserGender gender = UserGender.MALE;
 
     @Builder.Default
     private List<String> groupIds = new ArrayList<>();
@@ -77,7 +79,7 @@ public class User implements Serializable {
     private List<String> pinnedGroupsId = new ArrayList<>();
 
     @Builder.Default
-    private List<Role> roles = new ArrayList<>(List.of(USER));
+    private List<UserRole> roles = new ArrayList<>(List.of(USER));
 
     @Builder.Default
     private Date createdDate = new Date();
@@ -181,7 +183,7 @@ public class User implements Serializable {
         setWallpaper(url);
     }
 
-    public void assignRole(Role role) {
+    public void assignRole(UserRole role) {
         if (roles.contains(role)) {
             return;
         }
@@ -189,15 +191,4 @@ public class User implements Serializable {
         setRoles(roles);
     }
 
-    public enum Gender {
-        FEMALE,
-        MALE
-    }
-
-    public enum Role {
-        ADMIN,
-        SUPER_ADMIN,
-        ROLE_USER,
-        USER
-    }
 }
