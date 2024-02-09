@@ -139,7 +139,7 @@ public class MessageServiceImpl implements MessageService {
             return;
         }
 
-        Emoji.Type emoji = Emoji.Type.valueOf(request.getEmojiId());
+        EmojiType emoji = EmojiType.valueOf(request.getEmojiId());
         Reaction newReaction = message.react(request.getSenderId(), emoji);
         messageRepository.save(message);
 
@@ -398,7 +398,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        if(message.getType() == Message.Type.FORWARD)
+        if (message.getType() == Message.Type.FORWARD)
             message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);

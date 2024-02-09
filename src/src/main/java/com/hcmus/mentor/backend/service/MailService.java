@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.Email;
+import com.hcmus.mentor.backend.controller.usecase.common.Email;
 import com.hcmus.mentor.backend.domain.Group;
 
 import java.util.Map;

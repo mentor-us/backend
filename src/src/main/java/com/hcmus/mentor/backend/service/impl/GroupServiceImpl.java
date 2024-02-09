@@ -112,7 +112,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> menteeIds = Collections.singletonList(userId);
         Slice<Group> wrapper =
                 groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                        mentorIds, Group.Status.ACTIVE, menteeIds, Group.Status.ACTIVE, pageRequest);
+                        mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
@@ -142,7 +142,7 @@ public class GroupServiceImpl implements GroupService {
     public List<Group> getAllActiveOwnGroups(String userId) {
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
-        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, Group.Status.ACTIVE, menteeIds, Group.Status.ACTIVE);
+        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
     }
 
     @Override
@@ -150,7 +150,7 @@ public class GroupServiceImpl implements GroupService {
         Pageable pageRequest = PageRequest.of(page, pageSize);
         List<String> mentorIds = Collections.singletonList(userId);
         Page<Group> wrapper =
-                groupRepository.findAllByMentorsInAndStatus(mentorIds, Group.Status.ACTIVE, pageRequest);
+                groupRepository.findAllByMentorsInAndStatus(mentorIds, GroupStatus.ACTIVE, pageRequest);
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
@@ -160,7 +160,7 @@ public class GroupServiceImpl implements GroupService {
         Pageable pageRequest = PageRequest.of(page, pageSize);
         List<String> menteeIds = Collections.singletonList(userId);
         Page<Group> wrapper =
-                groupRepository.findAllByMenteesInAndStatus(menteeIds, Group.Status.ACTIVE, pageRequest);
+                groupRepository.findAllByMenteesInAndStatus(menteeIds, GroupStatus.ACTIVE, pageRequest);
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
@@ -179,7 +179,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> menteeIds = Collections.singletonList(userId);
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
         return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                mentorIds, Group.Status.ACTIVE, menteeIds, Group.Status.ACTIVE, pageRequest);
+                mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
     }
 
     private boolean hasDuplicateElements(List<String> list1, List<String> list2) {
@@ -338,7 +338,7 @@ public class GroupServiceImpl implements GroupService {
         Date timeStart = changeGroupTime(request.getTimeStart(), "START");
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
         Duration duration = calculateDuration(timeStart, timeEnd);
-        Group.Status status = getStatusFromTimeStartAndTimeEnd(timeStart, timeEnd);
+        GroupStatus status = getStatusFromTimeStartAndTimeEnd(timeStart, timeEnd);
         Optional<User> userOptional = userRepository.findByEmail(emailUser);
         String creatorId = null;
         if (userOptional.isPresent()) {
@@ -379,15 +379,15 @@ public class GroupServiceImpl implements GroupService {
         return Duration.between(from.toInstant(), to.toInstant());
     }
 
-    private Group.Status getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd) {
+    private GroupStatus getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd) {
         Date now = new Date();
         if (timeStart.before(now) && timeEnd.before(now)) {
-            return Group.Status.OUTDATED;
+            return GroupStatus.OUTDATED;
         }
         if (timeStart.before(now) && timeEnd.after(now)) {
-            return Group.Status.ACTIVE;
+            return GroupStatus.ACTIVE;
         }
-        return Group.Status.INACTIVE;
+        return GroupStatus.INACTIVE;
     }
 
     private void removeBlankRows(Sheet sheet) {
@@ -561,12 +561,12 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
         for (Group group : groups) {
-            if (group.getStatus() != Group.Status.DELETED && group.getStatus() != Group.Status.DISABLED) {
+            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
                 if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(Group.Status.OUTDATED);
+                    group.setStatus(GroupStatus.OUTDATED);
                 }
                 if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(Group.Status.INACTIVE);
+                    group.setStatus(GroupStatus.INACTIVE);
                 }
             }
             groupRepository.save(group);
@@ -843,7 +843,7 @@ public class GroupServiceImpl implements GroupService {
     public void loadTemplate(File file) throws Exception {
         int lastRow = 10000;
         List<GroupCategory> groupCategories =
-                groupCategoryRepository.findAllByStatus(GroupCategory.Status.ACTIVE);
+                groupCategoryRepository.findAllByStatus(GroupCategoryStatus.ACTIVE);
         String[] groupCategoryNames =
                 groupCategories.stream()
                         .map(groupCategory -> groupCategory.getName())
@@ -925,11 +925,11 @@ public class GroupServiceImpl implements GroupService {
         }
         Duration duration = calculateDuration(group.getTimeStart(), group.getTimeEnd());
         group.setDuration(duration);
-        Group.Status status =
+        GroupStatus status =
                 getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
         group.setStatus(status);
-        if (request.getStatus().equals(Group.Status.DISABLED)) {
-            group.setStatus(Group.Status.DISABLED);
+        if (request.getStatus().equals(GroupStatus.DISABLED)) {
+            group.setStatus(GroupStatus.DISABLED);
         }
         group.setUpdatedDate(new Date());
         groupRepository.save(group);
@@ -946,7 +946,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupReturnService(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
-        group.setStatus(Group.Status.DELETED);
+        group.setStatus(GroupStatus.DELETED);
         groupRepository.save(group);
         return new GroupReturnService(SUCCESS, null, group);
     }
@@ -1005,7 +1005,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupReturnService(NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
-        groups.forEach(group -> group.setStatus(Group.Status.DELETED));
+        groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
         groupRepository.saveAll(groups);
         return new GroupReturnService(SUCCESS, null, groups);
     }
@@ -1028,7 +1028,7 @@ public class GroupServiceImpl implements GroupService {
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         for (Group group : groups) {
-            group.setStatus(Group.Status.DISABLED);
+            group.setStatus(GroupStatus.DISABLED);
             groupRepository.save(group);
         }
 
@@ -1053,7 +1053,7 @@ public class GroupServiceImpl implements GroupService {
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         for (Group group : groups) {
-            Group.Status status =
+            GroupStatus status =
                     getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
             group.setStatus(status);
             groupRepository.save(group);
@@ -1162,8 +1162,8 @@ public class GroupServiceImpl implements GroupService {
             }
             GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
             response.setPermissions(
-                    response.getPermissions().contains(GroupCategory.Permission.SEND_FILES)
-                            ? Collections.singletonList(GroupCategory.Permission.SEND_FILES)
+                    response.getPermissions().contains(GroupCategoryPermission.SEND_FILES)
+                            ? Collections.singletonList(GroupCategoryPermission.SEND_FILES)
                             : Collections.emptyList());
             return new GroupReturnService(SUCCESS, null, response);
         }
@@ -1183,7 +1183,7 @@ public class GroupServiceImpl implements GroupService {
         String channelName = channel.getName();
         String imageUrl = null;
 
-        if (Channel.Type.PRIVATE_MESSAGE.equals(channel.getType())) {
+        if (ChannelType.PRIVATE_MESSAGE.equals(channel.getType())) {
             String penpalId = channel.getUserIds().stream()
                     .filter(id -> !id.equals(userId))
                     .findFirst()
@@ -1412,13 +1412,13 @@ public class GroupServiceImpl implements GroupService {
             groups = groupRepository.findAllByCreatorIdOrderByCreatedDate(creatorId);
         }
         for (Group group : groups) {
-            if (group.getStatus() != Group.Status.DELETED && group.getStatus() != Group.Status.DISABLED) {
+            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
                 if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(Group.Status.OUTDATED);
+                    group.setStatus(GroupStatus.OUTDATED);
                     groupRepository.save(group);
                 }
                 if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(Group.Status.INACTIVE);
+                    group.setStatus(GroupStatus.INACTIVE);
                     groupRepository.save(group);
                 }
             }
@@ -1803,7 +1803,7 @@ public class GroupServiceImpl implements GroupService {
         List<GroupDetailResponse.GroupChannel> privates =
                 channelRepository
                         .findByParentIdAndTypeAndUserIdsIn(
-                                groupId, Channel.Type.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
+                                groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
                         .stream()
                         .map(
                                 channel -> {
@@ -1902,7 +1902,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
-        groups = groups.stream().filter(group -> group.getStatus() == Group.Status.ACTIVE).toList();
+        groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
         List<String> lstChannelIds = new ArrayList<>();
        for(List<String> ids: listChannelIds){
@@ -1926,7 +1926,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         for (Channel channel : channels) {
-            if(channel.getStatus() == Channel.Status.ACTIVE){
+            if(channel.getStatus() == ChannelStatus.ACTIVE){
                 ChannelForwardResponse channelForwardResponse = ChannelForwardResponse.from(channel);
 
                 channelForwardResponse.setGroup(groupForwardResponses.stream().filter(groupForwardResponse -> groupForwardResponse.getId().equals(channel.getParentId())).findFirst().orElse(null));

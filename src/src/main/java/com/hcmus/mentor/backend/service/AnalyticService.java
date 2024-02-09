@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.service;
 
 import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
@@ -27,16 +27,16 @@ import org.thymeleaf.context.WebContext;
  * Analytic service.
  */
 public interface AnalyticService {
-    APIResponse<SystemAnalyticResponse> getGeneralInformation(String emailUser);
+    ApiResponseDto<SystemAnalyticResponse> getGeneralInformation(String emailUser);
 
-    APIResponse<SystemAnalyticResponse> getGeneralInformationByGroupCategory(
+    ApiResponseDto<SystemAnalyticResponse> getGeneralInformationByGroupCategory(
             String emailUser, String groupCategoryId);
 
-    APIResponse<SystemAnalyticChartResponse> getDataForChart(
+    ApiResponseDto<SystemAnalyticChartResponse> getDataForChart(
             String emailUser, int monthStart, int yearStart, int monthEnd, int yearEnd)
             throws ParseException;
 
-    APIResponse<SystemAnalyticChartResponse> getDataForChartByGroupCategory(
+    ApiResponseDto<SystemAnalyticChartResponse> getDataForChartByGroupCategory(
             String emailUser,
             int monthStart,
             int yearStart,
@@ -45,7 +45,7 @@ public interface AnalyticService {
             String groupCategoryId)
             throws ParseException;
 
-    APIResponse<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId);
+    ApiResponseDto<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId);
 
     ResponseEntity<Resource> generateExportGroupTable(
             List<GroupAnalyticResponse.Member> members, List<String> remainColumns) throws IOException;
@@ -57,7 +57,7 @@ public interface AnalyticService {
             String emailUser, String groupId, FindUserAnalyticRequest request, List<String> remainColumns)
             throws IOException;
 
-    APIResponse<Page<GroupGeneralResponse>> getGroupGeneralAnalytic(
+    ApiResponseDto<Page<GroupGeneralResponse>> getGroupGeneralAnalytic(
             String emailUser, Pageable pageRequest);
 
     ResponseEntity<Resource> generateExportGroupsTable(String emailUser, List<String> remainColumns)
@@ -67,19 +67,19 @@ public interface AnalyticService {
             String emailUser, FindGroupGeneralAnalyticRequest request, List<String> remainColumns)
             throws IOException;
 
-    APIResponse<Page<GroupGeneralResponse>> findGroupGeneralAnalytic(
+    ApiResponseDto<Page<GroupGeneralResponse>> findGroupGeneralAnalytic(
             String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request);
 
-    APIResponse<List<GroupAnalyticResponse.Member>> findUserAnalytic(
+    ApiResponseDto<List<GroupAnalyticResponse.Member>> findUserAnalytic(
             String emailUser, String groupId, FindUserAnalyticRequest request);
 
-    APIResponse<Map<String, String>> importData(String emailUser, MultipartFile file, String type)
+    ApiResponseDto<Map<String, String>> importData(String emailUser, MultipartFile file, String type)
             throws IOException;
 
-    APIResponse<List<ImportGeneralInformationResponse>> importMultipleData(
+    ApiResponseDto<List<ImportGeneralInformationResponse>> importMultipleData(
             String emailUser, MultipartFile file) throws IOException;
 
-    APIResponse<User> updateStudentInformation(
+    ApiResponseDto<User> updateStudentInformation(
             String emailUser, String userId, UpdateStudentInformationRequest request);
 
     String exportGroupReport(String exporterEmail, String groupId, WebContext context);

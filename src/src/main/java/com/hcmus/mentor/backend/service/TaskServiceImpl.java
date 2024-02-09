@@ -1,11 +1,5 @@
 package com.hcmus.mentor.backend.service;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.*;
-
-import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
@@ -15,20 +9,14 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeRe
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.ReminderRepository;
 import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.util.DateUtils;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -41,8 +29,20 @@ import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.*;
+
 @Service
 public class TaskServiceImpl implements IRemindableService {
+
     private final TaskRepository taskRepository;
     private final PermissionService permissionService;
     private final GroupRepository groupRepository;
@@ -103,7 +103,7 @@ public class TaskServiceImpl implements IRemindableService {
                         ? groupService.findAllMenteeIdsGroup(request.getGroupId())
                         : request.getUserIds();
         Optional<User> assigner = userRepository.findByEmail(emailUser);
-        List<Task.Assignee> assigneeIds =
+        List<Assignee> assigneeIds =
                 userIds.stream().map(Task::newTask).collect(Collectors.toList());
         Task task =
                 Task.builder()
@@ -215,11 +215,11 @@ public class TaskServiceImpl implements IRemindableService {
             return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
         }
 
-        Task.Status status =
+        TaskStatus status =
                 task.getAssigneeIds().stream()
                         .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
                         .findFirst()
-                        .map(Task.Assignee::getStatus)
+                        .map(Assignee::getStatus)
                         .orElse(null);
         return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
@@ -282,17 +282,17 @@ public class TaskServiceImpl implements IRemindableService {
         }
         Group group = groupWrapper.get();
         List<String> assigneeIds =
-                task.getAssigneeIds().stream().map(Task.Assignee::getUserId).collect(Collectors.toList());
+                task.getAssigneeIds().stream().map(Assignee::getUserId).collect(Collectors.toList());
         List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
-        Map<String, Task.Status> statuses =
+        Map<String, TaskStatus> statuses =
                 task.getAssigneeIds().stream()
                         .collect(
                                 Collectors.toMap(
-                                        Task.Assignee::getUserId, Task.Assignee::getStatus, (s1, s2) -> s2));
+                                        Assignee::getUserId, Assignee::getStatus, (s1, s2) -> s2));
         return assignees.stream()
                 .map(
                         assignee -> {
-                            Task.Status status = statuses.getOrDefault(assignee.getId(), null);
+                            TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
                             boolean isMentor = group.isMentor(assignee.getId());
                             return TaskAssigneeResponse.from(assignee, status, isMentor);
                         })
@@ -308,7 +308,7 @@ public class TaskServiceImpl implements IRemindableService {
         return taskRepository.existsByIdAndAssigneeIdsUserId(task.getId(), user.getId());
     }
 
-    public TaskReturnService updateStatus(String emailUser, String id, Task.Status status) {
+    public TaskReturnService updateStatus(String emailUser, String id, TaskStatus status) {
         Optional<Task> taskOptional = taskRepository.findById(id);
         if (!taskOptional.isPresent()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
@@ -409,7 +409,7 @@ public class TaskServiceImpl implements IRemindableService {
                         task -> {
                             Group group = groupRepository.findById(task.getGroupId()).orElse(null);
                             User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                            Task.Assignee assignee =
+                            Assignee assignee =
                                     task.getAssigneeIds().stream()
                                             .filter(a -> a.getUserId().equals(userId))
                                             .findFirst()
@@ -500,7 +500,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .map(
                         task -> {
                             User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                            Task.Assignee assignee =
+                            Assignee assignee =
                                     task.getAssigneeIds().stream()
                                             .filter(a -> a.getUserId().equals(userId))
                                             .findFirst()
@@ -562,7 +562,7 @@ public class TaskServiceImpl implements IRemindableService {
         Reminder reminder = remindable.toReminder();
         Task task = (Task) remindable;
         List<String> emailUsers = new ArrayList<>();
-        for (Task.Assignee assignee : task.getAssigneeIds()) {
+        for (Assignee assignee : task.getAssigneeIds()) {
             Optional<User> userOptional = userRepository.findById(assignee.getUserId());
             if (userOptional.isPresent()) {
                 emailUsers.add(userOptional.get().getEmail());

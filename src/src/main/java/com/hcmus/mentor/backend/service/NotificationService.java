@@ -15,9 +15,9 @@ import org.springframework.scheduling.annotation.Async;
 public interface NotificationService {
     Map<String, Object> getOwnNotifications(String userId, int page, int size);
 
-    Notif createResponseNotification(String senderId, AddNotificationRequest request);
+    Notify createResponseNotification(String senderId, AddNotificationRequest request);
 
-    Notif responseNotification(String userId, String notificationId, String action);
+    Notify responseNotification(String userId, String notificationId, String action);
 
     void subscribeNotification(SubscribeNotificationRequest request);
 
@@ -29,19 +29,19 @@ public interface NotificationService {
     @Async
     void sendNewTaskNotification(MessageDetailResponse message);
 
-    Notif createNewTaskNotification(
+    Notify createNewTaskNotification(
             String title, String content, String senderId, TaskMessageResponse task);
 
     @Async
     void sendNewMeetingNotification(MessageDetailResponse message);
 
-    Notif createNewMeetingNotification(
+    Notify createNewMeetingNotification(
             String title, String content, String senderId, Meeting meeting);
 
     @Async
     void sendNewMediaMessageNotification(MessageDetailResponse message);
 
-    Notif createNewMediaNotification(String title, String content, String senderId, Group group);
+    Notify createNewMediaNotification(String title, String content, String senderId, Group group);
 
     @Async
     void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId);
@@ -50,7 +50,7 @@ public interface NotificationService {
     void sendRescheduleMeetingNotification(
             String modifierId, Meeting meeting, RescheduleMeetingRequest request);
 
-    Notif createRescheduleMeetingNotification(
+    Notify createRescheduleMeetingNotification(
             String title, String content, String senderId, Group group, Meeting meeting);
 
     long getUnreadNumber(String userId);
@@ -58,7 +58,7 @@ public interface NotificationService {
     @Async
     void sendNewVoteNotification(String creatorId, Vote vote);
 
-    Notif createNewVoteNotification(
+    Notify createNewVoteNotification(
             String title, String content, String senderId, Group group, Vote vote);
 
     void sendNewPinNotification(MessageDetailResponse message, User pinner);

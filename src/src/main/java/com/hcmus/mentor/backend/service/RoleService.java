@@ -2,12 +2,11 @@ package com.hcmus.mentor.backend.service;
 
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
-
-import java.util.List;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 public interface RoleService {
     RoleServiceReturn findAll(String emailUser);

@@ -6,10 +6,8 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminReq
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import com.hcmus.mentor.backend.domain.Email;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.controller.usecase.common.Email;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -49,7 +47,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturn
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
-import static com.hcmus.mentor.backend.domain.User.Role.*;
+import static com.hcmus.mentor.backend.domain.UserRole.*;
 
 @Service
 @RequiredArgsConstructor
@@ -75,12 +73,11 @@ public class UserServiceImpl implements UserService {
     }
 
     private void sendEmail(String emailAddress) {
-        Email email =
-                Email.builder()
-                        .recipient(emailAddress)
-                        .msgBody("Welcome to MentorUS app!")
-                        .subject("Invite to MentorUS")
-                        .build();
+        Email email = Email.builder()
+                .recipient(emailAddress)
+                .msgBody("Welcome to MentorUS app!")
+                .subject("Invite to MentorUS")
+                .build();
         mailService.sendSimpleMail(email);
     }
 
@@ -230,7 +227,7 @@ public class UserServiceImpl implements UserService {
             return new UserReturnService(DUPLICATE_USER, "Duplicate user", null);
         }
 
-        User.Role role = request.getRole();
+        UserRole role = request.getRole();
         User user = User.builder().name(request.getName()).email(emailAddress).build();
         user.assignRole(role);
         userRepository.save(user);
@@ -279,7 +276,7 @@ public class UserServiceImpl implements UserService {
             String name = row.getCell(1).getStringCellValue();
             String email = row.getCell(2).getStringCellValue();
             String roleString = row.getCell(3).getStringCellValue();
-            User.Role role;
+            UserRole role;
             if (roleString.equals("Quản trị viên cấp cao")) {
                 role = SUPER_ADMIN;
             } else if (roleString.equals("Quản trị viên")) {
@@ -320,7 +317,7 @@ public class UserServiceImpl implements UserService {
             }
             String name = request.getName();
             String emailAddress = request.getEmailAddress();
-            User.Role role = request.getRole();
+            UserRole role = request.getRole();
             Optional<User> userOptional = userRepository.findByEmail(emailAddress);
             if (userOptional.isPresent()) {
                 duplicateEmails.add(emailAddress);
@@ -338,7 +335,7 @@ public class UserServiceImpl implements UserService {
                             .build();
 
             if (role != null) {
-                List<User.Role> roles = user.getRoles();
+                List<UserRole> roles = user.getRoles();
                 roles.add(role);
                 user.setRoles(roles);
                 userDataResponse.setRole(role);
@@ -416,7 +413,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserDataResponse getUserData(User user) {
-        User.Role role;
+        UserRole role;
         if (user.getRoles().contains(SUPER_ADMIN)) {
             role = SUPER_ADMIN;
         } else if (user.getRoles().contains(ADMIN)) {
@@ -607,7 +604,7 @@ public class UserServiceImpl implements UserService {
             groupInfos.add(groupInfo);
         }
         userDetailResponse.setGroups(groupInfos);
-        User.Role role;
+        UserRole role;
         if (user.getRoles().contains(SUPER_ADMIN)) {
             role = SUPER_ADMIN;
         } else if (user.getRoles().contains(ADMIN)) {
@@ -632,7 +629,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userOptional.get();
         user.update(request);
-        User.Role role = request.getRole() == USER ? ROLE_USER : request.getRole();
+        UserRole role = request.getRole() == USER ? ROLE_USER : request.getRole();
         if (!permissionService.isSuperAdmin(emailUser) && role == SUPER_ADMIN) {
             return new UserReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -640,7 +637,7 @@ public class UserServiceImpl implements UserService {
                 && permissionService.isSuperAdmin(user.getEmail())) {
             return new UserReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<User.Role> roles = new ArrayList<>();
+        List<UserRole> roles = new ArrayList<>();
         roles.add(role);
         if (role != ROLE_USER) {
             roles.add(ROLE_USER);
@@ -695,7 +692,7 @@ public class UserServiceImpl implements UserService {
         for (User user : users) {
             List<String> row = new ArrayList<>();
             String status = user.isStatus() ? "Đang hoạt động" : "Bị khoá";
-            List<User.Role> roles = user.getRoles();
+            List<UserRole> roles = user.getRoles();
             String role = "Người dùng";
 
             if (roles.contains(SUPER_ADMIN)) {

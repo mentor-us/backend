@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.domain.Role;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
+import com.hcmus.mentor.backend.domain.UserRole;
 import com.hcmus.mentor.backend.repository.PermissionRepository;
 import com.hcmus.mentor.backend.repository.RoleRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -107,7 +108,7 @@ public class RoleServiceImpl implements RoleService {
 
     private void removeRoleFromUsers(List<User> users, String roleId) {
         for (User user : users) {
-            List<User.Role> roles = user.getRoles();
+            List<UserRole> roles = user.getRoles();
             roles.remove(roleId);
             user.setRoles(roles);
             userRepository.save(user);

@@ -11,6 +11,8 @@ import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.domain.GroupCategoryStatus;
+import com.hcmus.mentor.backend.domain.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.service.GroupCategoryReturn;
@@ -72,8 +74,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
         if (groupCategoryRepository.existsByName(request.getName())) {
             GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
-            if (groupCategory.getStatus().equals(GroupCategory.Status.DELETED)) {
-                groupCategory.setStatus(GroupCategory.Status.ACTIVE);
+            if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
+                groupCategory.setStatus(GroupCategoryStatus.ACTIVE);
                 groupCategory.setDescription(request.getDescription());
                 groupCategory.setIconUrl(request.getIconUrl());
                 groupCategory.setPermissions(request.getPermissions());
@@ -145,12 +147,12 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             }
         } else {
             for (Group group : groups) {
-                group.setStatus(Group.Status.DELETED);
+                group.setStatus(GroupStatus.DELETED);
             }
             groupRepository.saveAll(groups);
         }
 
-        groupCategory.setStatus(GroupCategory.Status.DELETED);
+        groupCategory.setStatus(GroupCategoryStatus.DELETED);
         groupCategoryRepository.save(groupCategory);
         return new GroupCategoryReturn(SUCCESS, "", groupCategory);
     }
@@ -224,13 +226,13 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         } else {
             groups.forEach(
                     group -> {
-                        group.setStatus(Group.Status.DELETED);
+                        group.setStatus(GroupStatus.DELETED);
                     });
             groupRepository.saveAll(groups);
         }
         groupCategories.forEach(
                 groupCategory -> {
-                    groupCategory.setStatus(GroupCategory.Status.DELETED);
+                    groupCategory.setStatus(GroupCategoryStatus.DELETED);
                 });
 
         groupCategoryRepository.saveAll(groupCategories);
@@ -246,7 +248,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             row.add(Integer.toString(index));
             row.add(groupCategory.getName());
             row.add(groupCategory.getDescription());
-            if (groupCategory.getStatus().equals(GroupCategory.Status.ACTIVE)) {
+            if (groupCategory.getStatus().equals(GroupCategoryStatus.ACTIVE)) {
                 row.add("Đang hoạt động");
             } else {
                 row.add("Đã xoá");

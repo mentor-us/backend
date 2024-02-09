@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.TaskStatus;
 import lombok.*;
 
 public interface EventService {
@@ -31,7 +32,7 @@ public interface EventService {
         private String title;
         private String groupName;
         private String user;
-        private Task.Status status;
+        private TaskStatus status;
         private Date timeStart;
         private Date timeEnd;
         private Date deadline;
