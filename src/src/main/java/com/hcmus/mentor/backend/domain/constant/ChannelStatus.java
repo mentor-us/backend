@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.domain.constant;
 
 public enum ChannelStatus {
     ACTIVE,

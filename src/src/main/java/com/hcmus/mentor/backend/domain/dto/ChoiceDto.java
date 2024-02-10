@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.domain.dto;
 
 import lombok.*;
 
@@ -11,7 +11,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Choice {
+public class ChoiceDto {
 
     @Builder.Default
     private String id = UUID.randomUUID().toString();
@@ -21,11 +21,11 @@ public class Choice {
     @Builder.Default
     private List<String> voters = new ArrayList<>();
 
-    public static Choice from(String name) {
-        return Choice.builder().name(name).build();
+    public static ChoiceDto from(String name) {
+        return ChoiceDto.builder().name(name).build();
     }
 
-    public void update(Choice choice) {
+    public void update(ChoiceDto choice) {
         setName(choice.getName());
     }
 

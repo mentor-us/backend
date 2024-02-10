@@ -1,5 +1,6 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.domain.dto;
 
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import lombok.*;
 
 import java.io.Serializable;
@@ -9,7 +10,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Assignee implements Serializable {
+public class AssigneeDto implements Serializable {
 
     private String userId;
 

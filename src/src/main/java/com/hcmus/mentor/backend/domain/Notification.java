@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Document("notification")
-public class Notify {
+public class Notification {
 
     @Id
     private String id;
@@ -25,7 +26,7 @@ public class Notify {
 
     private String content;
 
-    private Type type;
+    private NotificationType type;
 
     private String senderId;
 
@@ -67,22 +68,5 @@ public class Notify {
             return;
         }
         refusers.add(userId);
-    }
-
-    public enum Type {
-        SYSTEM,
-        NEW_COMMENT,
-        NEW_MESSAGE,
-        NEW_TASK,
-        NEW_MEETING,
-        NEW_REACTION,
-        NEW_IMAGE_MESSAGE,
-        NEW_FILE_MESSAGE,
-        UPDATE_MEETING,
-        RESCHEDULE_MEETING,
-        NEW_VOTE,
-        PIN_MESSAGE,
-        UNPIN_MESSAGE,
-        NEED_RESPONSE
     }
 }

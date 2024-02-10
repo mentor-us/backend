@@ -1,5 +1,6 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.domain.dto;
 
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import lombok.*;
 
 @Getter
@@ -7,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Emoji {
+public class EmojiDto {
 
     private EmojiType id;
 
