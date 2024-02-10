@@ -3,7 +3,7 @@ package com.hcmus.mentor.backend.service.impl;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Reminder;
-import com.hcmus.mentor.backend.domain.ReminderType;
+import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.ReminderRepository;

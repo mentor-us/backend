@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.UserGender;
-import com.hcmus.mentor.backend.domain.UserRole;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 

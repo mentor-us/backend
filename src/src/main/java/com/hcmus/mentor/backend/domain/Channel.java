@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

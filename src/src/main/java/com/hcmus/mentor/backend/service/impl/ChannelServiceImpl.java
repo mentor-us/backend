@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;

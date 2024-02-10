@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.users;
 
 import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.domain;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -26,7 +27,7 @@ public class Vote {
     private String question;
 
     @Builder.Default
-    private List<Choice> choices = new ArrayList<>();
+    private List<ChoiceDto> choices = new ArrayList<>();
 
     private String groupId;
 
@@ -52,7 +53,7 @@ public class Vote {
                 .build();
     }
 
-    public Choice getChoice(String id) {
+    public ChoiceDto getChoice(String id) {
         return choices.stream().filter(choice -> choice.getId().equals(id)).findFirst().orElse(null);
     }
 
@@ -60,8 +61,8 @@ public class Vote {
         this.question = request.getQuestion();
         this.timeEnd = request.getTimeEnd();
 
-        for (Choice newChoice : request.getChoices()) {
-            Choice oldChoice = getChoice(newChoice.getId());
+        for (ChoiceDto newChoice : request.getChoices()) {
+            ChoiceDto oldChoice = getChoice(newChoice.getId());
             if (oldChoice == null) {
                 choices.add(newChoice);
             } else {
@@ -77,7 +78,7 @@ public class Vote {
                 .getChoices()
                 .forEach(
                         choice -> {
-                            Choice oldChoice = getChoice(choice.getId());
+                            ChoiceDto oldChoice = getChoice(choice.getId());
                             if (oldChoice == null) {
                                 choices.add(choice);
                                 return;
@@ -100,7 +101,7 @@ public class Vote {
     }
 
     public void sortChoicesDesc() {
-        List<Choice> newChoices =
+        List<ChoiceDto> newChoices =
                 choices.stream()
                         .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
                         .collect(Collectors.toList());

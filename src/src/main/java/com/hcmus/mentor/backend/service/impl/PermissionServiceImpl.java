@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.UserRole.ADMIN;
-import static com.hcmus.mentor.backend.domain.UserRole.SUPER_ADMIN;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
 
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;

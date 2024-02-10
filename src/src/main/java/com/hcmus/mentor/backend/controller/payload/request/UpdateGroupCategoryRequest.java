@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller.payload.request;
 
 import java.util.List;
 
-import com.hcmus.mentor.backend.domain.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

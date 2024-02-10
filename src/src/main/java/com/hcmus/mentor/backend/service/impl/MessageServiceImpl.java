@@ -13,6 +13,9 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeRe
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
@@ -140,7 +143,7 @@ public class MessageServiceImpl implements MessageService {
         }
 
         EmojiType emoji = EmojiType.valueOf(request.getEmojiId());
-        Reaction newReaction = message.react(request.getSenderId(), emoji);
+        ReactionDto newReaction = message.react(request.getSenderId(), emoji);
         messageRepository.save(message);
 
         pingGroup(message.getGroupId());
@@ -181,7 +184,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message) {
-        List<Emoji> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
+        List<EmojiDto> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
         int total = MessageDetailResponse.calculateTotalReactionAmount(message.getReactions());
         return MessageDetailResponse.TotalReaction.builder()
                 .data(data)
@@ -298,7 +301,7 @@ public class MessageServiceImpl implements MessageService {
         List<String> userIds =
                 messages.stream()
                         .flatMap(response -> response.getReactions().stream())
-                        .map(Reaction::getUserId)
+                        .map(ReactionDto::getUserId)
                         .collect(Collectors.toList());
         Map<String, User> reactors =
                 userRepository.findByIdIn(userIds).stream()
@@ -373,9 +376,9 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
-    public Reaction fulfillReaction(Reaction reaction, User reactor) {
+    public ReactionDto fulfillReaction(ReactionDto reaction, User reactor) {
         if (reactor == null) {
-            return new Reaction();
+            return new ReactionDto();
         }
         reaction.update(reactor);
         return reaction;
@@ -384,7 +387,7 @@ public class MessageServiceImpl implements MessageService {
     private MessageDetailResponse fulfillReactions(
             MessageDetailResponse message,
             Map<String, User> reactors) {
-        List<Reaction> reactions =
+        List<ReactionDto> reactions =
                 message.getReactions().stream()
                         .map(
                                 reaction -> {

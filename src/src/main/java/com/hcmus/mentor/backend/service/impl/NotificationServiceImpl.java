@@ -1,9 +1,8 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.Notify.Type.*;
+import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Notification;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
@@ -14,6 +13,8 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessag
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.NotificationRepository;
@@ -50,9 +51,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Slice<Notify> slice =
+        Slice<Notification> slice =
                 notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
-        List<String> senderIds = slice.get().map(Notify::getSenderId).collect(Collectors.toList());
+        List<String> senderIds = slice.get().map(Notification::getSenderId).collect(Collectors.toList());
         Map<String, ShortProfile> senders =
                 userRepository.findByIds(senderIds).stream()
                         .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
@@ -67,7 +68,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private Map<String, Object> pagingResponse(
-            Slice<Notify> slice, List<NotificationResponse> notifications) {
+            Slice<Notification> slice, List<NotificationResponse> notifications) {
         Map<String, Object> response = new HashMap<>();
         response.put("notifications", notifications);
         response.put("hasMore", slice.hasNext());
@@ -75,12 +76,12 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notify notif =
-                Notify.builder()
+    public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
+        Notification notif =
+                Notification.builder()
                         .title(request.getTitle())
                         .content(request.getContent())
-                        .type(Notify.Type.NEED_RESPONSE)
+                        .type(NotificationType.NEED_RESPONSE)
                         .senderId(senderId)
                         .receiverIds(Collections.singletonList(request.getReceiverId()))
                         .createdDate(request.getCreatedDate())
@@ -89,14 +90,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify responseNotification(String userId, String notificationId, String action) {
-        Optional<Notify> notificationWrapper = notificationRepository.findById(notificationId);
+    public Notification responseNotification(String userId, String notificationId, String action) {
+        Optional<Notification> notificationWrapper = notificationRepository.findById(notificationId);
         if (!notificationWrapper.isPresent()) {
             return null;
         }
 
-        Notify notif = notificationWrapper.get();
-        if (!notif.getType().equals(Notify.Type.NEED_RESPONSE)) {
+        Notification notif = notificationWrapper.get();
+        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
             return null;
         }
 
@@ -215,7 +216,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private Map<String, String> attachDataNotification(String groupId, Notify.Type type) {
+    private Map<String, String> attachDataNotification(String groupId, NotificationType type) {
         Map<String, String> data = new HashMap<>();
         data.put("type", type.name());
         data.put("screen", "chat");
@@ -240,7 +241,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         String title = group.getName();
         String content = "Nhóm có công việc mới \"" + task.getTitle() + "\"";
-        Notify notif = createNewTaskNotification(title, content, message.getSender().getId(), task);
+        Notification notif = createNewTaskNotification(title, content, message.getSender().getId(), task);
         try {
             firebaseMessagingManager.sendGroupNotification(
                     notif.getReceiverIds(),
@@ -253,7 +254,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createNewTaskNotification(
+    public Notification createNewTaskNotification(
             String title, String content, String senderId, TaskMessageResponse task) {
         List<String> assigneeIds =
                 task.getAssignees().stream().map(TaskAssigneeResponse::getId).collect(Collectors.toList());
@@ -261,8 +262,8 @@ public class NotificationServiceImpl implements NotificationService {
                 Stream.concat(assigneeIds.stream(), Stream.of(task.getAssignerId()))
                         .distinct()
                         .collect(Collectors.toList());
-        Notify inAppNotification =
-                Notify.builder()
+        Notification inAppNotification =
+                Notification.builder()
                         .title(title)
                         .content(content)
                         .type(NEW_TASK)
@@ -290,7 +291,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         String title = group.getName();
         String content = "Nhóm có lịch hẹn mới \"" + meeting.getTitle() + "\"";
-        Notify notif =
+        Notification notif =
                 createNewMeetingNotification(title, content, message.getSender().getId(), meeting);
         try {
             firebaseMessagingManager.sendGroupNotification(
@@ -304,14 +305,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createNewMeetingNotification(
+    public Notification createNewMeetingNotification(
             String title, String content, String senderId, Meeting meeting) {
         List<String> receiverIds =
                 Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizerId()))
                         .distinct()
                         .collect(Collectors.toList());
-        Notify notif =
-                Notify.builder()
+        Notification notif =
+                Notification.builder()
                         .title(title)
                         .content(content)
                         .type(NEW_MEETING)
@@ -371,7 +372,7 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Notify.Type type;
+        NotificationType type;
         StringBuilder notificationBody =
                 new StringBuilder(
                         (message.getSender() != null) ? (message.getSender().getName() + " đã gửi ") : "");
@@ -396,15 +397,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createNewMediaNotification(
+    public Notification createNewMediaNotification(
             String title, String content, String senderId, Group group) {
         List<String> receiverIds =
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
                         .collect(Collectors.toList());
-        Notify notif =
-                Notify.builder()
+        Notification notif =
+                Notification.builder()
                         .title(title)
                         .content(content)
                         .type(NEW_FILE_MESSAGE)
@@ -438,8 +439,8 @@ public class NotificationServiceImpl implements NotificationService {
         Group group = groupWrapper.get();
 
         Map<String, String> data = attachDataNotification(message.getGroupId(), NEW_REACTION);
-        Notification notification =
-                Notification.builder()
+        com.google.firebase.messaging.Notification notification =
+                com.google.firebase.messaging.Notification.builder()
                         .setTitle(group.getName())
                         .setBody(reaction.getName() + " đã thể hiện cảm xúc tin nhắn của bạn.")
                         .build();
@@ -472,7 +473,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         String title = group.getName();
         String content = "Lịch hẹn: \"" + meeting.getTitle() + "\" đã được dời thời gian.";
-        Notify notif = createRescheduleMeetingNotification(title, content, modifierId, group, meeting);
+        Notification notif = createRescheduleMeetingNotification(title, content, modifierId, group, meeting);
         try {
             firebaseMessagingManager.sendGroupNotification(
                     notif.getReceiverIds(),
@@ -485,15 +486,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createRescheduleMeetingNotification(
+    public Notification createRescheduleMeetingNotification(
             String title, String content, String senderId, Group group, Meeting meeting) {
         List<String> receiverIds =
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
                         .collect(Collectors.toList());
-        Notify notif =
-                Notify.builder()
+        Notification notif =
+                Notification.builder()
                         .title(title)
                         .content(content)
                         .type(RESCHEDULE_MEETING)
@@ -524,7 +525,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         String title = group.getName();
         String content = "Nhóm có cuộc bình chọn mới \"" + vote.getQuestion() + "\"";
-        Notify notif = createNewVoteNotification(title, content, creatorId, group, vote);
+        Notification notif = createNewVoteNotification(title, content, creatorId, group, vote);
         try {
             firebaseMessagingManager.sendGroupNotification(
                     notif.getReceiverIds(),
@@ -537,15 +538,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notify createNewVoteNotification(
+    public Notification createNewVoteNotification(
             String title, String content, String senderId, Group group, Vote vote) {
         List<String> receiverIds =
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
                         .collect(Collectors.toList());
-        Notify notif =
-                Notify.builder()
+        Notification notif =
+                Notification.builder()
                         .title(title)
                         .content(content)
                         .type(NEW_VOTE)

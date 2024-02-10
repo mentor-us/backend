@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.groups;
 
-import com.hcmus.mentor.backend.domain.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;

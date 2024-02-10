@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.Choice;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +17,7 @@ public class UpdateVoteRequest {
 
     private String question;
 
-    private List<Choice> choices;
+    private List<ChoiceDto> choices;
 
     private Date timeEnd;
 }

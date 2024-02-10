@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.UserDataRespon
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.common.Email;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -47,7 +48,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturn
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
-import static com.hcmus.mentor.backend.domain.UserRole.*;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
 @RequiredArgsConstructor

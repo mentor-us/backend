@@ -9,7 +9,7 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResp
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.TaskStatus;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;

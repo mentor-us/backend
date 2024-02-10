@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller.payload.request;
 
 import java.util.Date;
 
-import com.hcmus.mentor.backend.domain.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

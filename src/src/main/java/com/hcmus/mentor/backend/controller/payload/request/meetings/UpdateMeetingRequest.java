@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.meetings;
 
-import com.hcmus.mentor.backend.domain.MeetingRepeated;
+import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

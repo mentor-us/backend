@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.response.FAQDetail;
-import com.hcmus.mentor.backend.domain.FAQ;
+import com.hcmus.mentor.backend.domain.Faq;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.FaqService;
@@ -40,10 +40,10 @@ public class FaqController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<List<FAQ>> all(
+    public ResponseEntity<List<Faq>> all(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam String groupId) {
-        List<FAQ> faqs = faqService.getByGroupId(userPrincipal.getId(), groupId);
+        List<Faq> faqs = faqService.getByGroupId(userPrincipal.getId(), groupId);
         return ResponseEntity.ok(faqs);
     }
 
@@ -80,7 +80,7 @@ public class FaqController {
     public ResponseEntity<String> create(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody CreateFaqRequest request) {
-        FAQ faq = faqService.addNewFaq(userPrincipal.getId(), request);
+        Faq faq = faqService.addNewFaq(userPrincipal.getId(), request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -102,7 +102,7 @@ public class FaqController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String faqId,
             @RequestBody UpdateFaqRequest request) {
-        FAQ faq = faqService.updateFAQ(userPrincipal.getId(), faqId, request);
+        Faq faq = faqService.updateFAQ(userPrincipal.getId(), faqId, request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }

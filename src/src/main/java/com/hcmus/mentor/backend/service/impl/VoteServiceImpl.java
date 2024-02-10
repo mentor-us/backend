@@ -10,6 +10,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
@@ -86,7 +87,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(Choice choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
         if (choice == null) {
             return null;
         }

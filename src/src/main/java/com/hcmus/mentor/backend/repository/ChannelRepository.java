@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.domain.Channel;
 
 import java.util.List;
 
-import com.hcmus.mentor.backend.domain.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ChannelRepository extends MongoRepository<Channel, String> {

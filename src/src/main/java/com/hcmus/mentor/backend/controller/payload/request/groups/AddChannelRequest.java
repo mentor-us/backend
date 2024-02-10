@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.groups;
 
-import com.hcmus.mentor.backend.domain.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import lombok.*;
 
 import java.util.List;

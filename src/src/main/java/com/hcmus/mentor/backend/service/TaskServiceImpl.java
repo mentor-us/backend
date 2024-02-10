@@ -10,6 +10,8 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResp
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.ReminderRepository;
@@ -103,7 +105,7 @@ public class TaskServiceImpl implements IRemindableService {
                         ? groupService.findAllMenteeIdsGroup(request.getGroupId())
                         : request.getUserIds();
         Optional<User> assigner = userRepository.findByEmail(emailUser);
-        List<Assignee> assigneeIds =
+        List<AssigneeDto> assigneeIds =
                 userIds.stream().map(Task::newTask).collect(Collectors.toList());
         Task task =
                 Task.builder()
@@ -219,7 +221,7 @@ public class TaskServiceImpl implements IRemindableService {
                 task.getAssigneeIds().stream()
                         .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
                         .findFirst()
-                        .map(Assignee::getStatus)
+                        .map(AssigneeDto::getStatus)
                         .orElse(null);
         return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
@@ -282,13 +284,13 @@ public class TaskServiceImpl implements IRemindableService {
         }
         Group group = groupWrapper.get();
         List<String> assigneeIds =
-                task.getAssigneeIds().stream().map(Assignee::getUserId).collect(Collectors.toList());
+                task.getAssigneeIds().stream().map(AssigneeDto::getUserId).collect(Collectors.toList());
         List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
         Map<String, TaskStatus> statuses =
                 task.getAssigneeIds().stream()
                         .collect(
                                 Collectors.toMap(
-                                        Assignee::getUserId, Assignee::getStatus, (s1, s2) -> s2));
+                                        AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
         return assignees.stream()
                 .map(
                         assignee -> {
@@ -409,7 +411,7 @@ public class TaskServiceImpl implements IRemindableService {
                         task -> {
                             Group group = groupRepository.findById(task.getGroupId()).orElse(null);
                             User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                            Assignee assignee =
+                            AssigneeDto assignee =
                                     task.getAssigneeIds().stream()
                                             .filter(a -> a.getUserId().equals(userId))
                                             .findFirst()
@@ -500,7 +502,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .map(
                         task -> {
                             User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                            Assignee assignee =
+                            AssigneeDto assignee =
                                     task.getAssigneeIds().stream()
                                             .filter(a -> a.getUserId().equals(userId))
                                             .findFirst()
@@ -562,7 +564,7 @@ public class TaskServiceImpl implements IRemindableService {
         Reminder reminder = remindable.toReminder();
         Task task = (Task) remindable;
         List<String> emailUsers = new ArrayList<>();
-        for (Assignee assignee : task.getAssigneeIds()) {
+        for (AssigneeDto assignee : task.getAssigneeIds()) {
             Optional<User> userOptional = userRepository.findById(assignee.getUserId());
             if (userOptional.isPresent()) {
                 emailUsers.add(userOptional.get().getEmail());

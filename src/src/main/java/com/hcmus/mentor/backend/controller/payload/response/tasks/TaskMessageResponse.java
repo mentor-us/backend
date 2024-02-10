@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.hcmus.mentor.backend.domain.TaskStatus;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import lombok.*;
 
 @Getter

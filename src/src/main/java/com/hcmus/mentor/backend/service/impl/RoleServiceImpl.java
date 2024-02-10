@@ -8,7 +8,7 @@ import com.hcmus.mentor.backend.domain.Role;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
-import com.hcmus.mentor.backend.domain.UserRole;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.PermissionRepository;
 import com.hcmus.mentor.backend.repository.RoleRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;

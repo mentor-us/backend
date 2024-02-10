@@ -3,7 +3,7 @@ package com.hcmus.mentor.backend.controller;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
-import com.hcmus.mentor.backend.domain.Notify;
+import com.hcmus.mentor.backend.domain.Notification;
 import com.hcmus.mentor.backend.repository.NotificationRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
@@ -61,8 +61,8 @@ public class NotificationController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notify> get(@PathVariable String id) {
-        Optional<Notify> notification = notificationRepository.findById(id);
+    public ApiResponseDto<Notification> get(@PathVariable String id) {
+        Optional<Notification> notification = notificationRepository.findById(id);
         return notification.map(ApiResponseDto::success).orElseGet(() -> ApiResponseDto.notFound(NOT_FOUND));
     }
 
@@ -76,10 +76,10 @@ public class NotificationController {
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notify> create(
+    public ApiResponseDto<Notification> create(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody AddNotificationRequest request) {
-        Notify newNotif = notificationService.createResponseNotification(userPrincipal.getId(), request);
+        Notification newNotif = notificationService.createResponseNotification(userPrincipal.getId(), request);
         return ApiResponseDto.success(newNotif);
     }
 
@@ -94,12 +94,12 @@ public class NotificationController {
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notify> response(
+    public ApiResponseDto<Notification> response(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String id,
             @RequestParam String action) {
         String userId = userPrincipal.getId();
-        Notify notif = notificationService.responseNotification(userId, id, action);
+        Notification notif = notificationService.responseNotification(userId, id, action);
         if (notif == null) {
             return ApiResponseDto.notFound(NOT_FOUND);
         }

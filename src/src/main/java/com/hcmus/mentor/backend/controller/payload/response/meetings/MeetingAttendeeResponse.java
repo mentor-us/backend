@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.domain.User;
 
 import java.util.Date;
 
-import com.hcmus.mentor.backend.domain.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.*;
 
 @Getter

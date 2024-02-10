@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

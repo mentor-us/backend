@@ -4,6 +4,8 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformat
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfo;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -19,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static com.hcmus.mentor.backend.domain.UserRole.USER;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 
 @Data
 @Builder

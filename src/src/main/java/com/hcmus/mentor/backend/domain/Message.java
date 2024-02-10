@@ -2,6 +2,8 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.TextIndexed;
@@ -43,7 +45,7 @@ public class Message {
     private String taskId;
 
     @Builder.Default
-    private List<Reaction> reactions = new ArrayList<>();
+    private List<ReactionDto> reactions = new ArrayList<>();
 
     @Builder.Default
     private List<String> images = new ArrayList<>();
@@ -57,23 +59,23 @@ public class Message {
 
     private String reply;
 
-    public Reaction react(String userId, EmojiType emoji) {
-        Optional<Reaction> reactionWrapper =
+    public ReactionDto react(String userId, EmojiType emoji) {
+        Optional<ReactionDto> reactionWrapper =
                 reactions.stream().filter(r -> r.getUserId().equals(userId)).findFirst();
         if (!reactionWrapper.isPresent()) {
-            Reaction newReaction = Reaction.builder().userId(userId).total(0).build();
+            ReactionDto newReaction = ReactionDto.builder().userId(userId).total(0).build();
             newReaction.react(emoji);
             reactions.add(newReaction);
             return newReaction;
         }
-        Reaction reaction = reactionWrapper.get();
+        ReactionDto reaction = reactionWrapper.get();
         reaction.react(emoji);
         setReactions(reactions);
         return reaction;
     }
 
     public void removeReact(String userId) {
-        List<Reaction> filteredReactions =
+        List<ReactionDto> filteredReactions =
                 reactions.stream()
                         .filter(reaction -> !reaction.getUserId().equals(userId))
                         .collect(Collectors.toList());

@@ -1,6 +1,9 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
+import com.hcmus.mentor.backend.domain.constant.ReminderType;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
@@ -34,7 +37,7 @@ public class Task implements IRemindable, Serializable {
     private String assignerId;
 
     @Builder.Default
-    private List<Assignee> assigneeIds = new ArrayList<>();
+    private List<AssigneeDto> assigneeIds = new ArrayList<>();
 
     @Builder.Default
     private String parentTask = "";
@@ -44,8 +47,8 @@ public class Task implements IRemindable, Serializable {
     @Builder.Default
     private Date createdDate = new Date();
 
-    public static Assignee newTask(String userId) {
-        return new Assignee(userId, TaskStatus.TO_DO);
+    public static AssigneeDto newTask(String userId) {
+        return new AssigneeDto(userId, TaskStatus.TO_DO);
     }
 
     @Override
@@ -95,7 +98,7 @@ public class Task implements IRemindable, Serializable {
     }
 
     public List<String> getAllAssigneeIds() {
-        return assigneeIds.stream().map(Assignee::getUserId).collect(Collectors.toList());
+        return assigneeIds.stream().map(AssigneeDto::getUserId).collect(Collectors.toList());
     }
 
     public void update(UpdateTaskRequest request) {
@@ -109,7 +112,7 @@ public class Task implements IRemindable, Serializable {
             this.setDeadline(request.getDeadline());
         }
         if (request.getUserIds() != null) {
-            List<Assignee> assignees =
+            List<AssigneeDto> assignees =
                     assigneeIds.stream()
                             .filter(assignee -> request.getUserIds().contains(assignee.getUserId()))
                             .collect(Collectors.toList());
@@ -117,7 +120,7 @@ public class Task implements IRemindable, Serializable {
                     .filter(userId -> !getAllAssigneeIds().contains(userId))
                     .forEach(
                             userId -> {
-                                assignees.add(Assignee.builder().userId(userId).build());
+                                assignees.add(AssigneeDto.builder().userId(userId).build());
                             });
             this.setAssigneeIds(assignees);
         }

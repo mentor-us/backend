@@ -5,7 +5,7 @@ import com.hcmus.mentor.backend.domain.Task;
 import java.util.Date;
 import java.util.List;
 
-import com.hcmus.mentor.backend.domain.TaskStatus;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.MongoRepository;

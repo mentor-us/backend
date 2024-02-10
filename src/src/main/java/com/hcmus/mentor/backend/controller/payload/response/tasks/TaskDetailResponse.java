@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.tasks;
 
 import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.TaskStatus;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.User;
 
 import java.util.Date;
