@@ -1,142 +1,128 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Role;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
-import com.hcmus.mentor.backend.controller.payload.returnCode.RoleReturnCode;
-import com.hcmus.mentor.backend.service.RoleService;
-import com.hcmus.mentor.backend.service.impl.RoleServiceImpl;
+import com.hcmus.mentor.backend.domain.Role;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.hcmus.mentor.backend.service.RoleService;
+import com.hcmus.mentor.backend.service.dto.RoleServiceDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Role APIs", description = "REST APIs for Role collections")
+/**
+ * Role controller.
+ */
+@Tag(name = "role")
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("api/roles")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class RoleController {
+
     private final RoleService roleService;
 
-    public RoleController(RoleService roleService) {
-        this.roleService = roleService;
-    }
-
-    @Operation(summary = "Get all roles", description = "Get all roles in system", tags = "Role APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get all roles successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-    })
-    @GetMapping("/all")
-    public APIResponse<List<Role>> all(@CurrentUser UserPrincipal userPrincipal) {
+    /**
+     * Get all roles in the system.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @return APIResponse containing the list of roles in the system.
+     */
+    @GetMapping("all")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<Role>> all(@CurrentUser UserPrincipal userPrincipal) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findAll(emailUser);
-        return new APIResponse(
+        RoleServiceDto roleServiceReturn = roleService.findAll(emailUser);
+        return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
                 roleServiceReturn.getMessage());
     }
 
-    @Operation(summary = "Get a role", description = "Get a role in system", tags = "Role APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get role successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = RoleReturnCode.NOT_FOUND_STRING, description = "Not found role"),
-    })
-    @GetMapping("/{id}")
-    public APIResponse<Role> get(@CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
+    /**
+     * Get a specific role by ID.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param id            The ID of the role to retrieve.
+     * @return APIResponse containing the retrieved role or a not-found response.
+     */
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    @GetMapping("{id}")
+    public ApiResponseDto<Role> get(@CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findById(emailUser, id);
-        return new APIResponse(
+        RoleServiceDto roleServiceReturn = roleService.findById(emailUser, id);
+        return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
                 roleServiceReturn.getMessage());
     }
 
-    @Operation(summary = "Create a role", description = "Create a new role", tags = "Role APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Create role successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(
-                    responseCode = RoleReturnCode.DUPLICATE_ROLE_STRING,
-                    description = "Duplicate role"),
-            @ApiResponse(
-                    responseCode = RoleReturnCode.NOT_FOUND_PERMISSION_STRING,
-                    description = "Not found permissions"),
-    })
+    /**
+     * Create a new role.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param request       The request payload for creating a new role.
+     * @return APIResponse containing the created role or a response indicating failure.
+     */
     @PostMapping("")
-    public APIResponse<Role> create(
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Role> create(
             @CurrentUser UserPrincipal userPrincipal, @RequestBody CreateRoleRequest request) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.create(emailUser, request);
-        return new APIResponse(
+        RoleServiceDto roleServiceReturn = roleService.create(emailUser, request);
+        return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
                 roleServiceReturn.getMessage());
     }
 
-    @Operation(summary = "Update a role", description = "Update a role", tags = "Role APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update role successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = RoleReturnCode.NOT_FOUND_STRING, description = "Not found role"),
-            @ApiResponse(
-                    responseCode = RoleReturnCode.DUPLICATE_ROLE_STRING,
-                    description = "Duplicate role"),
-            @ApiResponse(
-                    responseCode = RoleReturnCode.NOT_FOUND_PERMISSION_STRING,
-                    description = "Not found permissions"),
-    })
-    @PatchMapping("/{id}")
-    public APIResponse<Role> update(
+    /**
+     * Update an existing role.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param id            The ID of the role to update.
+     * @param request       The request payload for updating the role.
+     * @return APIResponse containing the updated role or a not-found response.
+     */
+    @PatchMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Role> update(
             @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String id,
             @RequestBody UpdateRoleRequest request) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.update(emailUser, id, request);
-        return new APIResponse(
+        RoleServiceDto roleServiceReturn = roleService.update(emailUser, id, request);
+        return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
                 roleServiceReturn.getMessage());
     }
 
-    @Operation(summary = "Delete a role", description = "Delete a role", tags = "Role APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Delete role successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ApiResponse.class)))),
-            @ApiResponse(responseCode = RoleReturnCode.NOT_FOUND_STRING, description = "Not found role"),
-    })
+    /**
+     * Delete roles.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param ids           The list of role IDs to delete.
+     * @return APIResponse containing the result of the delete operation.
+     */
     @DeleteMapping("")
-    public APIResponse<Role> delete(
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Role> delete(
             @CurrentUser UserPrincipal userPrincipal, @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
-        return new APIResponse(
+        RoleServiceDto roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
+        return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
                 roleServiceReturn.getMessage());

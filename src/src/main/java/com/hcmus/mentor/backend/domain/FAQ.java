@@ -15,7 +15,7 @@ import java.util.List;
 @Setter
 @Builder
 @Document("faq")
-public class FAQ {
+public class Faq {
 
     @Id
     private String id;

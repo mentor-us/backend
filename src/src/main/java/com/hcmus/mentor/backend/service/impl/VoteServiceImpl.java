@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.corundumstudio.socketio.SocketIOServer;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
@@ -13,6 +10,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
@@ -89,7 +87,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(Vote.Choice choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
         if (choice == null) {
             return null;
         }

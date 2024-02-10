@@ -1,19 +1,15 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
-import com.hcmus.mentor.backend.service.EventService;
-import com.hcmus.mentor.backend.service.impl.EventServiceImpl;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
+import com.hcmus.mentor.backend.service.EventService;
+import com.hcmus.mentor.backend.service.dto.EventDto;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,68 +19,61 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Date;
 import java.util.List;
 
-@Tag(name = "Event APIs", description = "REST APIs for user event")
+/**
+ * Event controller.
+ */
+@Tag(name = "events")
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping("api/events")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class EventController {
 
     private final EventService eventService;
 
-    public EventController(EventService eventService) {
-        this.eventService = eventService;
-    }
-
-    @Operation(
-            summary = "Get all own events",
-            description = "API to get all own events (meeting, task) of user on Calendar",
-            tags = "Event APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping("/own")
-    public APIResponse<List<EventServiceImpl.Event>> getOwnEvents(
+    /**
+     * Retrieves all events owned by the user.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @return APIResponse containing a list of own events.
+     */
+    @GetMapping("own")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<EventDto>> getOwnEvents(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        return APIResponse.success(eventService.getAllOwnEvents(userPrincipal.getId()));
+        return ApiResponseDto.success(eventService.getAllOwnEvents(userPrincipal.getId()));
     }
 
-    @Operation(
-            summary = "Get all own events by date",
-            description = "API to get all own events in one day",
-            tags = "Event APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping("/own/date")
-    public APIResponse<List<EventServiceImpl.Event>> getAllByDate(
+    /**
+     * Retrieves all events owned by the user on a specific date.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param date          The date for which to retrieve events.
+     * @return APIResponse containing a list of own events on the specified date.
+     */
+    @GetMapping("own/date")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<EventDto>> getAllByDate(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
-        return APIResponse.success(eventService.getAllEventsByDate(userPrincipal.getId(), date));
+        return ApiResponseDto.success(eventService.getAllEventsByDate(userPrincipal.getId(), date));
     }
 
-    @Operation(
-            summary = "Get all own events by month",
-            description = "API to get all own events in one month",
-            tags = "Event APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class))))
-    })
-    @GetMapping("/own/month")
-    public APIResponse<List<EventServiceImpl.Event>> getAllByMonth(
+    /**
+     * Retrieves all events owned by the user in a specific month.
+     *
+     * @param userPrincipal The current user's principal information.
+     * @param date          The date within the desired month.
+     * @return APIResponse containing a list of own events in the specified month.
+     */
+    @GetMapping("own/month")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<EventDto>> getAllByMonth(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
-        return APIResponse.success(eventService.getAllEventsByMonth(userPrincipal.getId(), date));
+        return ApiResponseDto.success(eventService.getAllEventsByMonth(userPrincipal.getId(), date));
     }
 }

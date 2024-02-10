@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.FAQ;
+import com.hcmus.mentor.backend.domain.Faq;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
@@ -31,7 +31,7 @@ public class FaqServiceImpl implements FaqService {
     private final PermissionService permissionService;
 
     @Override
-    public List<FAQ> getByGroupId(String userId, String groupId) {
+    public List<Faq> getByGroupId(String userId, String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
             return Collections.emptyList();
@@ -42,17 +42,17 @@ public class FaqServiceImpl implements FaqService {
         }
 
         return faqRepository.findByGroupId(groupId).stream()
-                .sorted(Comparator.comparing(FAQ::getRating).reversed())
+                .sorted(Comparator.comparing(Faq::getRating).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
     public FAQDetail getById(String userId, String faqId) {
-        Optional<FAQ> faqWrapper = faqRepository.findById(faqId);
+        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return null;
         }
-        FAQ faq = faqWrapper.get();
+        Faq faq = faqWrapper.get();
 
         List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(faq.getGroupId());
         if (groupWrapper.size() == 0) {
@@ -65,7 +65,7 @@ public class FaqServiceImpl implements FaqService {
     }
 
     @Override
-    public FAQ addNewFaq(String userId, CreateFaqRequest request) {
+    public Faq addNewFaq(String userId, CreateFaqRequest request) {
         Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
         if (!groupWrapper.isPresent()) {
             return null;
@@ -75,14 +75,14 @@ public class FaqServiceImpl implements FaqService {
             return null;
         }
 
-        FAQ data =
-                FAQ.builder()
+        Faq data =
+                Faq.builder()
                         .question(request.getQuestion())
                         .answer(request.getAnswer())
                         .creatorId(userId)
                         .groupId(request.getGroupId())
                         .build();
-        FAQ newFAQ = faqRepository.save(data);
+        Faq newFAQ = faqRepository.save(data);
         if (newFAQ == null) {
             return null;
         }
@@ -93,7 +93,7 @@ public class FaqServiceImpl implements FaqService {
     }
 
     @Override
-    public FAQ updateFAQ(String userId, String faqId, UpdateFaqRequest request) {
+    public Faq updateFAQ(String userId, String faqId, UpdateFaqRequest request) {
         Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
         if (!groupWrapper.isPresent()) {
             return null;
@@ -103,22 +103,22 @@ public class FaqServiceImpl implements FaqService {
             return null;
         }
 
-        Optional<FAQ> faqWrapper = faqRepository.findById(faqId);
+        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return null;
         }
-        FAQ faq = faqWrapper.get();
+        Faq faq = faqWrapper.get();
         faq.update(request);
         return faqRepository.save(faq);
     }
 
     @Override
     public boolean deleteFaq(String userId, String faqId) {
-        Optional<FAQ> faqWrapper = faqRepository.findById(faqId);
+        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return false;
         }
-        FAQ faq = faqWrapper.get();
+        Faq faq = faqWrapper.get();
 
         Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
         if (!groupWrapper.isPresent()) {
@@ -145,11 +145,11 @@ public class FaqServiceImpl implements FaqService {
             return;
         }
 
-        List<FAQ> newFAQs =
+        List<Faq> newFAQs =
                 faqRepository.findByIdIn(request.getFaqIds()).stream()
                         .map(
                                 faq ->
-                                        FAQ.builder()
+                                        Faq.builder()
                                                 .question(faq.getQuestion())
                                                 .answer(faq.getAnswer())
                                                 .creatorId(user.getId())
@@ -158,18 +158,18 @@ public class FaqServiceImpl implements FaqService {
                         .collect(Collectors.toList());
 
         Group group = groupWrapper.get();
-        group.importFaq(newFAQs.stream().map(FAQ::getId).collect(Collectors.toList()));
+        group.importFaq(newFAQs.stream().map(Faq::getId).collect(Collectors.toList()));
         groupRepository.save(group);
         faqRepository.saveAll(newFAQs);
     }
 
     @Override
     public boolean upvote(UserPrincipal user, String faqId) {
-        Optional<FAQ> faqWrapper = faqRepository.findById(faqId);
+        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return false;
         }
-        FAQ faq = faqWrapper.get();
+        Faq faq = faqWrapper.get();
 
         Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
         if (!groupWrapper.isPresent()) {
@@ -187,11 +187,11 @@ public class FaqServiceImpl implements FaqService {
 
     @Override
     public boolean downVote(UserPrincipal user, String faqId) {
-        Optional<FAQ> faqWrapper = faqRepository.findById(faqId);
+        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return false;
         }
-        FAQ faq = faqWrapper.get();
+        Faq faq = faqWrapper.get();
 
         Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
         if (!groupWrapper.isPresent()) {

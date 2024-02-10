@@ -1,5 +1,7 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.domain.dto;
 
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import lombok.*;
 
 import java.io.Serializable;
@@ -12,7 +14,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Reaction implements Serializable {
+public class ReactionDto implements Serializable {
 
     private String userId;
 
@@ -21,19 +23,19 @@ public class Reaction implements Serializable {
     private String imageUrl;
 
     @Builder.Default
-    private List<Emoji> data = new ArrayList<>();
+    private List<EmojiDto> data = new ArrayList<>();
 
     private Integer total;
 
-    public void react(Emoji.Type type) {
-        Optional<Emoji> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
+    public void react(EmojiType type) {
+        Optional<EmojiDto> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
         if (!emojiWrapper.isPresent()) {
-            Emoji newEmoji = Emoji.builder().id(type).total(1).build();
+            EmojiDto newEmoji = EmojiDto.builder().id(type).total(1).build();
             data.add(newEmoji);
             total = total + 1;
             return;
         }
-        Emoji emoji = emojiWrapper.get();
+        EmojiDto emoji = emojiWrapper.get();
         emoji.react();
         total = total + 1;
     }

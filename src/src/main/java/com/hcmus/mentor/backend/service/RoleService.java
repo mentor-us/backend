@@ -2,36 +2,19 @@ package com.hcmus.mentor.backend.service;
 
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
+import com.hcmus.mentor.backend.service.dto.RoleServiceDto;
 
 import java.util.List;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 public interface RoleService {
-    RoleServiceReturn findAll(String emailUser);
+    RoleServiceDto findAll(String emailUser);
 
-    RoleServiceReturn findById(String emailUser, String id);
+    RoleServiceDto findById(String emailUser, String id);
 
-    RoleServiceReturn create(String emailUser, CreateRoleRequest request);
+    RoleServiceDto create(String emailUser, CreateRoleRequest request);
 
-    RoleServiceReturn deleteMultiple(String emailUser, List<String> ids);
+    RoleServiceDto deleteMultiple(String emailUser, List<String> ids);
 
-    RoleServiceReturn update(String emailUser, String id, UpdateRoleRequest request);
+    RoleServiceDto update(String emailUser, String id, UpdateRoleRequest request);
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    class RoleServiceReturn {
-        Integer returnCode;
-        String message;
-        Object data;
-
-        public RoleServiceReturn(Integer returnCode, String message, Object data) {
-            this.returnCode = returnCode;
-            this.message = message;
-            this.data = data;
-        }
-    }
 }

@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
 @Getter
@@ -35,7 +36,7 @@ public class MessageResponse implements Serializable {
 
     private String taskId;
 
-    private List<Reaction> reactions;
+    private List<ReactionDto> reactions;
 
     private List<String> images;
 

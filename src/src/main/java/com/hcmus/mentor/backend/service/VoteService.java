@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
@@ -16,7 +17,7 @@ public interface VoteService {
 
     VoteDetailResponse fulfillChoices(Vote vote);
 
-    VoteDetailResponse.ChoiceDetail fulfillChoice(Vote.Choice choice);
+    VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice);
 
     Vote createNewVote(String userId, CreateVoteRequest request);
 

@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -19,5 +19,5 @@ public class AddUserRequest {
     @Email(regexp = "^[a-zA-Z0-9._%+-]+@(gmail\\.com|hcmus\\.edu\\.vn)$")
     String emailAddress;
 
-    User.Role role;
+    UserRole role;
 }

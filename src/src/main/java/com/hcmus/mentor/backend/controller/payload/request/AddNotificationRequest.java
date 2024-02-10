@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.Notif;
+import com.hcmus.mentor.backend.domain.constant.NotificationType;
 
 import java.util.Date;
 
@@ -19,7 +19,7 @@ public class AddNotificationRequest {
 
     private String content;
 
-    private Notif.Type type;
+    private NotificationType type;
 
     private String receiverId;
 

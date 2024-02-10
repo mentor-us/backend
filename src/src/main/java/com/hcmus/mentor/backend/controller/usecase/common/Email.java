@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.domain;
+package com.hcmus.mentor.backend.controller.usecase.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

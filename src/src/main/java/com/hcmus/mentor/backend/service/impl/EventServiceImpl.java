@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.hcmus.mentor.backend.service.dto.EventDto;
 import lombok.*;
 import org.springframework.stereotype.Service;
 
@@ -29,40 +30,40 @@ public class EventServiceImpl implements EventService {
     private final TaskRepository taskRepository;
 
     @Override
-    public List<Event> getMostRecentEvents(String userId) {
+    public List<EventDto> getMostRecentEvents(String userId) {
         List<MeetingResponse> meetings = meetingService.getMostRecentMeetings(userId);
         List<TaskResponse> tasks = taskService.getMostRecentTasks(userId);
-        return Stream.concat(meetings.stream().map(Event::from), tasks.stream().map(Event::from))
+        return Stream.concat(meetings.stream().map(EventDto::from), tasks.stream().map(EventDto::from))
                 .filter(event -> event.getUpcomingTime() != null)
-                .sorted(Comparator.comparing(Event::getUpcomingTime))
+                .sorted(Comparator.comparing(EventDto::getUpcomingTime))
                 .limit(5)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<Event> getAllOwnEvents(String userId) {
+    public List<EventDto> getAllOwnEvents(String userId) {
         List<Meeting> meetings = meetingService.getAllOwnMeetings(userId);
         List<Task> tasks = taskService.getAllOwnTasks(userId);
         return mergeEvents(meetings, tasks);
     }
 
     @Override
-    public List<Event> mergeEvents(List<Meeting> meetings, List<Task> tasks) {
-        return Stream.concat(meetings.stream().map(Event::from), tasks.stream().map(Event::from))
+    public List<EventDto> mergeEvents(List<Meeting> meetings, List<Task> tasks) {
+        return Stream.concat(meetings.stream().map(EventDto::from), tasks.stream().map(EventDto::from))
                 .filter(event -> event.getUpcomingTime() != null)
-                .sorted(Comparator.comparing(Event::getUpcomingTime))
+                .sorted(Comparator.comparing(EventDto::getUpcomingTime))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<Event> getAllEventsByDate(String userId, Date date) {
+    public List<EventDto> getAllEventsByDate(String userId, Date date) {
         List<Meeting> meetings = meetingService.getAllOwnMeetingsByDate(userId, date);
         List<Task> tasks = taskService.getAllOwnTaskByDate(userId, date);
         return mergeEvents(meetings, tasks);
     }
 
     @Override
-    public List<Event> getAllEventsByMonth(String userId, Date date) {
+    public List<EventDto> getAllEventsByMonth(String userId, Date date) {
         List<Meeting> meetings = meetingService.getAllOwnMeetingsByMonth(userId, date);
         List<Task> tasks = taskService.getAllOwnTasksByMonth(userId, date);
         return mergeEvents(meetings, tasks);

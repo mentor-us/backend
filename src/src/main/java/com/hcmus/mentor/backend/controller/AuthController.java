@@ -9,7 +9,6 @@ import com.hcmus.mentor.backend.security.authenticateuser.refreshtoken.RefreshTo
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.BindingResult;
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "auth")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("api/auth")
 @RequiredArgsConstructor
 @Validated
 public class AuthController {
@@ -38,12 +37,9 @@ public class AuthController {
      * @return The response hold access token and expire time.
      * @throws ValidationException Username or password wrong.
      */
-    @PostMapping("/login")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "400", description = "Username or password wrong", content = @Content(schema = @Schema()))
-    })
-
+    @PostMapping("login")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "Username or password wrong", content = @Content(schema = @Schema()))
     public LoginUserCommandResult authenticate(@RequestBody LoginUserCommand command, BindingResult errors)
             throws ValidationException {
         if (errors.hasErrors()) {
@@ -60,11 +56,9 @@ public class AuthController {
      * @return The response hold access token and expire time.
      * @throws ValidationException Token is invalid.
      */
-    @PostMapping("/refresh-token")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "400", description = "Token is invalid", content = @Content(schema = @Schema()))
-    })
+    @PostMapping("refresh-token")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "Token is invalid", content = @Content(schema = @Schema()))
     public TokenModel refreshToken(@RequestBody RefreshTokenCommand command, BindingResult errors)
             throws ValidationException {
         if (errors.hasErrors()) {

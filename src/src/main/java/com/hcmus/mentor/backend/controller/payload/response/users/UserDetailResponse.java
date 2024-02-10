@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.constant.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,12 +35,12 @@ public class UserDetailResponse {
 
     private String personalEmail;
 
-    private User.Gender gender;
+    private UserGender gender;
 
     @Builder.Default
     private List<GroupInfo> groups = new ArrayList<>();
 
-    private User.Role role;
+    private UserRole role;
 
     public static UserDetailResponse from(User user) {
         return UserDetailResponse.builder()

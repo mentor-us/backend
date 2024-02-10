@@ -1,9 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-public interface SystemConfigService {
-    SystemConfigReturnService listAll(String emailUser);
+import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 
-    SystemConfigReturnService updateValue(String emailUser, String id, Object value);
+public interface SystemConfigService {
+    SystemConfigServiceDto listAll(String emailUser);
+
+    SystemConfigServiceDto updateValue(String emailUser, String id, Object value);
 
     void add();
 }

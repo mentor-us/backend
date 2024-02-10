@@ -1,5 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -27,12 +29,12 @@ public class GroupCategory {
     @Builder.Default
     private Date createdDate = new Date();
     @Builder.Default
-    private Status status = Status.ACTIVE;
+    private GroupCategoryStatus status = GroupCategoryStatus.ACTIVE;
     @Builder.Default
-    private List<Permission> permissions = new ArrayList<>();
+    private List<GroupCategoryPermission> permissions = new ArrayList<>();
 
     public void update(
-            String name, String description, String iconUrl, List<Permission> permissions) {
+            String name, String description, String iconUrl, List<GroupCategoryPermission> permissions) {
         if (name != null) {
             this.setName(name);
         }
@@ -47,27 +49,4 @@ public class GroupCategory {
         }
     }
 
-    public enum Status {
-        ACTIVE,
-        DELETED
-    }
-
-    public enum Permission {
-        SEND_FILES("Quyền gửi file"),
-        TASK_MANAGEMENT("Quyền quản lí công việc"),
-        MEETING_MANAGEMENT("Quyền quản lý lịch hẹn"),
-        BOARD_MANAGEMENT("Quyền quản lý bảng tin"),
-        FAQ_MANAGEMENT("Quyền quản lý câu hỏi thường gặp"),
-        GROUP_SETTINGS("Quyền cài đặt nhóm");
-
-        private final String description;
-
-        Permission(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
 }

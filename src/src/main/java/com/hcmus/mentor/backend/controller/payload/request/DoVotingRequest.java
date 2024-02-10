@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,5 +18,5 @@ public class DoVotingRequest {
 
     private String voteId;
 
-    private List<Vote.Choice> choices;
+    private List<ChoiceDto> choices;
 }

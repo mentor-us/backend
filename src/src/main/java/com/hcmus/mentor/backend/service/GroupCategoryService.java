@@ -8,24 +8,25 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRe
 import java.io.IOException;
 import java.util.List;
 
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
 public interface GroupCategoryService {
     List<GroupCategory> findAll();
 
-    GroupCategoryReturn findById(String id);
+    GroupCategoryServiceDto findById(String id);
 
-    GroupCategoryReturn create(String emailUser, CreateGroupCategoryRequest request);
+    GroupCategoryServiceDto create(String emailUser, CreateGroupCategoryRequest request);
 
-    GroupCategoryReturn update(String emailUser, String id, UpdateGroupCategoryRequest request);
+    GroupCategoryServiceDto update(String emailUser, String id, UpdateGroupCategoryRequest request);
 
-    GroupCategoryReturn delete(String emailUser, String id, String newGroupCategoryId);
+    GroupCategoryServiceDto delete(String emailUser, String id, String newGroupCategoryId);
 
-    GroupCategoryReturn findGroupCategories(
+    GroupCategoryServiceDto findGroupCategories(
             String emailUser, FindGroupCategoryRequest request, int page, int pageSize);
 
-    GroupCategoryReturn deleteMultiple(String emailUser, List<String> ids, String newGroupCategoryId);
+    GroupCategoryServiceDto deleteMultiple(String emailUser, List<String> ids, String newGroupCategoryId);
 
     ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
             throws IOException;

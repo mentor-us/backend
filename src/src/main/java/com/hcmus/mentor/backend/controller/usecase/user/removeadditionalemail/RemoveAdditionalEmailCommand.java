@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +12,7 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class RemoveAdditionalEmailCommand implements Command<UserService.UserReturnService> {
+public class RemoveAdditionalEmailCommand implements Command<UserServiceDto> {
     /**
      * ID of user account.
      */

@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller.payload.response;
 
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.domain.FAQ;
+import com.hcmus.mentor.backend.domain.Faq;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,7 +36,7 @@ public class FAQDetail {
 
     private List<String> voters;
 
-    public static FAQDetail from(FAQ faq, ShortProfile creator, GroupDetailResponse group) {
+    public static FAQDetail from(Faq faq, ShortProfile creator, GroupDetailResponse group) {
         return FAQDetail.builder()
                 .id(faq.getId())
                 .question(faq.getQuestion())

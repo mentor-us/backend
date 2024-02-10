@@ -1,16 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
-import com.hcmus.mentor.backend.domain.Meeting;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
@@ -21,38 +11,15 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.MessageRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.AnalyticAttribute;
 import com.hcmus.mentor.backend.service.AnalyticService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -73,6 +40,20 @@ import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+
 /**
  * Analytic service.
  */
@@ -92,7 +73,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private SystemAnalyticResponse getGeneralInformationForSuperAdmin() {
         long totalGroups = groupRepository.count();
-        long activeGroups = groupRepository.countByStatus(Group.Status.ACTIVE);
+        long activeGroups = groupRepository.countByStatus(GroupStatus.ACTIVE);
 
         List<Task> tasks = taskRepository.findAll();
         long totalTasks = 0;
@@ -106,21 +87,19 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByStatus(true);
 
-        SystemAnalyticResponse response =
-                SystemAnalyticResponse.builder()
-                        .totalGroups(totalGroups)
-                        .activeGroups(activeGroups)
-                        .totalTasks(totalTasks)
-                        .totalMeetings(totalMeetings)
-                        .totalMessages(totalMessages)
-                        .totalUsers(totalUsers)
-                        .activeUsers(activeUsers)
-                        .build();
-        return response;
+        return SystemAnalyticResponse.builder()
+                .totalGroups(totalGroups)
+                .activeGroups(activeGroups)
+                .totalTasks(totalTasks)
+                .totalMeetings(totalMeetings)
+                .totalMessages(totalMessages)
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .build();
     }
 
     private SystemAnalyticResponse getGeneralInformationForAdmin(String adminId) {
-        long activeGroups = groupRepository.countByStatusAndCreatorId(Group.Status.ACTIVE, adminId);
+        long activeGroups = groupRepository.countByStatusAndCreatorId(GroupStatus.ACTIVE, adminId);
         List<Group> groups = groupRepository.findAllByCreatorId(adminId);
         long totalGroups = groups.size();
 
@@ -136,23 +115,21 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByStatus(true);
 
-        SystemAnalyticResponse response =
-                SystemAnalyticResponse.builder()
-                        .totalGroups(totalGroups)
-                        .activeGroups(activeGroups)
-                        .totalTasks(totalTasks)
-                        .totalMeetings(totalMeetings)
-                        .totalMessages(totalMessages)
-                        .totalUsers(totalUsers)
-                        .activeUsers(activeUsers)
-                        .build();
-        return response;
+        return SystemAnalyticResponse.builder()
+                .totalGroups(totalGroups)
+                .activeGroups(activeGroups)
+                .totalTasks(totalTasks)
+                .totalMeetings(totalMeetings)
+                .totalMessages(totalMessages)
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .build();
     }
 
     @Override
-    public APIResponse<SystemAnalyticResponse> getGeneralInformation(String emailUser) {
+    public ApiResponseDto<SystemAnalyticResponse> getGeneralInformation(String emailUser) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         SystemAnalyticResponse response;
         if (permissionService.isSuperAdmin(emailUser)) {
@@ -166,14 +143,14 @@ public class AnalyticServiceImpl implements AnalyticService {
             response = getGeneralInformationForAdmin(adminId);
         }
 
-        return new APIResponse(response, SUCCESS, "");
+        return new ApiResponseDto(response, SUCCESS, "");
     }
 
     @Override
-    public APIResponse<SystemAnalyticResponse> getGeneralInformationByGroupCategory(
+    public ApiResponseDto<SystemAnalyticResponse> getGeneralInformationByGroupCategory(
             String emailUser, String groupCategoryId) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         List<Group> groups;
         long activeGroups;
@@ -181,7 +158,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (permissionService.isSuperAdmin(emailUser)) {
             groups = groupRepository.findAllByGroupCategory(groupCategoryId);
             activeGroups =
-                    groupRepository.countByGroupCategoryAndStatus(groupCategoryId, Group.Status.ACTIVE);
+                    groupRepository.countByGroupCategoryAndStatus(groupCategoryId, GroupStatus.ACTIVE);
         } else {
             Optional<User> userOptional = userRepository.findByEmail(emailUser);
             String adminId = null;
@@ -191,7 +168,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             groups = groupRepository.findAllByGroupCategoryAndCreatorId(groupCategoryId, adminId);
             activeGroups =
                     groupRepository.countByGroupCategoryAndStatusAndCreatorId(
-                            groupCategoryId, Group.Status.ACTIVE, adminId);
+                            groupCategoryId, GroupStatus.ACTIVE, adminId);
         }
 
         long totalGroups = groups.size();
@@ -222,21 +199,21 @@ public class AnalyticServiceImpl implements AnalyticService {
                         .totalUsers(totalUsers)
                         .activeUsers(activeUsers)
                         .build();
-        return new APIResponse(response, SUCCESS, "");
+        return new ApiResponseDto(response, SUCCESS, "");
     }
 
     @Override
-    public APIResponse<SystemAnalyticChartResponse> getDataForChart(
+    public ApiResponseDto<SystemAnalyticChartResponse> getDataForChart(
             String emailUser, int monthStart, int yearStart, int monthEnd, int yearEnd)
             throws ParseException {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         LocalDate timeStart = LocalDate.of(yearStart, monthStart, 1);
         int lastDay = getLastDayOfMonth(yearEnd, monthEnd);
         LocalDate timeEnd = LocalDate.of(yearEnd, monthEnd, lastDay);
         if (timeEnd.isBefore(timeStart)) {
-            return new APIResponse(null, INVALID_TIME_RANGE, "Invalid time range");
+            return new ApiResponseDto(null, INVALID_TIME_RANGE, "Invalid time range");
         }
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         if (permissionService.isSuperAdmin(emailUser)) {
@@ -250,7 +227,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             data = getChartByMonthForAdmin(timeStart, timeEnd, adminId);
         }
         SystemAnalyticChartResponse response = SystemAnalyticChartResponse.builder().data(data).build();
-        return new APIResponse(response, SUCCESS, "");
+        return new ApiResponseDto(response, SUCCESS, "");
     }
 
     private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForSuperAdmin(
@@ -328,7 +305,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<SystemAnalyticChartResponse> getDataForChartByGroupCategory(
+    public ApiResponseDto<SystemAnalyticChartResponse> getDataForChartByGroupCategory(
             String emailUser,
             int monthStart,
             int yearStart,
@@ -337,13 +314,13 @@ public class AnalyticServiceImpl implements AnalyticService {
             String groupCategoryId)
             throws ParseException {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         LocalDate timeStart = LocalDate.of(yearStart, monthStart, 1);
         int lastDay = getLastDayOfMonth(yearEnd, monthEnd);
         LocalDate timeEnd = LocalDate.of(yearEnd, monthEnd, lastDay);
         if (timeEnd.isBefore(timeStart)) {
-            return new APIResponse(null, INVALID_TIME_RANGE, "Invalid time range");
+            return new ApiResponseDto(null, INVALID_TIME_RANGE, "Invalid time range");
         }
         ArrayList<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         List<Group> groups;
@@ -401,7 +378,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             data.add(monthSystemAnalytic);
         }
         SystemAnalyticChartResponse response = SystemAnalyticChartResponse.builder().data(data).build();
-        return new APIResponse(response, SUCCESS, "");
+        return new ApiResponseDto(response, SUCCESS, "");
     }
 
     private int getLastDayOfMonth(int year, int month) {
@@ -413,16 +390,16 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId) {
+    public ApiResponseDto<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         Optional<Group> groupOptional = groupRepository.findById(groupId);
         if (!groupOptional.isPresent()) {
-            return new APIResponse(null, NOT_FOUND_GROUP, "Not found group");
+            return new ApiResponseDto(null, NOT_FOUND_GROUP, "Not found group");
         }
         Group group = groupOptional.get();
-        return new APIResponse(getGeneralGroupAnalytic(group), SUCCESS, "");
+        return new ApiResponseDto(getGeneralGroupAnalytic(group), SUCCESS, "");
     }
 
     private GroupAnalyticResponse getGeneralGroupAnalytic(Group group) {
@@ -581,7 +558,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                     taskRepository.countByGroupIdAndAssigneeIdsUserIdIn(groupId, memberId);
             long totalDoneTasks =
                     taskRepository.countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
-                            groupId, memberId, Task.Status.DONE);
+                            groupId, memberId, TaskStatus.DONE);
 
             Date lastTimeTaskMember =
                     Optional.ofNullable(
@@ -660,13 +637,13 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     private GroupGeneralResponse getGroupGeneralAnalytic(Group group) {
-        if (group.getStatus() != Group.Status.DELETED && group.getStatus() != Group.Status.DISABLED) {
+        if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
             if (group.getTimeEnd().before(new Date())) {
-                group.setStatus(Group.Status.OUTDATED);
+                group.setStatus(GroupStatus.OUTDATED);
                 groupRepository.save(group);
             }
             if (group.getTimeStart().after(new Date())) {
-                group.setStatus(Group.Status.INACTIVE);
+                group.setStatus(GroupStatus.INACTIVE);
                 groupRepository.save(group);
             }
         }
@@ -685,7 +662,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalMeetings = meetingRepository.countByGroupId(groupId);
 
         long totalDoneTasks =
-                taskRepository.countByGroupIdAndAssigneeIdsStatusIn(groupId, Task.Status.DONE);
+                taskRepository.countByGroupIdAndAssigneeIdsStatusIn(groupId, TaskStatus.DONE);
 
         return GroupGeneralResponse.builder()
                 .id(group.getId())
@@ -703,10 +680,10 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<Page<GroupGeneralResponse>> getGroupGeneralAnalytic(
+    public ApiResponseDto<Page<GroupGeneralResponse>> getGroupGeneralAnalytic(
             String emailUser, Pageable pageRequest) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         Page<Group> groups;
         if (permissionService.isSuperAdmin(emailUser)) {
@@ -722,7 +699,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<GroupGeneralResponse> responses = getGroupGeneralAnalyticFromGroups(groups.toList());
         Page<GroupGeneralResponse> responsesPage =
                 new PageImpl<>(responses, pageRequest, groups.getTotalElements());
-        return new APIResponse(pagingResponse(responsesPage), SUCCESS, "");
+        return new ApiResponseDto(pagingResponse(responsesPage), SUCCESS, "");
     }
 
     private List<GroupGeneralResponse> getAllGroupGeneralAnalytic(String emailUser) {
@@ -838,7 +815,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             String emailUser, FindGroupGeneralAnalyticRequest request) {
         String groupName = request.getGroupName();
         String groupCategory = request.getGroupCategory();
-        Group.Status status = request.getStatus();
+        GroupStatus status = request.getStatus();
         Query query = new Query();
 
         if (groupName != null && !groupName.isEmpty()) {
@@ -880,10 +857,10 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<Page<GroupGeneralResponse>> findGroupGeneralAnalytic(
+    public ApiResponseDto<Page<GroupGeneralResponse>> findGroupGeneralAnalytic(
             String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         List<GroupGeneralResponse> responses =
                 getGroupGeneralAnalyticBySearchConditions(emailUser, request);
@@ -897,7 +874,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         Page<GroupGeneralResponse> responsesPage =
                 new PageImpl<>(pagedResponses, pageRequest, responses.size());
-        return new APIResponse(pagingResponse(responsesPage), SUCCESS, "");
+        return new ApiResponseDto(pagingResponse(responsesPage), SUCCESS, "");
     }
 
     private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
@@ -953,15 +930,15 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<List<GroupAnalyticResponse.Member>> findUserAnalytic(
+    public ApiResponseDto<List<GroupAnalyticResponse.Member>> findUserAnalytic(
             String emailUser, String groupId, FindUserAnalyticRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
 
         List<GroupAnalyticResponse.Member> members =
                 getUsersAnalyticBySearchConditions(emailUser, groupId, request);
-        return new APIResponse(members, SUCCESS, null);
+        return new ApiResponseDto(members, SUCCESS, null);
     }
 
     private Map<String, Object> pagingResponse(Page<GroupGeneralResponse> groups) {
@@ -974,13 +951,13 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<Map<String, String>> importData(
+    public ApiResponseDto<Map<String, String>> importData(
             String emailUser, MultipartFile file, String type) throws IOException {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         Map<String, String> data = parseExcelTwoColumns(file);
-        APIResponse<Map<String, String>> isValidData = validateData(data, type);
+        ApiResponseDto<Map<String, String>> isValidData = validateData(data, type);
         if (isValidData.getReturnCode() != SUCCESS) {
             return isValidData;
         }
@@ -1002,20 +979,20 @@ public class AnalyticServiceImpl implements AnalyticService {
             userRepository.save(user);
         }
 
-        return new APIResponse(data, SUCCESS, "");
+        return new ApiResponseDto(data, SUCCESS, "");
     }
 
-    private APIResponse<Map<String, String>> validateData(Map<String, String> data, String type) {
+    private ApiResponseDto<Map<String, String>> validateData(Map<String, String> data, String type) {
         Map<String, String> invalidValues = new HashMap<>();
         Map<String, String> notFoundsUser = new HashMap<>();
-
         for (Map.Entry<String, String> entry : data.entrySet()) {
             String email = entry.getKey();
             String value = entry.getValue();
             Optional<User> user = userRepository.findByEmail(email);
-            if (!user.isPresent()) {
+            if (user.isEmpty()) {
                 notFoundsUser.put(email, value);
             }
+
             switch (type) {
                 case "TRAINING_POINT":
                     if (!isValidTrainingPoint(value)) {
@@ -1035,12 +1012,13 @@ public class AnalyticServiceImpl implements AnalyticService {
             }
         }
         if (!notFoundsUser.isEmpty()) {
-            return new APIResponse(notFoundsUser, NOT_FOUND_USER, "Not found users");
+            return new ApiResponseDto(notFoundsUser, NOT_FOUND_USER, "Not found users");
         }
         if (!invalidValues.isEmpty()) {
-            return new APIResponse(invalidValues, INVALID_VALUE, "Invalid values");
+            return new ApiResponseDto(invalidValues, INVALID_VALUE, "Invalid values");
         }
-        return new APIResponse(null, SUCCESS, "");
+
+        return new ApiResponseDto(null, SUCCESS, "");
     }
 
     private Boolean isValidTrainingPoint(String value) {
@@ -1057,7 +1035,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         return studyingPoint <= 10 && studyingPoint >= 0;
     }
 
-    private APIResponse<List<ImportGeneralInformationResponse>> validateMultipleData(
+    private ApiResponseDto<List<ImportGeneralInformationResponse>> validateMultipleData(
             Map<String, List<String>> data) {
         List<ImportGeneralInformationResponse> invalidValues = new ArrayList<>();
         List<ImportGeneralInformationResponse> notFoundsUser = new ArrayList<>();
@@ -1095,22 +1073,22 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
 
         if (!notFoundsUser.isEmpty()) {
-            return new APIResponse(notFoundsUser, NOT_FOUND_USER, "Not found users");
+            return new ApiResponseDto(notFoundsUser, NOT_FOUND_USER, "Not found users");
         }
         if (!invalidValues.isEmpty()) {
-            return new APIResponse(invalidValues, INVALID_VALUE, "Invalid values");
+            return new ApiResponseDto(invalidValues, INVALID_VALUE, "Invalid values");
         }
-        return new APIResponse(null, SUCCESS, "");
+        return new ApiResponseDto(null, SUCCESS, "");
     }
 
     @Override
-    public APIResponse<List<ImportGeneralInformationResponse>> importMultipleData(
+    public ApiResponseDto<List<ImportGeneralInformationResponse>> importMultipleData(
             String emailUser, MultipartFile file) throws IOException {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         Map<String, List<String>> data = parseExcelFourColumns(file);
-        APIResponse<List<ImportGeneralInformationResponse>> isValidMultipleData =
+        ApiResponseDto<List<ImportGeneralInformationResponse>> isValidMultipleData =
                 validateMultipleData(data);
         if (isValidMultipleData.getReturnCode() != SUCCESS) {
             return isValidMultipleData;
@@ -1140,7 +1118,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             }
         }
 
-        return new APIResponse(dataResponse, SUCCESS, "");
+        return new ApiResponseDto(dataResponse, SUCCESS, "");
     }
 
     private Map<String, String> parseExcelTwoColumns(MultipartFile file) throws IOException {
@@ -1205,23 +1183,23 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public APIResponse<User> updateStudentInformation(
+    public ApiResponseDto<User> updateStudentInformation(
             String emailUser, String userId, UpdateStudentInformationRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new APIResponse(null, INVALID_PERMISSION, "Invalid permission");
+            return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
         Optional<User> optionalUser = userRepository.findById(userId);
         if (!optionalUser.isPresent()) {
-            return new APIResponse(null, NOT_FOUND_USER, "Not found user");
+            return new ApiResponseDto(null, NOT_FOUND_USER, "Not found user");
         }
         User user = optionalUser.get();
         if (!isValidStudyingPoint(request.getStudyingPoint().toString())
                 || !isValidTrainingPoint(request.getTrainingPoint().toString())) {
-            return new APIResponse(null, INVALID_VALUE, "Invalid value");
+            return new ApiResponseDto(null, INVALID_VALUE, "Invalid value");
         }
         user.update(request);
         userRepository.save(user);
-        return new APIResponse(user, SUCCESS, "");
+        return new ApiResponseDto(user, SUCCESS, "");
     }
 
     @Override

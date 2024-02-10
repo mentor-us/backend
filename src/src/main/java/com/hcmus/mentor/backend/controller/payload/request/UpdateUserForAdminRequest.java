@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -15,7 +16,7 @@ import lombok.*;
 @Builder
 public class UpdateUserForAdminRequest {
 
-    User.Role role;
+    UserRole role;
     private String name;
 
     @Pattern(regexp = "\\d{10}", message = "Invalid phone number")
@@ -29,5 +30,5 @@ public class UpdateUserForAdminRequest {
     private boolean status;
 
     @Size(min = 0, max = 1)
-    private User.Gender gender;
+    private UserGender gender;
 }

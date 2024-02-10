@@ -1,17 +1,11 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.Email;
+import com.hcmus.mentor.backend.controller.usecase.common.Email;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import jakarta.mail.internet.MimeMessage;
-
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +17,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -92,27 +91,25 @@ public class MailServiceImpl implements MailService {
         properties.put("name", username);
         properties.put("groupName", group.getName());
         properties.put("groupId", group.getId());
-        Email email =
-                Email.builder()
-                        .recipient(emailAddress)
-                        .msgBody("Welcome to MentorUS app!")
-                        .subject("Invite to MentorUS")
-                        .properties(properties)
-                        .template("welcome-email.html")
-                        .build();
+        Email email = Email.builder()
+                .recipient(emailAddress)
+                .msgBody("Welcome to MentorUS app!")
+                .subject("Invite to MentorUS")
+                .properties(properties)
+                .template("welcome-email.html")
+                .build();
         sendHTMLMail(email);
     }
 
     @Override
     public void sendTemplateMail(
             String emailAddress, Map<String, Object> properties, String subject, String template) {
-        Email email =
-                Email.builder()
-                        .recipient(emailAddress)
-                        .subject(subject)
-                        .properties(properties)
-                        .template(template)
-                        .build();
+        Email email = Email.builder()
+                .recipient(emailAddress)
+                .subject(subject)
+                .properties(properties)
+                .template(template)
+                .build();
         sendHTMLMail(email);
     }
 }

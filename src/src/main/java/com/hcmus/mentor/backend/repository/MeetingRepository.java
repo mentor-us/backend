@@ -1,46 +1,32 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
-
-import java.util.Date;
-import java.util.List;
-
+import com.hcmus.mentor.backend.domain.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Date;
+import java.util.List;
+
 public interface MeetingRepository extends MongoRepository<Meeting, String> {
 
-    List<Meeting>
-    findAllByOrganizerIdAndTimeStartGreaterThanOrAttendeesInAndTimeStartGreaterThanOrderByTimeStartDesc(
-            String organizerId, Date date, List<String> ids, Date now);
-
-    List<Meeting> findAllByOrganizerIdAndTimeStartGreaterThan(String organizerId, Date date);
-
-    List<Meeting> findAllByAttendeesInAndTimeStartGreaterThanOrderByTimeStartAsc(
-            List<String> ids, Date now);
-
-    List<Meeting> findAllByTimeStartBetween(Date date1, Date date2);
-
-    @Aggregation(
-            pipeline = {
-                    "{$match: {groupId: ?0}}",
-                    "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
-                    "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
-                    "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
-                    "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
-                    "{'$unwind': '$group'}",
-                    "{'$unwind': '$organizer'}",
-                    "{'$sort':  {'createdDate':  -1}}"
-            })
+    @Aggregation(pipeline = {
+            "{$match: {groupId: ?0}}",
+            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
+            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
+            "{'$unwind': '$group'}",
+            "{'$unwind': '$organizer'}",
+            "{'$sort':  {'createdDate':  -1}}"
+    })
     List<MeetingResponse> findAllByGroupId(String groupId);
 
     Page<Meeting> findByGroupId(String groupId, PageRequest pageRequest);
 
-    Page<Meeting>
-    findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
+    Page<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
             List<String> groupIds,
             String userId,
             Date startDate,
@@ -69,7 +55,8 @@ public interface MeetingRepository extends MongoRepository<Meeting, String> {
     long countByGroupIdAndAttendeesIn(String groupId, String attendeeId);
 
     Meeting findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(
-            String groupId, String organizerId);
+            String groupId,
+            String organizerId);
 
     long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
 

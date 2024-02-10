@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
@@ -49,7 +50,7 @@ public class ChannelServiceImpl implements ChannelService {
             return null;
         }
 
-        if (Channel.Type.PRIVATE_MESSAGE.equals(request.getType())) {
+        if (ChannelType.PRIVATE_MESSAGE.equals(request.getType())) {
             return addPrivateChat(adderId, request, group);
         }
 
@@ -68,7 +69,7 @@ public class ChannelServiceImpl implements ChannelService {
                         .description(request.getDescription())
                         .type(request.getType())
                         .userIds(
-                                Channel.Type.PUBLIC.equals(request.getType())
+                                ChannelType.PUBLIC.equals(request.getType())
                                         ? group.getMembers()
                                         : request.getUserIds())
                         .parentId(group.getId())
@@ -96,7 +97,7 @@ public class ChannelServiceImpl implements ChannelService {
                 Channel.builder()
                         .name(channelName)
                         .description(request.getDescription())
-                        .type(Channel.Type.PRIVATE_MESSAGE)
+                        .type(ChannelType.PRIVATE_MESSAGE)
                         .userIds(memberIds)
                         .parentId(group.getId())
                         .creatorId(request.getCreatorId())

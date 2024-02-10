@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.GroupCategory;
 
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface GroupCategoryRepository extends MongoRepository<GroupCategory, String> {
@@ -13,5 +14,5 @@ public interface GroupCategoryRepository extends MongoRepository<GroupCategory, 
 
     List<GroupCategory> findByIdIn(List<String> ids);
 
-    List<GroupCategory> findAllByStatus(GroupCategory.Status status);
+    List<GroupCategory> findAllByStatus(GroupCategoryStatus status);
 }

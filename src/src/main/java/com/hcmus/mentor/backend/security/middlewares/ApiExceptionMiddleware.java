@@ -32,6 +32,17 @@ public class ApiExceptionMiddleware {
             Map.ofEntries(entry(DomainException.class, HttpStatus.BAD_REQUEST));
     private final Environment environment;
 
+    /**
+     * Global exception handler.
+     *
+     * @param ex exception.
+     * @return The {@link ProblemDetail}.
+     */
+    @ExceptionHandler({DomainException.class, ValidationException.class})
+    public ProblemDetail handlerDomainException(Exception ex) {
+        return getObjectByException(ex);
+    }
+
     private static void addExceptionInfoToProblemDetails(
             ProblemDetail problemDetail, DomainException exception) {
         problemDetail.setTitle(exception.getMessage());
@@ -55,17 +66,6 @@ public class ApiExceptionMiddleware {
             }
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
-    }
-
-    /**
-     * Global exception handler.
-     *
-     * @param ex exception.
-     * @return The {@link ProblemDetail}.
-     */
-    @ExceptionHandler({Exception.class})
-    public ProblemDetail handlerDomainException(Exception ex) {
-        return getObjectByException(ex);
     }
 
     private ProblemDetail getObjectByException(Exception exception) {
