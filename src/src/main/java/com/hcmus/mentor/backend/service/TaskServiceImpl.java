@@ -250,33 +250,33 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        Optional<Task> taskOptional = taskRepository.findById(taskId);
-        if (!taskOptional.isPresent()) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
             return Collections.emptyList();
         }
+        Task task = taskOpt.get();
 
-        Task task = taskOptional.get();
-        Optional<Group> groupWrapper = groupRepository.findById(task.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
+        if (groupOpt.isEmpty()) {
             return Collections.emptyList();
         }
-        Group group = groupWrapper.get();
-        List<String> assigneeIds =
-                task.getAssigneeIds().stream().map(AssigneeDto::getUserId).collect(Collectors.toList());
+        Group group = groupOpt.get();
+
+        List<String> assigneeIds = task.getAssigneeIds().stream()
+                .map(AssigneeDto::getUserId).toList();
+
         List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
-        Map<String, TaskStatus> statuses =
-                task.getAssigneeIds().stream()
-                        .collect(
-                                Collectors.toMap(
-                                        AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+
+        Map<String, TaskStatus> statuses = task.getAssigneeIds().stream()
+                .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+        
         return assignees.stream()
-                .map(
-                        assignee -> {
-                            TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
-                            boolean isMentor = group.isMentor(assignee.getId());
-                            return TaskAssigneeResponse.from(assignee, status, isMentor);
-                        })
-                .collect(Collectors.toList());
+                .map(assignee -> {
+                    TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
+                    boolean isMentor = group.isMentor(assignee.getId());
+                    return TaskAssigneeResponse.from(assignee, status, isMentor);
+                })
+                .toList();
     }
 
     private boolean isAssigned(String emailUser, Task task) {
@@ -372,10 +372,9 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<TaskResponse> getMostRecentTasks(String userId) {
-        List<String> groupIds =
-                groupService.getAllActiveOwnGroups(userId).stream()
-                        .map(Group::getId)
-                        .collect(Collectors.toList());
+        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
+                .map(Group::getId)
+                .collect(Collectors.toList());
         List<Task> tasks =
                 taskRepository
                         .findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
@@ -400,10 +399,10 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<Task> getAllOwnTasks(String userId) {
-        List<String> joinedGroupIds =
-                groupService.getAllActiveOwnGroups(userId).stream()
-                        .map(Group::getId)
-                        .collect(Collectors.toList());
+        List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
+                .map(Group::getId)
+                .collect(Collectors.toList());
+
         return taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdIn(
                 joinedGroupIds, Arrays.asList("*", userId));
     }

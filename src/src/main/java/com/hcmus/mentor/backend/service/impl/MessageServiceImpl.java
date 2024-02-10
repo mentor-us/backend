@@ -11,16 +11,18 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessag
 import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReactionResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
-import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -42,10 +44,9 @@ public class MessageServiceImpl implements MessageService {
     private final MeetingRepository meetingRepository;
     private final TaskRepository taskRepository;
     private final VoteRepository voteRepository;
-    private final SocketIOService socketIOService;
     private final UserRepository userRepository;
+    private final SocketIOService socketIOService;
     private final NotificationService notificationService;
-    private final TaskServiceImpl taskService;
     private final BlobStorage blobStorage;
 
     /**
@@ -362,12 +363,12 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageDetailResponse fulfillTaskMessage(MessageResponse message) {
         Optional<Task> taskWrapper = taskRepository.findById(message.getTaskId());
-        if (!taskWrapper.isPresent()) {
+        if (taskWrapper.isEmpty()) {
             return null;
         }
         TaskMessageResponse taskDetail = TaskMessageResponse.from(taskWrapper.get());
 
-        List<TaskAssigneeResponse> assignees = taskService.getTaskAssignees(taskDetail.getId());
+        List<TaskAssigneeResponse> assignees = getTaskAssignees(taskDetail.getId());
         taskDetail.setAssignees(assignees);
         return MessageDetailResponse.from(message, taskDetail);
     }
@@ -479,5 +480,35 @@ public class MessageServiceImpl implements MessageService {
             messages.add(messageRepository.save(m));
         });
         return messages;
+    }
+
+    private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Task task = taskOpt.get();
+
+        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
+        if (groupOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Group group = groupOpt.get();
+
+        List<String> assigneeIds = task.getAssigneeIds().stream()
+                .map(AssigneeDto::getUserId).toList();
+
+        List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
+
+        Map<String, TaskStatus> statuses = task.getAssigneeIds().stream()
+                .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+
+        return assignees.stream()
+                .map(assignee -> {
+                    TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
+                    boolean isMentor = group.isMentor(assignee.getId());
+                    return TaskAssigneeResponse.from(assignee, status, isMentor);
+                })
+                .toList();
     }
 }
