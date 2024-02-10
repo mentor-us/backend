@@ -19,6 +19,7 @@ import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
@@ -198,7 +199,7 @@ public class GroupServiceImpl implements GroupService {
         return false;
     }
 
-    private GroupReturnService validateTimeRange(Date timeStart, Date timeEnd) {
+    private GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
         int maxYearsBetweenTimeStartAndTimeEnd =
                 Integer.parseInt(systemConfigRepository.findByKey("valid_max_year").getValue().toString());
         int maxYearsBetweenTimeStartAndNow = 4;
@@ -206,46 +207,46 @@ public class GroupServiceImpl implements GroupService {
         LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         if (timeEnd.before(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
         }
         if (timeEnd.before(new Date()) || timeEnd.equals(new Date())) {
-            return new GroupReturnService(TIME_END_BEFORE_NOW, "Time end can't be before now", null);
+            return new GroupServiceDto(TIME_END_BEFORE_NOW, "Time end can't be before now", null);
         }
         if (ChronoUnit.YEARS.between(localTimeStart, localTimeEnd)
                 > maxYearsBetweenTimeStartAndTimeEnd) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
         }
         if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
                 > maxYearsBetweenTimeStartAndNow) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
         }
-        return new GroupReturnService(SUCCESS, "", null);
+        return new GroupServiceDto(SUCCESS, "", null);
     }
 
-    private GroupReturnService validateTimeRangeForUpdate(Date timeStart, Date timeEnd) {
+    private GroupServiceDto validateTimeRangeForUpdate(Date timeStart, Date timeEnd) {
         int maxYearsBetweenTimeStartAndTimeEnd = 7;
         int maxYearsBetweenTimeStartAndNow = 4;
         LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         if (timeEnd.before(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
         }
         if (ChronoUnit.YEARS.between(localTimeStart, localTimeEnd)
                 > maxYearsBetweenTimeStartAndTimeEnd) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
         }
         if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
                 > maxYearsBetweenTimeStartAndNow) {
-            return new GroupReturnService(
+            return new GroupServiceDto(
                     TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
         }
-        return new GroupReturnService(SUCCESS, "", null);
+        return new GroupServiceDto(SUCCESS, "", null);
     }
 
     private List<String> validateInvalidMails(List<String> mentors, List<String> mentees) {
@@ -276,49 +277,49 @@ public class GroupServiceImpl implements GroupService {
                 .collect(Collectors.toList());
     }
 
-    private GroupReturnService validateListMentorsMentees(
+    private GroupServiceDto validateListMentorsMentees(
             List<String> mentors, List<String> mentees) {
         List<String> invalidEmails = validateInvalidMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupReturnService(INVALID_EMAILS, "Invalid emails", invalidEmails);
+            return new GroupServiceDto(INVALID_EMAILS, "Invalid emails", invalidEmails);
         }
         invalidEmails = validateDomainMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupReturnService(INVALID_DOMAINS, "Invalid domains", invalidEmails);
+            return new GroupServiceDto(INVALID_DOMAINS, "Invalid domains", invalidEmails);
         }
         invalidEmails = validateDuplicatedMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupReturnService(DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
+            return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
         }
-        return new GroupReturnService(SUCCESS, "", null);
+        return new GroupServiceDto(SUCCESS, "", null);
     }
 
     @Override
-    public GroupReturnService createNewGroup(String emailUser, CreateGroupRequest request) {
+    public GroupServiceDto createNewGroup(String emailUser, CreateGroupRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (request.getName() == null
                 || request.getName().isEmpty()
                 || request.getTimeStart() == null
                 || request.getTimeEnd() == null) {
-            return new GroupReturnService(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+            return new GroupServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
-        GroupReturnService isValidTimeRange =
+        GroupServiceDto isValidTimeRange =
                 validateTimeRange(request.getTimeStart(), request.getTimeEnd());
         if (isValidTimeRange.getReturnCode() != SUCCESS) {
             return isValidTimeRange;
         }
         if (groupRepository.existsByName(request.getName())) {
-            return new GroupReturnService(DUPLICATE_GROUP, "Group name has been duplicated", null);
+            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
         if (!groupCategoryRepository.existsById(request.getGroupCategory())) {
-            return new GroupReturnService(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
+            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
         List<String> menteeEmails = request.getMenteeEmails();
         List<String> mentorEmails = request.getMentorEmails();
-        GroupReturnService isValidEmails = validateListMentorsMentees(mentorEmails, menteeEmails);
+        GroupServiceDto isValidEmails = validateListMentorsMentees(mentorEmails, menteeEmails);
         if (!isValidEmails.getReturnCode().equals(SUCCESS)) {
             return isValidEmails;
         }
@@ -362,7 +363,7 @@ public class GroupServiceImpl implements GroupService {
         menteeEmails.stream().forEach(email -> mailService.sendInvitationMail(email, group));
         mentorEmails.stream().forEach(email -> mailService.sendInvitationMail(email, group));
 
-        return new GroupReturnService(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 
     //    public Group addMentee(String groupId, AddMenteeRequest request) {
@@ -429,7 +430,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService readGroups(Workbook workbook) throws ParseException {
+    public GroupServiceDto readGroups(Workbook workbook) throws ParseException {
         Map<String, Group> groups = new HashMap<>();
         Sheet sheet = workbook.getSheet("Data");
         removeBlankRows(sheet);
@@ -470,12 +471,12 @@ public class GroupServiceImpl implements GroupService {
                 row = sheet.getRow(++i);
             }
             if (isAddMentee) {
-                GroupReturnService isValidTimeRange = validateTimeRange(timeStart, timeEnd);
+                GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
                 if (isValidTimeRange.getReturnCode() != SUCCESS) {
                     return isValidTimeRange;
                 }
                 if (!groupCategoryRepository.existsByName(groupCategoryName)) {
-                    return new GroupReturnService(
+                    return new GroupServiceDto(
                             GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
                 }
                 String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
@@ -493,27 +494,27 @@ public class GroupServiceImpl implements GroupService {
                                     .build();
                     groups.put(groupName, group);
                 } else {
-                    return new GroupReturnService(
+                    return new GroupServiceDto(
                             DUPLICATE_GROUP, "Group name has been duplicated", groupName);
                 }
                 i--;
             }
         }
-        return new GroupReturnService(SUCCESS, "", groups);
+        return new GroupServiceDto(SUCCESS, "", groups);
     }
 
     @Override
-    public GroupReturnService importGroups(String emailUser, MultipartFile file) throws IOException {
+    public GroupServiceDto importGroups(String emailUser, MultipartFile file) throws IOException {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Map<String, Group> groups;
         try (InputStream data = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(data)) {
             if (!isValidTemplate(workbook)) {
-                return new GroupReturnService(INVALID_TEMPLATE, "Invalid template", null);
+                return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
             }
-            GroupReturnService validReadGroups = readGroups(workbook);
+            GroupServiceDto validReadGroups = readGroups(workbook);
             if (validReadGroups.getReturnCode() != SUCCESS) {
                 return validReadGroups;
             }
@@ -522,7 +523,7 @@ public class GroupServiceImpl implements GroupService {
             throw new RuntimeException(e);
         }
         for (Group group : groups.values()) {
-            GroupReturnService isValidMails =
+            GroupServiceDto isValidMails =
                     validateListMentorsMentees(group.getMentors(), group.getMentees());
             if (isValidMails.getReturnCode() != SUCCESS) {
                 return isValidMails;
@@ -544,7 +545,7 @@ public class GroupServiceImpl implements GroupService {
                                                 .build())
                         .collect(Collectors.toList());
         for (CreateGroupRequest createGroupRequest : createGroupRequests) {
-            GroupReturnService returnData = createNewGroup(emailUser, createGroupRequest);
+            GroupServiceDto returnData = createNewGroup(emailUser, createGroupRequest);
             if (returnData.getReturnCode() != SUCCESS) {
                 return returnData;
             }
@@ -556,7 +557,7 @@ public class GroupServiceImpl implements GroupService {
             group.setMentees(groupRepository.findByName(group.getName()).getMentees());
         }
 
-        return new GroupReturnService(SUCCESS, null, groups.values());
+        return new GroupServiceDto(SUCCESS, null, groups.values());
     }
 
     @Override
@@ -576,7 +577,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService findGroups(
+    public GroupServiceDto findGroups(
             String emailUser,
             String name,
             String mentorEmail,
@@ -590,7 +591,7 @@ public class GroupServiceImpl implements GroupService {
             int page,
             int pageSize) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Pair<Long, List<Group>> groups =
                 getGroupsByConditions(
@@ -606,7 +607,7 @@ public class GroupServiceImpl implements GroupService {
                         status,
                         page,
                         pageSize);
-        return new GroupReturnService(
+        return new GroupServiceDto(
                 SUCCESS,
                 "",
                 new PageImpl<>(groups.getValue(), PageRequest.of(page, pageSize), groups.getKey()));
@@ -682,14 +683,14 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService addMentees(
+    public GroupServiceDto addMentees(
             String emailUser, String groupId, AddMenteesRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
         List<String> emails = request.getEmails();
@@ -701,7 +702,7 @@ public class GroupServiceImpl implements GroupService {
 
         if (hasDuplicateElements(ids, group.getMentees())
                 || hasDuplicateElements(ids, group.getMentors())) {
-            return new GroupReturnService(DUPLICATE_EMAIL, "Duplicate emails", null);
+            return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", null);
         }
         group.getMentees().addAll(ids);
         List<String> listMenteesAfterRemoveDuplicate =
@@ -712,18 +713,18 @@ public class GroupServiceImpl implements GroupService {
             mailService.sendInvitationMail(emailAddress, group);
         }
 
-        return new GroupReturnService(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 
     @Override
-    public GroupReturnService addMentors(
+    public GroupServiceDto addMentors(
             String emailUser, String groupId, AddMentorsRequest request) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
@@ -736,7 +737,7 @@ public class GroupServiceImpl implements GroupService {
 
         if (hasDuplicateElements(ids, group.getMentees())
                 || hasDuplicateElements(ids, group.getMentors())) {
-            return new GroupReturnService(DUPLICATE_EMAIL, "Duplicate emails", null);
+            return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", null);
         }
 
         group.getMentors().addAll(ids);
@@ -749,84 +750,84 @@ public class GroupServiceImpl implements GroupService {
             mailService.sendInvitationMail(emailAddress, group);
         }
 
-        return new GroupReturnService(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 
     @Override
-    public GroupReturnService deleteMentee(String emailUser, String groupId, String menteeId) {
+    public GroupServiceDto deleteMentee(String emailUser, String groupId, String menteeId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
         if (group.getMentees().remove(menteeId)) {
             group.setMentees(group.getMentees());
             groupRepository.save(group);
-            return new GroupReturnService(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, group);
         }
-        return new GroupReturnService(MENTEE_NOT_FOUND, "Mentee not found", null);
+        return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
     }
 
     @Override
-    public GroupReturnService deleteMentor(String emailUser, String groupId, String mentorId) {
+    public GroupServiceDto deleteMentor(String emailUser, String groupId, String mentorId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
         if (group.getMentors().remove(mentorId)) {
             group.setMentors(group.getMentors());
             groupRepository.save(group);
-            return new GroupReturnService(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, group);
         }
 
-        return new GroupReturnService(MENTOR_NOT_FOUND, "mentor not found", null);
+        return new GroupServiceDto(MENTOR_NOT_FOUND, "mentor not found", null);
     }
 
     @Override
-    public GroupReturnService promoteToMentor(String emailUser, String groupId, String menteeId) {
+    public GroupServiceDto promoteToMentor(String emailUser, String groupId, String menteeId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
         if (group.getMentees().remove(menteeId)) {
             group.getMentors().add(menteeId);
             groupRepository.save(group);
-            return new GroupReturnService(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, group);
         }
-        return new GroupReturnService(MENTEE_NOT_FOUND, "Mentee not found", null);
+        return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
     }
 
     @Override
-    public GroupReturnService demoteToMentee(String emailUser, String groupId, String mentorId) {
+    public GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
         if (group.getMentors().remove(mentorId)) {
             group.getMentees().add(mentorId);
             groupRepository.save(group);
-            return new GroupReturnService(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, group);
         }
-        return new GroupReturnService(MENTOR_NOT_FOUND, "Mentor not found", null);
+        return new GroupServiceDto(MENTOR_NOT_FOUND, "Mentor not found", null);
     }
 
     private void clearValidation(Sheet sheet) {
@@ -891,20 +892,20 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService updateGroup(
+    public GroupServiceDto updateGroup(
             String emailUser, String groupId, UpdateGroupRequest request) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
 
         if (groupRepository.existsByName(request.getName())
                 && !request.getName().equals(group.getName())) {
-            return new GroupReturnService(DUPLICATE_GROUP, "Group name has been duplicated", null);
+            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
         Date timeStart = changeGroupTime(request.getTimeStart(), "START");
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
@@ -916,10 +917,10 @@ public class GroupServiceImpl implements GroupService {
                 timeEnd,
                 request.getGroupCategory());
         if (!groupCategoryRepository.existsById(group.getGroupCategory())) {
-            return new GroupReturnService(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
+            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
-        GroupReturnService isValidTimeRange =
+        GroupServiceDto isValidTimeRange =
                 validateTimeRangeForUpdate(group.getTimeStart(), group.getTimeEnd());
         if (isValidTimeRange.getReturnCode() != SUCCESS) {
             return isValidTimeRange;
@@ -934,22 +935,22 @@ public class GroupServiceImpl implements GroupService {
         }
         group.setUpdatedDate(new Date());
         groupRepository.save(group);
-        return new GroupReturnService(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 
     @Override
-    public GroupReturnService deleteGroup(String emailUser, String groupId) {
+    public GroupServiceDto deleteGroup(String emailUser, String groupId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
         group.setStatus(GroupStatus.DELETED);
         groupRepository.save(group);
-        return new GroupReturnService(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 
     @Override
@@ -990,9 +991,9 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService deleteMultiple(String emailUser, List<String> ids) {
+    public GroupServiceDto deleteMultiple(String emailUser, List<String> ids) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
@@ -1003,18 +1004,18 @@ public class GroupServiceImpl implements GroupService {
         }
 
         if (!notFoundIds.isEmpty()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", notFoundIds);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
         groupRepository.saveAll(groups);
-        return new GroupReturnService(SUCCESS, null, groups);
+        return new GroupServiceDto(SUCCESS, null, groups);
     }
 
     @Override
-    public GroupReturnService disableMultiple(String emailUser, List<String> ids) {
+    public GroupServiceDto disableMultiple(String emailUser, List<String> ids) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
@@ -1025,7 +1026,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         if (!notFoundIds.isEmpty()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", notFoundIds);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         for (Group group : groups) {
@@ -1033,13 +1034,13 @@ public class GroupServiceImpl implements GroupService {
             groupRepository.save(group);
         }
 
-        return new GroupReturnService(SUCCESS, null, groups);
+        return new GroupServiceDto(SUCCESS, null, groups);
     }
 
     @Override
-    public GroupReturnService enableMultiple(String emailUser, List<String> ids) {
+    public GroupServiceDto enableMultiple(String emailUser, List<String> ids) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
@@ -1050,7 +1051,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         if (!notFoundIds.isEmpty()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", notFoundIds);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         for (Group group : groups) {
@@ -1060,11 +1061,11 @@ public class GroupServiceImpl implements GroupService {
             groupRepository.save(group);
         }
 
-        return new GroupReturnService(SUCCESS, null, groups);
+        return new GroupServiceDto(SUCCESS, null, groups);
     }
 
     @Override
-    public GroupReturnService getGroupMembers(String groupId, String userId) {
+    public GroupServiceDto getGroupMembers(String groupId, String userId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         List<String> mentorIds = new ArrayList<>();
         List<String> menteeIds = new ArrayList<>();
@@ -1072,13 +1073,13 @@ public class GroupServiceImpl implements GroupService {
         if (!groupWrapper.isPresent()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
             if (!channelWrapper.isPresent()) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
             Channel channel = channelWrapper.get();
             group = groupRepository.findById(channel.getParentId()).orElse(null);
             if (group == null) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
             mentorIds =
@@ -1089,7 +1090,7 @@ public class GroupServiceImpl implements GroupService {
 
         if (groupWrapper.isPresent()) {
             if (!permissionService.isUserIdInGroup(userId, groupId)) {
-                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
             group = groupWrapper.get();
@@ -1114,7 +1115,7 @@ public class GroupServiceImpl implements GroupService {
                         .collect(Collectors.toList());
         GroupMembersResponse response =
                 GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
-        return new GroupReturnService(SUCCESS, null, response);
+        return new GroupServiceDto(SUCCESS, null, response);
     }
 
     @Override
@@ -1140,41 +1141,41 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService getGroupDetail(String userId, String groupId) {
+    public GroupServiceDto getGroupDetail(String userId, String groupId) {
         List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
         if (groupWrapper.size() == 0) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
             if (!channelWrapper.isPresent()) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
             Channel channel = channelWrapper.get();
             Optional<Group> parentGroupWrapper = groupRepository.findById(channel.getParentId());
             if (!parentGroupWrapper.isPresent()) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
             Group parentGroup = parentGroupWrapper.get();
             if (!parentGroup.isMentor(userId) && !channel.isMember(userId)) {
-                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
             GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, parentGroup);
             if (channelDetail == null) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
             GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
             response.setPermissions(
                     response.getPermissions().contains(GroupCategoryPermission.SEND_FILES)
                             ? Collections.singletonList(GroupCategoryPermission.SEND_FILES)
                             : Collections.emptyList());
-            return new GroupReturnService(SUCCESS, null, response);
+            return new GroupServiceDto(SUCCESS, null, response);
         }
 
         if (!permissionService.isUserIdInGroup(userId, groupId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
         GroupDetailResponse response = fulfillGroupDetail(userId, groupWrapper.get(0));
-        return new GroupReturnService(SUCCESS, null, response);
+        return new GroupServiceDto(SUCCESS, null, response);
     }
 
     private GroupDetailResponse fulfillChannelDetail(
@@ -1305,19 +1306,19 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupReturnService getGroupMedia(String userId, String groupId) {
+    public GroupServiceDto getGroupMedia(String userId, String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         List<String> senderIds = new ArrayList<>();
         if (!groupWrapper.isPresent()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
             if (!channelWrapper.isPresent()) {
-                return new GroupReturnService(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
             Channel channel = channelWrapper.get();
             if (!channel.isMember(userId)
                     && !permissionService.isUserIdInGroup(userId, channel.getParentId())) {
-                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
             senderIds = channel.getUserIds();
@@ -1326,7 +1327,7 @@ public class GroupServiceImpl implements GroupService {
         if (groupWrapper.isPresent()) {
             Group group = groupWrapper.get();
             if (!group.isMember(userId)) {
-                return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
             senderIds =
@@ -1379,19 +1380,19 @@ public class GroupServiceImpl implements GroupService {
                         media.add(file);
                     }
                 });
-        return new GroupReturnService(SUCCESS, null, media);
+        return new GroupServiceDto(SUCCESS, null, media);
     }
 
     @Override
-    public GroupReturnService updateAvatar(String userId, String groupId, MultipartFile file)
+    public GroupServiceDto updateAvatar(String userId, String groupId, MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (!groupWrapper.isPresent()) {
-            return new GroupReturnService(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
         if (!group.isMember(userId)) {
-            return new GroupReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
@@ -1400,7 +1401,7 @@ public class GroupServiceImpl implements GroupService {
         // #TODO: Current save the link of google drive
         group.setImageUrl(key);
         groupRepository.save(group);
-        return new GroupReturnService(SUCCESS, "", key);
+        return new GroupServiceDto(SUCCESS, "", key);
     }
 
     private List<Group> getGroupsForAdmin(String emailUser) {

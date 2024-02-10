@@ -7,7 +7,7 @@ import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import com.hcmus.mentor.backend.service.GroupCategoryReturn;
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -59,7 +59,7 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupCategory> findById(@PathVariable String id) {
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.findById(id);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.findById(id);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
                 groupCategoryReturn.getReturnCode(),
@@ -80,7 +80,7 @@ public class GroupCategoryController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody CreateGroupCategoryRequest request) {
         String email = userPrincipal.getEmail();
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.create(email, request);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.create(email, request);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
                 groupCategoryReturn.getReturnCode(),
@@ -103,7 +103,7 @@ public class GroupCategoryController {
             @PathVariable String id,
             @RequestBody UpdateGroupCategoryRequest request) {
         String email = userPrincipal.getEmail();
-        GroupCategoryReturn groupCategoryReturn = groupCategoryService.update(email, id, request);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.update(email, id, request);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
                 groupCategoryReturn.getReturnCode(),
@@ -127,7 +127,7 @@ public class GroupCategoryController {
             @PathVariable String id) {
         String email = userPrincipal.getEmail();
         String newGroupCategoryId = request.getNewGroupCategoryId();
-        GroupCategoryReturn groupCategoryReturn =
+        GroupCategoryServiceDto groupCategoryReturn =
                 groupCategoryService.delete(email, id, newGroupCategoryId);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
@@ -158,7 +158,7 @@ public class GroupCategoryController {
             @RequestParam(defaultValue = "25") Integer size) {
         String email = userPrincipal.getEmail();
         FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        GroupCategoryReturn groupCategoryReturn =
+        GroupCategoryServiceDto groupCategoryReturn =
                 groupCategoryService.findGroupCategories(email, request, page, size);
         return new ApiResponseDto(
                 pagingResponse((Page<GroupCategory>) groupCategoryReturn.getData()),
@@ -182,7 +182,7 @@ public class GroupCategoryController {
         String email = userPrincipal.getEmail();
         List<String> ids = request.getIds();
         String newGroupCategoryId = request.getNewGroupCategoryId();
-        GroupCategoryReturn groupCategoryReturn =
+        GroupCategoryServiceDto groupCategoryReturn =
                 groupCategoryService.deleteMultiple(email, ids, newGroupCategoryId);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),

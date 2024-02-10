@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.domain.SystemConfig;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
-import com.hcmus.mentor.backend.service.SystemConfigReturnService;
+import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import com.hcmus.mentor.backend.service.SystemConfigService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,7 +39,7 @@ public class SystemConfigController {
     public ApiResponseDto<List<SystemConfig>> all(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         String emailUser = userPrincipal.getEmail();
-        SystemConfigReturnService configReturn =
+        SystemConfigServiceDto configReturn =
                 systemConfigService.listAll(emailUser);
         return new ApiResponseDto(
                 configReturn.getData(), configReturn.getReturnCode(), configReturn.getMessage());
@@ -61,7 +61,7 @@ public class SystemConfigController {
             @PathVariable String id,
             @RequestBody Object value) {
         String emailUser = userPrincipal.getEmail();
-        SystemConfigReturnService configReturn =
+        SystemConfigServiceDto configReturn =
                 systemConfigService.updateValue(emailUser, id, value);
         return new ApiResponseDto(
                 configReturn.getData(), configReturn.getReturnCode(), configReturn.getMessage());

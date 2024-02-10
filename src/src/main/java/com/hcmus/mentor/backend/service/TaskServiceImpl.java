@@ -21,8 +21,8 @@ import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -43,6 +43,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
 import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.*;
 
 @Service
+@RequiredArgsConstructor
 public class TaskServiceImpl implements IRemindableService {
 
     private final TaskRepository taskRepository;
@@ -55,29 +56,6 @@ public class TaskServiceImpl implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
-
-    public TaskServiceImpl(
-            TaskRepository taskRepository,
-            PermissionService permissionService,
-            GroupRepository groupRepository,
-            UserRepository userRepository,
-            MongoTemplate mongoTemplate,
-            @Lazy GroupService groupService,
-            @Lazy MessageService messageService,
-            SocketIOService socketIOService,
-            ReminderRepository reminderRepository,
-            NotificationService notificationService) {
-        this.taskRepository = taskRepository;
-        this.permissionService = permissionService;
-        this.groupRepository = groupRepository;
-        this.userRepository = userRepository;
-        this.mongoTemplate = mongoTemplate;
-        this.groupService = groupService;
-        this.messageService = messageService;
-        this.socketIOService = socketIOService;
-        this.reminderRepository = reminderRepository;
-        this.notificationService = notificationService;
-    }
 
     public TaskReturnService addTask(String emailUser, AddTaskRequest request) {
         if (!groupRepository.existsById(request.getGroupId())) {

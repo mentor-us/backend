@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.service;
+package com.hcmus.mentor.backend.service.dto;
 
 import lombok.*;
 
@@ -6,7 +6,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SystemConfigReturnService {
+public class SystemConfigServiceDto {
     Integer returnCode;
     String message;
     Object data;

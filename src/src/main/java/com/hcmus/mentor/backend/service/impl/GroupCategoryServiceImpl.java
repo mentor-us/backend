@@ -15,7 +15,7 @@ import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.service.GroupCategoryReturn;
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.util.FileUtils;
@@ -53,24 +53,24 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     }
 
     @Override
-    public GroupCategoryReturn findById(String id) {
+    public GroupCategoryServiceDto findById(String id) {
         Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
         if (!groupCategoryOptional.isPresent()) {
-            return new GroupCategoryReturn(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
-        return new GroupCategoryReturn(SUCCESS, "", groupCategoryOptional.get());
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategoryOptional.get());
     }
 
     @Override
-    public GroupCategoryReturn create(String emailUser, CreateGroupCategoryRequest request) {
+    public GroupCategoryServiceDto create(String emailUser, CreateGroupCategoryRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupCategoryReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (request.getName() == null
                 || request.getName().isEmpty()
                 || request.getIconUrl() == null
                 || request.getIconUrl().isEmpty()) {
-            return new GroupCategoryReturn(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+            return new GroupCategoryServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
         if (groupCategoryRepository.existsByName(request.getName())) {
             GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
@@ -80,9 +80,9 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 groupCategory.setIconUrl(request.getIconUrl());
                 groupCategory.setPermissions(request.getPermissions());
                 groupCategoryRepository.save(groupCategory);
-                return new GroupCategoryReturn(SUCCESS, "", groupCategory);
+                return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
             }
-            return new GroupCategoryReturn(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
+            return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
         GroupCategory groupCategory =
@@ -93,25 +93,25 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                         .permissions(request.getPermissions())
                         .build();
         groupCategoryRepository.save(groupCategory);
-        return new GroupCategoryReturn(SUCCESS, "", groupCategory);
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     @Override
-    public GroupCategoryReturn update(
+    public GroupCategoryServiceDto update(
             String emailUser, String id, UpdateGroupCategoryRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupCategoryReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
         if (!groupCategoryOptional.isPresent()) {
-            return new GroupCategoryReturn(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
         GroupCategory groupCategory = groupCategoryOptional.get();
 
         if (groupCategoryRepository.existsByName(request.getName())
                 && !request.getName().equals(groupCategory.getName())) {
-            return new GroupCategoryReturn(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
+            return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
         groupCategory.update(
                 request.getName(),
@@ -120,17 +120,17 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 request.getPermissions());
         groupCategoryRepository.save(groupCategory);
 
-        return new GroupCategoryReturn(SUCCESS, "", groupCategory);
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     @Override
-    public GroupCategoryReturn delete(String emailUser, String id, String newGroupCategoryId) {
+    public GroupCategoryServiceDto delete(String emailUser, String id, String newGroupCategoryId) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupCategoryReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
         if (!groupCategoryOptional.isPresent()) {
-            return new GroupCategoryReturn(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
         GroupCategory groupCategory = groupCategoryOptional.get();
@@ -138,7 +138,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!newGroupCategoryId.isEmpty()) {
             groupCategoryOptional = groupCategoryRepository.findById(newGroupCategoryId);
             if (!groupCategoryOptional.isPresent()) {
-                return new GroupCategoryReturn(
+                return new GroupCategoryServiceDto(
                         NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
@@ -154,7 +154,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
         groupCategory.setStatus(GroupCategoryStatus.DELETED);
         groupCategoryRepository.save(groupCategory);
-        return new GroupCategoryReturn(SUCCESS, "", groupCategory);
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     private Pair<Long, List<GroupCategory>> getGroupCategoriesBySearchConditions(
@@ -180,14 +180,14 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     }
 
     @Override
-    public GroupCategoryReturn findGroupCategories(
+    public GroupCategoryServiceDto findGroupCategories(
             String emailUser, FindGroupCategoryRequest request, int page, int pageSize) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupCategoryReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Pair<Long, List<GroupCategory>> groupCategories =
                 getGroupCategoriesBySearchConditions(request, page, pageSize);
-        return new GroupCategoryReturn(
+        return new GroupCategoryServiceDto(
                 SUCCESS,
                 "",
                 new PageImpl<>(
@@ -195,10 +195,10 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     }
 
     @Override
-    public GroupCategoryReturn deleteMultiple(
+    public GroupCategoryServiceDto deleteMultiple(
             String emailUser, List<String> ids, String newGroupCategoryId) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new GroupCategoryReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
@@ -208,7 +208,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new GroupCategoryReturn(NOT_FOUND, "Not found group category", notFoundIds);
+            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", notFoundIds);
         }
         List<Group> groups = groupRepository.findAllByGroupCategoryIn(ids);
         List<GroupCategory> groupCategories = groupCategoryRepository.findByIdIn(ids);
@@ -216,7 +216,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             Optional<GroupCategory> groupCategoryOptional =
                     groupCategoryRepository.findById(newGroupCategoryId);
             if (!groupCategoryOptional.isPresent()) {
-                return new GroupCategoryReturn(
+                return new GroupCategoryServiceDto(
                         NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
@@ -236,7 +236,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 });
 
         groupCategoryRepository.saveAll(groupCategories);
-        return new GroupCategoryReturn(SUCCESS, "", groupCategories);
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategories);
     }
 
     private List<List<String>> generateExportData(List<GroupCategory> groupCategories) {

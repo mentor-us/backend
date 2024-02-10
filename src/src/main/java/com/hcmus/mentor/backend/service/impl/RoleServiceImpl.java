@@ -17,6 +17,7 @@ import com.hcmus.mentor.backend.service.RoleService;
 
 import java.util.*;
 
+import com.hcmus.mentor.backend.service.dto.RoleServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,33 +31,33 @@ public class RoleServiceImpl implements RoleService {
     private final UserRepository userRepository;
 
     @Override
-    public RoleServiceReturn findAll(String emailUser) {
+    public RoleServiceDto findAll(String emailUser) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new RoleServiceReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new RoleServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<Role> roles = roleRepository.findAll();
-        return new RoleServiceReturn(SUCCESS, "", roles);
+        return new RoleServiceDto(SUCCESS, "", roles);
     }
 
     @Override
-    public RoleServiceReturn findById(String emailUser, String id) {
+    public RoleServiceDto findById(String emailUser, String id) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new RoleServiceReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new RoleServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Role> roleOptional = roleRepository.findById(id);
         if (!roleOptional.isPresent()) {
-            return new RoleServiceReturn(NOT_FOUND, "Not found role", null);
+            return new RoleServiceDto(NOT_FOUND, "Not found role", null);
         }
-        return new RoleServiceReturn(SUCCESS, "", roleOptional.get());
+        return new RoleServiceDto(SUCCESS, "", roleOptional.get());
     }
 
     @Override
-    public RoleServiceReturn create(String emailUser, CreateRoleRequest request) {
+    public RoleServiceDto create(String emailUser, CreateRoleRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new RoleServiceReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new RoleServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (roleRepository.existsByName(request.getName())) {
-            return new RoleServiceReturn(DUPLICATE_ROLE, "Duplicate role", null);
+            return new RoleServiceDto(DUPLICATE_ROLE, "Duplicate role", null);
         }
         List<String> permissions = request.getPermissions();
 
@@ -67,7 +68,7 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new RoleServiceReturn(NOT_FOUND_PERMISSION, "Not found permissions", notFoundIds);
+            return new RoleServiceDto(NOT_FOUND_PERMISSION, "Not found permissions", notFoundIds);
         }
 
         Role role =
@@ -77,13 +78,13 @@ public class RoleServiceImpl implements RoleService {
                         .permissions(permissions)
                         .build();
         roleRepository.save(role);
-        return new RoleServiceReturn(SUCCESS, "", role);
+        return new RoleServiceDto(SUCCESS, "", role);
     }
 
     @Override
-    public RoleServiceReturn deleteMultiple(String emailUser, List<String> ids) {
+    public RoleServiceDto deleteMultiple(String emailUser, List<String> ids) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new RoleServiceReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new RoleServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
@@ -93,7 +94,7 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new RoleServiceReturn(NOT_FOUND, "Not found role", notFoundIds);
+            return new RoleServiceDto(NOT_FOUND, "Not found role", notFoundIds);
         }
 
         List<Role> roles = roleRepository.findByIdIn(ids);
@@ -103,7 +104,7 @@ public class RoleServiceImpl implements RoleService {
         }
 
         roleRepository.deleteAllById(ids);
-        return new RoleServiceReturn(SUCCESS, "", roles);
+        return new RoleServiceDto(SUCCESS, "", roles);
     }
 
     private void removeRoleFromUsers(List<User> users, String roleId) {
@@ -116,15 +117,15 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public RoleServiceReturn update(String emailUser, String id, UpdateRoleRequest request) {
+    public RoleServiceDto update(String emailUser, String id, UpdateRoleRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new RoleServiceReturn(INVALID_PERMISSION, "Invalid permission", null);
+            return new RoleServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (!roleRepository.existsById(id)) {
-            return new RoleServiceReturn(NOT_FOUND, "Not found role", id);
+            return new RoleServiceDto(NOT_FOUND, "Not found role", id);
         }
         if (roleRepository.existsByName(request.getName())) {
-            return new RoleServiceReturn(DUPLICATE_ROLE, "Duplicate role", null);
+            return new RoleServiceDto(DUPLICATE_ROLE, "Duplicate role", null);
         }
         List<String> permissions = request.getPermissions();
         List<String> notFoundIds = new ArrayList<>();
@@ -134,13 +135,13 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new RoleServiceReturn(NOT_FOUND_PERMISSION, "Not found permissions", notFoundIds);
+            return new RoleServiceDto(NOT_FOUND_PERMISSION, "Not found permissions", notFoundIds);
         }
 
         Role role = roleRepository.findById(id).get();
         role.update(request);
         roleRepository.save(role);
 
-        return new RoleServiceReturn(SUCCESS, "", role);
+        return new RoleServiceDto(SUCCESS, "", role);
     }
 }

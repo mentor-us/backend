@@ -5,15 +5,17 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.UserService;
+
 import java.util.Optional;
+
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import org.springframework.stereotype.Component;
 
 /**
  * Handler for {@link RemoveAdditionalEmailCommand}.
  */
 @Component
-public class RemoveAdditionalEmailHandler implements Command.Handler<RemoveAdditionalEmailCommand, UserService.UserReturnService> {
+public class RemoveAdditionalEmailHandler implements Command.Handler<RemoveAdditionalEmailCommand, UserServiceDto> {
 
     private final UserRepository userRepository;
 
@@ -26,25 +28,25 @@ public class RemoveAdditionalEmailHandler implements Command.Handler<RemoveAddit
      * @return UserReturnService
      */
     @Override
-    public UserService.UserReturnService handle(RemoveAdditionalEmailCommand command) {
+    public UserServiceDto handle(RemoveAdditionalEmailCommand command) {
         if(userRepository.findByEmail(command.getAdditionalEmail()).isPresent())
-            return new UserService.UserReturnService(NOT_FOUND, "Can't not remove primary email!", null);
+            return new UserServiceDto(NOT_FOUND, "Can't not remove primary email!", null);
 
         Optional<User> userOptional = userRepository.findById(command.getUserId());
         if (userOptional.isEmpty()) {
-            return new UserService.UserReturnService(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(NOT_FOUND, "Not found user", null);
         }
 
         var user = userOptional.get();
         var additionEmails = user.getAdditionalEmails();
         if (additionEmails.isEmpty() || !additionEmails.contains(command.getAdditionalEmail())) {
-            return new UserService.UserReturnService(NOT_FOUND, "Not found additional email!", null);
+            return new UserServiceDto(NOT_FOUND, "Not found additional email!", null);
         }
         additionEmails.remove(command.getAdditionalEmail());
         user.setAdditionalEmails(additionEmails);
         userRepository.save(user);
 
-        return new UserService.UserReturnService(SUCCESS, "Remove addition email success.", user);
+        return new UserServiceDto(SUCCESS, "Remove addition email success.", user);
 
     }
 }

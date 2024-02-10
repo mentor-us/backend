@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AddAdditionalEmailCommand implements Command<UserService.UserReturnService> {
+public class AddAdditionalEmailCommand implements Command<UserServiceDto> {
 
     /**
      * ID of user account.

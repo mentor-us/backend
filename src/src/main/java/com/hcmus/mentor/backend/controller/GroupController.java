@@ -20,7 +20,7 @@ import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.GroupService.GroupReturnService;
+import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 import io.minio.errors.*;
@@ -209,7 +209,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody CreateGroupRequest request) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.createNewGroup(email, request);
+        GroupServiceDto groupReturn = groupService.createNewGroup(email, request);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -230,7 +230,7 @@ public class GroupController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.importGroups(email, file);
+        GroupServiceDto groupReturn = groupService.importGroups(email, file);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -281,7 +281,7 @@ public class GroupController {
             @RequestParam(defaultValue = "25") Integer size)
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.findGroups(
+        GroupServiceDto groupReturn = groupService.findGroups(
                 email,
                 name,
                 mentorEmail,
@@ -316,7 +316,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @RequestBody AddMenteesRequest request) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.addMentees(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMentees(email, groupId, request);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -337,7 +337,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @RequestBody AddMentorsRequest request) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.addMentors(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMentors(email, groupId, request);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -358,7 +358,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.deleteMentee(email, groupId, menteeId);
+        GroupServiceDto groupReturn = groupService.deleteMentee(email, groupId, menteeId);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -379,7 +379,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.deleteMentor(email, groupId, mentorId);
+        GroupServiceDto groupReturn = groupService.deleteMentor(email, groupId, mentorId);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -400,7 +400,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.promoteToMentor(email, groupId, menteeId);
+        GroupServiceDto groupReturn = groupService.promoteToMentor(email, groupId, menteeId);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -421,7 +421,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.demoteToMentee(email, groupId, mentorId);
+        GroupServiceDto groupReturn = groupService.demoteToMentee(email, groupId, mentorId);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -468,7 +468,7 @@ public class GroupController {
     public ApiResponseDto delete(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.deleteGroup(email, id);
+        GroupServiceDto groupReturn = groupService.deleteGroup(email, id);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -489,7 +489,7 @@ public class GroupController {
             @PathVariable String id,
             @RequestBody UpdateGroupRequest request) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.updateGroup(email, id, request);
+        GroupServiceDto groupReturn = groupService.updateGroup(email, id, request);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -530,7 +530,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.deleteMultiple(email, ids);
+        GroupServiceDto groupReturn = groupService.deleteMultiple(email, ids);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -549,7 +549,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.disableMultiple(email, ids);
+        GroupServiceDto groupReturn = groupService.disableMultiple(email, ids);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -568,7 +568,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String email = userPrincipal.getEmail();
-        GroupReturnService groupReturn = groupService.enableMultiple(email, ids);
+        GroupServiceDto groupReturn = groupService.enableMultiple(email, ids);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -586,7 +586,7 @@ public class GroupController {
     public ApiResponseDto<GroupMembersResponse> getGroupMembers(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable("id") String groupId) {
-        GroupReturnService groupMembers = groupService.getGroupMembers(groupId, userPrincipal.getId());
+        GroupServiceDto groupMembers = groupService.getGroupMembers(groupId, userPrincipal.getId());
         return new ApiResponseDto(
                 groupMembers.getData(),
                 groupMembers.getReturnCode(),
@@ -640,7 +640,7 @@ public class GroupController {
     public ApiResponseDto<GroupDetailResponse> getGroup(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable("id") String groupId) {
-        GroupReturnService groupData = groupService.getGroupDetail(userPrincipal.getId(), groupId);
+        GroupServiceDto groupData = groupService.getGroupDetail(userPrincipal.getId(), groupId);
         return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
     }
 
@@ -657,7 +657,7 @@ public class GroupController {
     public ApiResponseDto<ShortMediaMessage> getGroupMedia(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable("id") String groupId) {
-        GroupReturnService groupData = groupService.getGroupMedia(userPrincipal.getId(), groupId);
+        GroupServiceDto groupData = groupService.getGroupMedia(userPrincipal.getId(), groupId);
         return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
     }
 
@@ -685,7 +685,7 @@ public class GroupController {
             @RequestParam String groupId,
             @RequestParam(value = "file", required = false) MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        GroupReturnService groupData = groupService.updateAvatar(userPrincipal.getId(), groupId, file);
+        GroupServiceDto groupData = groupService.updateAvatar(userPrincipal.getId(), groupId, file);
         return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
     }
 

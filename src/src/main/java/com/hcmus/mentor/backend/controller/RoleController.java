@@ -7,7 +7,7 @@ import com.hcmus.mentor.backend.domain.Role;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.RoleService;
-import com.hcmus.mentor.backend.service.impl.RoleServiceImpl;
+import com.hcmus.mentor.backend.service.dto.RoleServiceDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +39,7 @@ public class RoleController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<Role>> all(@CurrentUser UserPrincipal userPrincipal) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findAll(emailUser);
+        RoleServiceDto roleServiceReturn = roleService.findAll(emailUser);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
@@ -58,7 +58,7 @@ public class RoleController {
     @GetMapping("{id}")
     public ApiResponseDto<Role> get(@CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.findById(emailUser, id);
+        RoleServiceDto roleServiceReturn = roleService.findById(emailUser, id);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
@@ -78,7 +78,7 @@ public class RoleController {
     public ApiResponseDto<Role> create(
             @CurrentUser UserPrincipal userPrincipal, @RequestBody CreateRoleRequest request) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.create(emailUser, request);
+        RoleServiceDto roleServiceReturn = roleService.create(emailUser, request);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
@@ -101,7 +101,7 @@ public class RoleController {
             @PathVariable String id,
             @RequestBody UpdateRoleRequest request) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.update(emailUser, id, request);
+        RoleServiceDto roleServiceReturn = roleService.update(emailUser, id, request);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),
@@ -121,7 +121,7 @@ public class RoleController {
     public ApiResponseDto<Role> delete(
             @CurrentUser UserPrincipal userPrincipal, @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
-        RoleServiceImpl.RoleServiceReturn roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
+        RoleServiceDto roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
                 roleServiceReturn.getReturnCode(),

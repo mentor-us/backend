@@ -15,7 +15,7 @@ import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.UserService;
-import com.hcmus.mentor.backend.service.impl.UserServiceImpl;
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -68,7 +68,7 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<User>> all() {
-        UserServiceImpl.UserReturnService userReturn = userService.listAll();
+        UserServiceDto userReturn = userService.listAll();
         return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
@@ -91,7 +91,7 @@ public class UserController {
             @RequestParam(defaultValue = "25") int size) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.listAllPaging(emailUser, pageRequest);
         if (userReturn.getData() != null) {
             return new ApiResponseDto(
@@ -122,7 +122,7 @@ public class UserController {
             @RequestParam(defaultValue = "25") int size) {
         Pageable pageRequest = PageRequest.of(page, size);
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.listByEmail(emailUser, email, pageRequest);
         return new ApiResponseDto(
                 pagingResponse((Page<User>) userReturn.getData()),
@@ -144,7 +144,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(defaultValue = "") String email) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.listAllByEmail(emailUser, email);
+        UserServiceDto userReturn = userService.listAllByEmail(emailUser, email);
         return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
@@ -223,7 +223,7 @@ public class UserController {
             @PathVariable String id,
             @RequestBody UpdateUserForAdminRequest request) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.updateUserForAdmin(emailUser, id, request);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -242,7 +242,7 @@ public class UserController {
     public ApiResponseDto delete(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.deleteUser(emailUser, id);
+        UserServiceDto userReturn = userService.deleteUser(emailUser, id);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -261,7 +261,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody AddUserRequest request) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.addUser(emailUser, request);
+        UserServiceDto userReturn = userService.addUser(emailUser, request);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -277,11 +277,11 @@ public class UserController {
     @PatchMapping("{userId}/profile")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<UserServiceImpl.UserReturnService> updateProfile(
+    public ResponseEntity<UserServiceDto> updateProfile(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @PathVariable String userId,
             @RequestBody UpdateUserRequest request) {
-        UserServiceImpl.UserReturnService userReturn = userService.updateUser(userId, request);
+        UserServiceDto userReturn = userService.updateUser(userId, request);
         return ResponseEntity.ok(userReturn);
     }
 
@@ -314,7 +314,7 @@ public class UserController {
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         String email = userPrincipal.getEmail();
         FindUserRequest request = new FindUserRequest(name, emailSearch, status, role);
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.findUsers(email, request, page, size);
         return new ApiResponseDto(
                 pagingResponse((Page<User>) userReturn.getData()),
@@ -336,7 +336,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.deleteMultiple(emailUser, ids);
+        UserServiceDto userReturn = userService.deleteMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -355,7 +355,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.disableMultiple(emailUser, ids);
+        UserServiceDto userReturn = userService.disableMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -374,7 +374,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestBody List<String> ids) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.enableMultiple(emailUser, ids);
+        UserServiceDto userReturn = userService.enableMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -392,7 +392,7 @@ public class UserController {
     public ApiResponseDto<UserDetailResponse> getDetail(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
         String emailUser = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.getDetail(emailUser, id);
+        UserServiceDto userReturn = userService.getDetail(emailUser, id);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -419,7 +419,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.updateAvatar(userPrincipal.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -447,7 +447,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        UserServiceImpl.UserReturnService userReturn =
+        UserServiceDto userReturn =
                 userService.updateWallpaper(userPrincipal.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -487,7 +487,7 @@ public class UserController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
         String email = userPrincipal.getEmail();
-        UserServiceImpl.UserReturnService userReturn = userService.importUsers(email, file);
+        UserServiceDto userReturn = userService.importUsers(email, file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
