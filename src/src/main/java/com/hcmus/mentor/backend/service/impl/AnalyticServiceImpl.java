@@ -87,17 +87,15 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByStatus(true);
 
-        SystemAnalyticResponse response =
-                SystemAnalyticResponse.builder()
-                        .totalGroups(totalGroups)
-                        .activeGroups(activeGroups)
-                        .totalTasks(totalTasks)
-                        .totalMeetings(totalMeetings)
-                        .totalMessages(totalMessages)
-                        .totalUsers(totalUsers)
-                        .activeUsers(activeUsers)
-                        .build();
-        return response;
+        return SystemAnalyticResponse.builder()
+                .totalGroups(totalGroups)
+                .activeGroups(activeGroups)
+                .totalTasks(totalTasks)
+                .totalMeetings(totalMeetings)
+                .totalMessages(totalMessages)
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .build();
     }
 
     private SystemAnalyticResponse getGeneralInformationForAdmin(String adminId) {
