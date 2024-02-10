@@ -1,10 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
@@ -16,40 +11,15 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.MessageRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.AnalyticAttribute;
 import com.hcmus.mentor.backend.service.AnalyticService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -69,6 +39,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 
 /**
  * Analytic service.
@@ -1005,14 +989,14 @@ public class AnalyticServiceImpl implements AnalyticService {
     private ApiResponseDto<Map<String, String>> validateData(Map<String, String> data, String type) {
         Map<String, String> invalidValues = new HashMap<>();
         Map<String, String> notFoundsUser = new HashMap<>();
-
         for (Map.Entry<String, String> entry : data.entrySet()) {
             String email = entry.getKey();
             String value = entry.getValue();
             Optional<User> user = userRepository.findByEmail(email);
-            if (!user.isPresent()) {
+            if (user.isEmpty()) {
                 notFoundsUser.put(email, value);
             }
+
             switch (type) {
                 case "TRAINING_POINT":
                     if (!isValidTrainingPoint(value)) {
@@ -1037,6 +1021,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (!invalidValues.isEmpty()) {
             return new ApiResponseDto(invalidValues, INVALID_VALUE, "Invalid values");
         }
+
         return new ApiResponseDto(null, SUCCESS, "");
     }
 

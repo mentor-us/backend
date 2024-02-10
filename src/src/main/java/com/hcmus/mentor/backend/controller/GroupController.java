@@ -22,6 +22,7 @@ import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.GroupService.GroupReturnService;
 import com.hcmus.mentor.backend.service.PermissionService;
+import com.hcmus.mentor.backend.service.dto.EventDto;
 import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -509,7 +510,7 @@ public class GroupController {
         if (user == null) {
             return ApiResponseDto.notFound(404);
         }
-        List<EventService.Event> events = eventService.getMostRecentEvents(userId);
+        List<EventDto> events = eventService.getMostRecentEvents(userId);
         List<GroupHomepageResponse> pinnedGroups = groupService.getUserPinnedGroups(userId);
         Slice<GroupHomepageResponse> groups = groupService.getHomePageRecentGroupsOfUser(userId, 0, 25);
         return ApiResponseDto.success(new HomePageResponse(events, pinnedGroups, groups));

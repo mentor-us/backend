@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.security.CurrentUser;
 import com.hcmus.mentor.backend.security.UserPrincipal;
 import com.hcmus.mentor.backend.service.EventService;
-import com.hcmus.mentor.backend.service.impl.EventServiceImpl;
+import com.hcmus.mentor.backend.service.dto.EventDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -40,7 +40,7 @@ public class EventController {
     @GetMapping("own")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<List<EventServiceImpl.Event>> getOwnEvents(
+    public ApiResponseDto<List<EventDto>> getOwnEvents(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
         return ApiResponseDto.success(eventService.getAllOwnEvents(userPrincipal.getId()));
     }
@@ -55,7 +55,7 @@ public class EventController {
     @GetMapping("own/date")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<List<EventServiceImpl.Event>> getAllByDate(
+    public ApiResponseDto<List<EventDto>> getAllByDate(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
         return ApiResponseDto.success(eventService.getAllEventsByDate(userPrincipal.getId(), date));
@@ -71,7 +71,7 @@ public class EventController {
     @GetMapping("own/month")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<List<EventServiceImpl.Event>> getAllByMonth(
+    public ApiResponseDto<List<EventDto>> getAllByMonth(
             @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
         return ApiResponseDto.success(eventService.getAllEventsByMonth(userPrincipal.getId(), date));

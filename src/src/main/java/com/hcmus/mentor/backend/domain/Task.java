@@ -98,7 +98,7 @@ public class Task implements IRemindable, Serializable {
     }
 
     public List<String> getAllAssigneeIds() {
-        return assigneeIds.stream().map(AssigneeDto::getUserId).collect(Collectors.toList());
+        return assigneeIds.stream().map(AssigneeDto::getUserId).toList();
     }
 
     public void update(UpdateTaskRequest request) {
