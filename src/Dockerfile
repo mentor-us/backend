@@ -1,8 +1,8 @@
-FROM eclipse-temurin:17-jre-alpine AS builder
+FROM eclipse-temurin:21-jre-alpine AS builder
 COPY ./target/app.jar ./app.jar
 RUN java -Djarmode=layertools -jar ./app.jar extract
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 COPY --from=builder /dependencies/ ./
 COPY --from=builder /spring-boot-loader/ ./
 COPY --from=builder /snapshot-dependencies/ ./

@@ -2,14 +2,13 @@ package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Meeting;
-import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter
