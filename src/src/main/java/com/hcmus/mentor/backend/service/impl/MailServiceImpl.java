@@ -52,7 +52,7 @@ public class MailServiceImpl implements MailService {
 
             emailSender.send(message);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.error("MailService::sendEmail", ex);
         }
     }
 
@@ -73,7 +73,7 @@ public class MailServiceImpl implements MailService {
 
             emailSender.send(message);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.error("MailService::sendEmailTemplate", ex);
         }
     }
 
