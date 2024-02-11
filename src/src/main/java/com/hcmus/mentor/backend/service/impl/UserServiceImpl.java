@@ -6,8 +6,9 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminReq
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import com.hcmus.mentor.backend.controller.usecase.common.Email;
-import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupCategory;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -20,6 +21,8 @@ import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -55,7 +58,7 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final Integer ADMIN_ROLE = 1;
+    private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
     private final UserRepository userRepository;
     private final MailService mailService;
     private final GroupRepository groupRepository;
@@ -70,17 +73,14 @@ public class UserServiceImpl implements UserService {
             addNewAccount(emailAddress);
         }
         Optional<User> menteeWrapper = userRepository.findByEmail(emailAddress);
-        // mailService.sendInvitationMail(emailAddress, groupName);
+//        mailService.sendInvitationMail(emailAddress, groupName);
         return menteeWrapper.map(User::getId).orElse(null);
     }
 
-    private void sendEmail(String emailAddress) {
-        Email email = Email.builder()
-                .recipient(emailAddress)
-                .msgBody("Welcome to MentorUS app!")
-                .subject("Invite to MentorUS")
-                .build();
-        mailService.sendSimpleMail(email);
+    private void sendEmail(String email) {
+        mailService.sendEmail("Welcome to MentorUS app!", "Invite to MentorUS", List.of(email));
+
+        logger.info("Send invitation email to {}", email);
     }
 
     @Override
