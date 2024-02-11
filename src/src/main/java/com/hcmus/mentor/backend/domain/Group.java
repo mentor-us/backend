@@ -242,7 +242,7 @@ public class Group implements Serializable {
     public List<String> getMembers() {
         return Stream.concat(mentees.stream(), mentors.stream())
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void markMentee(String menteeId) {

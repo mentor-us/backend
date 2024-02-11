@@ -72,7 +72,7 @@ public class MessageDetailResponse {
         if (imageUrls == null) {
             return Collections.emptyList();
         }
-        return imageUrls.stream().map(Image::new).collect(Collectors.toList());
+        return imageUrls.stream().map(Image::new).toList();
     }
 
     public static MessageDetailResponse from(MessageResponse message) {
@@ -192,7 +192,7 @@ public class MessageDetailResponse {
                 .stream()
                 .map(entry -> new EmojiDto(entry.getKey(), entry.getValue()))
                 .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static List<EmojiDto> generateOwnerReacted(List<ReactionDto> reactions, String viewerId) {
@@ -200,7 +200,7 @@ public class MessageDetailResponse {
                 .filter(reaction -> reaction.getUserId().equals(viewerId))
                 .flatMap(reaction -> reaction.getData().stream())
                 .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static Integer calculateTotalReactionAmount(List<ReactionDto> reactions) {

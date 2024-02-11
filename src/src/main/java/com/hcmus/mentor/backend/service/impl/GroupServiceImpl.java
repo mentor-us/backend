@@ -64,7 +64,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPerm
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
-    private final Integer SUCCESS = 200;
+    private static final Integer SUCCESS = 200;
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserRepository userRepository;
@@ -74,7 +74,6 @@ public class GroupServiceImpl implements GroupService {
     private final MongoTemplate mongoTemplate;
     private final MailUtils mailUtils;
     private final SystemConfigRepository systemConfigRepository;
-    private final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
     private final MessageRepository messageRepository;
     private final MessageService messageService;
     private final SocketIOService socketIOService;
@@ -84,7 +83,7 @@ public class GroupServiceImpl implements GroupService {
 
     private static Date changeGroupTime(Date time, String type) {
         LocalDateTime timeInstant =
-                time.toInstant().atZone(ZoneOffset.systemDefault()).toLocalDateTime();
+                time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
         if (type.equals("START")) {
             timeInstant = timeInstant.withHour(0).withMinute(0);
@@ -137,7 +136,7 @@ public class GroupServiceImpl implements GroupService {
                     return response;
                 })
                 .sorted(Comparator.comparing(GroupHomepageResponse::getUpdatedDate).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -252,7 +251,7 @@ public class GroupServiceImpl implements GroupService {
     private List<String> validateInvalidMails(List<String> mentors, List<String> mentees) {
         return Stream.concat(mentors.stream(), mentees.stream())
                 .filter(email -> !MailUtils.isValidEmail(email))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<String> validateDuplicatedMails(List<String> mentors, List<String> mentees) {
@@ -274,7 +273,7 @@ public class GroupServiceImpl implements GroupService {
     private List<String> validateDomainMails(List<String> mentors, List<String> mentees) {
         return Stream.concat(mentors.stream(), mentees.stream())
                 .filter(email -> !mailUtils.isValidDomain(email))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private GroupServiceDto validateListMentorsMentees(
@@ -305,8 +304,7 @@ public class GroupServiceImpl implements GroupService {
                 || request.getTimeEnd() == null) {
             return new GroupServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
-        GroupServiceDto isValidTimeRange =
-                validateTimeRange(request.getTimeStart(), request.getTimeEnd());
+        GroupServiceDto isValidTimeRange = validateTimeRange(request.getTimeStart(), request.getTimeEnd());
         if (isValidTimeRange.getReturnCode() != SUCCESS) {
             return isValidTimeRange;
         }
@@ -324,19 +322,17 @@ public class GroupServiceImpl implements GroupService {
             return isValidEmails;
         }
 
-        List<String> menteeIds =
-                menteeEmails.stream()
-                        .filter(email -> !email.isEmpty())
-                        .map(email -> userService.importUser(email, request.getName()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+        List<String> menteeIds = menteeEmails.stream()
+                .filter(email -> !email.isEmpty())
+                .map(email -> userService.importUser(email, request.getName()))
+                .filter(Objects::nonNull)
+                .toList();
 
-        List<String> mentorIds =
-                mentorEmails.stream()
-                        .filter(email -> !email.isEmpty())
-                        .map(email -> userService.importUser(email, request.getName()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+        List<String> mentorIds = mentorEmails.stream()
+                .filter(email -> !email.isEmpty())
+                .map(email -> userService.importUser(email, request.getName()))
+                .filter(Objects::nonNull)
+                .toList();
         Date timeStart = changeGroupTime(request.getTimeStart(), "START");
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
         Duration duration = calculateDuration(timeStart, timeEnd);
@@ -366,17 +362,6 @@ public class GroupServiceImpl implements GroupService {
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
-    //    public Group addMentee(String groupId, AddMenteeRequest request) {
-    //        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-    //        if (!groupWrapper.isPresent()) {
-    //            return null;
-    //        }
-    //        Group group = groupWrapper.get();
-    //        String email = request.getEmail();
-    //        String menteeId = userService.getOrCreateUserByEmail(email);
-    //        group.addMentee(menteeId);
-    //        return groupRepository.save(group);
-    //    }
     private Duration calculateDuration(Date from, Date to) {
         return Duration.between(from.toInstant(), to.toInstant());
     }
@@ -404,7 +389,7 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-    private Boolean isValidTemplate(Workbook workbook) {
+    private boolean isValidTemplate(Workbook workbook) {
         int numberOfSheetInTemplate = 2;
         if (workbook.getNumberOfSheets() != numberOfSheetInTemplate) {
             return false;
@@ -418,7 +403,7 @@ public class GroupServiceImpl implements GroupService {
         return isValidHeader(row);
     }
 
-    private Boolean isValidHeader(Row row) {
+    private boolean isValidHeader(Row row) {
         return (row.getCell(0).getStringCellValue().equals("STT")
                 && row.getCell(1).getStringCellValue().equals("Loại nhóm *")
                 && row.getCell(2).getStringCellValue().equals("Emails người được quản lí *")
@@ -454,16 +439,14 @@ public class GroupServiceImpl implements GroupService {
                 menteeEmails.add(menteeEmail);
                 groupName = row.getCell(3).getStringCellValue();
                 description = row.getCell(4).getStringCellValue();
-                mentorEmails =
-                        Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
-                                .collect(Collectors.toList());
+                mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n")).toList();
                 DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
                 formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
                 timeStart = formatter.parse(row.getCell(6).getStringCellValue());
                 timeEnd = formatter.parse(row.getCell(7).getStringCellValue());
             }
 
-            Boolean isAddMentee = false;
+            boolean isAddMentee = false;
             while (i <= sheet.getLastRowNum() && row.getCell(3).getStringCellValue().isEmpty()) {
                 isAddMentee = true;
                 menteeEmail = row.getCell(2).getStringCellValue();
@@ -476,26 +459,23 @@ public class GroupServiceImpl implements GroupService {
                     return isValidTimeRange;
                 }
                 if (!groupCategoryRepository.existsByName(groupCategoryName)) {
-                    return new GroupServiceDto(
-                            GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
+                    return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
                 }
                 String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
                 if (!groups.containsKey(groupName) && !groupRepository.existsByName(groupName)) {
-                    Group group =
-                            Group.builder()
-                                    .name(groupName)
-                                    .description(description)
-                                    .createdDate(new Date())
-                                    .mentees(menteeEmails)
-                                    .mentors(mentorEmails)
-                                    .groupCategory(groupCategoryId)
-                                    .timeStart(timeStart)
-                                    .timeEnd(timeEnd)
-                                    .build();
+                    Group group = Group.builder()
+                            .name(groupName)
+                            .description(description)
+                            .createdDate(new Date())
+                            .mentees(menteeEmails)
+                            .mentors(mentorEmails)
+                            .groupCategory(groupCategoryId)
+                            .timeStart(timeStart)
+                            .timeEnd(timeEnd)
+                            .build();
                     groups.put(groupName, group);
                 } else {
-                    return new GroupServiceDto(
-                            DUPLICATE_GROUP, "Group name has been duplicated", groupName);
+                    return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
                 }
                 i--;
             }
@@ -532,18 +512,16 @@ public class GroupServiceImpl implements GroupService {
 
         List<CreateGroupRequest> createGroupRequests =
                 groups.values().stream()
-                        .map(
-                                group ->
-                                        CreateGroupRequest.builder()
-                                                .name(group.getName())
-                                                .createdDate(new Date())
-                                                .menteeEmails(group.getMentees())
-                                                .mentorEmails(group.getMentors())
-                                                .groupCategory(group.getGroupCategory())
-                                                .timeStart(group.getTimeStart())
-                                                .timeEnd(group.getTimeEnd())
-                                                .build())
-                        .collect(Collectors.toList());
+                        .map(group -> CreateGroupRequest.builder()
+                                .name(group.getName())
+                                .createdDate(new Date())
+                                .menteeEmails(group.getMentees())
+                                .mentorEmails(group.getMentors())
+                                .groupCategory(group.getGroupCategory())
+                                .timeStart(group.getTimeStart())
+                                .timeEnd(group.getTimeEnd())
+                                .build())
+                        .toList();
         for (CreateGroupRequest createGroupRequest : createGroupRequests) {
             GroupServiceDto returnData = createNewGroup(emailUser, createGroupRequest);
             if (returnData.getReturnCode() != SUCCESS) {
@@ -698,7 +676,7 @@ public class GroupServiceImpl implements GroupService {
                 emails.stream()
                         .filter(email -> !email.isEmpty())
                         .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                        .collect(Collectors.toList());
+                        .toList();
 
         if (hasDuplicateElements(ids, group.getMentees())
                 || hasDuplicateElements(ids, group.getMentors())) {
@@ -733,7 +711,7 @@ public class GroupServiceImpl implements GroupService {
                 emails.stream()
                         .filter(email -> !email.isEmpty())
                         .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                        .collect(Collectors.toList());
+                        .toList();
 
         if (hasDuplicateElements(ids, group.getMentees())
                 || hasDuplicateElements(ids, group.getMentors())) {
@@ -830,17 +808,6 @@ public class GroupServiceImpl implements GroupService {
         return new GroupServiceDto(MENTOR_NOT_FOUND, "Mentor not found", null);
     }
 
-    private void clearValidation(Sheet sheet) {
-        for (Row row : sheet) {
-            for (Cell cell : row) {
-                cell.removeCellComment();
-                cell.removeHyperlink();
-                cell.removeFormula();
-                cell.setCellType(CellType.BLANK);
-            }
-        }
-    }
-
     @Override
     public void loadTemplate(File file) throws Exception {
         int lastRow = 10000;
@@ -848,8 +815,8 @@ public class GroupServiceImpl implements GroupService {
                 groupCategoryRepository.findAllByStatus(GroupCategoryStatus.ACTIVE);
         String[] groupCategoryNames =
                 groupCategories.stream()
-                        .map(groupCategory -> groupCategory.getName())
-                        .collect(Collectors.toList())
+                        .map(GroupCategory::getName)
+                        .toList()
                         .toArray(new String[0]);
         FileInputStream inputStream = new FileInputStream(file);
         Workbook workbook = WorkbookFactory.create(inputStream);
@@ -868,22 +835,6 @@ public class GroupServiceImpl implements GroupService {
         dataValidationCategory.setEmptyCellAllowed(false);
         dataSheet.addValidationData(dataValidationCategory);
 
-        //        XSSFDataValidationConstraint validationConstraintDate =
-        // (XSSFDataValidationConstraint)dvHelper.createDateConstraint(
-        //                DataValidationConstraint.OperatorType.BETWEEN,
-        //                "01/01/1970",
-        //                "31/12/2200",
-        //                "dd/mm/yyyy"
-        //        );
-        //        CellRangeAddressList addressListDate = new CellRangeAddressList(1, lastRow, 4, 5);
-        //        DataValidation dataValidationDate = dvHelper.createValidation(
-        //                validationConstraintDate, addressListDate);
-        //
-        //        dataValidationDate.setShowErrorBox(true);
-        //        dataValidationDate.setSuppressDropDownArrow(true);
-        //        dataValidationDate.setEmptyCellAllowed(false);
-
-        //        groupsSheet.addValidationData(dataValidationDate);
         FileOutputStream outputStream = new FileOutputStream(file);
         workbook.write(outputStream);
         workbook.close();
@@ -1082,10 +1033,8 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
-            mentorIds =
-                    channel.getUserIds().stream().filter(group::isMentor).collect(Collectors.toList());
-            menteeIds =
-                    channel.getUserIds().stream().filter(group::isMentee).collect(Collectors.toList());
+            mentorIds = channel.getUserIds().stream().filter(group::isMentor).toList();
+            menteeIds = channel.getUserIds().stream().filter(group::isMentee).toList();
         }
 
         if (groupWrapper.isPresent()) {
@@ -1098,23 +1047,16 @@ public class GroupServiceImpl implements GroupService {
             menteeIds = group.getMentees();
         }
 
-        List<GroupMembersResponse.GroupMember> mentors =
-                userRepository.findAllByIdIn(mentorIds).stream()
-                        .map(ProfileResponse::normalize)
-                        .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
-                        .collect(Collectors.toList());
-        List<String> markedMentees =
-                group.getMarkedMenteeIds() != null ? group.getMarkedMenteeIds() : new ArrayList<>();
-        List<GroupMembersResponse.GroupMember> mentees =
-                userRepository.findAllByIdIn(menteeIds).stream()
-                        .map(ProfileResponse::normalize)
-                        .map(
-                                profile ->
-                                        GroupMembersResponse.GroupMember.from(
-                                                profile, "MENTEE", markedMentees.contains(profile.getId())))
-                        .collect(Collectors.toList());
-        GroupMembersResponse response =
-                GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
+        List<GroupMembersResponse.GroupMember> mentors = userRepository.findAllByIdIn(mentorIds).stream()
+                .map(ProfileResponse::normalize)
+                .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
+                .toList();
+        List<String> markedMentees = group.getMarkedMenteeIds() != null ? group.getMarkedMenteeIds() : new ArrayList<>();
+        List<GroupMembersResponse.GroupMember> mentees = userRepository.findAllByIdIn(menteeIds).stream()
+                .map(ProfileResponse::normalize)
+                .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTEE", markedMentees.contains(profile.getId())))
+                .toList();
+        GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
         return new GroupServiceDto(SUCCESS, null, response);
     }
 
@@ -1143,14 +1085,14 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public GroupServiceDto getGroupDetail(String userId, String groupId) {
         List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
-        if (groupWrapper.size() == 0) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
             Channel channel = channelWrapper.get();
             Optional<Group> parentGroupWrapper = groupRepository.findById(channel.getParentId());
-            if (!parentGroupWrapper.isPresent()) {
+            if (parentGroupWrapper.isEmpty()) {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
@@ -1224,7 +1166,7 @@ public class GroupServiceImpl implements GroupService {
 
         List<MessageResponse> messages = new ArrayList<>();
 
-        if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
+        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
             messages = response.getPinnedMessageIds().stream()
                     .map(messageRepository::findById)
                     .filter(Optional::isPresent)
@@ -1234,7 +1176,7 @@ public class GroupServiceImpl implements GroupService {
                         User user = userRepository.findById(message.getSenderId()).orElse(null);
                         return MessageResponse.from(message, ProfileResponse.from(user));
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
         response.setTotalMember(channel.getUserIds().size());
@@ -1255,7 +1197,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         List<MessageResponse> messages = new ArrayList<>();
-        if (response.getPinnedMessageIds() != null && response.getPinnedMessageIds().size() != 0) {
+        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
             messages = response.getPinnedMessageIds().stream()
                     .map(messageRepository::findById)
                     .filter(Optional::isPresent)
@@ -1265,13 +1207,12 @@ public class GroupServiceImpl implements GroupService {
                         User user = userRepository.findById(message.getSenderId()).orElse(null);
                         return MessageResponse.from(message, ProfileResponse.from(user));
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        response.setImageUrl(
-                (response.getImageUrl() == null)
-                        ? groupCategory != null ? groupCategory.getIconUrl() : null
-                        : response.getImageUrl());
+        response.setImageUrl((response.getImageUrl() == null)
+                ? groupCategory != null ? groupCategory.getIconUrl() : null
+                : response.getImageUrl());
         return response;
     }
 
@@ -1285,7 +1226,7 @@ public class GroupServiceImpl implements GroupService {
         return group.getMentees().stream()
                 .filter(userRepository::existsById)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -1330,56 +1271,49 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
-            senderIds =
-                    Stream.concat(group.getMentees().stream(), group.getMentors().stream())
-                            .collect(Collectors.toList());
+            senderIds = Stream.concat(group.getMentees().stream(), group.getMentors().stream())
+                    .toList();
         }
 
-        Map<String, ProfileResponse> senders =
-                userRepository.findAllByIdIn(senderIds).stream()
-                        .collect(
-                                Collectors.toMap(
-                                        ProfileResponse::getId, sender -> sender, (sender1, sender2) -> sender2));
+        Map<String, ProfileResponse> senders = userRepository.findAllByIdIn(senderIds).stream()
+                .collect(
+                        Collectors.toMap(
+                                ProfileResponse::getId, sender -> sender, (sender1, sender2) -> sender2));
 
-        List<Message> mediaMessages =
-                messageRepository.findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
-                        groupId,
-                        Arrays.asList(Message.Type.IMAGE, Message.Type.FILE),
-                        Arrays.asList(Message.Status.SENT, Message.Status.EDITED));
+        List<Message> mediaMessages = messageRepository.findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
+                groupId,
+                Arrays.asList(Message.Type.IMAGE, Message.Type.FILE),
+                Arrays.asList(Message.Status.SENT, Message.Status.EDITED));
 
         List<ShortMediaMessage> media = new ArrayList<>();
-        mediaMessages.forEach(
-                message -> {
-                    ProfileResponse sender = senders.getOrDefault(message.getSenderId(), null);
+        mediaMessages.forEach(message -> {
+            ProfileResponse sender = senders.getOrDefault(message.getSenderId(), null);
 
-                    if (Message.Type.IMAGE.equals(message.getType())) {
-                        List<ShortMediaMessage> images =
-                                message.getImages().stream()
-                                        .map(
-                                                url ->
-                                                        ShortMediaMessage.builder()
-                                                                .id(message.getId())
-                                                                .sender(sender)
-                                                                .imageUrl(url)
-                                                                .type(message.getType())
-                                                                .createdDate(message.getCreatedDate())
-                                                                .build())
-                                        .collect(Collectors.toList());
-                        media.addAll(images);
-                    }
+            if (Message.Type.IMAGE.equals(message.getType())) {
+                List<ShortMediaMessage> images = message.getImages().stream()
+                        .map(url -> ShortMediaMessage.builder()
+                                .id(message.getId())
+                                .sender(sender)
+                                .imageUrl(url)
+                                .type(message.getType())
+                                .createdDate(message.getCreatedDate())
+                                .build())
+                        .toList();
+                media.addAll(images);
+            }
 
-                    if (Message.Type.FILE.equals(message.getType())) {
-                        ShortMediaMessage file =
-                                ShortMediaMessage.builder()
-                                        .id(message.getId())
-                                        .sender(sender)
-                                        .file(message.getFile())
-                                        .type(message.getType())
-                                        .createdDate(message.getCreatedDate())
-                                        .build();
-                        media.add(file);
-                    }
-                });
+            if (Message.Type.FILE.equals(message.getType())) {
+                ShortMediaMessage file =
+                        ShortMediaMessage.builder()
+                                .id(message.getId())
+                                .sender(sender)
+                                .file(message.getFile())
+                                .type(message.getType())
+                                .createdDate(message.getCreatedDate())
+                                .build();
+                media.add(file);
+            }
+        });
         return new GroupServiceDto(SUCCESS, null, media);
     }
 
@@ -1398,7 +1332,6 @@ public class GroupServiceImpl implements GroupService {
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
         blobStorage.post(file, key);
 
-        // #TODO: Current save the link of google drive
         group.setImageUrl(key);
         groupRepository.save(group);
         return new GroupServiceDto(SUCCESS, "", key);
@@ -1439,8 +1372,8 @@ public class GroupServiceImpl implements GroupService {
             String groupCategoryName =
                     groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
 
-            Map statusMap = Group.getStatusMap();
-            String status = (String) statusMap.get(group.getStatus());
+            Map<GroupStatus, String> statusMap = Group.getStatusMap();
+            String status = statusMap.get(group.getStatus());
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
             String dateStart = dateFormat.format(group.getTimeStart());
             String dateEnd = dateFormat.format(group.getTimeEnd());
@@ -1492,22 +1425,18 @@ public class GroupServiceImpl implements GroupService {
 
         File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override
     public ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
             throws IOException {
         List<Group> groups = getGroupsForAdmin(emailUser);
-        ResponseEntity<Resource> response = generateExportTable(groups, remainColumns);
-        return response;
+        return generateExportTable(groups, remainColumns);
     }
 
     @Override
@@ -1539,8 +1468,7 @@ public class GroupServiceImpl implements GroupService {
                         status,
                         0,
                         Integer.MAX_VALUE);
-        ResponseEntity<Resource> response = generateExportTable(groups.getValue(), remainColumns);
-        return response;
+        return generateExportTable(groups.getValue(), remainColumns);
     }
 
     private List<List<String>> generateExportDataMembers(String groupId, String type) {
@@ -1591,14 +1519,11 @@ public class GroupServiceImpl implements GroupService {
 
         File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override
@@ -1711,9 +1636,8 @@ public class GroupServiceImpl implements GroupService {
         socketIOService.sendNewUnpinMessage(groupId, messageId);
 
         Optional<User> pinnerWrapper = userRepository.findById(userId);
-        if (!pinnerWrapper.isPresent()) {
-            notificationService.sendNewUnpinNotification(
-                    MessageDetailResponse.from(message, sender), pinnerWrapper.get());
+        if (pinnerWrapper.isEmpty()) {
+            notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerWrapper.get());
         }
 
         return true;
@@ -1745,7 +1669,7 @@ public class GroupServiceImpl implements GroupService {
         socketIOService.sendNewUnpinMessage(groupId, messageId);
 
         Optional<User> pinnerWrapper = userRepository.findById(userId);
-        if (!pinnerWrapper.isPresent()) {
+        if (pinnerWrapper.isEmpty()) {
             notificationService.sendNewUnpinNotification(
                     MessageDetailResponse.from(message, sender), pinnerWrapper.get());
         }
@@ -1780,7 +1704,7 @@ public class GroupServiceImpl implements GroupService {
             return null;
         }
         List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
-        if (groupWrapper.size() == 0) {
+        if (groupWrapper.isEmpty()) {
             return null;
         }
         Group group = groupRepository.findById(groupId).orElse(null);
@@ -1792,50 +1716,42 @@ public class GroupServiceImpl implements GroupService {
 
         List<String> channelIds =
                 group.getChannelIds() != null ? group.getChannelIds() : new ArrayList<>();
-        List<String> privateIds =
-                group.getPrivateIds() != null ? group.getPrivateIds() : new ArrayList<>();
+        List<String> privateIds = group.getPrivateIds() != null ? group.getPrivateIds() : new ArrayList<>();
         List<GroupDetailResponse.GroupChannel> channels =
                 channelRepository.findByIdIn(channelIds).stream()
                         .map(GroupDetailResponse.GroupChannel::from)
-                        .sorted(
-                                Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                        .collect(Collectors.toList());
+                        .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                        .toList();
         detail.setChannels(channels);
 
         List<GroupDetailResponse.GroupChannel> privates =
                 channelRepository
-                        .findByParentIdAndTypeAndUserIdsIn(
-                                groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
+                        .findByParentIdAndTypeAndUserIdsIn(groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
                         .stream()
-                        .map(
-                                channel -> {
-                                    String userId =
-                                            channel.getUserIds().stream()
-                                                    .filter(id -> !id.equals(user.getId()))
-                                                    .findFirst()
-                                                    .orElse(null);
-                                    if (userId == null) {
-                                        return null;
-                                    }
-                                    ShortProfile penpal = userRepository.findShortProfile(userId);
-                                    if (penpal == null) {
-                                        return null;
-                                    }
-                                    channel.setName(penpal.getName());
-                                    channel.setImageUrl(penpal.getImageUrl());
+                        .map(channel -> {
+                            String userId = channel.getUserIds().stream()
+                                    .filter(id -> !id.equals(user.getId()))
+                                    .findFirst()
+                                    .orElse(null);
+                            if (userId == null) {
+                                return null;
+                            }
+                            ShortProfile penpal = userRepository.findShortProfile(userId);
+                            if (penpal == null) {
+                                return null;
+                            }
+                            channel.setName(penpal.getName());
+                            channel.setImageUrl(penpal.getImageUrl());
 
-                                    List<String> markedMentees =
-                                            group.getMarkedMenteeIds() != null
-                                                    ? group.getMarkedMenteeIds()
-                                                    : new ArrayList<>();
-                                    return GroupDetailResponse.GroupChannel.from(
-                                            channel, markedMentees.contains(penpal.getId()));
-                                })
+                            List<String> markedMentees = group.getMarkedMenteeIds() != null
+                                    ? group.getMarkedMenteeIds()
+                                    : new ArrayList<>();
+                            return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
+                        })
                         .filter(Objects::nonNull)
-                        .sorted(
-                                Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                        .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                         .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
-                        .collect(Collectors.toList());
+                        .toList();
         detail.setPrivates(privates);
         return detail;
     }
@@ -1907,9 +1823,9 @@ public class GroupServiceImpl implements GroupService {
         groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
         List<String> lstChannelIds = new ArrayList<>();
-       for(List<String> ids: listChannelIds){
-           lstChannelIds.addAll(ids);
-       }
+        for (List<String> ids : listChannelIds) {
+            lstChannelIds.addAll(ids);
+        }
         List<Channel> channels = channelRepository.findByIdIn(lstChannelIds);
 
         List<GroupForwardResponse> groupForwardResponses = new ArrayList<>();
@@ -1928,7 +1844,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         for (Channel channel : channels) {
-            if(channel.getStatus() == ChannelStatus.ACTIVE){
+            if (channel.getStatus() == ChannelStatus.ACTIVE) {
                 ChannelForwardResponse channelForwardResponse = ChannelForwardResponse.from(channel);
 
                 channelForwardResponse.setGroup(groupForwardResponses.stream().filter(groupForwardResponse -> groupForwardResponse.getId().equals(channel.getParentId())).findFirst().orElse(null));
@@ -1937,7 +1853,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         if (name.isPresent() && !name.get().isEmpty()) {
-            channelForwardResponses = channelForwardResponses.stream().filter(channelForwardResponse -> channelForwardResponse.getName().contains(name.get())).collect(Collectors.toList());
+            channelForwardResponses = channelForwardResponses.stream().filter(channelForwardResponse -> channelForwardResponse.getName().contains(name.get())).toList();
         }
 
         return channelForwardResponses.stream().sorted(Comparator.comparing(ChannelForwardResponse::getGroupName)).toList();

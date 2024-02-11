@@ -1,24 +1,23 @@
 package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.refreshtoken;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Optional;
-
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.springframework.stereotype.Component;
 
 /**
  * Handler for {@link RefreshTokenCommand}.
@@ -44,7 +43,7 @@ public class RefreshTokenCommandHandler
         // Validate token.
         var tokenCreationDate = getTokenCreateDate(command.getToken());
         if (tokenCreationDate
-                .plusSeconds(AuthenticateConstant.accessTokenExpirationTime.getSeconds())
+                .plusSeconds(AuthenticateConstant.ACCESS_TOKEN_EXPIRATION_TIME.getSeconds())
                 .isBefore(LocalDateTime.now())) {
             throw new DomainException("Token has been expired.");
         }

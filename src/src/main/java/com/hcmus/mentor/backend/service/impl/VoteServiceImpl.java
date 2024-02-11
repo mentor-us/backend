@@ -71,7 +71,7 @@ public class VoteServiceImpl implements VoteService {
         }
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(groupId).stream()
                 .map(this::fulfillChoices)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -82,7 +82,7 @@ public class VoteServiceImpl implements VoteService {
                         .map(this::fulfillChoice)
                         .filter(Objects::nonNull)
                         .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                        .collect(Collectors.toList());
+                        .toList();
         return VoteDetailResponse.from(vote, creator, choices);
     }
 

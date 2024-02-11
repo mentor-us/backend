@@ -43,7 +43,7 @@ public class FaqServiceImpl implements FaqService {
 
         return faqRepository.findByGroupId(groupId).stream()
                 .sorted(Comparator.comparing(Faq::getRating).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -155,10 +155,10 @@ public class FaqServiceImpl implements FaqService {
                                                 .creatorId(user.getId())
                                                 .groupId(toGroupId)
                                                 .build())
-                        .collect(Collectors.toList());
+                        .toList();
 
         Group group = groupWrapper.get();
-        group.importFaq(newFAQs.stream().map(Faq::getId).collect(Collectors.toList()));
+        group.importFaq(newFAQs.stream().map(Faq::getId).toList());
         groupRepository.save(group);
         faqRepository.saveAll(newFAQs);
     }

@@ -8,7 +8,7 @@ import java.util.Map;
 public abstract class CustomerOidcUser {
     protected Map<String, Object> attributes;
 
-    public CustomerOidcUser(Map<String, Object> attributes) {
+    protected CustomerOidcUser(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
 

@@ -303,7 +303,7 @@ public class MessageServiceImpl implements MessageService {
                 messages.stream()
                         .flatMap(response -> response.getReactions().stream())
                         .map(ReactionDto::getUserId)
-                        .collect(Collectors.toList());
+                        .toList();
         Map<String, User> reactors =
                 userRepository.findByIdIn(userIds).stream()
                         .collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
@@ -313,7 +313,7 @@ public class MessageServiceImpl implements MessageService {
                 .filter(message -> !message.isDeletedAttach())
                 .map(message -> fulfillReactions(message, reactors))
                 .map(message -> MessageDetailResponse.totalReaction(message, viewerId))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -396,7 +396,7 @@ public class MessageServiceImpl implements MessageService {
                                     return fulfillReaction(reaction, reactor);
                                 })
                         .filter(reaction -> reaction.getUserId() != null)
-                        .collect(Collectors.toList());
+                        .toList();
         message.setReactions(reactions);
         return message;
     }

@@ -408,7 +408,7 @@ public class UserServiceImpl implements UserService {
                 findUserResponses.stream()
                         .skip((long) page * pageSize)
                         .limit(pageSize)
-                        .collect(Collectors.toList());
+                        .toList();
 
         return new UserServiceDto(
                 SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));

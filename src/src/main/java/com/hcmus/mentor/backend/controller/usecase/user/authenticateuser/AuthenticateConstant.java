@@ -1,10 +1,10 @@
 package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser;
 
-import java.time.Duration;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Shared constants for authentication.
@@ -15,11 +15,11 @@ public class AuthenticateConstant {
     /**
      * Refresh token expiration time.
      */
-    public static Duration refreshTokenExpire = Duration.ofDays(20);
+    public static final Duration REFRESH_TOKEN_EXPIRE = Duration.ofDays(20);
     /**
      * Access token expiration time.
      */
-    public static Duration accessTokenExpirationTime = Duration.ofHours(3);
+    public static final Duration ACCESS_TOKEN_EXPIRATION_TIME = Duration.ofHours(3);
     /**
      * Secret key for jwt.
      */

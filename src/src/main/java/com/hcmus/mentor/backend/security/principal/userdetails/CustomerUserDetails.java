@@ -57,6 +57,7 @@ public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
         return id;
     }
 
+    @Override
     public String getEmail() {
         return email;
     }
@@ -112,7 +113,7 @@ public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
 
     @Override
     public Map<String, Object> getClaims() {
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override

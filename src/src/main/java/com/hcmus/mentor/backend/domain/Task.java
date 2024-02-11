@@ -115,7 +115,7 @@ public class Task implements IRemindable, Serializable {
             List<AssigneeDto> assignees =
                     assigneeIds.stream()
                             .filter(assignee -> request.getUserIds().contains(assignee.getUserId()))
-                            .collect(Collectors.toList());
+                            .toList();
             request.getUserIds().stream()
                     .filter(userId -> !getAllAssigneeIds().contains(userId))
                     .forEach(

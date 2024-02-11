@@ -65,7 +65,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
         return notificationSubscriberRepository.findAllByUserIdIn(userIds).stream()
                 .map(NotificationSubscriber::getToken)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

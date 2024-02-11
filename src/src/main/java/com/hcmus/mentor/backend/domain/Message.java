@@ -78,7 +78,7 @@ public class Message {
         List<ReactionDto> filteredReactions =
                 reactions.stream()
                         .filter(reaction -> !reaction.getUserId().equals(userId))
-                        .collect(Collectors.toList());
+                        .toList();
         setReactions(filteredReactions);
     }
 

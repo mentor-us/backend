@@ -104,7 +104,7 @@ public class Vote {
         List<ChoiceDto> newChoices =
                 choices.stream()
                         .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                        .collect(Collectors.toList());
+                        .toList();
         setChoices(newChoices);
     }
 
