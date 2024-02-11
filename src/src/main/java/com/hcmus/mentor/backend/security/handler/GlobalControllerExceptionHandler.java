@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security.middlewares;
+package com.hcmus.mentor.backend.security.handler;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
@@ -23,11 +23,11 @@ import static java.util.Map.entry;
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
-public class ApiExceptionMiddleware {
+public class GlobalControllerExceptionHandler {
 
     private static final String errorsKey = "errors";
     private static final String codeKey = "code";
-    private static final Logger logger = LoggerFactory.getLogger(ApiExceptionMiddleware.class);
+    private static final Logger logger = LoggerFactory.getLogger(GlobalControllerExceptionHandler.class);
     private static final Map<Class, HttpStatus> exceptionStatusCodes =
             Map.ofEntries(entry(DomainException.class, HttpStatus.BAD_REQUEST));
     private final Environment environment;

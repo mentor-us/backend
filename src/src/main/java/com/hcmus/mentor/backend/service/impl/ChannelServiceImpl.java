@@ -10,7 +10,7 @@ import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.ChannelService;
 import com.hcmus.mentor.backend.service.PermissionService;
 
@@ -110,7 +110,7 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public boolean removeChannel(UserPrincipal user, String channelId) {
+    public boolean removeChannel(CustomerUserDetails user, String channelId) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
         if (!channelWrapper.isPresent()) {
             return true;
@@ -134,7 +134,7 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public List<Channel> getChannels(UserPrincipal user, String parentId) {
+    public List<Channel> getChannels(CustomerUserDetails user, String parentId) {
         if (parentId == null) {
             return Collections.emptyList();
         }
@@ -153,7 +153,7 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public Channel updateChannel(UserPrincipal user, String channelId, UpdateChannelRequest request) {
+    public Channel updateChannel(CustomerUserDetails user, String channelId, UpdateChannelRequest request) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
         if (!channelWrapper.isPresent()) {
             return null;
@@ -175,7 +175,7 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public List<ShortProfile> getChannelMembers(UserPrincipal user, String channelId) {
+    public List<ShortProfile> getChannelMembers(CustomerUserDetails user, String channelId) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
         if (!channelWrapper.isPresent()) {
             return null;

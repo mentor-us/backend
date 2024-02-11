@@ -9,8 +9,8 @@ import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingDeta
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.MeetingService;
 import com.hcmus.mentor.backend.service.NotificationService;
@@ -50,7 +50,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<MeetingResponse>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @RequestParam String groupId) {
         if (!groupService.isGroupMember(groupId, user.getId())) {
             return ResponseEntity.notFound().build();
@@ -70,7 +70,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Meeting> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @RequestBody CreateMeetingRequest request) {
         Meeting newMeeting = meetingService.createNewMeeting(request);
         if (newMeeting == null) {
@@ -91,7 +91,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Meeting> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String meetingId,
             @RequestBody UpdateMeetingRequest request) {
         Meeting meeting = meetingService.updateMeeting(user.getId(), meetingId, request);
@@ -112,7 +112,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<String> delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String meetingId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String meetingId) {
         if (!meetingRepository.existsById(meetingId)) {
             return ApiResponseDto.notFound(404);
         }
@@ -131,7 +131,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<MeetingDetailResponse> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String meetingId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String meetingId) {
         MeetingDetailResponse response = meetingService.getMeetingById(user.getId(), meetingId);
         return ApiResponseDto.success(response);
     }
@@ -147,7 +147,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<MeetingAttendeeResponse>> getAttendees(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String meetingId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String meetingId) {
         return ApiResponseDto.success(meetingService.getMeetingAttendees(meetingId));
     }
 
@@ -163,7 +163,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Meeting> reschedule(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String meetingId,
             @RequestBody RescheduleMeetingRequest request) {
         Meeting meeting = meetingService.rescheduleMeeting(user.getId(), meetingId, request);

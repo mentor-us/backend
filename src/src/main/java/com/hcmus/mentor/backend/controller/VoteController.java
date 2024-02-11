@@ -6,8 +6,8 @@ import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.VoteService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -43,7 +43,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<VoteDetailResponse>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @RequestParam String groupId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @RequestParam String groupId) {
         List<VoteDetailResponse> votes = voteService.getGroupVotes(user.getId(), groupId);
         if (votes == null || votes.size() == 0) {
             return ResponseEntity.notFound().build();
@@ -62,7 +62,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<VoteDetailResponse> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
         VoteDetailResponse vote = voteService.get(user.getId(), voteId);
         if (vote == null) {
             return ResponseEntity.notFound().build();
@@ -81,7 +81,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Vote> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @RequestBody CreateVoteRequest request) {
         Vote vote = voteService.createNewVote(user.getId(), request);
         if (vote == null) {
@@ -102,7 +102,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @RequestBody UpdateVoteRequest request) {
         boolean isUpdated = voteService.updateVote(user, voteId, request);
@@ -123,7 +123,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
         boolean isDeleted = voteService.deleteVote(user, voteId);
         if (!isDeleted) {
             return ResponseEntity.badRequest().build();
@@ -143,7 +143,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<VoteDetailResponse.ChoiceDetail> getChoiceDetail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @PathVariable String choiceId) {
         VoteDetailResponse.ChoiceDetail choiceDetail =
@@ -165,7 +165,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
         List<VoteDetailResponse.ChoiceDetail> choiceResult = voteService.getChoiceResults(user, voteId);
         if (choiceResult == null || choiceResult.size() == 0) {
             return ResponseEntity.notFound().build();
@@ -184,7 +184,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> closeVote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
         boolean isSuccess = voteService.closeVote(user, voteId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
@@ -203,7 +203,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> reopenVote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
         boolean isSuccess = voteService.reopenVote(user, voteId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
@@ -223,7 +223,7 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> doVoting(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @RequestBody DoVotingRequest request) {
         Vote vote = voteService.doVoting(request);

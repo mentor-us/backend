@@ -17,7 +17,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.repository.*;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
@@ -1775,7 +1775,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupDetailResponse getGroupWorkspace(UserPrincipal user, String groupId) {
+    public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {
         if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
             return null;
         }
@@ -1841,7 +1841,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public boolean markMentee(UserPrincipal user, String groupId, String menteeId) {
+    public boolean markMentee(CustomerUserDetails user, String groupId, String menteeId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         Group group = null;
         if (!groupWrapper.isPresent()) {
@@ -1869,7 +1869,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public boolean unmarkMentee(UserPrincipal user, String groupId, String menteeId) {
+    public boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         Group group = null;
         if (!groupWrapper.isPresent()) {
@@ -1902,7 +1902,7 @@ public class GroupServiceImpl implements GroupService {
      * @return List<GroupForwardResponse>
      */
     @Override
-    public List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
         groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();

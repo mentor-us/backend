@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,21 +34,21 @@ public class EventController {
     /**
      * Retrieves all events owned by the user.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing a list of own events.
      */
     @GetMapping("own")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<EventDto>> getOwnEvents(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        return ApiResponseDto.success(eventService.getAllOwnEvents(userPrincipal.getId()));
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
+        return ApiResponseDto.success(eventService.getAllOwnEvents(customerUserDetails.getId()));
     }
 
     /**
      * Retrieves all events owned by the user on a specific date.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param date          The date for which to retrieve events.
      * @return APIResponse containing a list of own events on the specified date.
      */
@@ -56,15 +56,15 @@ public class EventController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<EventDto>> getAllByDate(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
-        return ApiResponseDto.success(eventService.getAllEventsByDate(userPrincipal.getId(), date));
+        return ApiResponseDto.success(eventService.getAllEventsByDate(customerUserDetails.getId(), date));
     }
 
     /**
      * Retrieves all events owned by the user in a specific month.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param date          The date within the desired month.
      * @return APIResponse containing a list of own events in the specified month.
      */
@@ -72,8 +72,8 @@ public class EventController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<EventDto>> getAllByMonth(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
-        return ApiResponseDto.success(eventService.getAllEventsByMonth(userPrincipal.getId(), date));
+        return ApiResponseDto.success(eventService.getAllEventsByMonth(customerUserDetails.getId(), date));
     }
 }

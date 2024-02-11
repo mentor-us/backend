@@ -1,10 +1,10 @@
-package com.hcmus.mentor.backend.security.authenticateuser.loginuser;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.security.authenticateuser.AuthenticationTokenService;
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModelGenerator;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.HashMap;
 
@@ -37,7 +37,7 @@ public class LoginUserCommandHandler
             var context = SecurityContextHolder.getContext();
             context.setAuthentication(authentication);
 
-            UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+            CustomerUserDetails principal = (CustomerUserDetails) authentication.getPrincipal();
 
             var claims = new HashMap<String, Object>();
             claims.put("sub", principal.getId());

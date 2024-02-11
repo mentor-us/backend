@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security;
+package com.hcmus.mentor.backend.security.principal;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 

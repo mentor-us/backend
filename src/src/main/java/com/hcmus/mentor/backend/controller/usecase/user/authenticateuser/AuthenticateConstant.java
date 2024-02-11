@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security.authenticateuser;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser;
 
 import java.time.Duration;
 import java.util.List;

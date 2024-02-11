@@ -1,9 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
-
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
@@ -13,19 +10,11 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessag
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.NotificationRepository;
-import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.NotificationService;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,6 +24,12 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 
 @Service
 @RequiredArgsConstructor
@@ -77,15 +72,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notification notif =
-                Notification.builder()
-                        .title(request.getTitle())
-                        .content(request.getContent())
-                        .type(NotificationType.NEED_RESPONSE)
-                        .senderId(senderId)
-                        .receiverIds(Collections.singletonList(request.getReceiverId()))
-                        .createdDate(request.getCreatedDate())
-                        .build();
+        Notification notif = Notification.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .type(NotificationType.NEED_RESPONSE)
+                .senderId(senderId)
+                .receiverIds(Collections.singletonList(request.getReceiverId()))
+                .createdDate(request.getCreatedDate())
+                .build();
         return notificationRepository.save(notif);
     }
 

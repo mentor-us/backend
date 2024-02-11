@@ -1,12 +1,12 @@
-package com.hcmus.mentor.backend.security.authenticateuser.refreshtoken;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.refreshtoken;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.security.authenticateuser.AuthenticateConstant;
-import com.hcmus.mentor.backend.security.authenticateuser.AuthenticationTokenService;
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModel;
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModelGenerator;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModelGenerator;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 

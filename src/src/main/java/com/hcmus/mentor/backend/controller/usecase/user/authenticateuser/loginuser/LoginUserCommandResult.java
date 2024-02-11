@@ -1,6 +1,6 @@
-package com.hcmus.mentor.backend.security.authenticateuser.loginuser;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser;
 
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModel;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

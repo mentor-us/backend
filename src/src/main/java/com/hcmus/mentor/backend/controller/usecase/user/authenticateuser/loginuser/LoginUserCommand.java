@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security.authenticateuser.loginuser;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser;
 
 import an.awesome.pipelinr.Command;
 import jakarta.validation.constraints.Email;

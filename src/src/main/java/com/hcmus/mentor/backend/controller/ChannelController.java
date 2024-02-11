@@ -4,8 +4,8 @@ import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequ
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.ChannelService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,7 +32,7 @@ public class ChannelController {
     /**
      * Adds a new channel to a group (Mobile).
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request containing information to create a new channel.
      * @return ResponseEntity containing the newly created channel.
      */
@@ -40,9 +40,9 @@ public class ChannelController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Channel> addChannel(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody AddChannelRequest request) {
-        Channel channel = channelService.addChannel(userPrincipal.getId(), request);
+        Channel channel = channelService.addChannel(customerUserDetails.getId(), request);
         if (channel == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -52,7 +52,7 @@ public class ChannelController {
     /**
      * Removes a channel from a group (Mobile).
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param channelId     The ID of the channel to be removed.
      * @return ResponseEntity indicating the success of the removal operation.
      */
@@ -60,9 +60,9 @@ public class ChannelController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> removeChannel(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String channelId) {
-        boolean isDeleted = channelService.removeChannel(userPrincipal, channelId);
+        boolean isDeleted = channelService.removeChannel(customerUserDetails, channelId);
         if (!isDeleted) {
             return ResponseEntity.badRequest().build();
         }
@@ -72,7 +72,7 @@ public class ChannelController {
     /**
      * Gets all channels of a group (Mobile).
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param parentId      The ID of the parent channel (optional).
      * @return ResponseEntity containing a list of channels in the group.
      */
@@ -80,16 +80,16 @@ public class ChannelController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<Channel>> getChannels(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(required = false) String parentId) {
-        List<Channel> channels = channelService.getChannels(userPrincipal, parentId);
+        List<Channel> channels = channelService.getChannels(customerUserDetails, parentId);
         return ResponseEntity.ok(channels);
     }
 
     /**
      * Updates a group channel (Mobile).
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param channelId     The ID of the channel to be updated.
      * @param request       The request containing updated information for the channel.
      * @return ResponseEntity containing the updated channel.
@@ -98,10 +98,10 @@ public class ChannelController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Channel> updateChannel(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String channelId,
             @RequestBody UpdateChannelRequest request) {
-        Channel channel = channelService.updateChannel(userPrincipal, channelId, request);
+        Channel channel = channelService.updateChannel(customerUserDetails, channelId, request);
         if (channel == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -111,7 +111,7 @@ public class ChannelController {
     /**
      * Gets all members of a channel (Mobile).
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param channelId     The ID of the channel to get members from.
      * @return ResponseEntity containing a list of short profiles of channel members.
      */
@@ -119,9 +119,9 @@ public class ChannelController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ShortProfile>> getChannelMembers(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String channelId) {
-        List<ShortProfile> members = channelService.getChannelMembers(userPrincipal, channelId);
+        List<ShortProfile> members = channelService.getChannelMembers(customerUserDetails, channelId);
         return ResponseEntity.ok(members);
     }
 }

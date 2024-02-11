@@ -17,7 +17,7 @@ import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.ReminderRepository;
 import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -148,7 +148,7 @@ public class TaskServiceImpl implements IRemindableService {
         return new TaskReturnService(SUCCESS, "", taskDetailResponses);
     }
 
-    public TaskReturnService deleteTask(UserPrincipal user, String id) {
+    public TaskReturnService deleteTask(CustomerUserDetails user, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
         if (!taskOptional.isPresent()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
@@ -338,7 +338,7 @@ public class TaskServiceImpl implements IRemindableService {
         return new TaskReturnService(SUCCESS, "", task);
     }
 
-    public TaskReturnService updateTask(UserPrincipal user, String id, UpdateTaskRequest request) {
+    public TaskReturnService updateTask(CustomerUserDetails user, String id, UpdateTaskRequest request) {
         Optional<Task> taskOptional = taskRepository.findById(id);
         if (!taskOptional.isPresent()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);

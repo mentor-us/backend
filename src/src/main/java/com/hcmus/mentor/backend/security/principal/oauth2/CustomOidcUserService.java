@@ -1,12 +1,10 @@
-package com.hcmus.mentor.backend.security.oauth2;
+package com.hcmus.mentor.backend.security.principal.oauth2;
 
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.exception.OAuth2AuthenticationProcessingException;
 import com.hcmus.mentor.backend.controller.payload.returnCode.AuthenticationErrorCode;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfo;
-import com.hcmus.mentor.backend.security.oauth2.user.OAuth2UserInfoFactory;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,16 +45,15 @@ public class CustomOidcUserService extends OidcUserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         Map<String, Object> attributes = oidcUser.getAttributes();
 
-        OAuth2UserInfo oAuth2UserInfo =
-                OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, attributes);
-        if (StringUtils.isEmpty(oAuth2UserInfo.getEmail())) {
+        CustomerOidcUser customerOidcUser = CustomerOidcUserFactory.getOAuth2UserInfo(registrationId, attributes);
+        if (!StringUtils.hasLength(customerOidcUser.getEmail())) {
             throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.INVALID_EMAIL);
         }
 
-        String email = oAuth2UserInfo.getEmail();
+        String email = customerOidcUser.getEmail();
 
         Optional<User> userOptional = userRepository.findByEmail(email);
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.NOT_FOUND);
         }
 
@@ -64,12 +61,12 @@ public class CustomOidcUserService extends OidcUserService {
         if (!data.isStatus()) {
             throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.BLOCKED);
         }
-        User user = updateExistingUser(data, oAuth2UserInfo);
-        return UserPrincipal.create(user, attributes);
+        User user = updateExistingUser(data, customerOidcUser);
+        return CustomerUserDetails.create(user, attributes);
     }
 
-    private User updateExistingUser(User user, OAuth2UserInfo oAuth2UserInfo) {
-        user.update(oAuth2UserInfo);
+    private User updateExistingUser(User user, CustomerOidcUser customerOidcUser) {
+        user.update(customerOidcUser);
         return userRepository.save(user);
     }
 }

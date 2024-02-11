@@ -1,5 +1,6 @@
-package com.hcmus.mentor.backend.security.oauth2;
+package com.hcmus.mentor.backend.security.handler;
 
+import com.hcmus.mentor.backend.security.principal.oauth2.OAuth2AuthorizationRequestRepository;
 import com.hcmus.mentor.backend.util.CookieUtils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,10 +21,8 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             LogManager.getLogger(OAuth2AuthenticationFailureHandler.class);
     private final OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
-    public OAuth2AuthenticationFailureHandler(
-            OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository) {
-        this.httpCookieOAuth2AuthorizationRequestRepository =
-                httpCookieOAuth2AuthorizationRequestRepository;
+    public OAuth2AuthenticationFailureHandler(OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository) {
+        this.httpCookieOAuth2AuthorizationRequestRepository = httpCookieOAuth2AuthorizationRequestRepository;
     }
 
     @Override
@@ -31,8 +30,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
         String targetUrl =
-                CookieUtils.getCookie(
-                                request, OAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
+                CookieUtils.getCookie(request, OAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
                         .map(Cookie::getValue)
                         .orElse(("/"));
 

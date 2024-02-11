@@ -8,8 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-        info =
-        @Info(
+        info = @Info(
                 title = "MentorUS Backend",
                 description = "BE API specification for web dashboard and mobile app",
                 version = "0.0.1"))

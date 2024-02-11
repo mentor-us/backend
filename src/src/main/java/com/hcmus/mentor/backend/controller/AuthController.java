@@ -2,10 +2,10 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModel;
-import com.hcmus.mentor.backend.security.authenticateuser.loginuser.LoginUserCommand;
-import com.hcmus.mentor.backend.security.authenticateuser.loginuser.LoginUserCommandResult;
-import com.hcmus.mentor.backend.security.authenticateuser.refreshtoken.RefreshTokenCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommandResult;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.refreshtoken.RefreshTokenCommand;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -66,5 +66,15 @@ public class AuthController {
         }
 
         return command.execute(pipeline);
+    }
+
+    /**
+     * Logout user.
+     */
+    @PostMapping("/logout")
+    public void fakeLogout() {
+        // This is the fake logout method, only for generate the swagger document. It's already implemented by Spring Security.
+        // See the SecurityConfig.java file for real implementation.
+        throw new IllegalStateException("This method shouldn't be called. It's implemented by Spring Security filters.");
     }
 }

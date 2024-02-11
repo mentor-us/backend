@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security.oauth2;
+package com.hcmus.mentor.backend.security.principal.oauth2;
 
 import com.hcmus.mentor.backend.util.CookieUtils;
 import com.hcmus.mentor.backend.util.SerializeUtils;
@@ -10,11 +10,10 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
 import org.springframework.stereotype.Component;
 
 @Component
-public class OAuth2AuthorizationRequestRepository
-        implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
+public class OAuth2AuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
     public static final String OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request";
     public static final String REDIRECT_URI_PARAM_COOKIE_NAME = "redirect_uri";
-    private static final int cookieExpireSeconds = 180;
+    private static final int COOKIE_EXPIRE_SECONDS = 180;
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
@@ -38,11 +37,10 @@ public class OAuth2AuthorizationRequestRepository
                 response,
                 OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME,
                 SerializeUtils.serialize(authorizationRequest),
-                cookieExpireSeconds);
+                COOKIE_EXPIRE_SECONDS);
         String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_COOKIE_NAME);
         if (StringUtils.isNotBlank(redirectUriAfterLogin)) {
-            CookieUtils.addCookie(
-                    response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, cookieExpireSeconds);
+            CookieUtils.addCookie(response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, COOKIE_EXPIRE_SECONDS);
         }
     }
 

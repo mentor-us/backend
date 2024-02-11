@@ -2,8 +2,8 @@ package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.domain.SystemConfig;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import com.hcmus.mentor.backend.service.SystemConfigService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,15 +30,15 @@ public class SystemConfigController {
     /**
      * Retrieve all system configurations.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing the list of all system configurations.
      */
     @GetMapping(value = "all")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<SystemConfig>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        String emailUser = userPrincipal.getEmail();
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
+        String emailUser = customerUserDetails.getEmail();
         SystemConfigServiceDto configReturn =
                 systemConfigService.listAll(emailUser);
         return new ApiResponseDto(
@@ -48,7 +48,7 @@ public class SystemConfigController {
     /**
      * Update the value of an existing system configuration.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param id            The ID of the system configuration to update.
      * @param value         The new value to set for the system configuration.
      * @return APIResponse containing the updated system configuration or an error response.
@@ -57,10 +57,10 @@ public class SystemConfigController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<SystemConfig> updateValue(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody Object value) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         SystemConfigServiceDto configReturn =
                 systemConfigService.updateValue(emailUser, id, value);
         return new ApiResponseDto(

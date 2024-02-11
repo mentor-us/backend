@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security;
+package com.hcmus.mentor.backend.security.principal.userdetails;
 
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -21,18 +21,13 @@ public class CustomUserDetailService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user =
-                userRepository
-                        .findByEmail(username)
-                        .or(() -> userRepository.findByAdditionalEmailsContains(username))
-                        .orElseThrow(
-                                () ->
-                                        new UsernameNotFoundException(
-                                                String.format("User not found with email: %s", username)));
+        User user = userRepository
+                .findByEmail(username)
+                .or(() -> userRepository.findByAdditionalEmailsContains(username))
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("User not found with email: %s", username)));
 
-        List<GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
-        return new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
     }
 }
