@@ -34,6 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * {@inheritDoc}
+ */
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
@@ -388,15 +391,13 @@ public class MessageServiceImpl implements MessageService {
     private MessageDetailResponse fulfillReactions(
             MessageDetailResponse message,
             Map<String, User> reactors) {
-        List<ReactionDto> reactions =
-                message.getReactions().stream()
-                        .map(
-                                reaction -> {
-                                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
-                                    return fulfillReaction(reaction, reactor);
-                                })
-                        .filter(reaction -> reaction.getUserId() != null)
-                        .collect(Collectors.toList());
+        List<ReactionDto> reactions = message.getReactions().stream()
+                .map(reaction -> {
+                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
+                    return fulfillReaction(reaction, reactor);
+                })
+                .filter(reaction -> reaction.getUserId() != null)
+                .toList();
         message.setReactions(reactions);
         return message;
     }
