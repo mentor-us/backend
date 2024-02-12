@@ -25,8 +25,7 @@ public class QuartzConfig {
         return TriggerBuilder.newTrigger()
                 .forJob(sendRemindersJobDetail())
                 .withIdentity("sendRemindersTrigger")
-                .withSchedule(
-                        SimpleScheduleBuilder.repeatMinutelyForever(5)) // Schedule to run every 5 minutes
+                .withSchedule(SimpleScheduleBuilder.repeatMinutelyForever(5)) // Schedule to run every 5 minutes
                 .build();
     }
 
@@ -37,7 +36,7 @@ public class QuartzConfig {
         private final ReminderService reminderService;
 
         @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
+        public void execute(JobExecutionContext context) {
             try {
                 reminderService.sendReminders();
             } catch (FirebaseMessagingException e) {

@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResp
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
+import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.VoteService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,6 +32,7 @@ public class VoteController {
 
     private final VoteService voteService;
     private final SocketIOServer socketServer;
+    private final MessageService messageService;
 
     /**
      * Get all votes on group.
@@ -165,9 +167,10 @@ public class VoteController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @PathVariable String voteId) {
         List<VoteDetailResponse.ChoiceDetail> choiceResult = voteService.getChoiceResults(user, voteId);
-        if (choiceResult == null || choiceResult.size() == 0) {
+        if (choiceResult == null || choiceResult.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(choiceResult);
@@ -230,6 +233,8 @@ public class VoteController {
         if (vote == null) {
             return ResponseEntity.badRequest().build();
         }
+
+        messageService.updateCreatedDateVoteMessage(voteId);
 
         socketServer.getRoomOperations(vote.getGroupId()).sendEvent("receive_voting", vote);
 

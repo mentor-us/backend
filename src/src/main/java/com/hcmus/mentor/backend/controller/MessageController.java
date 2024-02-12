@@ -331,7 +331,7 @@ public class MessageController {
      * Forward a message to another group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request payload for forwarding the message.
+     * @param request             The request payload for forwarding the message.
      * @return ResponseEntity indicating the success of the forward operation.
      */
     @PostMapping("forward")

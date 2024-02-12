@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -74,19 +73,16 @@ public class Vote {
     public void doVoting(DoVotingRequest request) {
         String voterId = request.getVoterId();
         choices.forEach(choice -> choice.removeVoting(voterId));
-        request
-                .getChoices()
-                .forEach(
-                        choice -> {
-                            ChoiceDto oldChoice = getChoice(choice.getId());
-                            if (oldChoice == null) {
-                                choices.add(choice);
-                                return;
-                            }
-                            if (choice.getVoters().contains(voterId)) {
-                                oldChoice.doVoting(voterId);
-                            }
-                        });
+        request.getChoices().forEach(choice -> {
+            ChoiceDto oldChoice = getChoice(choice.getId());
+            if (oldChoice == null) {
+                choices.add(choice);
+                return;
+            }
+            if (choice.getVoters().contains(voterId)) {
+                oldChoice.doVoting(voterId);
+            }
+        });
         sortChoicesDesc();
     }
 
@@ -101,10 +97,9 @@ public class Vote {
     }
 
     public void sortChoicesDesc() {
-        List<ChoiceDto> newChoices =
-                choices.stream()
-                        .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                        .toList();
+        List<ChoiceDto> newChoices = choices.stream()
+                .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
+                .toList();
         setChoices(newChoices);
     }
 

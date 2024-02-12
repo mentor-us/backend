@@ -483,6 +483,20 @@ public class MessageServiceImpl implements MessageService {
         return messages;
     }
 
+    @Override
+    public boolean updateCreatedDateVoteMessage(String voteId) {
+        var messageOpt = messageRepository.findByVoteId(voteId);
+        if (messageOpt.isEmpty()) {
+            return false;
+        }
+        var message = messageOpt.get();
+
+        message.setCreatedDate(new Date());
+        messageRepository.save(message);
+
+        return true;
+    }
+
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
