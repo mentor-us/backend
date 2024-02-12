@@ -1,0 +1,10 @@
+---
+spring.profiles: local
+spring.profiles.include: common, local
+---
+spring.profiles: dev
+spring.profiles.include: common, dev
+---
+spring.profiles: prod
+spring.profiles.include: common, prod
+---
