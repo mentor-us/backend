@@ -1,19 +1,13 @@
 # Running the Application Locally
 
-- You must provide the `application.yml` at `/src/src/main/resources`
-
 - Go to `/src/src/main/resources`
-- Choose one of the following options to set up your environment:
+- Run this command to initial the credential:
+```shell
+op inject -i application-common.yml.template -o application-common.yml
+op inject -i application-local.yml.template -o application-local.yml
+```
 
-  1. Using 1Password Cli (for the developer team only):
-
-  - Linux and macOS: command `APP_ENV=<env> op inject -i application.yml.tpl -o application.yml`
-  - PowerShell: `$Env:APP_ENV = "<env>" && op inject -i application.yml.tpl -o application.yml`
-  - For more information, refer to: [Inject credentials using the 1Password CLI in different environments](https://developer.1password.com/docs/cli/secrets-config-files/#step-3-differentiate-between-environments)
-
-  2. Ping @hieucckha for credential file
-
-> **Note:** In the Minio section, you must provide the necessary information yourself from [INSTALL.md](../INSTALL.md#configuration-minio).
+> For more information, refer to: [Inject credentials using the 1Password CLI in different environments](https://developer.1password.com/docs/cli/secrets-config-files/#step-3-differentiate-between-environments)
 
 ## Using JetBrains IntelliJ Ultimate:
 
