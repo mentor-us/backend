@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.security.filter;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.security.principal.userdetails.CustomUserDetailService;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomUserDetailService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private String getTokenEmail(String token) throws DomainException {
+    private String getTokenEmail(String token) {
         try {
             Claims claims = getTokenClaims(token);
 
@@ -58,7 +58,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
     }
 
-    private Claims getTokenClaims(String token) throws DomainException {
+    private Claims getTokenClaims(String token) {
         try {
             return tokenService.getTokenClaims(token);
         } catch (Exception ex) {

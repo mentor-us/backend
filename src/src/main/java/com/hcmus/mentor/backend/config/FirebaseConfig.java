@@ -13,18 +13,21 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
+    private static final String FIREBASE_ADMIN_CREDENTIALS = "/mentorus-firebase-admins.json";
+    private static final String FIREBASE_APP_NAME = "mentor-hcmus";
+
     @Bean
     FirebaseMessaging firebaseMessaging() throws IOException {
-        var googleCredentials = GoogleCredentials.fromStream(new ClassPathResource("/mentorus-firebase-admins.json").getInputStream());
+        var googleCredentials = GoogleCredentials.fromStream(new ClassPathResource(FIREBASE_ADMIN_CREDENTIALS).getInputStream());
         FirebaseOptions firebaseOptions = FirebaseOptions.builder()
                 .setCredentials(googleCredentials)
                 .build();
 
         FirebaseApp app;
         if (FirebaseApp.getApps().isEmpty()) {
-            app = FirebaseApp.initializeApp(firebaseOptions, "mentor-hcmus");
+            app = FirebaseApp.initializeApp(firebaseOptions, FIREBASE_APP_NAME);
         } else {
-            app = FirebaseApp.getInstance();
+            app = FirebaseApp.getInstance(FIREBASE_APP_NAME);
         }
 
         return FirebaseMessaging.getInstance(app);

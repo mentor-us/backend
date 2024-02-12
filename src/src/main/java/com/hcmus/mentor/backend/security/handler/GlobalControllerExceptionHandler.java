@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -38,9 +39,11 @@ public class GlobalControllerExceptionHandler {
      * @param ex exception.
      * @return The {@link ProblemDetail}.
      */
-    @ExceptionHandler({DomainException.class, ValidationException.class})
-    public ProblemDetail handlerDomainException(Exception ex) {
-        return getObjectByException(ex);
+    @ExceptionHandler(
+            {DomainException.class, ValidationException.class}
+    )
+    public ResponseEntity<ProblemDetail> handlerDomainException(Exception ex) {
+        return new ResponseEntity<>(getObjectByException(ex), getStatusCodeByExceptionType(ex.getClass()));
     }
 
     private static void addExceptionInfoToProblemDetails(

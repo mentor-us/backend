@@ -113,12 +113,6 @@ db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","R
    ![Edit access policy](docs/imgs/install-minio/edit-poliicy.png)
 6. Paste the access policy provided above and save it.
    ![Save policy](docs/imgs/install-minio/save-policy.png)
-7. Go to the 'Access key' tab and create a new access key.
-   ![Create new access key](docs/imgs/install-minio/create-new-access-key.png)
-8. Press the 'Create' button.
-   ![Create access key](docs/imgs/install-minio/create-access-key.png)
-9. Save both the access key and secret key; you will need them later.
-   ![Save key](docs/imgs/install-minio/save-key.png)
 
 **Note:** After that you have
 

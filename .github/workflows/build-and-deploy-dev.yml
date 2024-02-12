@@ -46,7 +46,8 @@ jobs:
       - name: Inject secret with 1Password
         run: |
           export OP_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          APP_ENV=dev op inject -i ./src/main/resources/application.yml.tpl -o ./src/main/resources/application.yml
+          op inject -i ./src/main/resources/application-common.yml.template -o ./src/main/resources/application-common.yml
+          op inject -i ./src/main/resources/application-dev.yml.template -o ./src/main/resources/application-dev.yml
 
       - name: Build with Maven
         run: mvn -B package --file pom.xml
@@ -130,4 +131,5 @@ jobs:
               --add-host host.docker.internal:host-gateway \
               -p 7000:8080 \
               -p 7001:8085 \
+              -e "SPRING_PROFILES_ACTIVE=dev"
               ${{ env.REGISTRY }}/${{ github.repository }}/dev:latest

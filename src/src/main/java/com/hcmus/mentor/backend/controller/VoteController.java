@@ -45,7 +45,7 @@ public class VoteController {
     public ResponseEntity<List<VoteDetailResponse>> all(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @RequestParam String groupId) {
         List<VoteDetailResponse> votes = voteService.getGroupVotes(user.getId(), groupId);
-        if (votes == null || votes.size() == 0) {
+        if (votes == null || votes.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(votes);

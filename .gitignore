@@ -199,4 +199,4 @@ README.html
 .idea
 .exercism
 
-**/application.yml
+**/application-*.yml
