@@ -27,7 +27,6 @@ spring:
     username: "op://mentorus/backend-common/wcjkfeqqs5msdj2eehtcj3ji6u/username"
     password: "op://mentorus/backend-common/wcjkfeqqs5msdj2eehtcj3ji6u/password"
     protocol: smtp
-    tls: true
     properties:
       mail:
         smtp:

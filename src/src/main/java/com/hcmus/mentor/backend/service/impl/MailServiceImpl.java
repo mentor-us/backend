@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
@@ -33,8 +32,6 @@ public class MailServiceImpl implements MailService {
     private final SpringTemplateEngine templateEngine;
     private final JavaMailSender emailSender;
     private final UserRepository userRepository;
-    @Resource
-    private MailServiceImpl mailService;
     @Value("${spring.mail.username}")
     private String sender;
 
@@ -86,7 +83,7 @@ public class MailServiceImpl implements MailService {
         var userOpt = userRepository.findByEmail(email);
         var username = userOpt.map(User::getName).orElse(email);
 
-        mailService.sendEmailTemplate(
+        this.sendEmailTemplate(
                 "welcome-email.html",
                 Map.of("name", username, "groupName", group.getName(), "groupId", group.getId()),
                 "Invite to MentorUS",
