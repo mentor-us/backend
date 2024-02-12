@@ -5,8 +5,8 @@ import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsReques
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.response.FAQDetail;
 import com.hcmus.mentor.backend.domain.Faq;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.FaqService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,7 +33,7 @@ public class FaqController {
     /**
      * Retrieves all FAQs of a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param groupId       The ID of the group to retrieve FAQs.
      * @return ResponseEntity containing a list of FAQs for the specified group.
      */
@@ -41,16 +41,16 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<Faq>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String groupId) {
-        List<Faq> faqs = faqService.getByGroupId(userPrincipal.getId(), groupId);
+        List<Faq> faqs = faqService.getByGroupId(customerUserDetails.getId(), groupId);
         return ResponseEntity.ok(faqs);
     }
 
     /**
      * Retrieves the details of a specific FAQ.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to retrieve details.
      * @return ResponseEntity containing the detailed information of the specified FAQ.
      */
@@ -58,9 +58,9 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<FAQDetail> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        FAQDetail faq = faqService.getById(userPrincipal.getId(), faqId);
+        FAQDetail faq = faqService.getById(customerUserDetails.getId(), faqId);
         if (faq == null) {
             return ResponseEntity.notFound().build();
         }
@@ -70,7 +70,7 @@ public class FaqController {
     /**
      * Adds a new FAQ to a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request containing information to create a new FAQ.
      * @return ResponseEntity containing the ID of the newly created FAQ.
      */
@@ -78,9 +78,9 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody CreateFaqRequest request) {
-        Faq faq = faqService.addNewFaq(userPrincipal.getId(), request);
+        Faq faq = faqService.addNewFaq(customerUserDetails.getId(), request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -90,7 +90,7 @@ public class FaqController {
     /**
      * Updates an existing FAQ in a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to be updated.
      * @param request       The request containing updated information for the FAQ.
      * @return ResponseEntity containing the ID of the updated FAQ.
@@ -99,10 +99,10 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId,
             @RequestBody UpdateFaqRequest request) {
-        Faq faq = faqService.updateFAQ(userPrincipal.getId(), faqId, request);
+        Faq faq = faqService.updateFAQ(customerUserDetails.getId(), faqId, request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -112,7 +112,7 @@ public class FaqController {
     /**
      * Deletes an existing FAQ from a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to be deleted.
      * @return ResponseEntity indicating the success of the deletion operation.
      */
@@ -120,16 +120,16 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        faqService.deleteFaq(userPrincipal.getId(), faqId);
+        faqService.deleteFaq(customerUserDetails.getId(), faqId);
         return ResponseEntity.ok().build();
     }
 
     /**
      * Imports existing FAQs from another group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to which FAQs will be imported.
      * @param request       The request containing information about the FAQs to import.
      * @return ResponseEntity indicating the success of the import operation.
@@ -138,17 +138,17 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> importFAQs(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId,
             @RequestBody ImportFAQsRequest request) {
-        faqService.importFAQs(userPrincipal, faqId, request);
+        faqService.importFAQs(customerUserDetails, faqId, request);
         return ResponseEntity.ok().build();
     }
 
     /**
      * Upvotes an existing FAQ in a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to be upvoted.
      * @return ResponseEntity indicating the success of the upvote operation.
      */
@@ -156,9 +156,9 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> upVote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isSuccess = faqService.upvote(userPrincipal, faqId);
+        boolean isSuccess = faqService.upvote(customerUserDetails, faqId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
         }
@@ -168,7 +168,7 @@ public class FaqController {
     /**
      * Downvotes an existing FAQ in a group.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param faqId         The ID of the FAQ to be downvoted.
      * @return ResponseEntity indicating the success of the downvote operation.
      */
@@ -176,9 +176,9 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> downVote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isSuccess = faqService.downVote(userPrincipal, faqId);
+        boolean isSuccess = faqService.downVote(customerUserDetails, faqId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
         }

@@ -15,14 +15,18 @@ public class FirebaseConfig {
 
     @Bean
     FirebaseMessaging firebaseMessaging() throws IOException {
-        GoogleCredentials googleCredentials =
-                GoogleCredentials.fromStream(
-                        new ClassPathResource("/mentorus-firebase-admins.json").getInputStream());
-        //        GoogleCredentials googleCredentials = GoogleCredentials.fromStream(new
-        // ClassPathResource("/home/deployer/mentorus-firebase-admins.json").getInputStream());
-        FirebaseOptions firebaseOptions =
-                FirebaseOptions.builder().setCredentials(googleCredentials).build();
-        FirebaseApp app = FirebaseApp.initializeApp(firebaseOptions, "mentor-hcmus");
+        var googleCredentials = GoogleCredentials.fromStream(new ClassPathResource("/mentorus-firebase-admins.json").getInputStream());
+        FirebaseOptions firebaseOptions = FirebaseOptions.builder()
+                .setCredentials(googleCredentials)
+                .build();
+
+        FirebaseApp app;
+        if (FirebaseApp.getApps().isEmpty()) {
+            app = FirebaseApp.initializeApp(firebaseOptions, "mentor-hcmus");
+        } else {
+            app = FirebaseApp.getInstance();
+        }
+
         return FirebaseMessaging.getInstance(app);
     }
 }

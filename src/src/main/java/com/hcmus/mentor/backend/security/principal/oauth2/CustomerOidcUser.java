@@ -1,16 +1,15 @@
-package com.hcmus.mentor.backend.security.oauth2.user;
+package com.hcmus.mentor.backend.security.principal.oauth2;
+
+import lombok.Getter;
 
 import java.util.Map;
 
-public abstract class OAuth2UserInfo {
+@Getter
+public abstract class CustomerOidcUser {
     protected Map<String, Object> attributes;
 
-    public OAuth2UserInfo(Map<String, Object> attributes) {
+    protected CustomerOidcUser(Map<String, Object> attributes) {
         this.attributes = attributes;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
     }
 
     public abstract String getId();

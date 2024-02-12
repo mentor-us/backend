@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security;
+package com.hcmus.mentor.backend.security.principal.userdetails;
 
 import com.hcmus.mentor.backend.domain.User;
 import lombok.ToString;
@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import java.util.*;
 
 @ToString
-public class UserPrincipal implements OAuth2User, OidcUser, UserDetails {
+public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
     private final String id;
     private final String email;
     private final String password;
@@ -22,7 +22,7 @@ public class UserPrincipal implements OAuth2User, OidcUser, UserDetails {
     private OidcUserInfo oidcUserInfo;
     private OidcIdToken oidcIdToken;
 
-    public UserPrincipal(
+    public CustomerUserDetails(
             String id,
             String email,
             String password,
@@ -33,30 +33,31 @@ public class UserPrincipal implements OAuth2User, OidcUser, UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserPrincipal create(User user) {
+    public static CustomerUserDetails create(User user) {
         List<GrantedAuthority> authorities =
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
-        return new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
     }
 
-    public static UserPrincipal create(User user, String role) {
+    public static CustomerUserDetails create(User user, String role) {
         List<GrantedAuthority> authorities =
                 Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority(role));
 
-        return new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
     }
 
-    public static UserPrincipal create(User user, Map<String, Object> attributes) {
-        UserPrincipal userPrincipal = UserPrincipal.create(user);
-        userPrincipal.setAttributes(attributes);
-        return userPrincipal;
+    public static CustomerUserDetails create(User user, Map<String, Object> attributes) {
+        CustomerUserDetails customerUserDetails = CustomerUserDetails.create(user);
+        customerUserDetails.setAttributes(attributes);
+        return customerUserDetails;
     }
 
     public String getId() {
         return id;
     }
 
+    @Override
     public String getEmail() {
         return email;
     }
@@ -112,7 +113,7 @@ public class UserPrincipal implements OAuth2User, OidcUser, UserDetails {
 
     @Override
     public Map<String, Object> getClaims() {
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override

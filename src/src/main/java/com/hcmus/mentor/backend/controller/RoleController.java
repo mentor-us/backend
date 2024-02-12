@@ -4,8 +4,8 @@ import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.CreateRoleRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateRoleRequest;
 import com.hcmus.mentor.backend.domain.Role;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.RoleService;
 import com.hcmus.mentor.backend.service.dto.RoleServiceDto;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,14 +31,14 @@ public class RoleController {
     /**
      * Get all roles in the system.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing the list of roles in the system.
      */
     @GetMapping("all")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<List<Role>> all(@CurrentUser UserPrincipal userPrincipal) {
-        String emailUser = userPrincipal.getEmail();
+    public ApiResponseDto<List<Role>> all(@CurrentUser CustomerUserDetails customerUserDetails) {
+        String emailUser = customerUserDetails.getEmail();
         RoleServiceDto roleServiceReturn = roleService.findAll(emailUser);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
@@ -49,15 +49,15 @@ public class RoleController {
     /**
      * Get a specific role by ID.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param id            The ID of the role to retrieve.
      * @return APIResponse containing the retrieved role or a not-found response.
      */
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @GetMapping("{id}")
-    public ApiResponseDto<Role> get(@CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+    public ApiResponseDto<Role> get(@CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         RoleServiceDto roleServiceReturn = roleService.findById(emailUser, id);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
@@ -68,7 +68,7 @@ public class RoleController {
     /**
      * Create a new role.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request payload for creating a new role.
      * @return APIResponse containing the created role or a response indicating failure.
      */
@@ -76,8 +76,8 @@ public class RoleController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Role> create(
-            @CurrentUser UserPrincipal userPrincipal, @RequestBody CreateRoleRequest request) {
-        String emailUser = userPrincipal.getEmail();
+            @CurrentUser CustomerUserDetails customerUserDetails, @RequestBody CreateRoleRequest request) {
+        String emailUser = customerUserDetails.getEmail();
         RoleServiceDto roleServiceReturn = roleService.create(emailUser, request);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
@@ -88,7 +88,7 @@ public class RoleController {
     /**
      * Update an existing role.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param id            The ID of the role to update.
      * @param request       The request payload for updating the role.
      * @return APIResponse containing the updated role or a not-found response.
@@ -97,10 +97,10 @@ public class RoleController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Role> update(
-            @CurrentUser UserPrincipal userPrincipal,
+            @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody UpdateRoleRequest request) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         RoleServiceDto roleServiceReturn = roleService.update(emailUser, id, request);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),
@@ -111,7 +111,7 @@ public class RoleController {
     /**
      * Delete roles.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param ids           The list of role IDs to delete.
      * @return APIResponse containing the result of the delete operation.
      */
@@ -119,8 +119,8 @@ public class RoleController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Role> delete(
-            @CurrentUser UserPrincipal userPrincipal, @RequestBody List<String> ids) {
-        String emailUser = userPrincipal.getEmail();
+            @CurrentUser CustomerUserDetails customerUserDetails, @RequestBody List<String> ids) {
+        String emailUser = customerUserDetails.getEmail();
         RoleServiceDto roleServiceReturn = roleService.deleteMultiple(emailUser, ids);
         return new ApiResponseDto(
                 roleServiceReturn.getData(),

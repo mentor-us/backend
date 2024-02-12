@@ -8,7 +8,7 @@ import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwa
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.minio.errors.*;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -142,11 +142,11 @@ public interface GroupService {
 
     void updateLastMessage(String groupId, String message);
 
-    GroupDetailResponse getGroupWorkspace(UserPrincipal user, String groupId);
+    GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
-    boolean markMentee(UserPrincipal user, String groupId, String menteeId);
+    boolean markMentee(CustomerUserDetails user, String groupId, String menteeId);
 
-    boolean unmarkMentee(UserPrincipal user, String groupId, String menteeId);
+    boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
 
-    List<ChannelForwardResponse> getGroupForwards(UserPrincipal user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 }

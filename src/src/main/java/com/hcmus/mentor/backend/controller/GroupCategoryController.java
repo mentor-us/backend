@@ -5,8 +5,8 @@ import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -69,7 +69,7 @@ public class GroupCategoryController {
     /**
      * Creates a new group category.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request containing information to create a new group category.
      * @return ResponseEntity containing the newly created group category information.
      */
@@ -77,9 +77,9 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupCategory> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody CreateGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.create(email, request);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
@@ -90,7 +90,7 @@ public class GroupCategoryController {
     /**
      * Updates an existing group category.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param id            The ID of the group category to be updated.
      * @param request       The request containing updated information for the group category.
      * @return ResponseEntity containing the updated group category information.
@@ -99,10 +99,10 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupCategory> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody UpdateGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.update(email, id, request);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
@@ -113,7 +113,7 @@ public class GroupCategoryController {
     /**
      * Deletes an existing group category.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request containing information to delete the group category.
      * @param id            The ID of the group category to be deleted.
      * @return APIResponse indicating the success of the deletion operation.
@@ -122,10 +122,10 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody DeleteGroupCategoryRequest request,
             @PathVariable String id) {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         String newGroupCategoryId = request.getNewGroupCategoryId();
         GroupCategoryServiceDto groupCategoryReturn =
                 groupCategoryService.delete(email, id, newGroupCategoryId);
@@ -138,7 +138,7 @@ public class GroupCategoryController {
     /**
      * Finds group categories with multiple filters.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param name          The name filter for group categories.
      * @param description   The description filter for group categories.
      * @param status        The status filter for group categories.
@@ -150,13 +150,13 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Page<Group>> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") String name,
             @RequestParam(defaultValue = "") String description,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "25") Integer size) {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
         GroupCategoryServiceDto groupCategoryReturn =
                 groupCategoryService.findGroupCategories(email, request, page, size);
@@ -169,7 +169,7 @@ public class GroupCategoryController {
     /**
      * Deletes multiple existing group categories.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param request       The request containing information to delete multiple group categories.
      * @return APIResponse indicating the success of the deletion operation.
      */
@@ -177,9 +177,9 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto deleteMultiple(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody DeleteMultipleGroupCategoryRequest request) {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         List<String> ids = request.getIds();
         String newGroupCategoryId = request.getNewGroupCategoryId();
         GroupCategoryServiceDto groupCategoryReturn =
@@ -193,7 +193,7 @@ public class GroupCategoryController {
     /**
      * Exports group categories table based on search conditions.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param name          The name filter for group categories.
      * @param description   The description filter for group categories.
      * @param status        The status filter for group categories.
@@ -205,20 +205,20 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> exportBySearchConditions(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") String name,
             @RequestParam(defaultValue = "") String description,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        return groupCategoryService.generateExportTableBySearchConditions(userPrincipal.getEmail(), request, remainColumns);
+        return groupCategoryService.generateExportTableBySearchConditions(customerUserDetails.getEmail(), request, remainColumns);
     }
 
     /**
      * Exports the entire group categories table.
      *
-     * @param userPrincipal The current user's principal information.
+     * @param customerUserDetails The current user's principal information.
      * @param remainColumns The columns to include in the export.
      * @return ResponseEntity containing the exported group categories table as a Resource.
      * @throws IOException If an I/O error occurs during the export process.
@@ -227,10 +227,10 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> export(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return groupCategoryService.generateExportTable(userPrincipal.getEmail(), remainColumns);
+        return groupCategoryService.generateExportTable(customerUserDetails.getEmail(), remainColumns);
     }
 
     /**

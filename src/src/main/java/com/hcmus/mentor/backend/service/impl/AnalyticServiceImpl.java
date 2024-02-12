@@ -103,7 +103,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<Group> groups = groupRepository.findAllByCreatorId(adminId);
         long totalGroups = groups.size();
 
-        List<String> groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
+        List<String> groupIds = groups.stream().map(Group::getId).toList();
 
         List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
         long totalTasks =
@@ -172,7 +172,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
 
         long totalGroups = groups.size();
-        List<String> groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
+        List<String> groupIds = groups.stream().map(Group::getId).toList();
         List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
         long totalTasks =
                 tasks.stream().map(task -> task.getAssigneeIds().size()).reduce(0, Integer::sum);
@@ -266,7 +266,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForAdmin(
             LocalDate timeStart, LocalDate timeEnd, String adminId) {
         List<Group> groups = groupRepository.findAllByCreatorId(adminId);
-        List<String> groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
+        List<String> groupIds = groups.stream().map(Group::getId).toList();
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         for (LocalDate localDate = timeStart;
              localDate.isBefore(timeEnd);
@@ -334,7 +334,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             }
             groups = groupRepository.findAllByCreatorId(adminId);
         }
-        List<String> groupIds = groups.stream().map(Group::getId).collect(Collectors.toList());
+        List<String> groupIds = groups.stream().map(Group::getId).toList();
         Set<String> userIds = new HashSet<>();
         groups.forEach(
                 group -> {
@@ -633,7 +633,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     private List<GroupGeneralResponse> getGroupGeneralAnalyticFromGroups(List<Group> groups) {
-        return groups.stream().map(this::getGroupGeneralAnalytic).collect(Collectors.toList());
+        return groups.stream().map(this::getGroupGeneralAnalytic).toList();
     }
 
     private GroupGeneralResponse getGroupGeneralAnalytic(Group group) {
@@ -851,7 +851,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                                             response.getLastTimeActive() != null
                                                     && response.getLastTimeActive().after(request.getTimeStart())
                                                     && response.getLastTimeActive().before(request.getTimeEnd()))
-                            .collect(Collectors.toList());
+                            .toList();
         }
         return responses;
     }
@@ -870,7 +870,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                 responses.stream()
                         .skip(offset)
                         .limit(pageRequest.getPageSize())
-                        .collect(Collectors.toList());
+                        .toList();
 
         Page<GroupGeneralResponse> responsesPage =
                 new PageImpl<>(pagedResponses, pageRequest, responses.size());
@@ -924,7 +924,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                                             response.getLastTimeActive() != null
                                                     && response.getLastTimeActive().after(request.getTimeStart())
                                                     && response.getLastTimeActive().before(request.getTimeEnd()))
-                            .collect(Collectors.toList());
+                            .toList();
         }
         return members;
     }

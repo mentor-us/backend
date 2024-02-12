@@ -19,7 +19,7 @@ import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.VoteService;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.List;
 import java.util.Objects;
@@ -71,7 +71,7 @@ public class VoteServiceImpl implements VoteService {
         }
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(groupId).stream()
                 .map(this::fulfillChoices)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -82,7 +82,7 @@ public class VoteServiceImpl implements VoteService {
                         .map(this::fulfillChoice)
                         .filter(Objects::nonNull)
                         .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                        .collect(Collectors.toList());
+                        .toList();
         return VoteDetailResponse.from(vote, creator, choices);
     }
 
@@ -116,7 +116,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean updateVote(UserPrincipal user, String voteId, UpdateVoteRequest request) {
+    public boolean updateVote(CustomerUserDetails user, String voteId, UpdateVoteRequest request) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -133,7 +133,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean deleteVote(UserPrincipal user, String voteId) {
+    public boolean deleteVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -163,7 +163,7 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public VoteDetailResponse.ChoiceDetail getChoiceDetail(
-            UserPrincipal user, String voteId, String choiceId) {
+            CustomerUserDetails user, String voteId, String choiceId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return null;
@@ -177,7 +177,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public List<VoteDetailResponse.ChoiceDetail> getChoiceResults(UserPrincipal user, String voteId) {
+    public List<VoteDetailResponse.ChoiceDetail> getChoiceResults(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return null;
@@ -195,7 +195,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean closeVote(UserPrincipal user, String voteId) {
+    public boolean closeVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -214,7 +214,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean reopenVote(UserPrincipal user, String voteId) {
+    public boolean reopenVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;

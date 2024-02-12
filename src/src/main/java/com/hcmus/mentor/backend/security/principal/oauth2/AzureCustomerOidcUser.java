@@ -1,9 +1,9 @@
-package com.hcmus.mentor.backend.security.oauth2.user;
+package com.hcmus.mentor.backend.security.principal.oauth2;
 
 import java.util.Map;
 
-public class AzureOAuth2UserInfo extends OAuth2UserInfo {
-    public AzureOAuth2UserInfo(Map<String, Object> attributes) {
+public class AzureCustomerOidcUser extends CustomerOidcUser {
+    public AzureCustomerOidcUser(Map<String, Object> attributes) {
         super(attributes);
     }
 

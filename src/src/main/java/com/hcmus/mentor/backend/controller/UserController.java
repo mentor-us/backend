@@ -12,8 +12,8 @@ import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
@@ -75,7 +75,7 @@ public class UserController {
     /**
      * Retrieve all users with pagination.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param email         Email filter.
      * @param page          Page number.
      * @param size          Number of items per page.
@@ -85,12 +85,12 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Page<User>> allPaging(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn =
                 userService.listAllPaging(emailUser, pageRequest);
         if (userReturn.getData() != null) {
@@ -106,7 +106,7 @@ public class UserController {
     /**
      * Retrieve users by email with pagination.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param email         Email filter.
      * @param page          Page number.
      * @param size          Number of items per page.
@@ -116,12 +116,12 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Page<User>> listByEmail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
         Pageable pageRequest = PageRequest.of(page, size);
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn =
                 userService.listByEmail(emailUser, email, pageRequest);
         return new ApiResponseDto(
@@ -133,7 +133,7 @@ public class UserController {
     /**
      * Retrieve all users by email without pagination.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param email         Email filter.
      * @return ApiResponseDto<List < User>> - Response containing a list of users.
      */
@@ -141,9 +141,9 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<User>> listAllByEmail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") String email) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.listAllByEmail(emailUser, email);
         return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -169,7 +169,7 @@ public class UserController {
     /**
      * Retrieve own profile.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @return ApiResponseDto<ProfileResponse> - Response containing own user profile information.
      */
     @SneakyThrows
@@ -177,10 +177,10 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ProfileResponse> getCurrentUser(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        var user = userService.findById(userPrincipal.getId());
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
+        var user = userService.findById(customerUserDetails.getId());
         if (user.isEmpty()) {
-            throw new DomainException(String.format("User with id %s not found", userPrincipal.getId()));
+            throw new DomainException(String.format("User with id %s not found", customerUserDetails.getId()));
         }
         var profileResponse = ProfileResponse.from(user.get());
         return ApiResponseDto.success(profileResponse);
@@ -210,7 +210,7 @@ public class UserController {
     /**
      * Update an existing user.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param id            User ID to update.
      * @param request       UpdateUserForAdminRequest containing updated information.
      * @return ApiResponseDto<User> - Response containing the updated user.
@@ -219,10 +219,10 @@ public class UserController {
     @PatchMapping("{id}/admin")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody UpdateUserForAdminRequest request) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn =
                 userService.updateUserForAdmin(emailUser, id, request);
         return new ApiResponseDto(
@@ -232,7 +232,7 @@ public class UserController {
     /**
      * Delete an existing user.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param id            User ID to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
@@ -240,8 +240,8 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.deleteUser(emailUser, id);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -250,7 +250,7 @@ public class UserController {
     /**
      * Add a new user.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param request       AddUserRequest containing user information.
      * @return ApiResponseDto - Response containing the added user.
      */
@@ -258,9 +258,9 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> add(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody AddUserRequest request) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.addUser(emailUser, request);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -269,7 +269,7 @@ public class UserController {
     /**
      * Update user profile.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param userId        User ID to update.
      * @param request       UpdateUserRequest containing updated information.
      * @return ResponseEntity<UserServiceImpl.UserReturnService> - Response entity containing the updated user information.
@@ -278,7 +278,7 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<UserServiceDto> updateProfile(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String userId,
             @RequestBody UpdateUserRequest request) {
         UserServiceDto userReturn = userService.updateUser(userId, request);
@@ -288,7 +288,7 @@ public class UserController {
     /**
      * Find users with multiple filters.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param name          User name filter.
      * @param emailSearch   Email search filter.
      * @param status        User status filter.
@@ -304,7 +304,7 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Page<Group>> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String emailSearch,
             @RequestParam(required = false) Boolean status,
@@ -312,7 +312,7 @@ public class UserController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "25") Integer size)
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         FindUserRequest request = new FindUserRequest(name, emailSearch, status, role);
         UserServiceDto userReturn =
                 userService.findUsers(email, request, page, size);
@@ -325,7 +325,7 @@ public class UserController {
     /**
      * Delete multiple users.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param ids           List of User IDs to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
@@ -333,9 +333,9 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @DeleteMapping("")
     public ApiResponseDto deleteMultiple(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.deleteMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -344,7 +344,7 @@ public class UserController {
     /**
      * Disable multiple users.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param ids           List of User IDs to disable.
      * @return ApiResponseDto - Response containing the result of the disable operation.
      */
@@ -352,9 +352,9 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @PatchMapping("disable")
     public ApiResponseDto disableMultiple(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.disableMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -363,7 +363,7 @@ public class UserController {
     /**
      * Enable multiple users.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param ids           List of User IDs to enable.
      * @return ApiResponseDto - Response containing the result of the enable operation.
      */
@@ -371,9 +371,9 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @PatchMapping("enable")
     public ApiResponseDto enableMultiple(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.enableMultiple(emailUser, ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -382,7 +382,7 @@ public class UserController {
     /**
      * Get user detail by ID (for admin).
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param id            User ID to get details.
      * @return ApiResponseDto<UserDetailResponse> - Response containing user details.
      */
@@ -390,8 +390,8 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<UserDetailResponse> getDetail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.getDetail(emailUser, id);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -400,7 +400,7 @@ public class UserController {
     /**
      * Update avatar.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param file          MultipartFile containing the avatar image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated avatar.
      * @throws GeneralSecurityException  If there is a general security exception.
@@ -416,11 +416,11 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<String> updateAvatar(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         UserServiceDto userReturn =
-                userService.updateAvatar(userPrincipal.getId(), file);
+                userService.updateAvatar(customerUserDetails.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -428,7 +428,7 @@ public class UserController {
     /**
      * Update wallpaper.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param file          MultipartFile containing the wallpaper image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated wallpaper.
      * @throws GeneralSecurityException  If there is a general security exception.
@@ -444,11 +444,11 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<String> updateWallpaper(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam MultipartFile file)
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         UserServiceDto userReturn =
-                userService.updateWallpaper(userPrincipal.getId(), file);
+                userService.updateWallpaper(customerUserDetails.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -456,7 +456,7 @@ public class UserController {
     /**
      * Export users table.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param remainColumns List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
      * @throws IOException If there is an I/O exception during the export process.
@@ -465,16 +465,16 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> export(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return userService.generateExportTable(userPrincipal.getEmail(), remainColumns);
+        return userService.generateExportTable(customerUserDetails.getEmail(), remainColumns);
     }
 
     /**
      * Import multiple users.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param file          MultipartFile containing the template file for user import.
      * @return ApiResponseDto<List < Group>> - Response containing the imported users.
      * @throws IOException If there is an I/O exception during the import process.
@@ -483,10 +483,10 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<Group>> importUsers(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("file") MultipartFile file)
             throws IOException {
-        String email = userPrincipal.getEmail();
+        String email = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.importUsers(email, file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
@@ -495,7 +495,7 @@ public class UserController {
     /**
      * Export mentor groups user table.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param userId        User ID for whom to export mentor groups.
      * @param remainColumns List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
@@ -505,18 +505,18 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> exportMentorGroups(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String userId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         return userService.generateExportTableMembers(
-                userPrincipal.getEmail(), remainColumns, userId, "MENTOR");
+                customerUserDetails.getEmail(), remainColumns, userId, "MENTOR");
     }
 
     /**
      * Export mentee groups user table.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param userId        User ID for whom to export mentee groups.
      * @param remainColumns List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
@@ -526,17 +526,17 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @GetMapping("{userId}/menteeGroups/export")
     public ResponseEntity<Resource> exportMenteeGroups(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String userId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return userService.generateExportTableMembers(userPrincipal.getEmail(), remainColumns, userId, "MENTEE");
+        return userService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, userId, "MENTEE");
     }
 
     /**
      * Export users table by search conditions.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param name          User name filter.
      * @param emailSearch   Email search filter.
      * @param status        User status filter.
@@ -549,7 +549,7 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @GetMapping("export/search")
     public ResponseEntity<Resource> exportBySearchConditions(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String emailSearch,
             @RequestParam(required = false) Boolean status,
@@ -558,13 +558,13 @@ public class UserController {
             throws IOException {
         FindUserRequest request = new FindUserRequest(name, emailSearch, status, role);
         return userService.generateExportTableBySearchConditions(
-                userPrincipal.getEmail(), request, remainColumns);
+                customerUserDetails.getEmail(), request, remainColumns);
     }
 
     /**
      * Add additional email to user.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param userId        User ID to add an additional email.
      * @param request       AddAdditionEmailRequest containing the additional email.
      * @return ApiResponseDto<User> - Response containing the user with additional email added.
@@ -573,7 +573,7 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> addAdditionalEmail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String userId,
             @RequestBody AddAdditionEmailRequest request) {
         var command = new AddAdditionalEmailCommand(userId, request.getAdditionalEmail());
@@ -584,7 +584,7 @@ public class UserController {
     /**
      * Delete additional email of user.
      *
-     * @param userPrincipal Current authenticated user's principal.
+     * @param customerUserDetails Current authenticated user's principal.
      * @param userId        User ID to delete an additional email.
      * @param request       RemoveAdditionalEmailRequest containing the additional email to remove.
      * @return ApiResponseDto<User> - Response containing the user with additional email removed.
@@ -593,7 +593,7 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> deleteAdditionalEmail(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String userId,
             @RequestBody RemoveAdditionalEmailRequest request) {
         var command = new RemoveAdditionalEmailCommand(userId, request.getAdditionalEmail());

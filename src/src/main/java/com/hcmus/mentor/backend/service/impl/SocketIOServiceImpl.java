@@ -71,7 +71,7 @@ public class SocketIOServiceImpl implements SocketIOService {
                     }
                     return !userId.equals(senderId);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

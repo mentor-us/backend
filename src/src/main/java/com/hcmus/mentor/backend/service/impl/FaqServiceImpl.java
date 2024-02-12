@@ -13,7 +13,7 @@ import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.FaqService;
 import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +43,7 @@ public class FaqServiceImpl implements FaqService {
 
         return faqRepository.findByGroupId(groupId).stream()
                 .sorted(Comparator.comparing(Faq::getRating).reversed())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class FaqServiceImpl implements FaqService {
     }
 
     @Override
-    public void importFAQs(UserPrincipal user, String toGroupId, ImportFAQsRequest request) {
+    public void importFAQs(CustomerUserDetails user, String toGroupId, ImportFAQsRequest request) {
         if (!permissionService.isMentor(user.getEmail(), toGroupId)) {
             return;
         }
@@ -155,16 +155,16 @@ public class FaqServiceImpl implements FaqService {
                                                 .creatorId(user.getId())
                                                 .groupId(toGroupId)
                                                 .build())
-                        .collect(Collectors.toList());
+                        .toList();
 
         Group group = groupWrapper.get();
-        group.importFaq(newFAQs.stream().map(Faq::getId).collect(Collectors.toList()));
+        group.importFaq(newFAQs.stream().map(Faq::getId).toList());
         groupRepository.save(group);
         faqRepository.saveAll(newFAQs);
     }
 
     @Override
-    public boolean upvote(UserPrincipal user, String faqId) {
+    public boolean upvote(CustomerUserDetails user, String faqId) {
         Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return false;
@@ -186,7 +186,7 @@ public class FaqServiceImpl implements FaqService {
     }
 
     @Override
-    public boolean downVote(UserPrincipal user, String faqId) {
+    public boolean downVote(CustomerUserDetails user, String faqId) {
         Optional<Faq> faqWrapper = faqRepository.findById(faqId);
         if (!faqWrapper.isPresent()) {
             return false;

@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.security.jwt;
 
-import com.hcmus.mentor.backend.security.authenticateuser.AuthenticateConstant;
-import com.hcmus.mentor.backend.security.authenticateuser.AuthenticationTokenService;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

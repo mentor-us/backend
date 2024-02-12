@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.security.authenticateuser;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser;
 
 import java.util.Map;
 
@@ -6,6 +6,10 @@ import java.util.Map;
  * Helper to generate {@link TokenModel}.
  */
 public class TokenModelGenerator {
+
+    private TokenModelGenerator() {
+        throw new IllegalStateException("Utility class");
+    }
 
     /**
      * Common code to generate token and fill with claims.
@@ -20,11 +24,11 @@ public class TokenModelGenerator {
         long epoch = System.currentTimeMillis() / 1000;
         claims.put("iat", epoch);
 
-        var accessToken = authenticationTokenService.generateToken(claims, AuthenticateConstant.accessTokenExpirationTime);
+        var accessToken = authenticationTokenService.generateToken(claims, AuthenticateConstant.ACCESS_TOKEN_EXPIRATION_TIME);
 
         return TokenModel.builder()
                 .accessToken(accessToken)
-                .expiresIn(AuthenticateConstant.accessTokenExpirationTime.getSeconds())
+                .expiresIn(AuthenticateConstant.ACCESS_TOKEN_EXPIRATION_TIME.getSeconds())
                 .build();
     }
 }

@@ -1,9 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
-
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
@@ -13,19 +10,11 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessag
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.NotificationRepository;
-import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.NotificationService;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,11 +25,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
-    private static final Logger LOGGER = LogManager.getLogger(NotificationServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(NotificationServiceImpl.class);
     private final NotificationRepository notificationRepository;
     private final NotificationSubscriberRepository notificationSubscriberRepository;
     private final GroupRepository groupRepository;
@@ -53,7 +48,7 @@ public class NotificationServiceImpl implements NotificationService {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Slice<Notification> slice =
                 notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
-        List<String> senderIds = slice.get().map(Notification::getSenderId).collect(Collectors.toList());
+        List<String> senderIds = slice.get().map(Notification::getSenderId).toList();
         Map<String, ShortProfile> senders =
                 userRepository.findByIds(senderIds).stream()
                         .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
@@ -63,7 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
                                 notification ->
                                         NotificationResponse.from(
                                                 notification, senders.getOrDefault(notification.getSenderId(), null)))
-                        .collect(Collectors.toList());
+                        .toList();
         return pagingResponse(slice, notifications);
     }
 
@@ -77,15 +72,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notification notif =
-                Notification.builder()
-                        .title(request.getTitle())
-                        .content(request.getContent())
-                        .type(NotificationType.NEED_RESPONSE)
-                        .senderId(senderId)
-                        .receiverIds(Collections.singletonList(request.getReceiverId()))
-                        .createdDate(request.getCreatedDate())
-                        .build();
+        Notification notif = Notification.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .type(NotificationType.NEED_RESPONSE)
+                .senderId(senderId)
+                .receiverIds(Collections.singletonList(request.getReceiverId()))
+                .createdDate(request.getCreatedDate())
+                .build();
         return notificationRepository.save(notif);
     }
 
@@ -126,10 +120,10 @@ public class NotificationServiceImpl implements NotificationService {
         unsubscribeNotification(request.getUserId());
 
         if (request.getToken().isEmpty()) {
-            LOGGER.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
+            logger.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
             return;
         }
-        LOGGER.info(
+        logger.info(
                 "[*] Subscribe user notification: userID({}) | Token({})",
                 request.getUserId(),
                 request.getToken());
@@ -137,7 +131,7 @@ public class NotificationServiceImpl implements NotificationService {
         List<NotificationSubscriber> subscribes =
                 notificationSubscriberRepository.findByUserIdOrToken(
                         request.getUserId(), request.getToken());
-        if (subscribes.size() == 0) {
+        if (subscribes.isEmpty()) {
             NotificationSubscriber subscriber =
                     NotificationSubscriber.builder()
                             .userId(request.getUserId())
@@ -171,23 +165,20 @@ public class NotificationServiceImpl implements NotificationService {
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title =
-                    ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
-                            ? parentGroup.getName() + "\n" + message.getSender().getName()
-                            : channel.getName();
-            members =
-                    channel.getUserIds().stream()
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .collect(Collectors.toList());
+            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+                    ? parentGroup.getName() + "\n" + message.getSender().getName()
+                    : channel.getName();
+            members = channel.getUserIds().stream()
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members =
-                    Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .collect(Collectors.toList());
+            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         }
 
         if (members.isEmpty()) {
@@ -228,7 +219,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Async
     public void sendNewTaskNotification(MessageDetailResponse message) {
         if (message.getTask() == null) {
-            LOGGER.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
+            logger.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
             return;
         }
         TaskMessageResponse task = message.getTask();
@@ -257,11 +248,11 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification createNewTaskNotification(
             String title, String content, String senderId, TaskMessageResponse task) {
         List<String> assigneeIds =
-                task.getAssignees().stream().map(TaskAssigneeResponse::getId).collect(Collectors.toList());
+                task.getAssignees().stream().map(TaskAssigneeResponse::getId).toList();
         List<String> receiverIds =
                 Stream.concat(assigneeIds.stream(), Stream.of(task.getAssignerId()))
                         .distinct()
-                        .collect(Collectors.toList());
+                        .toList();
         Notification inAppNotification =
                 Notification.builder()
                         .title(title)
@@ -278,7 +269,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Async
     public void sendNewMeetingNotification(MessageDetailResponse message) {
         if (message.getMeeting() == null) {
-            LOGGER.warn("[!] Meeting message #{}, NULL cannot send notifications", message.getId());
+            logger.warn("[!] Meeting message #{}, NULL cannot send notifications", message.getId());
             return;
         }
         Meeting meeting = message.getMeeting();
@@ -310,7 +301,7 @@ public class NotificationServiceImpl implements NotificationService {
         List<String> receiverIds =
                 Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizerId()))
                         .distinct()
-                        .collect(Collectors.toList());
+                        .toList();
         Notification notif =
                 Notification.builder()
                         .title(title)
@@ -326,46 +317,42 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Async
     public void sendNewMediaMessageNotification(MessageDetailResponse message) {
-        boolean isImageMessage =
-                Message.Type.IMAGE.equals(message.getType())
-                        && message.getImages() != null
-                        && message.getImages().size() != 0;
-        boolean isFileMessage =
-                Message.Type.FILE.equals(message.getType()) && message.getFile() != null;
+        boolean isImageMessage = Message.Type.IMAGE.equals(message.getType())
+                && message.getImages() != null
+                && !message.getImages().isEmpty();
+        boolean isFileMessage = Message.Type.FILE.equals(message.getType()) && message.getFile() != null;
         if (!isImageMessage && !isFileMessage) {
-            LOGGER.warn("[!] Media message #{}, empty cannot send notifications", message.getId());
+            logger.warn("[!] Media message #{}, empty cannot send notifications", message.getId());
             return;
         }
+
 
         String title;
         List<String> members;
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return;
             }
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title =
-                    ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
-                            ? parentGroup.getName() + "\n" + message.getSender().getName()
-                            : channel.getName();
-            members =
-                    channel.getUserIds().stream()
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .collect(Collectors.toList());
+            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+                    ? parentGroup.getName() + "\n" + message.getSender().getName()
+                    : channel.getName();
+            members = channel.getUserIds().stream()
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members =
-                    Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .collect(Collectors.toList());
+            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         }
 
         if (members.isEmpty()) {
@@ -373,9 +360,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         NotificationType type;
-        StringBuilder notificationBody =
-                new StringBuilder(
-                        (message.getSender() != null) ? (message.getSender().getName() + " đã gửi ") : "");
+        StringBuilder notificationBody = new StringBuilder((message.getSender() != null) ? (message.getSender().getName() + " đã gửi ") : "");
         if (Message.Type.IMAGE.equals(message.getType())) {
             type = NEW_IMAGE_MESSAGE;
             notificationBody.append(message.getImages().size()).append(" ảnh mới.");
@@ -389,10 +374,9 @@ public class NotificationServiceImpl implements NotificationService {
 
         String body = notificationBody.toString();
         try {
-            firebaseMessagingManager.sendGroupNotification(
-                    members, title, body, attachDataNotification(message.getGroupId(), type));
+            firebaseMessagingManager.sendGroupNotification(members, title, body, attachDataNotification(message.getGroupId(), type));
         } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
+            logger.error("Error sending media message notification", e);
         }
     }
 
@@ -403,7 +387,7 @@ public class NotificationServiceImpl implements NotificationService {
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
-                        .collect(Collectors.toList());
+                        .toList();
         Notification notif =
                 Notification.builder()
                         .title(title)
@@ -492,7 +476,7 @@ public class NotificationServiceImpl implements NotificationService {
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
-                        .collect(Collectors.toList());
+                        .toList();
         Notification notif =
                 Notification.builder()
                         .title(title)
@@ -544,7 +528,7 @@ public class NotificationServiceImpl implements NotificationService {
                 Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
-                        .collect(Collectors.toList());
+                        .toList();
         Notification notif =
                 Notification.builder()
                         .title(title)
@@ -571,23 +555,21 @@ public class NotificationServiceImpl implements NotificationService {
         List<String> members;
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return;
             }
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title =
-                    ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
-                            ? parentGroup.getName() + "\n" + message.getSender().getName()
-                            : channel.getName();
-            members =
-                    channel.getUserIds().stream()
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .collect(Collectors.toList());
+            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+                    ? parentGroup.getName() + "\n" + message.getSender().getName()
+                    : channel.getName();
+            members = channel.getUserIds().stream()
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
@@ -595,7 +577,7 @@ public class NotificationServiceImpl implements NotificationService {
                     Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                             .filter(id -> !id.equals(message.getSender().getId()))
                             .distinct()
-                            .collect(Collectors.toList());
+                            .toList();
         }
 
         if (members.isEmpty()) {
@@ -607,7 +589,6 @@ public class NotificationServiceImpl implements NotificationService {
                 Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
                         .text();
         String content = pinner.getName() + " đã ghim tin nhắn \"" + shortMessage + "\"";
-        //        groupService.updateLastMessage(group.getId(), content);
         try {
             firebaseMessagingManager.sendGroupNotification(members, title, content, data);
         } catch (FirebaseMessagingException e) {
@@ -645,7 +626,7 @@ public class NotificationServiceImpl implements NotificationService {
                     channel.getUserIds().stream()
                             .filter(id -> !id.equals(message.getSender().getId()))
                             .distinct()
-                            .collect(Collectors.toList());
+                            .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
@@ -653,7 +634,7 @@ public class NotificationServiceImpl implements NotificationService {
                     Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                             .filter(id -> !id.equals(message.getSender().getId()))
                             .distinct()
-                            .collect(Collectors.toList());
+                            .toList();
         }
 
         if (members.isEmpty()) {
@@ -665,7 +646,6 @@ public class NotificationServiceImpl implements NotificationService {
                 Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
                         .text();
         String content = pinner.getName() + " đã bỏ ghim tin nhắn \"" + shortMessage + "\"";
-        //        groupService.updateLastMessage(group.getId(), content);
         try {
             firebaseMessagingManager.sendGroupNotification(members, title, content, data);
         } catch (FirebaseMessagingException e) {

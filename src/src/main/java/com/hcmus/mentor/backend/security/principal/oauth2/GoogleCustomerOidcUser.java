@@ -1,10 +1,10 @@
-package com.hcmus.mentor.backend.security.oauth2.user;
+package com.hcmus.mentor.backend.security.principal.oauth2;
 
 import java.util.Map;
 
-public class GoogleOAuth2UserInfo extends OAuth2UserInfo {
+public class GoogleCustomerOidcUser extends CustomerOidcUser {
 
-    public GoogleOAuth2UserInfo(Map<String, Object> attributes) {
+    public GoogleCustomerOidcUser(Map<String, Object> attributes) {
         super(attributes);
     }
 

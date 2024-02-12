@@ -37,7 +37,7 @@ public class EventServiceImpl implements EventService {
                 .filter(event -> event.getUpcomingTime() != null)
                 .sorted(Comparator.comparing(EventDto::getUpcomingTime))
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -52,7 +52,7 @@ public class EventServiceImpl implements EventService {
         return Stream.concat(meetings.stream().map(EventDto::from), tasks.stream().map(EventDto::from))
                 .filter(event -> event.getUpcomingTime() != null)
                 .sorted(Comparator.comparing(EventDto::getUpcomingTime))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

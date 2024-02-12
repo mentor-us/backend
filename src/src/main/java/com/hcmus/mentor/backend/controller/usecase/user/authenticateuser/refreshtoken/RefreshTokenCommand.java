@@ -1,7 +1,7 @@
-package com.hcmus.mentor.backend.security.authenticateuser.refreshtoken;
+package com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.refreshtoken;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.security.authenticateuser.TokenModel;
+import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
 import lombok.Getter;
 import lombok.Setter;
 
