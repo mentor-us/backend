@@ -161,4 +161,6 @@ public interface MessageService {
     ReactionDto fulfillReaction(ReactionDto reaction, User reactor);
 
     List<Message> saveForwardMessage(String userId, ForwardRequest request);
+
+    boolean updateCreatedDateVoteMessage(String voteId);
 }
