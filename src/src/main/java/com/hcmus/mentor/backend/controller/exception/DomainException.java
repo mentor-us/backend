@@ -8,7 +8,7 @@ import lombok.Getter;
  * contain actual system exception.
  */
 @Getter
-public class DomainException extends Exception {
+public class DomainException extends RuntimeException {
 
     /**
      * Optional description code for this exception.
