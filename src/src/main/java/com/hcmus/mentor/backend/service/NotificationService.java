@@ -1,16 +1,15 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.domain.*;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.Map;
-
-import org.springframework.scheduling.annotation.Async;
 
 public interface NotificationService {
     Map<String, Object> getOwnNotifications(String userId, int page, int size);
@@ -65,11 +64,8 @@ public interface NotificationService {
 
     void sendNewUnpinNotification(MessageDetailResponse message, User pinner);
 
-
     @Async
     Notification createForwardNotification(String title, String content, String senderId, Group group);
 
     void sendForwardNotification(MessageDetailResponse message, String groupIds);
-
-
 }

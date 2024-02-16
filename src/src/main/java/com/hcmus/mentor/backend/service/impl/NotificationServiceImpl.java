@@ -46,19 +46,13 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Slice<Notification> slice =
-                notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
+        Slice<Notification> slice = notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
         List<String> senderIds = slice.get().map(Notification::getSenderId).toList();
-        Map<String, ShortProfile> senders =
-                userRepository.findByIds(senderIds).stream()
-                        .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
-        List<NotificationResponse> notifications =
-                slice.getContent().stream()
-                        .map(
-                                notification ->
-                                        NotificationResponse.from(
-                                                notification, senders.getOrDefault(notification.getSenderId(), null)))
-                        .toList();
+        Map<String, ShortProfile> senders = userRepository.findByIds(senderIds).stream()
+                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
+        List<NotificationResponse> notifications = slice.getContent().stream()
+                .map(notification -> NotificationResponse.from(notification, senders.getOrDefault(notification.getSenderId(), null)))
+                .toList();
         return pagingResponse(slice, notifications);
     }
 
@@ -123,10 +117,7 @@ public class NotificationServiceImpl implements NotificationService {
             logger.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
             return;
         }
-        logger.info(
-                "[*] Subscribe user notification: userID({}) | Token({})",
-                request.getUserId(),
-                request.getToken());
+        logger.info("[*] Subscribe user notification: userID({}) | Token({})", request.getUserId(), request.getToken());
 
         List<NotificationSubscriber> subscribes =
                 notificationSubscriberRepository.findByUserIdOrToken(
@@ -653,18 +644,17 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-
     /**
-     * @param title Title of notification
-     * @param content Content of notification
+     * @param title    Title of notification
+     * @param content  Content of notification
      * @param senderId Sender
-     * @param group Group
+     * @param group    Group
      * @return A notification
      */
     @Override
     public Notification createForwardNotification(String title, String content, String senderId, Group group) {
         List<String> receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                .filter(id->!id.equals(senderId))
+                .filter(id -> !id.equals(senderId))
                 .distinct()
                 .toList();
 

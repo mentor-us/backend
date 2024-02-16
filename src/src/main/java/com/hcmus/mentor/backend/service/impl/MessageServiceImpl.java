@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.google.firebase.messaging.FirebaseMessagingException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -27,18 +26,16 @@ import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
 
@@ -516,10 +513,7 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
-
-
-
-@Override
+    @Override
     public boolean updateCreatedDateVoteMessage(String voteId) {
         var messageOpt = messageRepository.findByVoteId(voteId);
         if (messageOpt.isEmpty()) {
