@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -464,6 +465,7 @@ public class MessageServiceImpl implements MessageService {
 
 
     /**
+     * Only forward message type TEXT
      * @param userId  String
      * @param request ForwardRequest
      */
@@ -471,15 +473,26 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
         // check message
+
         Message message = messageRepository.findById(request.getMessageId()).orElse(null);
         if (message == null) {
-            throw new RuntimeException("Message not found");
+            throw new DomainException("Message not found");
         }
+
+        if(message.getType()!= Message.Type.TEXT){
+            throw new DomainException("Message type is not TEXT");
+        }
+
+        // Todo: check message content
+        if(message.getContent() == null ){
+            throw new DomainException("Message content is null");
+        }
+
 
         // check user
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            throw new RuntimeException("User not found");
+            throw new DomainException("User not found");
         }
 
         // get list channels can forward
@@ -509,7 +522,7 @@ public class MessageServiceImpl implements MessageService {
             });
             return messages;
         } catch (Exception e) {
-            throw new RuntimeException("Forward message failed");
+            throw new DomainException("Forward message failed");
         }
     }
 
