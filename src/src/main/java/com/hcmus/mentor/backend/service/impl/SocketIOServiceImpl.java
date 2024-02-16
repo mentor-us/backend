@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +36,7 @@ public class SocketIOServiceImpl implements SocketIOService {
 
     @Override
     public void sendUpdatedVote(SocketIOClient client, VoteDetailResponse vote) {
-        client
-                .getNamespace()
+        client.getNamespace()
                 .getRoomOperations(vote.getGroupId())
                 .getClients()
                 .forEach(receiver -> {
@@ -57,8 +55,7 @@ public class SocketIOServiceImpl implements SocketIOService {
 
     @Override
     public void sendReact(ReactMessageResponse request, String groupId) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("receive_react_message", request));
     }
 
@@ -76,29 +73,35 @@ public class SocketIOServiceImpl implements SocketIOService {
 
     @Override
     public void sendRemoveReact(RemoveReactionResponse request, String groupId) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("receive_remove_react_message", request));
     }
 
     @Override
     public void sendUpdateMessage(UpdateMessageResponse response, String groupId) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("update_message", response));
     }
 
     @Override
     public void sendNewPinMessage(MessageDetailResponse message) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(message.getGroupId()).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(message.getGroupId()).getClients());
         clients.forEach(client -> client.sendEvent("receive_pinned_message", message));
     }
 
     @Override
     public void sendNewUnpinMessage(String groupId, String messageId) {
-        List<SocketIOClient> clients =
-                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("receive_unpinned_message", messageId));
+    }
+
+    /**
+     * @param message message to be sent
+     * @param groupId group id
+     */
+    @Override
+    public void sendForwardMessage(MessageDetailResponse message, String groupId) {
+        List<SocketIOClient> clients = new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        clients.forEach(client -> client.sendEvent("receive_forward_message", message));
     }
 }

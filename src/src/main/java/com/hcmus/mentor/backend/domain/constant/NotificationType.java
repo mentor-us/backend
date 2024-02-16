@@ -14,5 +14,6 @@ public enum NotificationType {
     NEW_VOTE,
     PIN_MESSAGE,
     UNPIN_MESSAGE,
-    NEED_RESPONSE
+    NEED_RESPONSE,
+    FORWARD,
 }

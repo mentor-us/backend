@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -26,13 +27,18 @@ import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
 
 /**
  * {@inheritDoc}
@@ -41,6 +47,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
+    private final Logger logger = LogManager.getLogger(MessageServiceImpl.class);
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
@@ -51,6 +58,7 @@ public class MessageServiceImpl implements MessageService {
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
+    private final NotificationRepository notificationRepository;
 
     /**
      * {@inheritDoc}
@@ -403,7 +411,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        if (message.getType() == Message.Type.FORWARD)
+        if (message.getType() == FORWARD)
             message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);
@@ -457,30 +465,65 @@ public class MessageServiceImpl implements MessageService {
 
 
     /**
+     * Only forward message type TEXT
      * @param userId  String
      * @param request ForwardRequest
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
-        List<Channel> channels = channelRepository.findByIdIn(request.getChannelIds());
-        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
+        // check message
 
+        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
         if (message == null) {
-            throw new RuntimeException("Message not found");
+            throw new DomainException("Message not found");
         }
-        List<Message> messages = new ArrayList<>();
-        channels.forEach(ch -> {
-            Message m = Message.builder()
-                    .senderId(userId)
-                    .groupId(ch.getParentId())
-                    .createdDate(new Date())
-                    .type(Message.Type.FORWARD)
-                    .content(message.getContent())
-                    .reply(message.getReply())
-                    .build();
-            messages.add(messageRepository.save(m));
-        });
-        return messages;
+
+        if(message.getType()!= Message.Type.TEXT){
+            throw new DomainException("Message type is not TEXT");
+        }
+
+        // Todo: check message content
+        if(message.getContent() == null ){
+            throw new DomainException("Message content is null");
+        }
+
+
+        // check user
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            throw new DomainException("User not found");
+        }
+
+        // get list channels can forward
+        var channelIds = new ArrayList<>(channelRepository.findByIdIn(request.getChannelIds()).stream().map(Channel::getId).toList());
+
+        // add general channel
+        groupRepository.findByIdIn(request.getChannelIds()).forEach(g -> channelIds.add(g.getId()));
+
+        try {
+            List<Message> messages = new ArrayList<>();
+            channelIds.forEach(cId -> {
+                Message m = Message.builder()
+                        .senderId(userId)
+                        .groupId(cId)
+                        .createdDate(new Date())
+                        .type(FORWARD)
+                        .content(message.getContent())
+                        .reply(message.getReply()).build();
+
+                logger.debug("Forward message: ", m.toString());
+                messages.add(messageRepository.save(m));
+                pingGroup(cId);
+            });
+            messages.forEach(m -> {
+                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getGroupId());
+                socketIOService.sendForwardMessage(MessageDetailResponse.from(m, user), m.getGroupId());
+            });
+            return messages;
+        } catch (Exception e) {
+            throw new DomainException("Forward message failed");
+        }
     }
 
     @Override
