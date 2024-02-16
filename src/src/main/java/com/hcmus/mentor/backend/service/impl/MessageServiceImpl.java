@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.google.firebase.messaging.FirebaseMessagingException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -29,10 +30,17 @@ import lombok.SneakyThrows;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
 
 /**
  * {@inheritDoc}
@@ -41,6 +49,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
+    private final Logger logger = LogManager.getLogger(MessageServiceImpl.class);
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
@@ -51,6 +60,7 @@ public class MessageServiceImpl implements MessageService {
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
+    private final NotificationRepository notificationRepository;
 
     /**
      * {@inheritDoc}
@@ -403,7 +413,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        if (message.getType() == Message.Type.FORWARD)
+        if (message.getType() == FORWARD)
             message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);
@@ -461,29 +471,55 @@ public class MessageServiceImpl implements MessageService {
      * @param request ForwardRequest
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
-        List<Channel> channels = channelRepository.findByIdIn(request.getChannelIds());
+        // check message
         Message message = messageRepository.findById(request.getMessageId()).orElse(null);
-
         if (message == null) {
             throw new RuntimeException("Message not found");
         }
-        List<Message> messages = new ArrayList<>();
-        channels.forEach(ch -> {
-            Message m = Message.builder()
-                    .senderId(userId)
-                    .groupId(ch.getParentId())
-                    .createdDate(new Date())
-                    .type(Message.Type.FORWARD)
-                    .content(message.getContent())
-                    .reply(message.getReply())
-                    .build();
-            messages.add(messageRepository.save(m));
-        });
-        return messages;
+
+        // check user
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // get list channels can forward
+        var channelIds = new ArrayList<>(channelRepository.findByIdIn(request.getChannelIds()).stream().map(Channel::getId).toList());
+
+        // add general channel
+        groupRepository.findByIdIn(request.getChannelIds()).forEach(g -> channelIds.add(g.getId()));
+
+        try {
+            List<Message> messages = new ArrayList<>();
+            channelIds.forEach(cId -> {
+                Message m = Message.builder()
+                        .senderId(userId)
+                        .groupId(cId)
+                        .createdDate(new Date())
+                        .type(FORWARD)
+                        .content(message.getContent())
+                        .reply(message.getReply()).build();
+
+                logger.debug("Forward message: ", m.toString());
+                messages.add(messageRepository.save(m));
+                pingGroup(cId);
+            });
+            messages.forEach(m -> {
+                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getGroupId());
+                socketIOService.sendForwardMessage(MessageDetailResponse.from(m, user), m.getGroupId());
+            });
+            return messages;
+        } catch (Exception e) {
+            throw new RuntimeException("Forward message failed");
+        }
     }
 
-    @Override
+
+
+
+@Override
     public boolean updateCreatedDateVoteMessage(String voteId) {
         var messageOpt = messageRepository.findByVoteId(voteId);
         if (messageOpt.isEmpty()) {

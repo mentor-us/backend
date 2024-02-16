@@ -101,4 +101,16 @@ public class SocketIOServiceImpl implements SocketIOService {
                 new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
         clients.forEach(client -> client.sendEvent("receive_unpinned_message", messageId));
     }
+
+
+    /**
+     * @param message message to be sent
+     * @param groupId group id
+     */
+    @Override
+    public void sendForwardMessage(MessageDetailResponse message, String groupId) {
+        List<SocketIOClient> clients =
+                new ArrayList<>(socketServer.getRoomOperations(groupId).getClients());
+        clients.forEach(client -> client.sendEvent("receive_forward_message", message));
+    }
 }

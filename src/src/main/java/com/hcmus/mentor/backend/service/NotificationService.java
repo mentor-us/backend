@@ -64,4 +64,12 @@ public interface NotificationService {
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 
     void sendNewUnpinNotification(MessageDetailResponse message, User pinner);
+
+
+    @Async
+    Notification createForwardNotification(String title, String content, String senderId, Group group);
+
+    void sendForwardNotification(MessageDetailResponse message, String groupIds);
+
+
 }

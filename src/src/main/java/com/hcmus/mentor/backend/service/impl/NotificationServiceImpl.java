@@ -11,7 +11,6 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeRe
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.NotificationService;
@@ -29,6 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.hcmus.mentor.backend.domain.constant.ChannelType.PRIVATE_MESSAGE;
 import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 
 @Service
@@ -165,7 +165,7 @@ public class NotificationServiceImpl implements NotificationService {
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+            title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
             members = channel.getUserIds().stream()
@@ -339,7 +339,7 @@ public class NotificationServiceImpl implements NotificationService {
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+            title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
             members = channel.getUserIds().stream()
@@ -563,7 +563,7 @@ public class NotificationServiceImpl implements NotificationService {
 
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title = ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+            title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
             members = channel.getUserIds().stream()
@@ -619,7 +619,7 @@ public class NotificationServiceImpl implements NotificationService {
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
             title =
-                    ChannelType.PRIVATE_MESSAGE.equals(channel.getType())
+                    PRIVATE_MESSAGE.equals(channel.getType())
                             ? parentGroup.getName() + "\n" + message.getSender().getName()
                             : channel.getName();
             members =
@@ -651,5 +651,80 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (FirebaseMessagingException e) {
             e.printStackTrace();
         }
+    }
+
+
+    /**
+     * @param title Title of notification
+     * @param content Content of notification
+     * @param senderId Sender
+     * @param group Group
+     * @return A notification
+     */
+    @Override
+    public Notification createForwardNotification(String title, String content, String senderId, Group group) {
+        List<String> receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                .filter(id->!id.equals(senderId))
+                .distinct()
+                .toList();
+
+        Notification notif = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(FORWARD)
+                .senderId(senderId)
+                .refId(group.getId())
+                .receiverIds(receiverIds)
+                .build();
+        return notificationRepository.save(notif);
+    }
+
+    /**
+     * @param message Message to be sent
+     * @param groupId Group identifier
+     */
+    @Override
+    public void sendForwardNotification(MessageDetailResponse message, String groupId) {
+        if (message == null || groupId == null) {
+            return;
+        }
+
+        String title;
+        List<String> members;
+
+        Optional<Group> groupWrapper = groupRepository.findById(groupId);
+        if (groupWrapper.isEmpty()) {
+            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+            if (channelWrapper.isEmpty()) {
+                return;
+            }
+
+            Channel channel = channelWrapper.get();
+            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
+            title = PRIVATE_MESSAGE.equals(channel.getType()) ? parentGroup.getName() + "\n" + message.getSender().getName() : channel.getName();
+            members = channel.getUserIds().stream().filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+        } else {
+            Group group = groupWrapper.get();
+            title = group.getName();
+            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream()).filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+        }
+
+        if (members.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> data = attachDataNotification(groupId, FORWARD);
+        String shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25))).text();
+        String content = message.getSender().getName() + " đã chuyển tiếp tin nhắn \"" + shortMessage + "\"";
+        try {
+            logger.debug("[*] Send forward notification to group {}", groupId);
+            logger.debug("[*] Title: {}", title);
+            logger.debug("[*] Content: {}", content);
+            logger.debug("[*] Data: {}", data);
+            firebaseMessagingManager.sendGroupNotification(members, title, content, data);
+        } catch (FirebaseMessagingException e) {
+            e.printStackTrace();
+        }
+
     }
 }
