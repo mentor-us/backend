@@ -29,6 +29,10 @@ public class MessageDetailResponse {
 
     private Message.Type type;
 
+    private Boolean isEdited;
+
+    private Date editedAt;
+
     private String groupId;
 
     private Vote vote;
@@ -65,6 +69,8 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .editedAt(message.getEditedAt())
+                .isEdited(message.getIsEdited())
                 .build();
     }
 
@@ -87,6 +93,8 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .editedAt(message.getEditedAt())
+                .isEdited(message.getIsEdited())
                 .build();
     }
 

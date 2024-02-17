@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -43,6 +42,10 @@ public class Message {
     private String meetingId;
 
     private String taskId;
+
+    private Boolean isEdited = false;
+
+    private Date editedAt = null;
 
     @Builder.Default
     private List<ReactionDto> reactions = new ArrayList<>();
@@ -85,6 +88,8 @@ public class Message {
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
+        setEditedAt(new Date());
+        setIsEdited(true);
     }
 
     public void delete() {

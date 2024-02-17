@@ -34,6 +34,10 @@ public class MessageResponse implements Serializable {
 
     private String meetingId;
 
+    private Boolean isEdited;
+
+    private Date editedAt;
+
     private String taskId;
 
     private List<ReactionDto> reactions;
@@ -62,6 +66,8 @@ public class MessageResponse implements Serializable {
                 .file(message.getFile())
                 .status(message.getStatus())
                 .reply(message.getReply())
+                .isEdited(message.getIsEdited())
+                .editedAt(message.getEditedAt())
                 .build();
     }
 
