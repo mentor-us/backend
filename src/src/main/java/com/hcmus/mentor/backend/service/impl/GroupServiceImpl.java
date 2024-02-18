@@ -1,9 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
@@ -26,13 +24,17 @@ import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
 import io.minio.errors.*;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
+import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -65,6 +67,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPerm
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
+    private final Logger logger = LogManager.getLogger(this.getClass());
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserRepository userRepository;
@@ -1857,5 +1860,29 @@ public class GroupServiceImpl implements GroupService {
         }
 
         return channelForwardResponses.stream().sorted(Comparator.comparing(ChannelForwardResponse::getGroupName)).toList();
+    }
+
+    /**
+     * @param request UpdateGroupImageRequest
+     */
+    @Override
+    @SneakyThrows
+    public void updateGroupImage(UpdateGroupImageRequest request) {
+        Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
+        if (groupWrapper.isEmpty()) {
+            throw new DomainException("Group not found");
+        }
+        var tika = new Tika();
+        var key = blobStorage.generateBlobKey(tika.detect(request.getFile().getBytes()));
+        try{
+            blobStorage.post(request.getFile(), key);
+            logger.log(Level.INFO,"[*] Upload group image success");
+        } catch (Exception e) {
+            logger.error(e);
+            throw new DomainException("Upload group image failed");
+        }
+        Group group = groupWrapper.get();
+        group.setImageUrl(key);
+        groupRepository.save(group);
     }
 }
