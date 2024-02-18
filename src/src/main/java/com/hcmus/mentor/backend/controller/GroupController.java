@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
@@ -29,6 +26,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -927,13 +925,22 @@ public class GroupController {
      * @throws InternalException         If an internal exception occurs during the process.
      */
     @GetMapping("forward")
+    @SneakyThrows
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) {
         List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
 
         return ResponseEntity.ok(listChannelForward);
+    }
+
+    @PostMapping(value = "{groupId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiResponse(responseCode = "200", description = "Group image updated successfully")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    public ResponseEntity<Void> uploadImage(@PathVariable String groupId,@RequestPart MultipartFile file) {
+        groupService.updateGroupImage(UpdateGroupImageRequest.builder().groupId(groupId).file(file).build());
+        return ResponseEntity.ok().build();
     }
 
     private Map<String, Object> pagingResponse(Page<Group> groups) {

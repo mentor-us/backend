@@ -1,9 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
@@ -149,4 +146,6 @@ public interface GroupService {
     boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
 
     List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+
+    void updateGroupImage(UpdateGroupImageRequest request);
 }
