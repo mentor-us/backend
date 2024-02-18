@@ -89,6 +89,7 @@ public class MessageController {
     @DeleteMapping("{messageId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "404", description = "Message not found")
     public ResponseEntity<Void> deleteMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String messageId) {
