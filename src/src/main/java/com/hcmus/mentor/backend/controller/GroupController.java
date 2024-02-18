@@ -101,9 +101,14 @@ public class GroupController {
         if (isSuperAdmin) {
             groups = groupRepository.findAll(pageRequest);
         } else {
-            String creatorId = userRepository.findByEmail(customerUserDetails.getEmail()).get().getId();
+            var user = userRepository.findByEmail(customerUserDetails.getEmail());
+            if(user.isEmpty()){
+                return ApiResponseDto.notFound(NOT_FOUND);
+            }
+            String creatorId = user.get().getId();
             groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
         }
+
         for (Group group : groups) {
             if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
                 if (group.getTimeEnd().before(new Date())) {

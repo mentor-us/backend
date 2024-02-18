@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.google.api.gax.rpc.NotFoundException;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
