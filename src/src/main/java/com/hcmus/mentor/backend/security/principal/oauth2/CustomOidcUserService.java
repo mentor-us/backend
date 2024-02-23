@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,15 +51,16 @@ public class CustomOidcUserService extends OidcUserService {
 
         String email = customerOidcUser.getEmail();
 
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isEmpty()) {
-            throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.NOT_FOUND);
-        }
+        // If not found in email.
+        User data = userRepository
+                .findByEmail(email)
+                .or(() -> userRepository.findByAdditionalEmailsContains(email))
+                .orElseThrow(() -> new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.NOT_FOUND));
 
-        User data = userOptional.get();
         if (!data.isStatus()) {
             throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.BLOCKED);
         }
+
         User user = updateExistingUser(data, customerOidcUser);
         return CustomerUserDetails.create(user, attributes);
     }
