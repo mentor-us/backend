@@ -33,15 +33,20 @@ public interface MailService {
     void sendEmailTemplate(String template, Map<String, Object> properties, String subject, List<String> to);
 
     /**
-     * Asynchronously sends an invitation email.
+     * Asynchronously sends an invitation email to group.
      *
-     * @param emailAddress The email address of the recipient.
-     * @param group        The group associated with the invitation.
+     * @param email The email address of the recipient.
+     * @param group The group associated with the invitation.
      */
     @Async
-    void sendInvitationToGroupMail(String emailAddress, Group group);
+    void sendInvitationToGroupMail(String email, Group group);
 
+    /**
+     * Asynchronously sends an invitation email.
+     *
+     * @param email The email address of the recipient.
+     */
     @Async
-    void sendWelcomeMail(String emailAddress);
+    void sendWelcomeMail(String email);
 
 }
