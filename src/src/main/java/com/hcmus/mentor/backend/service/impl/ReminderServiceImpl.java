@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.service.ReminderService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,6 +27,8 @@ public class ReminderServiceImpl implements ReminderService {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final MailService mailService;
+    @Value("${app.frontendUrl}")
+    private String frontendUrl;
 
     @Override
     public void sendReminders() throws FirebaseMessagingException {
@@ -35,6 +38,7 @@ public class ReminderServiceImpl implements ReminderService {
             String template = reminder.getType().toString() + "_REMINDER";
             String subject = reminder.getSubject();
             Map<String, Object> properties = reminder.getProperties();
+            properties.put("frontendUrl", frontendUrl);
             List<String> recipients = reminder.getRecipients();
             List<String> receiverIds = new ArrayList<>();
             recipients.forEach(recipient -> {

@@ -41,7 +41,8 @@
                 <tr>
                     <td align="center" style="height: 60px !important;">
                         <a style="text-decoration: none!important; border: 1px solid #98A8F8!important; border-radius: 5px!important; background-color: #98A8F8!important; font-size: 25px!important; color: white!important; padding: 10px 15px!important; cursor: pointer!important;"
-                           th:href="@{https://web-nang-cao-19-3-ymeb.vercel.app/meeting(meetingId=${id})}">Mở
+                           th:with="meetingUrl=(${frontendUrl} + '/send-link/meeting')"
+                           th:href="@{${meetingUrl}(meetingId=${id})}">Mở
                             lịch hẹn</a>
                     </td>
                 </tr>
