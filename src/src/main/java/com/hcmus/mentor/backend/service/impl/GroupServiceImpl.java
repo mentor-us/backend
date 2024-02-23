@@ -1821,9 +1821,13 @@ public class GroupServiceImpl implements GroupService {
      * @return List<GroupForwardResponse>
      */
     @Override
-    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name)  {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
         groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
+
+        Map<String, GroupCategory> categories = groupCategoryRepository.findAll().stream()
+                .collect(Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
+
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
         List<String> lstChannelIds = new ArrayList<>();
         for (List<String> ids : listChannelIds) {
@@ -1835,8 +1839,7 @@ public class GroupServiceImpl implements GroupService {
         List<ChannelForwardResponse> channelForwardResponses = new ArrayList<>();
         for (Group group : groups) {
             GroupForwardResponse groupForwardResponse = GroupForwardResponse.from(group);
-            if (group.getImageUrl() != null && !group.getImageUrl().isEmpty())
-                groupForwardResponse.setImageUrl(blobStorage.getUrl(group.getImageUrl()));
+            groupForwardResponse.setImageUrl(categories.get(group.getGroupCategory()).getIconUrl());
 
             groupForwardResponses.add(groupForwardResponse);
             channelForwardResponses.add(ChannelForwardResponse.builder()
