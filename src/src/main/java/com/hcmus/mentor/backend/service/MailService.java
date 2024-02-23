@@ -39,6 +39,9 @@ public interface MailService {
      * @param group        The group associated with the invitation.
      */
     @Async
-    void sendInvitationMail(String emailAddress, Group group);
+    void sendInvitationToGroupMail(String emailAddress, Group group);
+
+    @Async
+    void sendWelcomeMail(String emailAddress);
 
 }
