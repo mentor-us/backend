@@ -12,6 +12,7 @@ s3-settings:
   force-path-style: "op://mentorus/backend-local/s3-settings/force-path-style"
 
 app:
+  frontendUrl: "op://mentorus/backend-local/app/frontendUrl"
   jwt:
     secret-key: "op://mentorus/backend-local/jwt/secret-key"
   cors:
