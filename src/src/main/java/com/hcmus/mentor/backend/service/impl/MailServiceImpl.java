@@ -34,6 +34,8 @@ public class MailServiceImpl implements MailService {
     private final UserRepository userRepository;
     @Value("${spring.mail.username}")
     private String sender;
+    @Value("${app.frontendUrl}")
+    private String frontendUrl;
 
     /**
      * {@inheritDoc}
@@ -79,17 +81,34 @@ public class MailServiceImpl implements MailService {
      */
     @Override
     @Async
-    public void sendInvitationMail(String email, Group group) {
+    public void sendInvitationToGroupMail(String email, Group group) {
         var userOpt = userRepository.findByEmail(email);
-        var username = userOpt.map(User::getName).orElse(email);
+        var name = userOpt.map(User::getName).orElse(email);
 
         this.sendEmailTemplate(
-                "welcome-email.html",
-                Map.of("name", username, "groupName", group.getName(), "groupId", group.getId()),
-                "Invite to MentorUS",
+                "mails/welcome-to-app.html",
+                Map.of("name", name, "groupName", group.getName(), "groupId", group.getId(), "frontendUrl", frontendUrl),
+                String.format("You have been invited to join group %s !", group.getName()),
                 List.of(email));
 
         logger.info("Invitation email sent to {}, groupId::{}, groupName::{}", email, group.getId(), group.getName());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void sendWelcomeMail(String email) {
+        var userOpt = userRepository.findByEmail(email);
+        var name = userOpt.map(User::getName).orElse(email);
+
+        this.sendEmailTemplate(
+                "mails/welcome-to-app.html",
+                Map.of("name", name, "frontendUrl", frontendUrl),
+                "Welcome to MentorUS!",
+                List.of(email));
+
+        logger.info("Welcome email sent to {}", email);
     }
 
     private void setSubjectAndRecipients(MimeMessage message, String subject, List<String> to) throws MessagingException, DomainException {

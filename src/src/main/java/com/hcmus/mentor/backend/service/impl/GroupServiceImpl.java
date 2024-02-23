@@ -359,8 +359,8 @@ public class GroupServiceImpl implements GroupService {
                         .creatorId(creatorId)
                         .build();
         groupRepository.save(group);
-        menteeEmails.stream().forEach(email -> mailService.sendInvitationMail(email, group));
-        mentorEmails.stream().forEach(email -> mailService.sendInvitationMail(email, group));
+        menteeEmails.stream().forEach(email -> mailService.sendInvitationToGroupMail(email, group));
+        mentorEmails.stream().forEach(email -> mailService.sendInvitationToGroupMail(email, group));
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
@@ -691,7 +691,7 @@ public class GroupServiceImpl implements GroupService {
         group.setMentees(listMenteesAfterRemoveDuplicate);
         groupRepository.save(group);
         for (String emailAddress : emails) {
-            mailService.sendInvitationMail(emailAddress, group);
+            mailService.sendInvitationToGroupMail(emailAddress, group);
         }
 
         return new GroupServiceDto(SUCCESS, null, group);
@@ -728,7 +728,7 @@ public class GroupServiceImpl implements GroupService {
 
         groupRepository.save(group);
         for (String emailAddress : emails) {
-            mailService.sendInvitationMail(emailAddress, group);
+            mailService.sendInvitationToGroupMail(emailAddress, group);
         }
 
         return new GroupServiceDto(SUCCESS, null, group);

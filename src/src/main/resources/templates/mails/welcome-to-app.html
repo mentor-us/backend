@@ -27,23 +27,22 @@
                 </tr>
                 <tr>
                     <td align="center">
-                        <h2 style="margin-top:2rem!important;font-size:30px!important;">Thư mời tham gia nhóm <span
-                                th:text="${groupName}"></span></h2>
+                        <h2 style="margin-top:2rem!important;font-size:30px!important;">Chào mừng <span
+                                th:text="${name}"></span> đến với App Mentor US</h2>
                     </td>
                 </tr>
                 <tr>
                     <td align="center">
                         <p style="width:600px!important;font-size:20px!important;text-align:center!important;letter-spacing:1px!important;margin-bottom:2rem!important;">
-                            Chào <span th:text="${name}"></span>, bạn được mời tham gia vào <span
-                                th:text="${groupName}"></span> trong ứng dụng MentorUS bởi người quản trị. Hãy nhấn vào
-                            nút bên dưới để truy cập vào ứng dụng nha!</p>
+                            Hãy nhấn vào nút bên dưới để truy cập vào ứng dụng nha!</p>
                     </td>
                 </tr>
                 <tr>
                     <td align="center" style="height: 60px !important;">
                         <a style="text-decoration: none!important; border: 1px solid #98A8F8!important; border-radius: 5px!important; background-color: #98A8F8!important; font-size: 25px!important; color: white!important; padding: 10px 15px!important; cursor: pointer!important;"
-                           th:href="@{https://mentor.somesandwich.rocks/send-link/invitation(groupId=${groupId})}">Tham gia
-                            nhóm</a>
+                           th:with="invitationUrl=(${frontendUrl} + '/send-link/invitation')"
+                           th:href="@{${invitationUrl}}">Tham gia ứng dụng
+                        </a>
                     </td>
                 </tr>
                 </tbody>

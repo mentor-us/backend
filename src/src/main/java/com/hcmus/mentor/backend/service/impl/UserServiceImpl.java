@@ -46,7 +46,6 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
@@ -77,17 +76,10 @@ public class UserServiceImpl implements UserService {
         return menteeWrapper.map(User::getId).orElse(null);
     }
 
-    private void sendEmail(String email) {
-        mailService.sendEmail("Welcome to MentorUS app!", "Invite to MentorUS", List.of(email));
-
-        logger.info("Send invitation email to {}", email);
-    }
-
     @Override
     public void addNewAccount(String emailAddress) {
         String initialName = "User " + randomString(6);
-        User data =
-                User.builder().name(initialName).initialName(initialName).email(emailAddress).build();
+        User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).build();
         userRepository.save(data);
     }
 
@@ -223,20 +215,19 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
 
-        String emailAddress = request.getEmailAddress();
-        Optional<User> userOptional = userRepository.findByEmail(emailAddress);
+        String email = request.getEmailAddress();
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
         }
 
         UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(emailAddress).build();
+        User user = User.builder().name(request.getName()).email(email).build();
         user.assignRole(role);
         userRepository.save(user);
-        sendEmail(emailAddress);
+        mailService.sendWelcomeMail(email);
 
-        UserDataResponse userDataResponse =
-                UserDataResponse.builder()
+        UserDataResponse userDataResponse = UserDataResponse.builder()
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
@@ -348,7 +339,8 @@ public class UserServiceImpl implements UserService {
         if (duplicateEmails.size() > 0) {
             return new UserServiceDto(DUPLICATE_USER, "Duplicate user", duplicateEmails);
         }
-        users.forEach(user -> sendEmail(user.getEmail()));
+        users.forEach(user -> mailService.sendWelcomeMail(user.getEmail()));
+
         userRepository.saveAll(users);
 
         return new UserServiceDto(SUCCESS, "", responses);
