@@ -1,199 +1,184 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.FAQ;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.response.FAQDetail;
+import com.hcmus.mentor.backend.domain.Faq;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.FaqService;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "FAQ APIs", description = "REST APIs for FAQ collections")
+/**
+ *
+ */
+@Tag(name = "faqs")
 @RestController
-@RequestMapping("/api/faqs")
+@RequestMapping("api/faqs")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class FaqController {
 
     private final FaqService faqService;
 
-    public FaqController(FaqService faqService) {
-        this.faqService = faqService;
-    }
-
-    @Operation(
-            summary = "Get all FAQs of group",
-            description = "Get all FAQs by group ID",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @GetMapping(value = {""})
-    public ResponseEntity<List<FAQ>> all(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Retrieves all FAQs of a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param groupId       The ID of the group to retrieve FAQs.
+     * @return ResponseEntity containing a list of FAQs for the specified group.
+     */
+    @GetMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<List<Faq>> all(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String groupId) {
-        List<FAQ> faqs = faqService.getByGroupId(userPrincipal.getId(), groupId);
+        List<Faq> faqs = faqService.getByGroupId(customerUserDetails.getId(), groupId);
         return ResponseEntity.ok(faqs);
     }
 
-    @Operation(
-            summary = "Get FAQ detail",
-            description = "Get existing FAQ detail in group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @GetMapping("/{faqId}")
+    /**
+     * Retrieves the details of a specific FAQ.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to retrieve details.
+     * @return ResponseEntity containing the detailed information of the specified FAQ.
+     */
+    @GetMapping("{faqId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<FAQDetail> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        FAQDetail faq = faqService.getById(userPrincipal.getId(), faqId);
+        FAQDetail faq = faqService.getById(customerUserDetails.getId(), faqId);
         if (faq == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(faq);
     }
 
-    @Operation(summary = "Add FAQ", description = "Add FAQ to group", tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Create successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @PostMapping(value = {""})
+    /**
+     * Adds a new FAQ to a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param request       The request containing information to create a new FAQ.
+     * @return ResponseEntity containing the ID of the newly created FAQ.
+     */
+    @PostMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> create(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody CreateFaqRequest request) {
-        FAQ faq = faqService.addNewFaq(userPrincipal.getId(), request);
+        Faq faq = faqService.addNewFaq(customerUserDetails.getId(), request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(faq.getId());
     }
 
-    @Operation(
-            summary = "Update FAQ",
-            description = "Update existing FAQ in group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @PatchMapping("/{faqId}")
+    /**
+     * Updates an existing FAQ in a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to be updated.
+     * @param request       The request containing updated information for the FAQ.
+     * @return ResponseEntity containing the ID of the updated FAQ.
+     */
+    @PatchMapping("{faqId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId,
             @RequestBody UpdateFaqRequest request) {
-        FAQ faq = faqService.updateFAQ(userPrincipal.getId(), faqId, request);
+        Faq faq = faqService.updateFAQ(customerUserDetails.getId(), faqId, request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok(faq.getId());
     }
 
-    @Operation(
-            summary = "Delete FAQ",
-            description = "Delete existing FAQ in group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Delete successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @DeleteMapping("/{faqId}")
+    /**
+     * Deletes an existing FAQ from a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to be deleted.
+     * @return ResponseEntity indicating the success of the deletion operation.
+     */
+    @DeleteMapping("{faqId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isDeleted = faqService.deleteFaq(userPrincipal.getId(), faqId);
+        faqService.deleteFaq(customerUserDetails.getId(), faqId);
         return ResponseEntity.ok().build();
     }
 
-    @Operation(
-            summary = "Import FAQs",
-            description = "Import existing FAQs from another group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Import successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @PostMapping("/{faqId}/import")
+    /**
+     * Imports existing FAQs from another group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to which FAQs will be imported.
+     * @param request       The request containing information about the FAQs to import.
+     * @return ResponseEntity indicating the success of the import operation.
+     */
+    @PostMapping("{faqId}/import")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> importFAQs(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId,
             @RequestBody ImportFAQsRequest request) {
-        faqService.importFAQs(userPrincipal, faqId, request);
+        faqService.importFAQs(customerUserDetails, faqId, request);
         return ResponseEntity.ok().build();
     }
 
-    @Operation(
-            summary = "Upvote FAQ",
-            description = "Upvote existing FAQ in group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Upvote successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @PostMapping("/{faqId}/upvote")
-    public ResponseEntity<String> upvote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Upvotes an existing FAQ in a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to be upvoted.
+     * @return ResponseEntity indicating the success of the upvote operation.
+     */
+    @PostMapping("{faqId}/upvote")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<String> upVote(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isSuccess = faqService.upvote(userPrincipal, faqId);
+        boolean isSuccess = faqService.upvote(customerUserDetails, faqId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.ok().build();
     }
 
-    @Operation(
-            summary = "Downvote FAQ",
-            description = "Downvote existing FAQ in group",
-            tags = "FAQ APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Upvote successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class))))
-    })
-    @PostMapping("/{faqId}/downVote")
+    /**
+     * Downvotes an existing FAQ in a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param faqId         The ID of the FAQ to be downvoted.
+     * @return ResponseEntity indicating the success of the downvote operation.
+     */
+    @PostMapping("{faqId}/downVote")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> downVote(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isSuccess = faqService.downVote(userPrincipal, faqId);
+        boolean isSuccess = faqService.downVote(customerUserDetails, faqId);
         if (!isSuccess) {
             return ResponseEntity.badRequest().build();
         }

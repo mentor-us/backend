@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.hcmus.mentor.backend.domain.constant.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -29,7 +30,7 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     Boolean existsByEmail(String email);
 
-    Boolean existsByEmailAndRolesIn(String email, User.Role role);
+    Boolean existsByEmailAndRolesIn(String email, UserRole role);
 
     List<User> findByIdIn(List<String> ids);
 

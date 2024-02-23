@@ -28,8 +28,11 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
     @Override
     public String sendNotification(String token, Notification notification, Map<String, String> data)
             throws FirebaseMessagingException {
-        Message message =
-                Message.builder().setToken(token).setNotification(notification).putAllData(data).build();
+        Message message = Message.builder()
+                .setToken(token)
+                .setNotification(notification)
+                .putAllData(data)
+                .build();
 
         return firebaseMessaging.send(message);
     }
@@ -62,7 +65,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
         return notificationSubscriberRepository.findAllByUserIdIn(userIds).stream()
                 .map(NotificationSubscriber::getToken)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

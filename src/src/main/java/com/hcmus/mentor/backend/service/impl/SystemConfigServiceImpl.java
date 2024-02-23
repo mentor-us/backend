@@ -8,7 +8,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnC
 import com.hcmus.mentor.backend.domain.SystemConfig;
 import com.hcmus.mentor.backend.repository.SystemConfigRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.SystemConfigReturnService;
+import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import com.hcmus.mentor.backend.service.SystemConfigService;
 
 import java.util.ArrayList;
@@ -28,35 +28,35 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private final PermissionService permissionService;
 
     @Override
-    public SystemConfigReturnService listAll(String emailUser) {
+    public SystemConfigServiceDto listAll(String emailUser) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new SystemConfigReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new SystemConfigServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<SystemConfig> systemConfigs = systemConfigRepository.findAll();
-        return new SystemConfigReturnService(SUCCESS, null, systemConfigs);
+        return new SystemConfigServiceDto(SUCCESS, null, systemConfigs);
     }
 
     @Override
-    public SystemConfigReturnService updateValue(String emailUser, String id, Object value) {
+    public SystemConfigServiceDto updateValue(String emailUser, String id, Object value) {
         Optional<SystemConfig> configOptional = systemConfigRepository.findById(id);
         if (!configOptional.isPresent()) {
-            return new SystemConfigReturnService(NOT_FOUND, "Not found system config", null);
+            return new SystemConfigServiceDto(NOT_FOUND, "Not found system config", null);
         }
         SystemConfig config = configOptional.get();
         if (!permissionService.isAdmin(emailUser)) {
-            return new SystemConfigReturnService(INVALID_PERMISSION, "Invalid permission", null);
+            return new SystemConfigServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (!isValidType(value, config.getType())) {
-            return new SystemConfigReturnService(INVALID_TYPE, "Invalid type", value);
+            return new SystemConfigServiceDto(INVALID_TYPE, "Invalid type", value);
         }
-        SystemConfigReturnService isValidValue = isValidValue(config.getKey(), value);
+        SystemConfigServiceDto isValidValue = isValidValue(config.getKey(), value);
         if (isValidValue.getReturnCode() != SUCCESS) {
             return isValidValue;
         }
         config.setValue(value);
         systemConfigRepository.save(config);
 
-        return new SystemConfigReturnService(SUCCESS, "", config);
+        return new SystemConfigServiceDto(SUCCESS, "", config);
     }
 
     private boolean isValidType(Object value, String type) {
@@ -64,23 +64,23 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return valueType.equals(type);
     }
 
-    private SystemConfigReturnService isValidValue(String key, Object value) {
+    private SystemConfigServiceDto isValidValue(String key, Object value) {
         switch (key) {
             case "valid_domains":
                 String[] domains = (String[]) value;
                 for (String domain : domains) {
                     if (!isValidDomain(domain)) {
-                        return new SystemConfigReturnService(INVALID_DOMAIN, "Invalid domain", domain);
+                        return new SystemConfigServiceDto(INVALID_DOMAIN, "Invalid domain", domain);
                     }
                 }
             case "valid_max_year":
                 if ((int) value < 0) {
-                    return new SystemConfigReturnService(INVALID_MAX_YEAR, "Invalid max year", value);
+                    return new SystemConfigServiceDto(INVALID_MAX_YEAR, "Invalid max year", value);
                 }
             default:
                 break;
         }
-        return new SystemConfigReturnService(SUCCESS, "", "");
+        return new SystemConfigServiceDto(SUCCESS, "", "");
     }
 
     private boolean isValidDomain(String domain) {

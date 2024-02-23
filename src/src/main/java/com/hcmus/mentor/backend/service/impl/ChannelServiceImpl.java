@@ -1,25 +1,24 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.ChannelService;
 import com.hcmus.mentor.backend.service.PermissionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -34,10 +33,10 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     public Channel addChannel(String adderId, AddChannelRequest request) {
         Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
-        Group group = null;
-        if (!groupWrapper.isPresent()) {
+        Group group;
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(request.getGroupId());
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return null;
             }
             Channel channel = channelWrapper.get();
@@ -49,7 +48,7 @@ public class ChannelServiceImpl implements ChannelService {
             return null;
         }
 
-        if (Channel.Type.PRIVATE_MESSAGE.equals(request.getType())) {
+        if (ChannelType.PRIVATE_MESSAGE.equals(request.getType())) {
             return addPrivateChat(adderId, request, group);
         }
 
@@ -68,7 +67,7 @@ public class ChannelServiceImpl implements ChannelService {
                         .description(request.getDescription())
                         .type(request.getType())
                         .userIds(
-                                Channel.Type.PUBLIC.equals(request.getType())
+                                ChannelType.PUBLIC.equals(request.getType())
                                         ? group.getMembers()
                                         : request.getUserIds())
                         .parentId(group.getId())
@@ -83,8 +82,7 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     public Channel addPrivateChat(String adderId, AddChannelRequest request, Group group) {
         request.getUserIds().add(adderId);
-        List<String> memberIds =
-                request.getUserIds().stream().distinct().sorted().collect(Collectors.toList());
+        List<String> memberIds = request.getUserIds().stream().distinct().sorted().toList();
 
         String channelName = String.join("|", memberIds) + "|" + group.getId();
         Channel existedChannel = channelRepository.findTopByParentIdAndName(group.getId(), channelName);
@@ -92,15 +90,14 @@ public class ChannelServiceImpl implements ChannelService {
             return existedChannel;
         }
 
-        Channel data =
-                Channel.builder()
-                        .name(channelName)
-                        .description(request.getDescription())
-                        .type(Channel.Type.PRIVATE_MESSAGE)
-                        .userIds(memberIds)
-                        .parentId(group.getId())
-                        .creatorId(request.getCreatorId())
-                        .build();
+        Channel data = Channel.builder()
+                .name(channelName)
+                .description(request.getDescription())
+                .type(ChannelType.PRIVATE_MESSAGE)
+                .userIds(memberIds)
+                .parentId(group.getId())
+                .creatorId(request.getCreatorId())
+                .build();
 
         Channel newChannel = channelRepository.save(data);
         group.addPrivate(newChannel.getId());
@@ -109,9 +106,9 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public boolean removeChannel(UserPrincipal user, String channelId) {
+    public boolean removeChannel(CustomerUserDetails user, String channelId) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (!channelWrapper.isPresent()) {
+        if (channelWrapper.isEmpty()) {
             return true;
         }
 
@@ -133,13 +130,13 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public List<Channel> getChannels(UserPrincipal user, String parentId) {
+    public List<Channel> getChannels(CustomerUserDetails user, String parentId) {
         if (parentId == null) {
             return Collections.emptyList();
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(parentId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -152,15 +149,15 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public Channel updateChannel(UserPrincipal user, String channelId, UpdateChannelRequest request) {
+    public Channel updateChannel(CustomerUserDetails user, String channelId, UpdateChannelRequest request) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (!channelWrapper.isPresent()) {
+        if (channelWrapper.isEmpty()) {
             return null;
         }
 
         Channel channel = channelWrapper.get();
         Optional<Group> groupWrapper = groupRepository.findById(channel.getParentId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return null;
         }
 
@@ -174,21 +171,21 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public List<ShortProfile> getChannelMembers(UserPrincipal user, String channelId) {
+    public List<ShortProfile> getChannelMembers(CustomerUserDetails user, String channelId) {
         Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (!channelWrapper.isPresent()) {
-            return null;
+        if (channelWrapper.isEmpty()) {
+            return Collections.emptyList();
         }
 
         Channel channel = channelWrapper.get();
         Optional<Group> groupWrapper = groupRepository.findById(channel.getParentId());
-        if (!groupWrapper.isPresent()) {
-            return null;
+        if (groupWrapper.isEmpty()) {
+            return Collections.emptyList();
         }
 
         Group group = groupWrapper.get();
         if (!group.isMentor(user.getId())) {
-            return null;
+            return Collections.emptyList();
         }
 
         return userRepository.findByIds(channel.getUserIds());

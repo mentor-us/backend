@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.User;
 
 import java.util.Date;
 
+import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.*;
 
 @Getter
@@ -25,7 +26,7 @@ public class MeetingAttendeeResponse {
 
     private String personalEmail;
 
-    private User.Gender gender;
+    private UserGender gender;
 
     private String imageUrl;
 

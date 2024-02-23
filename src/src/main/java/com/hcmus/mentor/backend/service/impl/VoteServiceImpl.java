@@ -1,10 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.corundumstudio.socketio.SocketIOServer;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
@@ -13,23 +9,22 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
-import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.MessageService;
-import com.hcmus.mentor.backend.service.NotificationService;
-import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.VoteService;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
+import com.hcmus.mentor.backend.service.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +42,7 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public VoteDetailResponse get(String userId, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        if (voteWrapper.isEmpty()) {
             return null;
         }
         Vote vote = voteWrapper.get();
@@ -56,7 +51,7 @@ public class VoteServiceImpl implements VoteService {
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(vote.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return null;
         }
         Group group = groupWrapper.get();
@@ -73,23 +68,22 @@ public class VoteServiceImpl implements VoteService {
         }
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(groupId).stream()
                 .map(this::fulfillChoices)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
         ShortProfile creator = userRepository.findShortProfile(vote.getCreatorId());
-        List<VoteDetailResponse.ChoiceDetail> choices =
-                vote.getChoices().stream()
-                        .map(this::fulfillChoice)
-                        .filter(Objects::nonNull)
-                        .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                        .collect(Collectors.toList());
+        List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
+                .map(this::fulfillChoice)
+                .filter(Objects::nonNull)
+                .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
+                .toList();
         return VoteDetailResponse.from(vote, creator, choices);
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(Vote.Choice choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
         if (choice == null) {
             return null;
         }
@@ -107,9 +101,7 @@ public class VoteServiceImpl implements VoteService {
 
         Message message = messageService.saveVoteMessage(newVote);
         User sender = userRepository.findById(message.getSenderId()).orElse(null);
-        MessageDetailResponse response =
-                MessageDetailResponse.from(
-                        MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
+        MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
         notificationService.sendNewVoteNotification(newVote.getCreatorId(), newVote);
@@ -118,7 +110,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean updateVote(UserPrincipal user, String voteId, UpdateVoteRequest request) {
+    public boolean updateVote(CustomerUserDetails user, String voteId, UpdateVoteRequest request) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -135,7 +127,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean deleteVote(UserPrincipal user, String voteId) {
+    public boolean deleteVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -151,21 +143,24 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public Vote doVoting(DoVotingRequest request) {
-        Optional<Vote> voteWrapper = voteRepository.findById(request.getVoteId());
-        if (!voteWrapper.isPresent()) {
+        Optional<Vote> voteOpt = voteRepository.findById(request.getVoteId());
+        if (voteOpt.isEmpty()) {
             return null;
         }
-        Vote vote = voteWrapper.get();
+
+        Vote vote = voteOpt.get();
         if (Vote.Status.CLOSED.equals(vote.getStatus())) {
             return null;
         }
+
         vote.doVoting(request);
+
         return voteRepository.save(vote);
     }
 
     @Override
     public VoteDetailResponse.ChoiceDetail getChoiceDetail(
-            UserPrincipal user, String voteId, String choiceId) {
+            CustomerUserDetails user, String voteId, String choiceId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return null;
@@ -179,9 +174,9 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public List<VoteDetailResponse.ChoiceDetail> getChoiceResults(UserPrincipal user, String voteId) {
+    public List<VoteDetailResponse.ChoiceDetail> getChoiceResults(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        if (voteWrapper.isEmpty()) {
             return null;
         }
         Vote vote = voteWrapper.get();
@@ -193,11 +188,12 @@ public class VoteServiceImpl implements VoteService {
         if (voteDetail == null) {
             return null;
         }
+
         return voteDetail.getChoices();
     }
 
     @Override
-    public boolean closeVote(UserPrincipal user, String voteId) {
+    public boolean closeVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;
@@ -216,7 +212,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public boolean reopenVote(UserPrincipal user, String voteId) {
+    public boolean reopenVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
         if (!voteWrapper.isPresent()) {
             return false;

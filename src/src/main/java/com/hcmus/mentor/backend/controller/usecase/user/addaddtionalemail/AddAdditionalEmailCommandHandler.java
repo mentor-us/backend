@@ -7,15 +7,17 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.UserService;
+
 import java.util.Optional;
+
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import org.springframework.stereotype.Component;
 
 /**
  * Handler for {@link AddAdditionalEmailCommand}.
  */
 @Component
-public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAdditionalEmailCommand, UserService.UserReturnService> {
+public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAdditionalEmailCommand, UserServiceDto> {
 
     private final UserRepository userRepository;
 
@@ -31,14 +33,14 @@ public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAddi
      * @return result of adding additional email to user account.
      */
     @Override
-    public UserService.UserReturnService handle(AddAdditionalEmailCommand command) {
+    public UserServiceDto handle(AddAdditionalEmailCommand command) {
         if (userRepository.findByAdditionalEmailsContains(command.getAdditionalEmail()).isPresent() || userRepository.findByEmail(command.getAdditionalEmail()).isPresent()) {
-            return new UserService.UserReturnService(DUPLICATE_EMAIL, "Duplicate email", null);
+            return new UserServiceDto(DUPLICATE_EMAIL, "Duplicate email", null);
         }
 
         Optional<User> userOptional = userRepository.findById(command.getUserId());
         if (userOptional.isEmpty()) {
-            return new UserService.UserReturnService(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(NOT_FOUND, "Not found user", null);
         }
 
         var user = userOptional.get();
@@ -47,7 +49,7 @@ public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAddi
         user.setAdditionalEmails(additionEmails);
         userRepository.save(user);
 
-        return new UserService.UserReturnService(SUCCESS, "Add addition email success", user);
+        return new UserServiceDto(SUCCESS, "Add addition email success", user);
     }
 
 }

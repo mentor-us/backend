@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
 @Getter
@@ -33,9 +34,13 @@ public class MessageResponse implements Serializable {
 
     private String meetingId;
 
+    private Boolean isEdited;
+
+    private Date editedAt;
+
     private String taskId;
 
-    private List<Reaction> reactions;
+    private List<ReactionDto> reactions;
 
     private List<String> images;
 
@@ -61,6 +66,8 @@ public class MessageResponse implements Serializable {
                 .file(message.getFile())
                 .status(message.getStatus())
                 .reply(message.getReply())
+                .isEdited(message.getIsEdited())
+                .editedAt(message.getEditedAt())
                 .build();
     }
 

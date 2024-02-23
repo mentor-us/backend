@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -11,39 +12,53 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessag
 import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReactionResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
+import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
-import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
+
+/**
+ * {@inheritDoc}
+ */
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
+    private final Logger logger = LogManager.getLogger(MessageServiceImpl.class);
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
     private final MeetingRepository meetingRepository;
     private final TaskRepository taskRepository;
     private final VoteRepository voteRepository;
-    private final SocketIOService socketIOService;
     private final UserRepository userRepository;
+    private final SocketIOService socketIOService;
     private final NotificationService notificationService;
-    private final TaskServiceImpl taskService;
     private final BlobStorage blobStorage;
+    private final NotificationRepository notificationRepository;
 
     /**
      * {@inheritDoc}
@@ -139,8 +154,8 @@ public class MessageServiceImpl implements MessageService {
             return;
         }
 
-        Emoji.Type emoji = Emoji.Type.valueOf(request.getEmojiId());
-        Reaction newReaction = message.react(request.getSenderId(), emoji);
+        EmojiType emoji = EmojiType.valueOf(request.getEmojiId());
+        ReactionDto newReaction = message.react(request.getSenderId(), emoji);
         messageRepository.save(message);
 
         pingGroup(message.getGroupId());
@@ -181,7 +196,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message) {
-        List<Emoji> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
+        List<EmojiDto> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
         int total = MessageDetailResponse.calculateTotalReactionAmount(message.getReactions());
         return MessageDetailResponse.TotalReaction.builder()
                 .data(data)
@@ -298,8 +313,8 @@ public class MessageServiceImpl implements MessageService {
         List<String> userIds =
                 messages.stream()
                         .flatMap(response -> response.getReactions().stream())
-                        .map(Reaction::getUserId)
-                        .collect(Collectors.toList());
+                        .map(ReactionDto::getUserId)
+                        .toList();
         Map<String, User> reactors =
                 userRepository.findByIdIn(userIds).stream()
                         .collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
@@ -309,7 +324,7 @@ public class MessageServiceImpl implements MessageService {
                 .filter(message -> !message.isDeletedAttach())
                 .map(message -> fulfillReactions(message, reactors))
                 .map(message -> MessageDetailResponse.totalReaction(message, viewerId))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -359,12 +374,12 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageDetailResponse fulfillTaskMessage(MessageResponse message) {
         Optional<Task> taskWrapper = taskRepository.findById(message.getTaskId());
-        if (!taskWrapper.isPresent()) {
+        if (taskWrapper.isEmpty()) {
             return null;
         }
         TaskMessageResponse taskDetail = TaskMessageResponse.from(taskWrapper.get());
 
-        List<TaskAssigneeResponse> assignees = taskService.getTaskAssignees(taskDetail.getId());
+        List<TaskAssigneeResponse> assignees = getTaskAssignees(taskDetail.getId());
         taskDetail.setAssignees(assignees);
         return MessageDetailResponse.from(message, taskDetail);
     }
@@ -373,9 +388,9 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
-    public Reaction fulfillReaction(Reaction reaction, User reactor) {
+    public ReactionDto fulfillReaction(ReactionDto reaction, User reactor) {
         if (reactor == null) {
-            return new Reaction();
+            return new ReactionDto();
         }
         reaction.update(reactor);
         return reaction;
@@ -384,21 +399,19 @@ public class MessageServiceImpl implements MessageService {
     private MessageDetailResponse fulfillReactions(
             MessageDetailResponse message,
             Map<String, User> reactors) {
-        List<Reaction> reactions =
-                message.getReactions().stream()
-                        .map(
-                                reaction -> {
-                                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
-                                    return fulfillReaction(reaction, reactor);
-                                })
-                        .filter(reaction -> reaction.getUserId() != null)
-                        .collect(Collectors.toList());
+        List<ReactionDto> reactions = message.getReactions().stream()
+                .map(reaction -> {
+                    User reactor = reactors.getOrDefault(reaction.getUserId(), null);
+                    return fulfillReaction(reaction, reactor);
+                })
+                .filter(reaction -> reaction.getUserId() != null)
+                .toList();
         message.setReactions(reactions);
         return message;
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        if(message.getType() == Message.Type.FORWARD)
+        if (message.getType() == FORWARD)
             message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);
@@ -452,29 +465,108 @@ public class MessageServiceImpl implements MessageService {
 
 
     /**
+     * Only forward message type TEXT
      * @param userId  String
      * @param request ForwardRequest
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
-        List<Channel> channels = channelRepository.findByIdIn(request.getChannelIds());
-        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
+        // check message
 
+        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
         if (message == null) {
-            throw new RuntimeException("Message not found");
+            throw new DomainException("Message not found");
         }
-        List<Message> messages = new ArrayList<>();
-        channels.forEach(ch -> {
-            Message m = Message.builder()
-                    .senderId(userId)
-                    .groupId(ch.getParentId())
-                    .createdDate(new Date())
-                    .type(Message.Type.FORWARD)
-                    .content(message.getContent())
-                    .reply(message.getReply())
-                    .build();
-            messages.add(messageRepository.save(m));
-        });
-        return messages;
+
+        if(message.getType()!= Message.Type.TEXT){
+            throw new DomainException("Message type is not TEXT");
+        }
+
+        // Todo: check message content
+        if(message.getContent() == null ){
+            throw new DomainException("Message content is null");
+        }
+
+
+        // check user
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            throw new DomainException("User not found");
+        }
+
+        // get list channels can forward
+        var channelIds = new ArrayList<>(channelRepository.findByIdIn(request.getChannelIds()).stream().map(Channel::getId).toList());
+
+        // add general channel
+        groupRepository.findByIdIn(request.getChannelIds()).forEach(g -> channelIds.add(g.getId()));
+
+        try {
+            List<Message> messages = new ArrayList<>();
+            channelIds.forEach(cId -> {
+                Message m = Message.builder()
+                        .senderId(userId)
+                        .groupId(cId)
+                        .createdDate(new Date())
+                        .type(FORWARD)
+                        .content(message.getContent())
+                        .reply(message.getReply()).build();
+
+                logger.debug("Forward message: ", m.toString());
+                messages.add(messageRepository.save(m));
+                pingGroup(cId);
+            });
+            messages.forEach(m -> {
+                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getGroupId());
+                socketIOService.sendForwardMessage(MessageDetailResponse.from(m, user), m.getGroupId());
+            });
+            return messages;
+        } catch (Exception e) {
+            throw new DomainException("Forward message failed");
+        }
+    }
+
+    @Override
+    public boolean updateCreatedDateVoteMessage(String voteId) {
+        var messageOpt = messageRepository.findByVoteId(voteId);
+        if (messageOpt.isEmpty()) {
+            return false;
+        }
+        var message = messageOpt.get();
+
+        message.setCreatedDate(new Date());
+        messageRepository.save(message);
+
+        return true;
+    }
+
+    private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Task task = taskOpt.get();
+
+        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
+        if (groupOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Group group = groupOpt.get();
+
+        List<String> assigneeIds = task.getAssigneeIds().stream()
+                .map(AssigneeDto::getUserId).toList();
+
+        List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
+
+        Map<String, TaskStatus> statuses = task.getAssigneeIds().stream()
+                .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+
+        return assignees.stream()
+                .map(assignee -> {
+                    TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
+                    boolean isMentor = group.isMentor(assignee.getId());
+                    return TaskAssigneeResponse.from(assignee, status, isMentor);
+                })
+                .toList();
     }
 }

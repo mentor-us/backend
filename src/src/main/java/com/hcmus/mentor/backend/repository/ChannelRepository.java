@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.Channel;
 
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ChannelRepository extends MongoRepository<Channel, String> {
@@ -11,7 +12,7 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
     List<Channel> findByIdIn(List<String> channelIds);
 
     List<Channel> findByParentIdAndTypeAndUserIdsIn(
-            String parentId, Channel.Type type, List<String> userIds);
+            String parentId, ChannelType type, List<String> userIds);
 
     List<Channel> findByParentId(String parentId);
 

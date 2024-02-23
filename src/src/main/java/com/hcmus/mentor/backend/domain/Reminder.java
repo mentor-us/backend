@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -28,8 +29,4 @@ public class Reminder {
     @Builder.Default
     private Map<String, Object> properties = new HashMap<>();
 
-    public enum ReminderType {
-        TASK,
-        MEETING
-    }
 }

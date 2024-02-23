@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
-import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.controller.payload.APIResponse;
+import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
@@ -9,446 +8,275 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeRe
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode;
+import com.hcmus.mentor.backend.domain.Task;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Task APIs", description = "REST APIs for Task collections")
+/**
+ * Task controller.
+ */
+@Tag(name = "task")
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("api/tasks")
 @SecurityRequirement(name = "bearer")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskServiceImpl taskService;
 
-    public TaskController(TaskServiceImpl taskService) {
-        this.taskService = taskService;
-    }
-
-    @Operation(
-            summary = "Retrieve task data",
-            description = "Retrieve fully information of task",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @GetMapping(value = "/{id}")
-    public APIResponse<TaskDetailResponse> get(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+    /**
+     * Retrieve fully detailed information of a task.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to retrieve.
+     * @return APIResponse containing the detailed information of the task or an error response.
+     */
+    @GetMapping(value = "{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<TaskDetailResponse> get(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTask(emailUser, id);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Add new task",
-            description = "Create new task in a group",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Add successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @PostMapping(value = "")
-    public APIResponse<Task> add(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Add a new task to a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param request       The request object containing information about the new task.
+     * @return APIResponse containing the added task or an error response.
+     */
+    @PostMapping("")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Task> add(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody AddTaskRequest request) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.addTask(emailUser, request);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Update an existing task",
-            description = "Update an existing task with new information",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @PatchMapping(value = "/{id}")
-    public APIResponse<Task> update(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Update an existing task with new information.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to update.
+     * @param request       The request object containing the updated information for the task.
+     * @return APIResponse containing the updated task or an error response.
+     */
+    @PatchMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Task> update(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody UpdateTaskRequest request) {
-        String emailUser = userPrincipal.getEmail();
-        TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(userPrincipal, id, request);
-        return new APIResponse(
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(customerUserDetails, id, request);
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Mentee update status of task",
-            description = "Assignees can update status of their own assigned task",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Update status successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @PatchMapping(value = "/{id}/{status}")
-    public APIResponse<Task> updateStatus(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Mentee update status of a task.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to update the status.
+     * @param status        The new status for the task.
+     * @return APIResponse containing the updated task or an error response.
+     */
+    @PatchMapping("{id}/{status}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Task> updateStatus(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
-            @PathVariable Task.Status status) {
-        String emailUser = userPrincipal.getEmail();
+            @PathVariable TaskStatus status) {
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.updateStatus(emailUser, id, status);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Mentor update status",
-            description = "Mentor can update status of any task in group",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @PatchMapping(value = "/mentor/{id}/status")
-    public APIResponse<Task> updateStatusByMentor(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Mentor update status of any task in a group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to update the status.
+     * @param request       The request object containing the updated status for the task.
+     * @return APIResponse containing the updated task or an error response.
+     */
+    @PatchMapping("mentor/{id}/status")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<Task> updateStatusByMentor(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
             @RequestBody UpdateStatusByMentorRequest request) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn =
                 taskService.updateStatusByMentor(emailUser, id, request);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Delete an existing task (Only mentor)",
-            description = "Only mentors can have permission to delete a task on system",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Delete successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @DeleteMapping(value = "/{id}")
-    public APIResponse delete(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
-        TaskServiceImpl.TaskReturnService taskReturn = taskService.deleteTask(userPrincipal, id);
-        return new APIResponse(
+    /**
+     * Delete an existing task (Only mentor).
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to delete.
+     * @return APIResponse containing the result of the delete operation or an error response.
+     */
+    @DeleteMapping("{id}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto delete(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.deleteTask(customerUserDetails, id);
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Retrieve all tasks of a group (mentor and mentee in group)",
-            description = "",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @GetMapping(value = "/group/{groupId}")
-    public APIResponse<List<TaskDetailResponse>> getByGroupId(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Retrieve all tasks of a group (mentor and mentee in group).
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param groupId       The ID of the group for which tasks are retrieved.
+     * @return APIResponse containing a list of task details or an error response.
+     */
+    @GetMapping("group/{groupId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskDetailResponse>> getByGroupId(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
-        String emailUser = userPrincipal.getEmail();
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByGroupId(emailUser, groupId);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Retrieve all tasks of user",
-            description = "Retrieve all tasks has been assigned to user through by user id",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Retrieve successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_GROUP_STRING,
-                    description = "Not found group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_PARENT_TASK_STRING,
-                    description = "Not found parent task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_USER_IN_GROUP_STRING,
-                    description = "Not found user in group"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_ENOUGH_FIELDS_STRING,
-                    description = "Not enough required field input")
-    })
-    @GetMapping(value = "/user")
-    public APIResponse<List<TaskDetailResponse>> getByUserId(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal) {
-        String emailUser = userPrincipal.getEmail();
+    /**
+     * Retrieve all tasks assigned to a user.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @return APIResponse containing a list of task details or an error response.
+     */
+    @GetMapping("user")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskDetailResponse>> getByUserId(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByEmailUser(emailUser);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(summary = "Get task assigner", description = "Get task's assigner", tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get task's assigner successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-    })
-    @GetMapping(value = "/{id}/assigner")
-    public APIResponse<ProfileResponse> getAssigner(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+    /**
+     * Get the assigner of a task.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to get the assigner.
+     * @return APIResponse containing the profile of the task's assigner or an error response.
+     */
+    @GetMapping("{id}/assigner")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<ProfileResponse> getAssigner(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTaskAssigner(emailUser, id);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(summary = "Get task assigner", description = "Get task's assigner", tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get task's assigner successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-    })
-    @GetMapping(value = "/{id}/assignees")
-    public APIResponse<List<TaskAssigneeResponse>> getAssignees(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @PathVariable String id) {
-        String emailUser = userPrincipal.getEmail();
+    /**
+     * Get the assignees of a task.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param id            The ID of the task to get the assignees.
+     * @return APIResponse containing a list of task assignees or an error response.
+     */
+    @GetMapping("{id}/assignees")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskAssigneeResponse>> getAssignees(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
+        String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTaskAssigneesWrapper(emailUser, id);
-        return new APIResponse(
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Get your own tasks",
-            description = "Get all tasks that I assigned and have been assigned to me",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-    })
-    @GetMapping(value = "/own")
-    public APIResponse<List<TaskResponse>> getAllOwnTask(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Get all tasks assigned and owned by the current user.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param groupId       The ID of the group to filter tasks.
+     * @return APIResponse containing a list of task responses or an error response.
+     */
+    @GetMapping("own")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskResponse>> getAllOwnTask(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
         TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.getAllOwnTasks(groupId, userPrincipal.getId());
-        return new APIResponse(
+                taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Get your assigned tasks",
-            description = "Get all tasks have been assigned to me",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-    })
-    @GetMapping(value = "/assigned")
-    public APIResponse<List<TaskResponse>> getAllOwnAssignedTask(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Get all tasks assigned to the current user.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param groupId       The ID of the group to filter tasks.
+     * @return APIResponse containing a list of task responses or an error response.
+     */
+    @GetMapping("assigned")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskResponse>> getAllOwnAssignedTask(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
         TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.wrapOwnAssignedTasks(groupId, userPrincipal.getId());
-        return new APIResponse(
+                taskService.wrapOwnAssignedTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
-    @Operation(
-            summary = "Get tasks that you assigned to someone",
-            description = "Get all tasks that I assigned to someone",
-            tags = "Task APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Get successfully",
-                    content =
-                    @Content(array = @ArraySchema(schema = @Schema(implementation = APIResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Need authentication"),
-            @ApiResponse(
-                    responseCode = TaskReturnCode.NOT_FOUND_TASK_STRING,
-                    description = "Not found task"),
-    })
-    @GetMapping(value = "/assigning")
-    public APIResponse<List<TaskResponse>> getAllOwnAssignedByMeTask(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+    /**
+     * Get all tasks assigned by the current user to others.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param groupId       The ID of the group to filter tasks.
+     * @return APIResponse containing a list of task responses or an error response.
+     */
+    @GetMapping("assigning")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ApiResponseDto<List<TaskResponse>> getAllOwnAssignedByMeTask(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
         TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.wrapAssignedByMeTasks(groupId, userPrincipal.getId());
-        return new APIResponse(
+                taskService.wrapAssignedByMeTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 }

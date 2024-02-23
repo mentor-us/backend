@@ -1,11 +1,12 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.List;
 
@@ -16,22 +17,22 @@ public interface VoteService {
 
     VoteDetailResponse fulfillChoices(Vote vote);
 
-    VoteDetailResponse.ChoiceDetail fulfillChoice(Vote.Choice choice);
+    VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice);
 
     Vote createNewVote(String userId, CreateVoteRequest request);
 
-    boolean updateVote(UserPrincipal user, String voteId, UpdateVoteRequest request);
+    boolean updateVote(CustomerUserDetails user, String voteId, UpdateVoteRequest request);
 
-    boolean deleteVote(UserPrincipal user, String voteId);
+    boolean deleteVote(CustomerUserDetails user, String voteId);
 
     Vote doVoting(DoVotingRequest request);
 
     VoteDetailResponse.ChoiceDetail getChoiceDetail(
-            UserPrincipal user, String voteId, String choiceId);
+            CustomerUserDetails user, String voteId, String choiceId);
 
-    List<VoteDetailResponse.ChoiceDetail> getChoiceResults(UserPrincipal user, String voteId);
+    List<VoteDetailResponse.ChoiceDetail> getChoiceResults(CustomerUserDetails user, String voteId);
 
-    boolean closeVote(UserPrincipal user, String voteId);
+    boolean closeVote(CustomerUserDetails user, String voteId);
 
-    boolean reopenVote(UserPrincipal user, String voteId);
+    boolean reopenVote(CustomerUserDetails user, String voteId);
 }

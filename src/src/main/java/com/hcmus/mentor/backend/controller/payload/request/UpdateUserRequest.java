@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -23,5 +23,5 @@ public class UpdateUserRequest {
     private String personalEmail;
 
     @Size(min = 0, max = 1)
-    private User.Gender gender;
+    private UserGender gender;
 }

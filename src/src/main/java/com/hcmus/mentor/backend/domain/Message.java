@@ -2,6 +2,8 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.TextIndexed;
@@ -11,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -42,8 +43,12 @@ public class Message {
 
     private String taskId;
 
+    private Boolean isEdited = false;
+
+    private Date editedAt = null;
+
     @Builder.Default
-    private List<Reaction> reactions = new ArrayList<>();
+    private List<ReactionDto> reactions = new ArrayList<>();
 
     @Builder.Default
     private List<String> images = new ArrayList<>();
@@ -57,32 +62,34 @@ public class Message {
 
     private String reply;
 
-    public Reaction react(String userId, Emoji.Type emoji) {
-        Optional<Reaction> reactionWrapper =
+    public ReactionDto react(String userId, EmojiType emoji) {
+        Optional<ReactionDto> reactionWrapper =
                 reactions.stream().filter(r -> r.getUserId().equals(userId)).findFirst();
         if (!reactionWrapper.isPresent()) {
-            Reaction newReaction = Reaction.builder().userId(userId).total(0).build();
+            ReactionDto newReaction = ReactionDto.builder().userId(userId).total(0).build();
             newReaction.react(emoji);
             reactions.add(newReaction);
             return newReaction;
         }
-        Reaction reaction = reactionWrapper.get();
+        ReactionDto reaction = reactionWrapper.get();
         reaction.react(emoji);
         setReactions(reactions);
         return reaction;
     }
 
     public void removeReact(String userId) {
-        List<Reaction> filteredReactions =
+        List<ReactionDto> filteredReactions =
                 reactions.stream()
                         .filter(reaction -> !reaction.getUserId().equals(userId))
-                        .collect(Collectors.toList());
+                        .toList();
         setReactions(filteredReactions);
     }
 
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
+        setEditedAt(new Date());
+        setIsEdited(true);
     }
 
     public void delete() {

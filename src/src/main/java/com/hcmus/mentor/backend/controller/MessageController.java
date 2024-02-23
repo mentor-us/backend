@@ -14,20 +14,14 @@ import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.security.CurrentUser;
-import com.hcmus.mentor.backend.security.UserPrincipal;
+import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
-import io.minio.errors.*;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,8 +33,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,17 +65,15 @@ public class MessageController {
      * @param size    Required page size (amount of items returned at a time).
      * @return ResponseEntity with a list of message details.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @GetMapping(value = {""})
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<MessageDetailResponse>> getGroupMessages(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String groupId,
             @RequestParam int page,
             @RequestParam int size) {
-        String userId = userPrincipal.getId();
+        String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -96,13 +86,12 @@ public class MessageController {
      * @param messageId The ID of the message to be deleted.
      * @return ResponseEntity indicating success or failure.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @DeleteMapping("{messageId}")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "404", description = "Message not found")
     public ResponseEntity<Void> deleteMessage(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String messageId) {
         Optional<Message> messageWrapper = messageRepository.findById(messageId);
         if (messageWrapper.isEmpty()) {
@@ -122,14 +111,14 @@ public class MessageController {
             channelRepository.save(channel);
         } else {
             Group group = groupWrapper.get();
-            if (!group.isMember(userPrincipal.getId())) {
+            if (!group.isMember(customerUserDetails.getId())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             group.unpinMessage(message.getId());
             groupRepository.save(group);
         }
 
-        if (!userPrincipal.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSenderId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (message.isDeleted()) {
@@ -154,23 +143,21 @@ public class MessageController {
      * @param request The request containing information for editing the message.
      * @return ResponseEntity indicating success or failure.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @PostMapping("edit")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> editMessage(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody EditMessageRequest request) {
         Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
         if (!messageWrapper.isPresent()) {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), userPrincipal.getId())) {
+        if (!groupService.isGroupMember(message.getGroupId(), customerUserDetails.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (!userPrincipal.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSenderId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -197,22 +184,19 @@ public class MessageController {
      * @param file     The file being sent.
      * @return ResponseEntity with the URL of the sent file.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @PostMapping(value = "file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> sendFile(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String id,
             @RequestParam String groupId,
             @RequestParam String senderId,
-            @RequestPart(required = false) MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+            @RequestPart(required = false) MultipartFile file) {
         SendFileRequest request = SendFileRequest.builder()
                 .id(id)
                 .groupId(groupId)
-                .senderId(userPrincipal.getId())
+                .senderId(customerUserDetails.getId())
                 .file(file)
                 .build();
         Message message = messageService.saveFileMessage(request);
@@ -234,18 +218,16 @@ public class MessageController {
      * @param size    Required page size (amount of items returned at a time).
      * @return ResponseEntity with a list of message responses.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @GetMapping("find")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<MessageResponse>> findGroupMessages(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String groupId,
             @RequestParam String query,
             @RequestParam int page,
             @RequestParam int size) {
-        String userId = userPrincipal.getId();
+        String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -261,22 +243,19 @@ public class MessageController {
      * @param files    The array of image files being sent.
      * @return ResponseEntity indicating success or failure.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> sendImages(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String id,
             @RequestParam String groupId,
             @RequestParam String senderId,
-            @RequestPart(required = false) MultipartFile[] files)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+            @RequestPart(required = false) MultipartFile[] files) {
         SendImagesRequest request = SendImagesRequest.builder()
                 .id(id)
                 .groupId(groupId)
-                .senderId(userPrincipal.getId())
+                .senderId(customerUserDetails.getId())
                 .files(files)
                 .build();
         Message message = messageService.saveImageMessage(request);
@@ -296,10 +275,8 @@ public class MessageController {
      * @return A ResponseEntity indicating the success of the operation.
      */
     @PostMapping("mention")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> mentionUser(
             @RequestBody MentionUserCommand command) {
         var message = messageService.find(command.getMessageId());
@@ -322,13 +299,11 @@ public class MessageController {
      * @param request The request containing reaction details.
      * @return ResponseEntity indicating success or failure.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @PostMapping("react")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> react(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody @Valid ReactMessageRequest request) {
         messageService.reactMessage(request);
 
@@ -342,44 +317,31 @@ public class MessageController {
      * @param senderId  The ID of the sender whose reactions will be removed.
      * @return ResponseEntity indicating success or failure.
      */
-    @ApiResponses({
-            @ApiResponse(responseCode = "200"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
     @DeleteMapping("react")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> removeReact(
-            @Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String messageId,
             @RequestParam String senderId) {
         messageService.removeReaction(messageId, senderId);
         return ResponseEntity.ok().build();
     }
 
-    @Operation(
-            summary = "Forward message",
-            description = "Forward a message to another group",
-            tags = "Message APIs")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Forward successfully",
-                    content =
-                    @Content(
-                            array = @ArraySchema(schema = @Schema(implementation = ResponseEntity.class)))),
-            @ApiResponse(responseCode = "400", description = "Bad request"),
-            @ApiResponse(responseCode = "401", description = "Need authentication")
-    })
-    @PostMapping("/forward")
-    public ResponseEntity<Void> forwardMessage(@Parameter(hidden = true) @CurrentUser UserPrincipal userPrincipal, @RequestBody ForwardRequest request) {
-        List<Message> messages = messageService.saveForwardMessage(userPrincipal.getId(), request);
-//        messages.forEach(message -> {
-//            User sender = userRepository.findById(message.getSenderId()).orElse(null);
-//            MessageDetailResponse response = MessageDetailResponse.from(message, sender);
-//
-////            socketIOService.sendMessage(socketServer.getClient(message.getSenderId()), response, message.getGroupId());
-////            notificationService.sendNewMessageNotification(response);
-//            groupService.updateLastMessageId(message.getGroupId(), message.getId());
-//        });
+    /**
+     * Forward a message to another group.
+     *
+     * @param customerUserDetails The current user's principal information.
+     * @param request             The request payload for forwarding the message.
+     * @return ResponseEntity indicating the success of the forward operation.
+     */
+    @PostMapping("forward")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<Void> forwardMessage(
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+            @RequestBody ForwardRequest request) {
+        messageService.saveForwardMessage(customerUserDetails.getId(), request);
         return ResponseEntity.ok().build();
     }
 }

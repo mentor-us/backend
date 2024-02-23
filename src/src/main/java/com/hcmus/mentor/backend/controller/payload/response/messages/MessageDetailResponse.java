@@ -8,6 +8,8 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
 @Getter
@@ -27,6 +29,10 @@ public class MessageDetailResponse {
 
     private Message.Type type;
 
+    private Boolean isEdited;
+
+    private Date editedAt;
+
     private String groupId;
 
     private Vote vote;
@@ -35,7 +41,7 @@ public class MessageDetailResponse {
 
     private TaskMessageResponse task;
 
-    private List<Reaction> reactions;
+    private List<ReactionDto> reactions;
 
     private TotalReaction totalReaction;
 
@@ -63,6 +69,8 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .editedAt(message.getEditedAt())
+                .isEdited(message.getIsEdited())
                 .build();
     }
 
@@ -70,7 +78,7 @@ public class MessageDetailResponse {
         if (imageUrls == null) {
             return Collections.emptyList();
         }
-        return imageUrls.stream().map(Image::new).collect(Collectors.toList());
+        return imageUrls.stream().map(Image::new).toList();
     }
 
     public static MessageDetailResponse from(MessageResponse message) {
@@ -85,6 +93,8 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .editedAt(message.getEditedAt())
+                .isEdited(message.getIsEdited())
                 .build();
     }
 
@@ -143,7 +153,7 @@ public class MessageDetailResponse {
                 && ("https://graph.microsoft.com/v1.0/me/photo/$value").equals(profile.getImageUrl())) {
             profile.setImageUrl(null);
         }
-        List<Reaction> reactions = message.getReactions();
+        List<ReactionDto> reactions = message.getReactions();
         if (reactions == null) {
             reactions = new ArrayList<>();
         }
@@ -182,27 +192,27 @@ public class MessageDetailResponse {
         return response;
     }
 
-    public static List<Emoji> generateTotalReactionData(List<Reaction> reactions) {
+    public static List<EmojiDto> generateTotalReactionData(List<ReactionDto> reactions) {
         return reactions.stream()
                 .flatMap(reaction -> reaction.getData().stream())
-                .collect(Collectors.groupingBy(Emoji::getId, Collectors.summingInt(Emoji::getTotal)))
+                .collect(Collectors.groupingBy(EmojiDto::getId, Collectors.summingInt(EmojiDto::getTotal)))
                 .entrySet()
                 .stream()
-                .map(entry -> new Emoji(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(Emoji::getTotal).reversed())
-                .collect(Collectors.toList());
+                .map(entry -> new EmojiDto(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
+                .toList();
     }
 
-    public static List<Emoji> generateOwnerReacted(List<Reaction> reactions, String viewerId) {
+    public static List<EmojiDto> generateOwnerReacted(List<ReactionDto> reactions, String viewerId) {
         return reactions.stream()
                 .filter(reaction -> reaction.getUserId().equals(viewerId))
                 .flatMap(reaction -> reaction.getData().stream())
-                .sorted(Comparator.comparing(Emoji::getTotal).reversed())
-                .collect(Collectors.toList());
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
+                .toList();
     }
 
-    public static Integer calculateTotalReactionAmount(List<Reaction> reactions) {
-        return reactions.stream().map(Reaction::getTotal).reduce(0, Integer::sum);
+    public static Integer calculateTotalReactionAmount(List<ReactionDto> reactions) {
+        return reactions.stream().map(ReactionDto::getTotal).reduce(0, Integer::sum);
     }
 
     public boolean isDeletedAttach() {
@@ -253,10 +263,10 @@ public class MessageDetailResponse {
     public static class TotalReaction {
 
         @Builder.Default
-        private List<Emoji> data = new ArrayList<>();
+        private List<EmojiDto> data = new ArrayList<>();
 
         @Builder.Default
-        private List<Emoji> ownerReacted = new ArrayList<>();
+        private List<EmojiDto> ownerReacted = new ArrayList<>();
 
         @Builder.Default
         private int total = 0;

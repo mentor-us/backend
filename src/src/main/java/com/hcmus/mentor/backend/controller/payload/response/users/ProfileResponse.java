@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.users;
 
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,7 +31,7 @@ public class ProfileResponse implements Serializable {
 
     private String personalEmail;
 
-    private User.Gender gender;
+    private UserGender gender;
 
     private String imageUrl;
 

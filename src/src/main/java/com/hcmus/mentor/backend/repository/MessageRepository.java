@@ -21,6 +21,8 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
 
+    Optional<Message> findByVoteId(String voteId);
+
     @Aggregation(
             pipeline = {
                     "{$match: {groupId: ?0}}",

@@ -1,0 +1,37 @@
+server-socket:
+  host: 0.0.0.0
+  port: 8085
+
+server:
+  tomcat:
+    relaxed-query-chars: [ "{", "}" ]
+  forward-headers-strategy: framework
+
+springdoc:
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha
+  show-actuator: true
+
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "op://mentorus/backend-common/wcjkfeqqs5msdj2eehtcj3ji6u/username"
+    password: "op://mentorus/backend-common/wcjkfeqqs5msdj2eehtcj3ji6u/password"
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com

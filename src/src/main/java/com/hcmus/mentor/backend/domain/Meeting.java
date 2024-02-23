@@ -1,9 +1,11 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
+import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
+import com.hcmus.mentor.backend.domain.constant.ReminderType;
+import com.hcmus.mentor.backend.domain.method.IRemindable;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.data.annotation.Id;
@@ -34,7 +36,7 @@ public class Meeting implements IRemindable, Serializable {
 
     private Date timeEnd;
 
-    private Repeated repeated;
+    private MeetingRepeated repeated;
 
     private String place;
 
@@ -71,7 +73,7 @@ public class Meeting implements IRemindable, Serializable {
         return Reminder.builder()
                 .groupId(groupId)
                 .name(title)
-                .type(Reminder.ReminderType.MEETING)
+                .type(ReminderType.MEETING)
                 .reminderDate(getReminderDate())
                 .properties(properties)
                 .remindableId(id)
@@ -144,14 +146,6 @@ public class Meeting implements IRemindable, Serializable {
         timeStart = request.getTimeStart();
         timeEnd = request.getTimeEnd();
         place = request.getPlace();
-    }
-
-    public enum Repeated {
-        NONE,
-        ONCE_A_WEEK,
-        ONCE_TWO_WEEKS,
-        ONCE_A_MONTH,
-        EVERY_DAY
     }
 
     @Getter

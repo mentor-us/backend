@@ -1,23 +1,22 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.domain.*;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.Map;
-
-import org.springframework.scheduling.annotation.Async;
 
 public interface NotificationService {
     Map<String, Object> getOwnNotifications(String userId, int page, int size);
 
-    Notif createResponseNotification(String senderId, AddNotificationRequest request);
+    Notification createResponseNotification(String senderId, AddNotificationRequest request);
 
-    Notif responseNotification(String userId, String notificationId, String action);
+    Notification responseNotification(String userId, String notificationId, String action);
 
     void subscribeNotification(SubscribeNotificationRequest request);
 
@@ -29,19 +28,19 @@ public interface NotificationService {
     @Async
     void sendNewTaskNotification(MessageDetailResponse message);
 
-    Notif createNewTaskNotification(
+    Notification createNewTaskNotification(
             String title, String content, String senderId, TaskMessageResponse task);
 
     @Async
     void sendNewMeetingNotification(MessageDetailResponse message);
 
-    Notif createNewMeetingNotification(
+    Notification createNewMeetingNotification(
             String title, String content, String senderId, Meeting meeting);
 
     @Async
     void sendNewMediaMessageNotification(MessageDetailResponse message);
 
-    Notif createNewMediaNotification(String title, String content, String senderId, Group group);
+    Notification createNewMediaNotification(String title, String content, String senderId, Group group);
 
     @Async
     void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId);
@@ -50,7 +49,7 @@ public interface NotificationService {
     void sendRescheduleMeetingNotification(
             String modifierId, Meeting meeting, RescheduleMeetingRequest request);
 
-    Notif createRescheduleMeetingNotification(
+    Notification createRescheduleMeetingNotification(
             String title, String content, String senderId, Group group, Meeting meeting);
 
     long getUnreadNumber(String userId);
@@ -58,10 +57,15 @@ public interface NotificationService {
     @Async
     void sendNewVoteNotification(String creatorId, Vote vote);
 
-    Notif createNewVoteNotification(
+    Notification createNewVoteNotification(
             String title, String content, String senderId, Group group, Vote vote);
 
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 
     void sendNewUnpinNotification(MessageDetailResponse message, User pinner);
+
+    @Async
+    Notification createForwardNotification(String title, String content, String senderId, Group group);
+
+    void sendForwardNotification(MessageDetailResponse message, String groupIds);
 }

@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.domain.Task;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -54,8 +55,8 @@ public interface TaskRepository extends MongoRepository<Task, String> {
 
     List<Task> findAllByGroupId(String groupId);
 
-    long countByGroupIdAndAssigneeIdsStatusIn(String groupId, Task.Status status);
+    long countByGroupIdAndAssigneeIdsStatusIn(String groupId, TaskStatus status);
 
     long countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
-            String groupId, String assigneeId, Task.Status status);
+            String groupId, String assigneeId, TaskStatus status);
 }

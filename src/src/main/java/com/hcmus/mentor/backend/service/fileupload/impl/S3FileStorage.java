@@ -11,6 +11,7 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -80,14 +81,15 @@ public class S3FileStorage implements BlobStorage {
     @SneakyThrows
     @Override
     public void post(MultipartFile file, String key) {
+        var tika = new Tika();
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucket)
                         .object(key)
-                        .contentType(file.getContentType())
+                        .contentType(tika.detect(file.getInputStream()))
                         .stream(file.getInputStream(), file.getSize(), -1)
                         .build());
-        logger.log(Level.INFO, "File {} is uploaded successfully", key);
+       logger.log(Level.INFO, "[*] File {} is uploaded successfully", key);
     }
 
     /**

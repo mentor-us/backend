@@ -1,15 +1,16 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
+import com.hcmus.mentor.backend.domain.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 
@@ -48,7 +49,7 @@ public class GroupDetailResponse {
 
     private String imageUrl;
 
-    private List<GroupCategory.Permission> permissions;
+    private List<GroupCategoryPermission> permissions;
 
     private List<String> pinnedMessageIds;
 
@@ -62,7 +63,7 @@ public class GroupDetailResponse {
 
     private String parentId;
 
-    private Channel.Type type = Channel.Type.PUBLIC;
+    private ChannelType type = ChannelType.PUBLIC;
 
     public GroupDetailResponse(Group group) {
         this.id = group.getId();
@@ -101,7 +102,7 @@ public class GroupDetailResponse {
         this.isPinned = isPinned;
     }
 
-    public void removePermission(GroupCategory.Permission permission) {
+    public void removePermission(GroupCategoryPermission permission) {
         if (!permissions.contains(permission)) {
             return;
         }
@@ -133,10 +134,10 @@ public class GroupDetailResponse {
         private List<String> userIds = new ArrayList<>();
 
         @Builder.Default
-        private Channel.Status status = Channel.Status.ACTIVE;
+        private ChannelStatus status = ChannelStatus.ACTIVE;
 
         @Builder.Default
-        private Channel.Type type = Channel.Type.PUBLIC;
+        private ChannelType type = ChannelType.PUBLIC;
 
         private String creatorId;
 

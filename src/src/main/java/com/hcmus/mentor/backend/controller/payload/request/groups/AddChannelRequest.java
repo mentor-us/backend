@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.groups;
 
-import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import lombok.*;
 
 import java.util.List;
@@ -15,7 +15,7 @@ public class AddChannelRequest {
 
     private String description;
 
-    private Channel.Type type;
+    private ChannelType type;
 
     private String groupId;
 

@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -36,10 +38,10 @@ public class Channel {
     private List<String> userIds = new ArrayList<>();
 
     @Builder.Default
-    private Status status = Status.ACTIVE;
+    private ChannelStatus status = ChannelStatus.ACTIVE;
 
     @Builder.Default
-    private Type type = Type.PUBLIC;
+    private ChannelType type = ChannelType.PUBLIC;
 
     private String creatorId;
 
@@ -97,17 +99,4 @@ public class Channel {
         updatedDate = new Date();
     }
 
-    public enum Status {
-        ACTIVE,
-        DISABLED,
-        OUTDATED,
-        INACTIVE,
-        DELETED
-    }
-
-    public enum Type {
-        PUBLIC,
-        PRIVATE,
-        PRIVATE_MESSAGE
-    }
 }

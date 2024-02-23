@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response.votes;
 
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 
@@ -64,7 +65,7 @@ public class VoteDetailResponse {
 
         private List<ShortProfile> voters;
 
-        public static ChoiceDetail from(Vote.Choice choice, List<ShortProfile> voters) {
+        public static ChoiceDetail from(ChoiceDto choice, List<ShortProfile> voters) {
             return ChoiceDetail.builder()
                     .id(choice.getId())
                     .name(choice.getName())

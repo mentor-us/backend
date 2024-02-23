@@ -1,0 +1,16 @@
+---
+spring:
+  profiles:
+    active: local
+    include: common, local
+---
+spring:
+  profiles:
+    active: dev
+    include: common, dev
+---
+spring:
+  profiles:
+    active: prod
+    include: common, prod
+---
