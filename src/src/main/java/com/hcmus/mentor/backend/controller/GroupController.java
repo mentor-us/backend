@@ -672,8 +672,8 @@ public class GroupController {
      * @param file                  The multipart file containing the new avatar.
      * @return APIResponse containing the updated avatar information.
      */
-    @PostMapping(value = "{groupId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @SneakyThrows
+    @PostMapping(value = "{groupId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @ApiResponse(responseCode = "403", description = "Forbidden")

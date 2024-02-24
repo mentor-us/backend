@@ -125,8 +125,7 @@ public class GroupServiceImpl implements GroupService {
                     String role = group.isMentee(userId) ? "MENTEE" : "MENTOR";
                     GroupCategory category = categories.get(group.getGroupCategory());
                     String lastMessage = messageService.getLastGroupMessage(group.getId());
-                    GroupHomepageResponse response =
-                            new GroupHomepageResponse(group, category.getName(), role);
+                    GroupHomepageResponse response = new GroupHomepageResponse(group, category.getName(), role);
                     response.setNewMessage(lastMessage);
                     return response;
                 })
