@@ -1,26 +1,29 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.*;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.dto.EventDto;
-import io.minio.errors.*;
+import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,9 +49,6 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
@@ -667,29 +667,22 @@ public class GroupController {
     /**
      * Update the avatar of a group for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which the avatar is updated.
-     * @param file          The multipart file containing the new avatar.
+     * @param customerUserDetails   The current user's principal information.
+     * @param groupId               The ID of the group for which the avatar is updated.
+     * @param file                  The multipart file containing the new avatar.
      * @return APIResponse containing the updated avatar information.
-     * @throws GeneralSecurityException  If a security exception occurs during the process.
-     * @throws IOException               If an I/O exception occurs during the process.
-     * @throws ServerException           If a server exception occurs during the process.
-     * @throws InsufficientDataException If there is insufficient data for the process.
-     * @throws ErrorResponseException    If an error response occurs during the process.
-     * @throws InvalidResponseException  If an invalid response occurs during the process.
-     * @throws XmlParserException        If an XML parsing exception occurs during the process.
-     * @throws InternalException         If an internal exception occurs during the process.
      */
-    @PostMapping(value = "{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "{groupId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SneakyThrows
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<String> updateGroupAvatar(
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    public ResponseEntity<UpdateGroupAvatarResponse> updateGroupAvatar(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam String groupId,
-            @RequestParam(value = "file", required = false) MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        GroupServiceDto groupData = groupService.updateAvatar(customerUserDetails.getId(), groupId, file);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+            @PathVariable String groupId,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+        UpdateGroupAvatarResponse groupData = groupService.updateAvatar(customerUserDetails.getId(), groupId, file);
+        return ResponseEntity.ok(groupData);
     }
 
     /**
@@ -919,15 +912,6 @@ public class GroupController {
      * @param customerUserDetails The current user's principal information.
      * @param name          Optional name parameter for filtering the list.
      * @return ResponseEntity containing the list of group forwards.
-     * @throws ServerException           If a server exception occurs during the process.
-     * @throws InsufficientDataException If there is insufficient data for the process.
-     * @throws ErrorResponseException    If an error response occurs during the process.
-     * @throws IOException               If an I/O exception occurs during the process.
-     * @throws NoSuchAlgorithmException  If no such algorithm is found during the process.
-     * @throws InvalidKeyException       If an invalid key is encountered during the process.
-     * @throws InvalidResponseException  If an invalid response occurs during the process.
-     * @throws XmlParserException        If an XML parsing exception occurs during the process.
-     * @throws InternalException         If an internal exception occurs during the process.
      */
     @GetMapping("forward")
     @SneakyThrows
@@ -938,14 +922,6 @@ public class GroupController {
         List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
 
         return ResponseEntity.ok(listChannelForward);
-    }
-
-    @PostMapping(value = "{groupId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ApiResponse(responseCode = "200", description = "Group image updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
-    public ResponseEntity<Void> uploadImage(@PathVariable String groupId,@RequestPart MultipartFile file) {
-        groupService.updateGroupImage(UpdateGroupImageRequest.builder().groupId(groupId).file(file).build());
-        return ResponseEntity.ok().build();
     }
 
     private Map<String, Object> pagingResponse(Page<Group> groups) {
