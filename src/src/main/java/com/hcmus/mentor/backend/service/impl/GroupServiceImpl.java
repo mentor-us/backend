@@ -1,13 +1,11 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupForwardResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
@@ -22,19 +20,18 @@ import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
-import io.minio.errors.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
-import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -48,9 +45,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -130,11 +124,8 @@ public class GroupServiceImpl implements GroupService {
                 .map(group -> {
                     String role = group.isMentee(userId) ? "MENTEE" : "MENTOR";
                     GroupCategory category = categories.get(group.getGroupCategory());
-                    String imageUrl = (group.getImageUrl() == null) ? category.getIconUrl() : group.getImageUrl();
                     String lastMessage = messageService.getLastGroupMessage(group.getId());
-                    GroupHomepageResponse response =
-                            new GroupHomepageResponse(group, category.getName(), role);
-                    response.setImageUrl(imageUrl);
+                    GroupHomepageResponse response = new GroupHomepageResponse(group, category.getName(), role);
                     response.setNewMessage(lastMessage);
                     return response;
                 })
@@ -1213,9 +1204,6 @@ public class GroupServiceImpl implements GroupService {
                     .toList();
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        response.setImageUrl((response.getImageUrl() == null)
-                ? groupCategory != null ? groupCategory.getIconUrl() : null
-                : response.getImageUrl());
         return response;
     }
 
@@ -1321,23 +1309,25 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupServiceDto updateAvatar(String userId, String groupId, MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+    @SneakyThrows
+    public UpdateGroupAvatarResponse updateAvatar(String userId, String groupId, MultipartFile file) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new DomainException("Group not found"));
+
         if (!group.isMember(userId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+            throw new ForbiddenException("Invalid permission");
         }
 
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
-        blobStorage.post(file, key);
+        try {
+            blobStorage.post(file, key);
+        } catch (Exception e) {
+            throw new DomainException("Upload image failed");
+        }
 
         group.setImageUrl(key);
         groupRepository.save(group);
-        return new GroupServiceDto(SUCCESS, "", key);
+        return new UpdateGroupAvatarResponse(key);
     }
 
     private List<Group> getGroupsForAdmin(String emailUser) {
@@ -1649,14 +1639,14 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public boolean unpinChannelMessage(String userId, String groupId, String messageId) {
         Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-        if (!channelWrapper.isPresent()) {
+        if (channelWrapper.isEmpty()) {
             return false;
         }
 
         Channel channel = channelWrapper.get();
 
         Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (!messageWrapper.isPresent()) {
+        if (messageWrapper.isEmpty()) {
             return false;
         }
 
@@ -1682,7 +1672,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void updateLastMessageId(String groupId, String messageId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return;
         }
         Group group = groupWrapper.get();
@@ -1715,7 +1705,6 @@ public class GroupServiceImpl implements GroupService {
             return null;
         }
         GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.get(0));
-        detail.setImageUrl(group.getImageUrl() == null ? detail.getImageUrl() : group.getImageUrl());
 
         List<String> channelIds =
                 group.getChannelIds() != null ? group.getChannelIds() : new ArrayList<>();
@@ -1763,14 +1752,14 @@ public class GroupServiceImpl implements GroupService {
     public boolean markMentee(CustomerUserDetails user, String groupId, String menteeId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         Group group = null;
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return false;
             }
             Channel channel = channelWrapper.get();
             Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
-            if (!parentGroup.isPresent()) {
+            if (parentGroup.isEmpty()) {
                 return false;
             }
             group = parentGroup.get();
@@ -1791,14 +1780,14 @@ public class GroupServiceImpl implements GroupService {
     public boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         Group group = null;
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return false;
             }
             Channel channel = channelWrapper.get();
             Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
-            if (!parentGroup.isPresent()) {
+            if (parentGroup.isEmpty()) {
                 return false;
             }
             group = parentGroup.get();
@@ -1817,16 +1806,13 @@ public class GroupServiceImpl implements GroupService {
 
     /**
      * @param user UserPrincipal
-     * @param name
+     * @param name Optional name of groups.
      * @return List<GroupForwardResponse>
      */
     @Override
-    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name)  {
+    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
         groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
-
-        Map<String, GroupCategory> categories = groupCategoryRepository.findAll().stream()
-                .collect(Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
 
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
         List<String> lstChannelIds = new ArrayList<>();
@@ -1839,7 +1825,6 @@ public class GroupServiceImpl implements GroupService {
         List<ChannelForwardResponse> channelForwardResponses = new ArrayList<>();
         for (Group group : groups) {
             GroupForwardResponse groupForwardResponse = GroupForwardResponse.from(group);
-            groupForwardResponse.setImageUrl(categories.get(group.getGroupCategory()).getIconUrl());
 
             groupForwardResponses.add(groupForwardResponse);
             channelForwardResponses.add(ChannelForwardResponse.builder()
@@ -1877,9 +1862,9 @@ public class GroupServiceImpl implements GroupService {
         }
         var tika = new Tika();
         var key = blobStorage.generateBlobKey(tika.detect(request.getFile().getBytes()));
-        try{
+        try {
             blobStorage.post(request.getFile(), key);
-            logger.log(Level.INFO,"[*] Upload group image success");
+            logger.log(Level.INFO, "[*] Upload group image success");
         } catch (Exception e) {
             logger.error(e);
             throw new DomainException("Upload group image failed");

@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.security.handler;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -30,7 +31,10 @@ public class GlobalControllerExceptionHandler {
     private static final String CODE_KEY = "code";
     private static final Logger logger = LoggerFactory.getLogger(GlobalControllerExceptionHandler.class);
     private static final Map<Class, HttpStatus> exceptionStatusCodes =
-            Map.ofEntries(entry(DomainException.class, HttpStatus.BAD_REQUEST));
+            Map.ofEntries(
+                    entry(DomainException.class, HttpStatus.BAD_REQUEST),
+                    entry(ForbiddenException.class, HttpStatus.FORBIDDEN)
+            );
     private final Environment environment;
 
     /**
@@ -40,7 +44,7 @@ public class GlobalControllerExceptionHandler {
      * @return The {@link ProblemDetail}.
      */
     @ExceptionHandler(
-            {DomainException.class, ValidationException.class}
+            {DomainException.class, ValidationException.class, ForbiddenException.class}
     )
     public ResponseEntity<ProblemDetail> handlerDomainException(Exception ex) {
         return new ResponseEntity<>(getObjectByException(ex), getStatusCodeByExceptionType(ex.getClass()));
