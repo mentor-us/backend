@@ -14,6 +14,7 @@ s3-settings:
 app:
   frontendUrl: "op://mentorus/backend-dev/app/frontendUrl"
   jwt:
+    issuer: "op://mentorus/backend-dev/jwt/issuer"
     secret-key: "op://mentorus/backend-dev/jwt/secret-key"
   cors:
     allowedOrigins: http://localhost:3000,http://localhost:8080
