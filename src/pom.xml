@@ -33,12 +33,7 @@
         <!-- Dependency package version-->
         <jjwt.version>0.12.5</jjwt.version>
 
-        <google-api-client.version>2.2.0</google-api-client.version>
-        <google-api-services-drive.version>v3-rev136-1.25.0</google-api-services-drive.version>
-        <google-oauth-client-jetty.version>1.34.1</google-oauth-client-jetty.version>
         <google-firebase-admin.version>9.1.1</google-firebase-admin.version>
-
-        <azure-active-directory.version>5.5.0</azure-active-directory.version>
 
         <lombok.version>1.18.30</lombok.version>
 
@@ -156,34 +151,11 @@
 
         <!-- Begin google thing relate -->
         <dependency>
-            <groupId>com.google.api-client</groupId>
-            <artifactId>google-api-client</artifactId>
-            <version>${google-api-client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.apis</groupId>
-            <artifactId>google-api-services-drive</artifactId>
-            <version>${google-api-services-drive.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.oauth-client</groupId>
-            <artifactId>google-oauth-client-jetty</artifactId>
-            <version>${google-oauth-client-jetty.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
             <version>${google-firebase-admin.version}</version>
         </dependency>
         <!-- End google thing relate -->
-
-        <!-- Begin azure active directory -->
-        <dependency>
-            <groupId>com.azure.spring</groupId>
-            <artifactId>spring-cloud-azure-starter-active-directory</artifactId>
-            <version>${azure-active-directory.version}</version>
-        </dependency>
-        <!-- End azure active directory -->
 
         <!-- Begin socket io -->
         <dependency>
