@@ -413,66 +413,82 @@ public class GroupServiceImpl implements GroupService {
         Map<String, Group> groups = new HashMap<>();
         Sheet sheet = workbook.getSheet("Data");
         removeBlankRows(sheet);
-        String groupCategoryName = "";
-        List<String> menteeEmails = new ArrayList<>();
-        List<String> mentorEmails = new ArrayList<>();
-        String menteeEmail;
-        String groupName = "";
+        String groupCategoryName;
+        List<String> menteeEmails;
+        List<String> mentorEmails;
+        String groupName;
         String description = "";
-        Date timeStart = new Date();
-        Date timeEnd = new Date();
+        Date timeStart;
+        Date timeEnd;
+
+        DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+
         for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            var errorOnRow = String.format("tại dòng %d không có dữ liệu.", i);
             Row row = sheet.getRow(i);
             if (i == 0) {
                 continue;
             }
-            if (!row.getCell(3).getStringCellValue().isEmpty()) {
-                groupCategoryName = row.getCell(1).getStringCellValue();
-                menteeEmails = new ArrayList<>();
-                menteeEmail = row.getCell(2).getStringCellValue();
-                menteeEmails.add(menteeEmail);
-                groupName = row.getCell(3).getStringCellValue();
-                description = row.getCell(4).getStringCellValue();
-                mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n")).toList();
-                DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-                formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-                timeStart = formatter.parse(row.getCell(6).getStringCellValue());
-                timeEnd = formatter.parse(row.getCell(7).getStringCellValue());
+            // Validate required fields
+            // Group category
+            if (row.getCell(1) == null || row.getCell(2).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Loại nhóm %s", errorOnRow), null);
+            }
+            groupCategoryName = row.getCell(1).getStringCellValue();
+            if (!groupCategoryRepository.existsByName(groupCategoryName)) {
+                return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
+            }
+            String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
+
+            // Mentee email
+            if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
+            }
+            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n")).toList();
+
+            // Group name
+            if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Tên nhóm  %s", errorOnRow), null);
+            }
+            groupName = row.getCell(3).getStringCellValue();
+            if (groups.containsKey(groupName) || groupCategoryRepository.existsByName(groupName))
+                return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
+
+            // Mentor email
+            if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
+            }
+            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n")).toList();
+
+            // Start date
+            if (row.getCell(6) == null || row.getCell(6).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
+            }
+            timeStart = formatter.parse(row.getCell(6).getStringCellValue());
+
+            // End date
+            if (row.getCell(7).getStringCellValue().isEmpty()) {
+                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
+            }
+            timeEnd = formatter.parse(row.getCell(7).getStringCellValue());
+
+            GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
+            if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
+                return isValidTimeRange;
             }
 
-            boolean isAddMentee = false;
-            while (i <= sheet.getLastRowNum() && row.getCell(3).getStringCellValue().isEmpty()) {
-                isAddMentee = true;
-                menteeEmail = row.getCell(2).getStringCellValue();
-                menteeEmails.add(menteeEmail);
-                row = sheet.getRow(++i);
-            }
-            if (isAddMentee) {
-                GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
-                if (isValidTimeRange.getReturnCode() != SUCCESS) {
-                    return isValidTimeRange;
-                }
-                if (!groupCategoryRepository.existsByName(groupCategoryName)) {
-                    return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
-                }
-                String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
-                if (!groups.containsKey(groupName) && !groupRepository.existsByName(groupName)) {
-                    Group group = Group.builder()
-                            .name(groupName)
-                            .description(description)
-                            .createdDate(new Date())
-                            .mentees(menteeEmails)
-                            .mentors(mentorEmails)
-                            .groupCategory(groupCategoryId)
-                            .timeStart(timeStart)
-                            .timeEnd(timeEnd)
-                            .build();
-                    groups.put(groupName, group);
-                } else {
-                    return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
-                }
-                i--;
-            }
+            Group group = Group.builder()
+                    .name(groupName)
+                    .description(description)
+                    .createdDate(new Date())
+                    .mentees(menteeEmails)
+                    .mentors(mentorEmails)
+                    .groupCategory(groupCategoryId)
+                    .timeStart(timeStart)
+                    .timeEnd(timeEnd)
+                    .build();
+            groups.put(groupName, group);
         }
         return new GroupServiceDto(SUCCESS, "", groups);
     }
@@ -488,18 +504,18 @@ public class GroupServiceImpl implements GroupService {
             if (!isValidTemplate(workbook)) {
                 return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
             }
+
             GroupServiceDto validReadGroups = readGroups(workbook);
-            if (validReadGroups.getReturnCode() != SUCCESS) {
+            if (!Objects.equals(validReadGroups.getReturnCode(), SUCCESS)) {
                 return validReadGroups;
             }
             groups = (Map<String, Group>) validReadGroups.getData();
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            throw new DomainException(String.valueOf(e));
         }
         for (Group group : groups.values()) {
-            GroupServiceDto isValidMails =
-                    validateListMentorsMentees(group.getMentors(), group.getMentees());
-            if (isValidMails.getReturnCode() != SUCCESS) {
+            GroupServiceDto isValidMails = validateListMentorsMentees(group.getMentors(), group.getMentees());
+            if (!Objects.equals(isValidMails.getReturnCode(), SUCCESS)) {
                 return isValidMails;
             }
         }
@@ -518,7 +534,7 @@ public class GroupServiceImpl implements GroupService {
                         .toList();
         for (CreateGroupRequest createGroupRequest : createGroupRequests) {
             GroupServiceDto returnData = createNewGroup(emailUser, createGroupRequest);
-            if (returnData.getReturnCode() != SUCCESS) {
+            if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
                 return returnData;
             }
         }
