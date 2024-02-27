@@ -44,7 +44,7 @@ public class GlobalControllerExceptionHandler {
      * @return The {@link ProblemDetail}.
      */
     @ExceptionHandler(
-            {DomainException.class, ValidationException.class, ForbiddenException.class}
+            {Exception.class}
     )
     public ResponseEntity<ProblemDetail> handlerDomainException(Exception ex) {
         return new ResponseEntity<>(getObjectByException(ex), getStatusCodeByExceptionType(ex.getClass()));
