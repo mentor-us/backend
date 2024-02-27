@@ -16,15 +16,27 @@ public class AuthenticateConstant {
      * Refresh token expiration time.
      */
     public static final Duration REFRESH_TOKEN_EXPIRE = Duration.ofDays(20);
+
     /**
      * Access token expiration time.
      */
     public static final Duration ACCESS_TOKEN_EXPIRATION_TIME = Duration.ofHours(3);
+
+    /**
+     * Issuer for jwt.
+     */
+    @Value("${app.jwt.issuer}")
+    public String issuer;
+
     /**
      * Secret key for jwt.
      */
     @Value("${app.jwt.secret-key}")
     public String secretKey;
+
+    /**
+     * List of authorized redirect URIs for OAuth2.
+     */
     @Value("${app.oauth2.authorized-redirect-uris}")
     public List<String> authorizedRedirectUris;
 }
