@@ -1115,10 +1115,6 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
             GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
-            response.setPermissions(
-                    response.getPermissions().contains(GroupCategoryPermission.SEND_FILES)
-                            ? Collections.singletonList(GroupCategoryPermission.SEND_FILES)
-                            : Collections.emptyList());
             return new GroupServiceDto(SUCCESS, null, response);
         }
 
