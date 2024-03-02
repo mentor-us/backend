@@ -33,7 +33,7 @@
         <!-- Dependency package version-->
         <jjwt.version>0.12.5</jjwt.version>
 
-        <google-firebase-admin.version>9.1.1</google-firebase-admin.version>
+        <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
 
         <lombok.version>1.18.30</lombok.version>
 
