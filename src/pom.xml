@@ -39,7 +39,7 @@
 
         <socketio.version>1.7.7</socketio.version>
 
-        <springdoc.version>2.2.0</springdoc.version>
+        <springdoc.version>2.3.0</springdoc.version>
         <api-runtime-javadoc.version>0.15.0</api-runtime-javadoc.version>
 
         <quartz.version>2.3.2</quartz.version>
