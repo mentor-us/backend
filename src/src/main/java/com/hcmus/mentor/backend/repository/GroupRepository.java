@@ -1,17 +1,16 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
-
-import java.util.Date;
-import java.util.List;
-
+import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Date;
+import java.util.List;
 
 public interface GroupRepository extends MongoRepository<Group, String> {
     Page<Group> findAllOrderByCreatedDate(Pageable pageable);
@@ -100,6 +99,8 @@ public interface GroupRepository extends MongoRepository<Group, String> {
             })
     List<GroupDetailResponse> getGroupDetail(String groupId);
 
+
+
     long countByStatus(GroupStatus status);
 
     long countByGroupCategoryAndStatus(String groupCategoryId, GroupStatus status);
@@ -125,4 +126,6 @@ public interface GroupRepository extends MongoRepository<Group, String> {
 
     List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
     List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
+
+    List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
 }

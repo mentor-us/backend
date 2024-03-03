@@ -126,25 +126,18 @@ public interface GroupService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String groupId, String type) throws IOException;
 
-    boolean pinMessage(String userId, String groupId, String messageId);
+    void pinChannelMessage(String userId, String channelId, String messageId);
 
-    boolean pinChannelMessage(String userId, String groupId, String messageId);
-
-    boolean unpinMessage(String userId, String groupId, String messageId);
-
-    boolean unpinChannelMessage(String userId, String groupId, String messageId);
+    void unpinChannelMessage(String userId, String channelId, String messageId);
 
     void updateLastMessageId(String groupId, String messageId);
 
-    void updateLastMessage(String groupId, String message);
-
     GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
-    boolean markMentee(CustomerUserDetails user, String groupId, String menteeId);
+    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
 
-    boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
+    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
 
     List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
-    void updateGroupImage(UpdateGroupImageRequest request);
 }

@@ -16,44 +16,44 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @ToString
-@Document("channel")
-public class Channel {
+    @Document("channel")
+    public class Channel {
 
-    public static final int MAX_PINNED_MESSAGES = 5;
+        public static final int MAX_PINNED_MESSAGES = 5;
 
-    @Id
-    private String id;
+        @Id
+        private String id;
 
-    private String name;
+        private String name;
 
-    private String description;
+        private String description;
 
-    @Builder.Default
-    private Date createdDate = new Date();
+        @Builder.Default
+        private Date createdDate = new Date();
 
-    @Builder.Default
-    private Date updatedDate = new Date();
+        @Builder.Default
+        private Date updatedDate = new Date();
 
-    @Builder.Default
-    private List<String> userIds = new ArrayList<>();
+        @Builder.Default
+        private List<String> userIds = new ArrayList<>();
 
-    @Builder.Default
-    private ChannelStatus status = ChannelStatus.ACTIVE;
+        @Builder.Default
+        private ChannelStatus status = ChannelStatus.ACTIVE;
 
-    @Builder.Default
-    private ChannelType type = ChannelType.PUBLIC;
+        @Builder.Default
+        private ChannelType type = ChannelType.PUBLIC;
 
-    private String creatorId;
+        private String creatorId;
 
-    private Boolean hasNewMessage;
+        private Boolean hasNewMessage;
 
-    private String imageUrl;
+        private String imageUrl;
 
-    @Builder.Default
-    private List<String> pinnedMessageIds = new ArrayList<>();
+        @Builder.Default
+        private List<String> pinnedMessageIds = new ArrayList<>();
 
-    @Builder.Default
-    private String parentId = null;
+        @Builder.Default
+        private String parentId = null;
 
     public boolean isMember(String userId) {
         return userIds.contains(userId);
