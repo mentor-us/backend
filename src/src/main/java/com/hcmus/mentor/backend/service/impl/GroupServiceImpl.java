@@ -11,7 +11,10 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.constant.*;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.*;
@@ -288,18 +291,13 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupServiceDto createNewGroup(String emailUser, CreateGroupRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+    public GroupServiceDto createGroup(String creatorEmail, CreateGroupCommand request) {
+        if (!permissionService.isAdmin(creatorEmail)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (request.getName() == null
-                || request.getName().isEmpty()
-                || request.getTimeStart() == null
-                || request.getTimeEnd() == null) {
-            return new GroupServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
-        }
+
         GroupServiceDto isValidTimeRange = validateTimeRange(request.getTimeStart(), request.getTimeEnd());
-        if (isValidTimeRange.getReturnCode() != SUCCESS) {
+        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
             return isValidTimeRange;
         }
         if (groupRepository.existsByName(request.getName())) {
@@ -331,27 +329,42 @@ public class GroupServiceImpl implements GroupService {
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
         Duration duration = calculateDuration(timeStart, timeEnd);
         GroupStatus status = getStatusFromTimeStartAndTimeEnd(timeStart, timeEnd);
-        Optional<User> userOptional = userRepository.findByEmail(emailUser);
+        Optional<User> userOptional = userRepository.findByEmail(creatorEmail);
         String creatorId = null;
         if (userOptional.isPresent()) {
             creatorId = userOptional.get().getId();
         }
-        Group group =
-                Group.builder()
-                        .name(request.getName())
-                        .description(request.getDescription())
-                        .mentees(menteeIds)
-                        .mentors(mentorIds)
-                        .groupCategory(request.getGroupCategory())
-                        .status(status)
-                        .timeStart(timeStart)
-                        .timeEnd(timeEnd)
-                        .duration(duration)
-                        .creatorId(creatorId)
-                        .build();
+        Group group = Group.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .mentees(menteeIds)
+                .mentors(mentorIds)
+                .groupCategory(request.getGroupCategory())
+                .status(status)
+                .timeStart(timeStart)
+                .timeEnd(timeEnd)
+                .duration(duration)
+                .creatorId(creatorId)
+                .build();
+        var groupId = groupRepository.save(group);
+
+        var channel = Channel.builder()
+                .creatorId(creatorId)
+                .name("Kênh chat chung")
+                .status(ChannelStatus.ACTIVE)
+                .description("Kênh chat chung")
+                .isDefault(true)
+                .name(request.getName())
+                .parentId(groupId.getId())
+                .type(ChannelType.PUBLIC)
+                .build();
+        var channelId = channelRepository.save(channel);
+
+        group.setChannelIds(List.of(channelId.getId()));
         groupRepository.save(group);
-        menteeEmails.stream().forEach(email -> mailService.sendInvitationToGroupMail(email, group));
-        mentorEmails.stream().forEach(email -> mailService.sendInvitationToGroupMail(email, group));
+
+        menteeEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
+        mentorEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
@@ -520,9 +533,9 @@ public class GroupServiceImpl implements GroupService {
             }
         }
 
-        List<CreateGroupRequest> createGroupRequests =
+        List<CreateGroupCommand> createGroupRequests =
                 groups.values().stream()
-                        .map(group -> CreateGroupRequest.builder()
+                        .map(group -> CreateGroupCommand.builder()
                                 .name(group.getName())
                                 .createdDate(new Date())
                                 .menteeEmails(group.getMentees())
@@ -532,8 +545,8 @@ public class GroupServiceImpl implements GroupService {
                                 .timeEnd(group.getTimeEnd())
                                 .build())
                         .toList();
-        for (CreateGroupRequest createGroupRequest : createGroupRequests) {
-            GroupServiceDto returnData = createNewGroup(emailUser, createGroupRequest);
+        for (CreateGroupCommand createGroupRequest : createGroupRequests) {
+            GroupServiceDto returnData = createGroup(emailUser, createGroupRequest);
             if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
                 return returnData;
             }
