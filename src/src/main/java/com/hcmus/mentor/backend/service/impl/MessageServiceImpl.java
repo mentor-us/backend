@@ -39,6 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
+import static com.hcmus.mentor.backend.domain.Message.Type.TEXT;
 
 /**
  * {@inheritDoc}
@@ -335,7 +336,7 @@ public class MessageServiceImpl implements MessageService {
         MessageDetailResponse response = MessageDetailResponse.from(message);
         if (message.getReply() != null) {
             Optional<Message> wrapper = messageRepository.findById(message.getReply());
-            if (!wrapper.isPresent()) {
+            if (wrapper.isEmpty()) {
                 return response;
             }
             Message data = wrapper.get();
@@ -355,6 +356,12 @@ public class MessageServiceImpl implements MessageService {
                             .content(content)
                             .build();
             response.setReply(replyMessage);
+        }
+
+        if(response.getType() == FORWARD)
+        {
+            response.setType(TEXT);
+            response.setIsForward(true);
         }
         return response;
     }
@@ -411,13 +418,11 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        if (message.getType() == FORWARD)
-            message.setType(Message.Type.TEXT);
         return switch (message.getType()) {
             case MEETING -> fulfillMeetingMessage(message);
             case TASK -> fulfillTaskMessage(message);
             case VOTE -> fulfillVotingMessage(message);
-            case TEXT -> fulfillTextMessage(message);
+            case TEXT, FORWARD -> fulfillTextMessage(message);
             default -> MessageDetailResponse.from(message);
         };
     }
@@ -518,7 +523,7 @@ public class MessageServiceImpl implements MessageService {
             });
             messages.forEach(m -> {
                 notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getGroupId());
-                socketIOService.sendForwardMessage(MessageDetailResponse.from(m, user), m.getGroupId());
+                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, user), m.getGroupId());
             });
             return messages;
         } catch (Exception e) {
