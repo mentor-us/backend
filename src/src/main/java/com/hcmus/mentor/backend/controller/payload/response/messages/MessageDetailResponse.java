@@ -1,16 +1,18 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.hcmus.mentor.backend.domain.Meeting;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
@@ -53,6 +55,8 @@ public class MessageDetailResponse {
 
     private ReplyMessage reply;
 
+    private Boolean isForward = false;
+
     public static MessageDetailResponse from(Message message, User user) {
         if (message == null || user == null) {
             return null;
@@ -71,6 +75,7 @@ public class MessageDetailResponse {
                 .status(message.getStatus())
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
+                .isForward(message.getType() == Message.Type.FORWARD)
                 .build();
     }
 
@@ -95,6 +100,7 @@ public class MessageDetailResponse {
                 .status(message.getStatus())
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
+                .isForward(message.getIsForward())
                 .build();
     }
 
@@ -111,6 +117,7 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .isForward(message.getIsForward())
                 .build();
     }
 
@@ -127,6 +134,7 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .isForward(message.getIsForward())
                 .build();
     }
 
@@ -143,6 +151,7 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .isForward(message.getIsForward())
                 .build();
     }
 
@@ -176,6 +185,7 @@ public class MessageDetailResponse {
                 .file(message.getFile())
                 .status(message.getStatus())
                 .reply(message.getReply())
+                .isForward(message.getIsForward())
                 .build();
     }
 
