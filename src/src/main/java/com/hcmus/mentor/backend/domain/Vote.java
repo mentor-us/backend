@@ -40,6 +40,9 @@ public class Vote {
     private Date closedDate;
 
     @Builder.Default
+    private Boolean isMultipleChoice = false;
+
+    @Builder.Default
     private Status status = Status.OPEN;
 
     public static Vote from(CreateVoteRequest request) {
@@ -49,6 +52,7 @@ public class Vote {
                 .creatorId(request.getCreatorId())
                 .timeEnd(request.getTimeEnd())
                 .choices(request.getChoices())
+                .isMultipleChoice(request.getIsMultipleChoice())
                 .build();
     }
 
