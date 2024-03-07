@@ -52,7 +52,7 @@
         <poi.version>5.2.5</poi.version>
         <minio.version>8.5.8</minio.version>
 
-        <aws.sdk.version>2.25.0</aws.sdk.version>
+        <aws.sdk.version>2.25.4</aws.sdk.version>
     </properties>
 
     <dependencies>
