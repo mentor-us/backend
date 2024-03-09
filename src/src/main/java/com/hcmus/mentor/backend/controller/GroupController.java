@@ -29,10 +29,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -42,12 +41,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
@@ -427,22 +423,13 @@ public class GroupController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> getTemplate() throws Exception {
-        InputStream tempStream = getClass().getResourceAsStream("/templates/temp-import-groups.xlsx");
-        File tempFile = new File(TEMP_TEMPLATE_PATH);
-        FileUtils.copyInputStreamToFile(tempStream, tempFile);
+        InputStream generateTemplateStream = groupService.loadTemplate("/templates/temp-import-groups.xlsx");
 
-        InputStream templateStream = getClass().getResourceAsStream("/templates/import-groups.xlsx");
-        File templateFile = new File(TEMPLATE_PATH);
-        FileUtils.copyInputStreamToFile(templateStream, templateFile);
-
-        Files.copy(templateFile.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-        groupService.loadTemplate(tempFile);
-        Resource resource = new FileSystemResource(tempFile.getAbsolutePath());
+        Resource resource = new InputStreamResource(generateTemplateStream);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + "import-groups.xlsx")
                 .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
+                .contentLength(generateTemplateStream.available())
                 .body(resource);
     }
 
