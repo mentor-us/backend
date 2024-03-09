@@ -14,7 +14,6 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersR
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
@@ -109,18 +108,8 @@ public class GroupController {
             groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
         }
 
-        for (Group group : groups) {
-            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-                if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(GroupStatus.OUTDATED);
-                    groupRepository.save(group);
-                }
-                if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(GroupStatus.INACTIVE);
-                    groupRepository.save(group);
-                }
-            }
-        }
+        var groupsTemp = groupService.validateTimeGroups(groups.getContent());
+        groups = new PageImpl<>(groupsTemp, pageRequest, groupsTemp.size());
         return ApiResponseDto.success(pagingResponse(groups));
     }
 
@@ -758,10 +747,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String messageId) {
-        boolean isPinned = groupService.pinMessage(customerUserDetails.getId(), groupId, messageId);
-        if (!isPinned) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.pinChannelMessage(customerUserDetails.getId(), groupId, messageId);
         return ResponseEntity.ok().build();
     }
 
@@ -780,10 +766,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String messageId) {
-        boolean isPinned = groupService.unpinMessage(customerUserDetails.getId(), groupId, messageId);
-        if (!isPinned) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.unpinChannelMessage(customerUserDetails.getId(), groupId, messageId);
         return ResponseEntity.ok().build();
     }
 
@@ -877,10 +860,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        boolean isMarked = groupService.markMentee(customerUserDetails, groupId, menteeId);
-        if (!isMarked) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.markMentee(customerUserDetails, groupId, menteeId);
         return ResponseEntity.ok().build();
     }
 
@@ -899,10 +879,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        boolean isMarked = groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
-        if (!isMarked) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
         return ResponseEntity.ok().build();
     }
 

@@ -830,16 +830,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             query.addCriteria(Criteria.where("status").is(status));
         }
 
-        if (!permissionService.isSuperAdmin(emailUser)) {
-            Optional<User> userOptional = userRepository.findByEmail(emailUser);
-            String userId = null;
-            if (userOptional.isPresent()) {
-                userId = userOptional.get().getId();
-            }
-            query.addCriteria(Criteria.where("creatorId").is(userId));
-        }
-
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+        GroupServiceImpl.validateSupperAdmin(emailUser, query, permissionService, userRepository);
         List<Group> groups = mongoTemplate.find(query, Group.class);
 
         List<GroupGeneralResponse> responses = getGroupGeneralAnalyticFromGroups(groups);

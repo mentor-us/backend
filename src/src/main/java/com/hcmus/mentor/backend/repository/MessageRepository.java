@@ -17,7 +17,11 @@ import java.util.Optional;
 
 public interface MessageRepository extends MongoRepository<Message, String> {
 
+    @NotNull
     Optional<Message> findById(@NotNull String id);
+
+    @NotNull
+    Optional<Message> findByIdAndStatusNot(String id, Message.Status status);
 
     Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
 
