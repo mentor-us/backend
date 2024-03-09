@@ -37,7 +37,7 @@ public class VoteDetailResponse {
 
     private boolean canEdit;
 
-    private Boolean isMultiChoice = false;
+    private Boolean isMultipleChoice = false;
 
     public static VoteDetailResponse from(
             Vote vote, ShortProfile creator, List<ChoiceDetail> choices) {
@@ -51,7 +51,7 @@ public class VoteDetailResponse {
                 .createdDate(vote.getCreatedDate())
                 .status(vote.getStatus())
                 .closedDate(vote.getClosedDate())
-                .isMultiChoice(vote.getIsMultipleChoice())
+                .isMultipleChoice(vote.getIsMultipleChoice())
                 .build();
     }
 
