@@ -2,10 +2,16 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.payload.request.groups.*;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.*;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
@@ -535,13 +541,11 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
         for (Group group : groups) {
-            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-                if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(GroupStatus.OUTDATED);
-                }
-                if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(GroupStatus.INACTIVE);
-                }
+            switch (group.getStatus()) {
+                case GroupStatus.DISABLED, GroupStatus.DELETED:
+                    break;
+                default:
+                    group.setStatus(getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd()));
             }
             groupRepository.save(group);
         }
@@ -565,20 +569,19 @@ public class GroupServiceImpl implements GroupService {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Pair<Long, List<Group>> groups =
-                getGroupsByConditions(
-                        emailUser,
-                        name,
-                        mentorEmail,
-                        menteeEmail,
-                        groupCategory,
-                        timeStart1,
-                        timeEnd1,
-                        timeStart2,
-                        timeEnd2,
-                        status,
-                        page,
-                        pageSize);
+        Pair<Long, List<Group>> groups = getGroupsByConditions(
+                emailUser,
+                name,
+                mentorEmail,
+                menteeEmail,
+                groupCategory,
+                timeStart1,
+                timeEnd1,
+                timeStart2,
+                timeEnd2,
+                status,
+                page,
+                pageSize);
         return new GroupServiceDto(
                 SUCCESS,
                 "",
@@ -1619,7 +1622,7 @@ public class GroupServiceImpl implements GroupService {
     public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
         Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
         if (!group.isMentor(user.getId())) {
-           throw new ForbiddenException("You are not mentor");
+            throw new ForbiddenException("You are not mentor");
         }
 
         group.markMentee(menteeId);
