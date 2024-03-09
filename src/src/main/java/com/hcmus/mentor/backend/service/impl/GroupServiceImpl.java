@@ -2,10 +2,16 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.payload.request.groups.*;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.*;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
@@ -26,7 +32,6 @@ import com.hcmus.mentor.backend.util.MailUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.*;
@@ -59,11 +64,13 @@ import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
 
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
+    private static final Integer MAX_YEAR_FROM_TIME_START_AND_NOW = 4;
     private final Logger logger = LogManager.getLogger(this.getClass());
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
@@ -80,6 +87,7 @@ public class GroupServiceImpl implements GroupService {
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
     private final BlobStorage blobStorage;
+    private final ShareService shareService;
 
     private static Date changeGroupTime(Date time, String type) {
         LocalDateTime timeInstant =
@@ -97,8 +105,8 @@ public class GroupServiceImpl implements GroupService {
         return Date.from(instant);
     }
 
-    private static void clearSheet(Sheet sheet, int firstRow, int lastRow) {
-        for (int i = firstRow; i <= lastRow; i++) {
+    private static void clearSheet(Sheet sheet, int lastRow) {
+        for (int i = 1; i <= lastRow; i++) {
             Row row = sheet.getRow(i);
             if (row != null) {
                 sheet.removeRow(row);
@@ -136,6 +144,10 @@ public class GroupServiceImpl implements GroupService {
                 .toList();
     }
 
+    /**
+     * @param userId User id
+     * @return all group user is participant
+     */
     @Override
     public List<Group> getAllActiveOwnGroups(String userId) {
         List<String> mentorIds = Collections.singletonList(userId);
@@ -143,6 +155,12 @@ public class GroupServiceImpl implements GroupService {
         return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
     }
 
+    /**
+     * @param userId   user identity
+     * @param page     page
+     * @param pageSize items of page
+     * @return list groupHomePageResponse user is mentor
+     */
     @Override
     public Page<GroupHomepageResponse> findMentorGroups(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize);
@@ -153,6 +171,12 @@ public class GroupServiceImpl implements GroupService {
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
 
+    /**
+     * @param userId   user identity
+     * @param page     page
+     * @param pageSize items of page
+     * @return list groupHomePageResponse user is mentee
+     */
     @Override
     public Page<GroupHomepageResponse> findMenteeGroups(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize);
@@ -196,9 +220,10 @@ public class GroupServiceImpl implements GroupService {
     }
 
     private GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
-        int maxYearsBetweenTimeStartAndTimeEnd =
-                Integer.parseInt(systemConfigRepository.findByKey("valid_max_year").getValue().toString());
-        int maxYearsBetweenTimeStartAndNow = 4;
+        int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt(systemConfigRepository
+                .findByKey("valid_max_year")
+                .getValue()
+                .toString());
         LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -215,30 +240,7 @@ public class GroupServiceImpl implements GroupService {
                     TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
         }
         if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
-                > maxYearsBetweenTimeStartAndNow) {
-            return new GroupServiceDto(
-                    TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
-        }
-        return new GroupServiceDto(SUCCESS, "", null);
-    }
-
-    private GroupServiceDto validateTimeRangeForUpdate(Date timeStart, Date timeEnd) {
-        int maxYearsBetweenTimeStartAndTimeEnd = 7;
-        int maxYearsBetweenTimeStartAndNow = 4;
-        LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        if (timeEnd.before(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupServiceDto(
-                    TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
-        }
-        if (ChronoUnit.YEARS.between(localTimeStart, localTimeEnd)
-                > maxYearsBetweenTimeStartAndTimeEnd) {
-            return new GroupServiceDto(
-                    TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
-        }
-        if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
-                > maxYearsBetweenTimeStartAndNow) {
+                > MAX_YEAR_FROM_TIME_START_AND_NOW) {
             return new GroupServiceDto(
                     TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
         }
@@ -396,31 +398,6 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-    private boolean isValidTemplate(Workbook workbook) {
-        int numberOfSheetInTemplate = 2;
-        if (workbook.getNumberOfSheets() != numberOfSheetInTemplate) {
-            return false;
-        }
-        Sheet sheet = workbook.getSheet("Data");
-        if (sheet == null) {
-            return false;
-        }
-
-        Row row = sheet.getRow(0);
-        return isValidHeader(row);
-    }
-
-    private boolean isValidHeader(Row row) {
-        return (row.getCell(0).getStringCellValue().equals("STT")
-                && row.getCell(1).getStringCellValue().equals("Loại nhóm *")
-                && row.getCell(2).getStringCellValue().equals("Emails người được quản lí *")
-                && row.getCell(3).getStringCellValue().equals("Tên nhóm *")
-                && row.getCell(4).getStringCellValue().equals("Mô tả")
-                && row.getCell(5).getStringCellValue().equals("Emails người quản lí *")
-                && row.getCell(6).getStringCellValue().equals("Ngày bắt đầu *\n" + "(dd/MM/YYYY)")
-                && row.getCell(7).getStringCellValue().equals("Ngày kết thúc *\n" + "(dd/MM/YYYY)"));
-    }
-
     @Override
     public GroupServiceDto readGroups(Workbook workbook) throws ParseException {
         Map<String, Group> groups = new HashMap<>();
@@ -514,7 +491,17 @@ public class GroupServiceImpl implements GroupService {
         Map<String, Group> groups;
         try (InputStream data = file.getInputStream();
              Workbook workbook = new XSSFWorkbook(data)) {
-            if (!isValidTemplate(workbook)) {
+            List<String> nameHeaders = new ArrayList<>();
+            nameHeaders.add("STT");
+            nameHeaders.add("Loại nhóm *");
+            nameHeaders.add("Emails người được quản lí *");
+            nameHeaders.add("Tên nhóm *");
+            nameHeaders.add("Mô tả");
+            nameHeaders.add("Emails người quản lí *");
+            nameHeaders.add("Ngày bắt đầu *\n" + "(dd/MM/YYYY)");
+            nameHeaders.add("Ngày kết thúc *\n" + "(dd/MM/YYYY)");
+
+            if (!shareService.isValidTemplate(workbook, 2, nameHeaders)) {
                 return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
             }
 
@@ -564,13 +551,11 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
         for (Group group : groups) {
-            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-                if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(GroupStatus.OUTDATED);
-                }
-                if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(GroupStatus.INACTIVE);
-                }
+            switch (group.getStatus()) {
+                case GroupStatus.DISABLED, GroupStatus.DELETED:
+                    break;
+                default:
+                    group.setStatus(getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd()));
             }
             groupRepository.save(group);
         }
@@ -594,20 +579,19 @@ public class GroupServiceImpl implements GroupService {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Pair<Long, List<Group>> groups =
-                getGroupsByConditions(
-                        emailUser,
-                        name,
-                        mentorEmail,
-                        menteeEmail,
-                        groupCategory,
-                        timeStart1,
-                        timeEnd1,
-                        timeStart2,
-                        timeEnd2,
-                        status,
-                        page,
-                        pageSize);
+        Pair<Long, List<Group>> groups = getGroupsByConditions(
+                emailUser,
+                name,
+                mentorEmail,
+                menteeEmail,
+                groupCategory,
+                timeStart1,
+                timeEnd1,
+                timeStart2,
+                timeEnd2,
+                status,
+                page,
+                pageSize);
         return new GroupServiceDto(
                 SUCCESS,
                 "",
@@ -665,15 +649,7 @@ public class GroupServiceImpl implements GroupService {
         if (timeStart2 != null && timeEnd2 != null) {
             query.addCriteria(Criteria.where("timeEnd").gte(timeStart2).lte(timeEnd2));
         }
-        if (!permissionService.isSuperAdmin(emailUser)) {
-            Optional<User> userOptional = userRepository.findByEmail(emailUser);
-            String userId = null;
-            if (userOptional.isPresent()) {
-                userId = userOptional.get().getId();
-            }
-            query.addCriteria(Criteria.where("creatorId").is(userId));
-        }
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+        validateSupperAdmin(emailUser, query, permissionService, userRepository);
 
         long count = mongoTemplate.count(query, Group.class);
         query.with(PageRequest.of(page, pageSize));
@@ -683,6 +659,18 @@ public class GroupServiceImpl implements GroupService {
         return new Pair<>(count, data);
     }
 
+    static void validateSupperAdmin(String emailUser, Query query, PermissionService permissionService, UserRepository userRepository) {
+        if (!permissionService.isSuperAdmin(emailUser)) {
+            Optional<User> userOptional = userRepository.findByEmail(emailUser);
+            String userId = null;
+            if (userOptional.isPresent()) {
+                userId = userOptional.get().getId();
+            }
+            query.addCriteria(Criteria.where("creatorId").is(userId));
+        }
+        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+    }
+
     @Override
     public GroupServiceDto addMentees(
             String emailUser, String groupId, AddMenteesRequest request) {
@@ -690,7 +678,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -724,7 +712,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -760,7 +748,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -779,7 +767,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -799,7 +787,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -818,7 +806,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -845,7 +833,7 @@ public class GroupServiceImpl implements GroupService {
         Workbook workbook = WorkbookFactory.create(inputStream);
 
         Sheet dataSheet = workbook.getSheet("Data");
-        clearSheet(dataSheet, 1, dataSheet.getLastRowNum());
+        clearSheet(dataSheet, dataSheet.getLastRowNum());
 
         DataValidationHelper validationHelper = new XSSFDataValidationHelper((XSSFSheet) dataSheet);
         CellRangeAddressList addressList = new CellRangeAddressList(1, lastRow, 1, 1);
@@ -872,7 +860,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -894,9 +882,8 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
-        GroupServiceDto isValidTimeRange =
-                validateTimeRangeForUpdate(group.getTimeStart(), group.getTimeEnd());
-        if (isValidTimeRange.getReturnCode() != SUCCESS) {
+        GroupServiceDto isValidTimeRange = validateTimeRange(group.getTimeStart(), group.getTimeEnd());
+        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
             return isValidTimeRange;
         }
         Duration duration = calculateDuration(group.getTimeStart(), group.getTimeEnd());
@@ -918,7 +905,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
@@ -972,7 +959,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
             Optional<Group> groupOptional = groupRepository.findById(id);
-            if (!groupOptional.isPresent()) {
+            if (groupOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -994,7 +981,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
             Optional<Group> groupOptional = groupRepository.findById(id);
-            if (!groupOptional.isPresent()) {
+            if (groupOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -1019,7 +1006,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
             Optional<Group> groupOptional = groupRepository.findById(id);
-            if (!groupOptional.isPresent()) {
+            if (groupOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -1044,9 +1031,9 @@ public class GroupServiceImpl implements GroupService {
         List<String> mentorIds = new ArrayList<>();
         List<String> menteeIds = new ArrayList<>();
         Group group = null;
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
@@ -1086,7 +1073,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void pinGroup(String userId, String groupId) {
         Optional<User> userWrapper = userRepository.findById(userId);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return;
         }
         User user = userWrapper.get();
@@ -1097,7 +1084,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void unpinGroup(String userId, String groupId) {
         Optional<User> userWrapper = userRepository.findById(userId);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return;
         }
         User user = userWrapper.get();
@@ -1215,9 +1202,15 @@ public class GroupServiceImpl implements GroupService {
             response.setPermissions(groupCategory.getPermissions());
         }
 
-        List<MessageResponse> messages = new ArrayList<>();
-        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
-            messages = response.getPinnedMessageIds().stream()
+        response.setPinnedMessages(fullFillPinMessages(userId, response.getPinnedMessageIds()));
+        return response;
+    }
+
+
+    private List<MessageDetailResponse> fullFillPinMessages(String userId, List<String> pinMessageIds) {
+        List<MessageResponse> messageResponses = new ArrayList<>();
+        if (pinMessageIds != null && !pinMessageIds.isEmpty()) {
+            messageResponses = pinMessageIds.stream()
                     .map(messageRepository::findById)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -1228,14 +1221,13 @@ public class GroupServiceImpl implements GroupService {
                     })
                     .toList();
         }
-        response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        return response;
+        return messageService.fulfillMessages(messageResponses, userId);
     }
 
     @Override
     public List<String> findAllMenteeIdsGroup(String groupId) {
         Optional<Group> wrapper = groupRepository.findById(groupId);
-        if (!wrapper.isPresent()) {
+        if (wrapper.isEmpty()) {
             return Collections.emptyList();
         }
         Group group = wrapper.get();
@@ -1266,9 +1258,9 @@ public class GroupServiceImpl implements GroupService {
     public GroupServiceDto getGroupMedia(String userId, String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         List<String> senderIds = new ArrayList<>();
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (!channelWrapper.isPresent()) {
+            if (channelWrapper.isEmpty()) {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
@@ -1361,22 +1353,12 @@ public class GroupServiceImpl implements GroupService {
         if (isSuperAdmin) {
             groups = groupRepository.findAllByOrderByCreatedDate();
         } else {
-            String creatorId = userRepository.findByEmail(emailUser).get().getId();
+            var userOpt = userRepository.findByEmail(emailUser).orElseThrow(() -> new DomainException("User not found"));
+            String creatorId = userOpt.getId();
             groups = groupRepository.findAllByCreatorIdOrderByCreatedDate(creatorId);
         }
-        for (Group group : groups) {
-            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-                if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(GroupStatus.OUTDATED);
-                    groupRepository.save(group);
-                }
-                if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(GroupStatus.INACTIVE);
-                    groupRepository.save(group);
-                }
-            }
-        }
-        return groups;
+
+        return validateTimeGroups(groups);
     }
 
     private List<List<String>> generateExportData(List<Group> groups) {
@@ -1545,73 +1527,14 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public boolean pinMessage(String userId, String groupId, String messageId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            return pinChannelMessage(userId, groupId, messageId);
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
-            return false;
-        }
-
-        if (group.isMaximumPinnedMessages()) {
-            return false;
-        }
-
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (!messageWrapper.isPresent()) {
-            return false;
-        }
-
-        Message message = messageWrapper.get();
-        if (Message.Status.DELETED.equals(message.getStatus())) {
-            return false;
-        }
-
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-        if (sender == null) {
-            return false;
-        }
-        group.pinMessage(messageId);
-        group.ping();
-        groupRepository.save(group);
-
-        MessageDetailResponse messageDetail = MessageDetailResponse.from(message, sender);
-        socketIOService.sendNewPinMessage(messageDetail);
-
-        Optional<User> pinnerWrapper = userRepository.findById(userId);
-        pinnerWrapper.ifPresent(
-                user -> notificationService.sendNewPinNotification(messageDetail, user));
-        return true;
-    }
-
-    @Override
-    public boolean pinChannelMessage(String userId, String groupId, String messageId) {
-        Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-        if (!channelWrapper.isPresent()) {
-            return false;
-        }
-
-        Channel channel = channelWrapper.get();
+    public void pinChannelMessage(String userId, String channelId, String messageId) {
+        Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
         if (channel.isMaximumPinnedMessages()) {
-            return false;
+            throw new DomainException("Maximum pinned messages");
         }
 
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (!messageWrapper.isPresent()) {
-            return false;
-        }
-
-        Message message = messageWrapper.get();
-        if (Message.Status.DELETED.equals(message.getStatus())) {
-            return false;
-        }
-
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-        if (sender == null) {
-            return false;
-        }
+        Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
+        User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
         channel.pinMessage(messageId);
         channel.ping();
         channelRepository.save(channel);
@@ -1619,79 +1542,23 @@ public class GroupServiceImpl implements GroupService {
         MessageDetailResponse messageDetail = MessageDetailResponse.from(message, sender);
         socketIOService.sendNewPinMessage(messageDetail);
 
-        Optional<User> pinnerWrapper = userRepository.findById(userId);
-        pinnerWrapper.ifPresent(
-                user -> notificationService.sendNewPinNotification(messageDetail, user));
-
-        return true;
+        var pinnerWrapper = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
+        notificationService.sendNewPinNotification(messageDetail, pinnerWrapper);
     }
 
     @Override
-    public boolean unpinMessage(String userId, String groupId, String messageId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            return false;
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
-            return unpinChannelMessage(userId, groupId, messageId);
-        }
-
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (!messageWrapper.isPresent()) {
-            return false;
-        }
-
-        Message message = messageWrapper.get();
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-        if (sender == null) {
-            return false;
-        }
-
-        group.unpinMessage(messageId);
-        group.ping();
-        groupRepository.save(group);
-        socketIOService.sendNewUnpinMessage(groupId, messageId);
-
-        Optional<User> pinnerWrapper = userRepository.findById(userId);
-        if (pinnerWrapper.isEmpty()) {
-            notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerWrapper.get());
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean unpinChannelMessage(String userId, String groupId, String messageId) {
-        Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-        if (channelWrapper.isEmpty()) {
-            return false;
-        }
-
-        Channel channel = channelWrapper.get();
-
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (messageWrapper.isEmpty()) {
-            return false;
-        }
-
-        Message message = messageWrapper.get();
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-        if (sender == null) {
-            return false;
-        }
+    public void unpinChannelMessage(String userId, String channelId, String messageId) {
+        Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
+        Message message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
+        User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
 
         channel.unpinMessage(messageId);
         channel.ping();
         channelRepository.save(channel);
-        socketIOService.sendNewUnpinMessage(groupId, messageId);
+        socketIOService.sendNewUnpinMessage(channelId, messageId);
 
-        Optional<User> pinnerWrapper = userRepository.findById(userId);
-        if (pinnerWrapper.isEmpty()) {
-            notificationService.sendNewUnpinNotification(
-                    MessageDetailResponse.from(message, sender), pinnerWrapper.get());
-        }
-        return true;
+        User pinnerMessage = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
+        notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerMessage);
     }
 
     @Override
@@ -1702,17 +1569,6 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = groupWrapper.get();
         group.setLastMessageId(messageId);
-        groupRepository.save(group);
-    }
-
-    @Override
-    public void updateLastMessage(String groupId, String message) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            return;
-        }
-        Group group = groupWrapper.get();
-        group.setLastMessage(message);
         groupRepository.save(group);
     }
 
@@ -1729,16 +1585,15 @@ public class GroupServiceImpl implements GroupService {
         if (group == null) {
             return null;
         }
-        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.get(0));
+        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.getFirst());
 
-        List<String> channelIds =
-                group.getChannelIds() != null ? group.getChannelIds() : new ArrayList<>();
-        List<String> privateIds = group.getPrivateIds() != null ? group.getPrivateIds() : new ArrayList<>();
-        List<GroupDetailResponse.GroupChannel> channels =
-                channelRepository.findByIdIn(channelIds).stream()
-                        .map(GroupDetailResponse.GroupChannel::from)
-                        .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                        .toList();
+        List<String> channelIds = group.getChannelIds() != null
+                ? group.getChannelIds()
+                : new ArrayList<>();
+        List<GroupDetailResponse.GroupChannel> channels = channelRepository.findByIdIn(channelIds).stream()
+                .map(GroupDetailResponse.GroupChannel::from)
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                .toList();
         detail.setChannels(channels);
 
         List<GroupDetailResponse.GroupChannel> privates =
@@ -1774,59 +1629,25 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public boolean markMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        Group group = null;
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (channelWrapper.isEmpty()) {
-                return false;
-            }
-            Channel channel = channelWrapper.get();
-            Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
-            if (parentGroup.isEmpty()) {
-                return false;
-            }
-            group = parentGroup.get();
-        } else {
-            group = groupWrapper.get();
-        }
-
+    public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
         if (!group.isMentor(user.getId())) {
-            return false;
+            throw new ForbiddenException("You are not mentor");
         }
 
         group.markMentee(menteeId);
         groupRepository.save(group);
-        return true;
     }
 
     @Override
-    public boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        Group group = null;
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (channelWrapper.isEmpty()) {
-                return false;
-            }
-            Channel channel = channelWrapper.get();
-            Optional<Group> parentGroup = groupRepository.findById(channel.getParentId());
-            if (parentGroup.isEmpty()) {
-                return false;
-            }
-            group = parentGroup.get();
-        } else {
-            group = groupWrapper.get();
-        }
-
+    public void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
         if (!group.isMentor(user.getId())) {
-            return false;
+            throw new ForbiddenException("You are not mentor");
         }
 
         group.unmarkMentee(menteeId);
         groupRepository.save(group);
-        return true;
     }
 
     /**
@@ -1836,66 +1657,12 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
-        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContains(user.getId(), user.getId());
-        groups = groups.stream().filter(group -> group.getStatus() == GroupStatus.ACTIVE).toList();
+        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
 
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
-        List<String> lstChannelIds = new ArrayList<>();
-        for (List<String> ids : listChannelIds) {
-            lstChannelIds.addAll(ids);
-        }
-        List<Channel> channels = channelRepository.findByIdIn(lstChannelIds);
+        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
 
-        List<GroupForwardResponse> groupForwardResponses = new ArrayList<>();
-        List<ChannelForwardResponse> channelForwardResponses = new ArrayList<>();
-        for (Group group : groups) {
-            GroupForwardResponse groupForwardResponse = GroupForwardResponse.from(group);
 
-            groupForwardResponses.add(groupForwardResponse);
-            channelForwardResponses.add(ChannelForwardResponse.builder()
-                    .id(group.getId())
-                    .name("Cuộc trò chuyện chung")
-                    .group(groupForwardResponse)
-                    .build());
-        }
-
-        for (Channel channel : channels) {
-            if (channel.getStatus() == ChannelStatus.ACTIVE) {
-                ChannelForwardResponse channelForwardResponse = ChannelForwardResponse.from(channel);
-
-                channelForwardResponse.setGroup(groupForwardResponses.stream().filter(groupForwardResponse -> groupForwardResponse.getId().equals(channel.getParentId())).findFirst().orElse(null));
-                channelForwardResponses.add(channelForwardResponse);
-            }
-        }
-
-        if (name.isPresent() && !name.get().isEmpty()) {
-            channelForwardResponses = channelForwardResponses.stream().filter(channelForwardResponse -> channelForwardResponse.getName().contains(name.get())).toList();
-        }
-
-        return channelForwardResponses.stream().sorted(Comparator.comparing(ChannelForwardResponse::getGroupName)).toList();
-    }
-
-    /**
-     * @param request UpdateGroupImageRequest
-     */
-    @Override
-    @SneakyThrows
-    public void updateGroupImage(UpdateGroupImageRequest request) {
-        Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            throw new DomainException("Group not found");
-        }
-        var tika = new Tika();
-        var key = blobStorage.generateBlobKey(tika.detect(request.getFile().getBytes()));
-        try {
-            blobStorage.post(request.getFile(), key);
-            logger.log(Level.INFO, "[*] Upload group image success");
-        } catch (Exception e) {
-            logger.error(e);
-            throw new DomainException("Upload group image failed");
-        }
-        Group group = groupWrapper.get();
-        group.setImageUrl(key);
-        groupRepository.save(group);
+        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
     }
 }

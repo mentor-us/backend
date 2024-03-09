@@ -15,6 +15,7 @@ import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
+import com.hcmus.mentor.backend.service.ShareService;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
@@ -65,6 +66,7 @@ public class UserServiceImpl implements UserService {
     private final MongoTemplate mongoTemplate;
     private final GroupCategoryRepository groupCategoryRepository;
     private final BlobStorage blobStorage;
+    private final ShareService shareService;
 
     @Override
     public String getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -237,27 +239,6 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    private Boolean isValidTemplate(Workbook workbook) {
-        int numberOfSheetInTemplate = 1;
-        if (workbook.getNumberOfSheets() != numberOfSheetInTemplate) {
-            return false;
-        }
-        Sheet sheet = workbook.getSheet("Data");
-        if (sheet == null) {
-            return false;
-        }
-
-        Row row = sheet.getRow(0);
-        return isValidHeader(row);
-    }
-
-    private Boolean isValidHeader(Row row) {
-        return (row.getCell(0).getStringCellValue().equals("STT")
-                && row.getCell(1).getStringCellValue().equals("Họ tên *")
-                && row.getCell(2).getStringCellValue().equals("Email *")
-                && row.getCell(3).getStringCellValue().equals("Vai trò *"));
-    }
-
     private List<AddUserRequest> getImportData(Workbook workbook) throws IOException {
         Sheet sheet = workbook.getSheet("Data");
         List<AddUserRequest> requests = new ArrayList<>();
@@ -288,7 +269,12 @@ public class UserServiceImpl implements UserService {
     public UserServiceDto importUsers(String emailUser, MultipartFile file) throws IOException {
         InputStream data = file.getInputStream();
         Workbook workbook = new XSSFWorkbook(data);
-        if (!isValidTemplate(workbook)) {
+        List<String> nameHeader = new ArrayList<>();
+        nameHeader.add("STT");
+        nameHeader.add("Họ tên *");
+        nameHeader.add("Email *");
+        nameHeader.add("Vai trò *");
+        if (!shareService.isValidTemplate(workbook, 1, nameHeader)) {
             return new UserServiceDto(INVALID_TEMPLATE, "Invalid template", null);
         }
         List<AddUserRequest> requests = getImportData(workbook);
