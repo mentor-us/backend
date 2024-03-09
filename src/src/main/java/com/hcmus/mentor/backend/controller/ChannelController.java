@@ -58,14 +58,13 @@ public class ChannelController {
      */
     @DeleteMapping("{channelId}")
     @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "Bad request")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> removeChannel(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String channelId) {
-        boolean isDeleted = channelService.removeChannel(customerUserDetails, channelId);
-        if (!isDeleted) {
-            return ResponseEntity.badRequest().build();
-        }
+        channelService.removeChannel(customerUserDetails, channelId);
         return ResponseEntity.ok().build();
     }
 

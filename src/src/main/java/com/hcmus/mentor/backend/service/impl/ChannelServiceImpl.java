@@ -1,5 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
@@ -106,27 +108,22 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public boolean removeChannel(CustomerUserDetails user, String channelId) {
-        Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (channelWrapper.isEmpty()) {
-            return true;
+    public void removeChannel(CustomerUserDetails user, String channelId) {
+        Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
+        if (!permissionService.isMentor(user.getEmail(), channel.getParentId())) {
+            throw new ForbiddenException("You are not allowed to remove this channel");
         }
 
-        Channel channel = channelWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), channel.getParentId())) {
-            return false;
+        Group group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Group not found"));
+        if (group.getDefaultChannelId().equals(channelId)) {
+            throw new DomainException("You cannot remove the default channel");
         }
+
+        group.removeChannel(channelId);
+        groupRepository.save(group);
 
         channelRepository.delete(channel);
         messageRepository.deleteByGroupId(channel.getId());
-
-        Optional<Group> groupWrapper = groupRepository.findById(channel.getParentId());
-        if (groupWrapper.isPresent()) {
-            Group group = groupWrapper.get();
-            group.removeChannel(channelId);
-            groupRepository.save(group);
-        }
-        return true;
     }
 
     @Override
