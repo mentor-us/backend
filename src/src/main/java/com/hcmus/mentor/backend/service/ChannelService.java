@@ -14,7 +14,7 @@ public interface ChannelService {
 
     Channel addPrivateChat(String adderId, AddChannelRequest request, Group group);
 
-    boolean removeChannel(CustomerUserDetails user, String channelId);
+    void removeChannel(CustomerUserDetails user, String channelId);
 
     List<Channel> getChannels(CustomerUserDetails user, String parentId);
 
