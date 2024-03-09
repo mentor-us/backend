@@ -4,7 +4,7 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
@@ -348,21 +348,21 @@ public class GroupServiceImpl implements GroupService {
                 .duration(duration)
                 .creatorId(creatorId)
                 .build();
-        var groupId = groupRepository.save(group);
+        groupRepository.save(group);
 
         var channel = Channel.builder()
                 .creatorId(creatorId)
                 .name("Kênh chat chung")
                 .status(ChannelStatus.ACTIVE)
                 .description("Kênh chat chung")
-                .isDefault(true)
                 .name(request.getName())
-                .parentId(groupId.getId())
                 .type(ChannelType.PUBLIC)
+                .parentId(group.getId())
                 .build();
-        var channelId = channelRepository.save(channel);
+        channelRepository.save(channel);
 
-        group.setChannelIds(List.of(channelId.getId()));
+        group.setChannelIds(List.of(channel.getId()));
+        group.setDefaultChannelId(channel.getId());
         groupRepository.save(group);
 
         menteeEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
@@ -909,6 +909,11 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
+
+        if(group.getDefaultChannelId() == groupId) {
+            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        }
+
         group.setStatus(GroupStatus.DELETED);
         groupRepository.save(group);
         return new GroupServiceDto(SUCCESS, null, group);

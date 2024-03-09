@@ -35,9 +35,6 @@ import java.util.List;
         private Date updatedDate = new Date();
 
     @Builder.Default
-    private Boolean isDefault = false;
-
-    @Builder.Default
     private List<String> userIds = new ArrayList<>();
 
         @Builder.Default

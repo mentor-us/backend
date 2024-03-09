@@ -1,12 +1,14 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.domain.Group;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter
@@ -48,6 +50,8 @@ public class GroupHomepageResponse {
 
     private String newMessageId;
 
+    private String defaultChannelId;
+
     public GroupHomepageResponse(Group group, String groupCategory, String role) {
         this.id = group.getId();
         this.name = group.getName();
@@ -65,6 +69,7 @@ public class GroupHomepageResponse {
         this.hasNewMessage = group.getHasNewMessage();
         this.newMessage = group.getLastMessage();
         this.newMessageId = group.getLastMessageId();
+        this.defaultChannelId = group.getDefaultChannelId();
     }
 
     public static GroupHomepageResponse from(Group group, String groupCategory, String role) {
