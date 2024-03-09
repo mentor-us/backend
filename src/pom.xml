@@ -50,6 +50,7 @@
         <commonio.version>2.15.1</commonio.version>
         <common-csv.version>1.8</common-csv.version>
         <poi.version>5.2.5</poi.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
         <minio.version>8.5.8</minio.version>
 
         <aws.sdk.version>2.25.0</aws.sdk.version>
@@ -237,6 +238,11 @@
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
         <!-- End utility -->
 
         <!-- Begin minio-->
@@ -306,6 +312,11 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
