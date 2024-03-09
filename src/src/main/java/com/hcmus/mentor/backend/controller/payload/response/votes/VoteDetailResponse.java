@@ -1,13 +1,13 @@
 package com.hcmus.mentor.backend.controller.payload.response.votes;
 
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
-import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-
-import java.util.*;
-
+import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -37,6 +37,8 @@ public class VoteDetailResponse {
 
     private boolean canEdit;
 
+    private Boolean isMultiChoice = false;
+
     public static VoteDetailResponse from(
             Vote vote, ShortProfile creator, List<ChoiceDetail> choices) {
         return VoteDetailResponse.builder()
@@ -49,6 +51,7 @@ public class VoteDetailResponse {
                 .createdDate(vote.getCreatedDate())
                 .status(vote.getStatus())
                 .closedDate(vote.getClosedDate())
+                .isMultiChoice(vote.getIsMultipleChoice())
                 .build();
     }
 
