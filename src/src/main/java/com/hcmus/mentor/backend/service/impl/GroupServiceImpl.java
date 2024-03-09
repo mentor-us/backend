@@ -352,14 +352,20 @@ public class GroupServiceImpl implements GroupService {
 
         var channel = Channel.builder()
                 .creatorId(creatorId)
-                .name("Kênh chat chung")
                 .status(ChannelStatus.ACTIVE)
                 .description("Kênh chat chung")
-                .name(request.getName())
+                .name("Kênh chung")
                 .type(ChannelType.PUBLIC)
                 .parentId(group.getId())
                 .build();
         channelRepository.save(channel);
+
+        var userIds = new ArrayList<String>();
+        userIds.addAll(menteeIds);
+        userIds.addAll(mentorIds);
+
+        addUsersToChannel(channel.getId(), userIds);
+
 
         group.setChannelIds(List.of(channel.getId()));
         group.setDefaultChannelId(channel.getId());
@@ -702,6 +708,8 @@ public class GroupServiceImpl implements GroupService {
             mailService.sendInvitationToGroupMail(emailAddress, group);
         }
 
+        addUsersToChannel(group.getDefaultChannelId(), ids);
+
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
@@ -734,6 +742,8 @@ public class GroupServiceImpl implements GroupService {
                 new ArrayList<>(new HashSet<>(group.getMentors()));
         group.setMentors(listMentorsAfterRemoveDuplicate);
 
+        addUsersToChannel(group.getDefaultChannelId(), ids);
+
         groupRepository.save(group);
         for (String emailAddress : emails) {
             mailService.sendInvitationToGroupMail(emailAddress, group);
@@ -741,6 +751,23 @@ public class GroupServiceImpl implements GroupService {
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
+
+    private Channel addUsersToChannel(String channelId, List<String> userIds) {
+        Channel channel = channelRepository.findById(channelId).orElse(null);
+        if (channel == null) {
+            return null;
+        }
+
+        for (String userId : userIds) {
+            var lstUserIds = channel.getUserIds();
+            if (!lstUserIds.contains(userId)) {
+                lstUserIds.add(userId);
+                channel.setUserIds(lstUserIds);
+            }
+        }
+        return channelRepository.save(channel);
+    }
+
 
     @Override
     public GroupServiceDto deleteMentee(String emailUser, String groupId, String menteeId) {
@@ -910,7 +937,7 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = groupWrapper.get();
 
-        if(group.getDefaultChannelId() == groupId) {
+        if (group.getDefaultChannelId() == groupId) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
