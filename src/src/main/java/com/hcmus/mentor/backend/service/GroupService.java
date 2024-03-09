@@ -16,8 +16,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
@@ -72,7 +72,7 @@ public interface GroupService {
 
     GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId);
 
-    void loadTemplate(File file) throws Exception;
+    InputStream loadTemplate(String pathToTemplate) throws Exception;
 
     GroupServiceDto updateGroup(String emailUser, String groupId, UpdateGroupRequest request);
 

@@ -105,22 +105,12 @@ public class GroupServiceImpl implements GroupService {
         return Date.from(instant);
     }
 
-    private static void clearSheet(Sheet sheet, int lastRow) {
-        for (int i = 1; i <= lastRow; i++) {
-            Row row = sheet.getRow(i);
-            if (row != null) {
-                sheet.removeRow(row);
-            }
-        }
-    }
-
     @Override
     public Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize);
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
-        Slice<Group> wrapper =
-                groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
+        Slice<Group> wrapper = groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
                         mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
@@ -847,37 +837,47 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public void loadTemplate(File file) throws Exception {
-        int lastRow = 10000;
-        List<GroupCategory> groupCategories =
-                groupCategoryRepository.findAllByStatus(GroupCategoryStatus.ACTIVE);
-        String[] groupCategoryNames =
-                groupCategories.stream()
-                        .map(GroupCategory::getName)
-                        .toList()
-                        .toArray(new String[0]);
-        FileInputStream inputStream = new FileInputStream(file);
-        Workbook workbook = WorkbookFactory.create(inputStream);
+    public InputStream loadTemplate(String pathToTemplate) throws Exception {
+        String[] groupCategoryNames = groupCategoryRepository
+                .findAllByStatus(GroupCategoryStatus.ACTIVE)
+                .stream()
+                .map(GroupCategory::getName)
+                .toList()
+                .toArray(new String[0]);
 
-        Sheet dataSheet = workbook.getSheet("Data");
-        clearSheet(dataSheet, dataSheet.getLastRowNum());
+        InputStream tempTemplateStream = getClass().getResourceAsStream(pathToTemplate);
 
-        DataValidationHelper validationHelper = new XSSFDataValidationHelper((XSSFSheet) dataSheet);
-        CellRangeAddressList addressList = new CellRangeAddressList(1, lastRow, 1, 1);
-        DataValidationConstraint constraintCategory =
-                validationHelper.createExplicitListConstraint(groupCategoryNames);
+        if (tempTemplateStream == null) {
+            throw new DomainException("Template not found");
+        }
 
-        DataValidation dataValidationCategory =
-                validationHelper.createValidation(constraintCategory, addressList);
-        dataValidationCategory.setSuppressDropDownArrow(true);
-        dataValidationCategory.setEmptyCellAllowed(false);
-        dataSheet.addValidationData(dataValidationCategory);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            try (Workbook workbook = WorkbookFactory.create(tempTemplateStream)) {
+                Sheet dataSheet = workbook.getSheet("Data");
+                for (int i = 1; i <= dataSheet.getLastRowNum(); i++) {
+                    Row row = dataSheet.getRow(i);
+                    if (row != null) {
+                        dataSheet.removeRow(row);
+                    }
+                }
 
-        FileOutputStream outputStream = new FileOutputStream(file);
-        workbook.write(outputStream);
-        workbook.close();
-        inputStream.close();
-        outputStream.close();
+                DataValidationHelper validationHelper = new XSSFDataValidationHelper((XSSFSheet) dataSheet);
+
+                CellRangeAddressList addressList = new CellRangeAddressList(1, 10000, 1, 1);
+                DataValidationConstraint constraintCategory = validationHelper.createExplicitListConstraint(groupCategoryNames);
+                DataValidation dataValidationCategory = validationHelper.createValidation(constraintCategory, addressList);
+
+                dataValidationCategory.setSuppressDropDownArrow(true);
+                dataValidationCategory.setEmptyCellAllowed(false);
+                dataValidationCategory.setErrorStyle(DataValidation.ErrorStyle.STOP);
+
+                dataSheet.addValidationData(dataValidationCategory);
+
+                workbook.write(outputStream);
+            }
+
+            return new ByteArrayInputStream(outputStream.toByteArray());
+        }
     }
 
     @Override
