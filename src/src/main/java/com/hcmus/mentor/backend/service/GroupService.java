@@ -38,7 +38,7 @@ public interface GroupService {
 
     Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize);
 
-    GroupServiceDto createNewGroup(String emailUser, CreateGroupRequest request);
+    GroupServiceDto createGroup(String creatorEmail, CreateGroupCommand request);
 
     GroupServiceDto readGroups(Workbook workbook) throws ParseException;
 

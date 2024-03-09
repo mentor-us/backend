@@ -34,8 +34,11 @@ import java.util.List;
         @Builder.Default
         private Date updatedDate = new Date();
 
-        @Builder.Default
-        private List<String> userIds = new ArrayList<>();
+    @Builder.Default
+    private Boolean isDefault = false;
+
+    @Builder.Default
+    private List<String> userIds = new ArrayList<>();
 
         @Builder.Default
         private ChannelStatus status = ChannelStatus.ACTIVE;
