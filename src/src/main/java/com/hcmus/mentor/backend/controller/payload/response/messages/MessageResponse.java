@@ -69,7 +69,7 @@ public class MessageResponse implements Serializable {
                 .reply(message.getReply())
                 .isEdited(message.getIsEdited())
                 .editedAt(message.getEditedAt())
-                .isForward(message.getType() == Message.Type.FORWARD)
+                .isForward(message.getIsForward())
                 .build();
     }
 

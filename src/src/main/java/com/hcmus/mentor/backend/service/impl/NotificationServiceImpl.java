@@ -15,6 +15,7 @@ import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -674,10 +675,12 @@ public class NotificationServiceImpl implements NotificationService {
      * @param groupId Group identifier
      */
     @Override
+    @SneakyThrows
     public void sendForwardNotification(MessageDetailResponse message, String groupId) {
         if (message == null || groupId == null) {
             return;
         }
+
 
         String title;
         List<String> members;
@@ -703,18 +706,28 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
+        if (message.getType() == Message.Type.FILE || message.getType() == Message.Type.IMAGE || message.getType() == Message.Type.VIDEO) {
+
+            NotificationType type;
+            StringBuilder notificationBody = new StringBuilder((message.getSender() != null) ? (message.getSender().getName() + " đã chuyển tiếp ") : "");
+            if (Message.Type.IMAGE.equals(message.getType())) {
+                type = NEW_IMAGE_MESSAGE;
+                notificationBody.append(message.getImages().size()).append(" ảnh.");
+            } else if (Message.Type.FILE.equals(message.getType())) {
+                type = NEW_FILE_MESSAGE;
+                notificationBody.append(" một tệp đính kèm.");
+            } else {
+                type = SYSTEM;
+                notificationBody.append(" một đa phương tiện.");
+            }
+            String body = notificationBody.toString();
+            firebaseMessagingManager.sendGroupNotification(members, title, body, attachDataNotification(message.getGroupId(), type));
+            return;
+        }
+
         Map<String, String> data = attachDataNotification(groupId, FORWARD);
         String shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25))).text();
         String content = message.getSender().getName() + " đã chuyển tiếp tin nhắn \"" + shortMessage + "\"";
-        try {
-            logger.debug("[*] Send forward notification to group {}", groupId);
-            logger.debug("[*] Title: {}", title);
-            logger.debug("[*] Content: {}", content);
-            logger.debug("[*] Data: {}", data);
-            firebaseMessagingManager.sendGroupNotification(members, title, content, data);
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
-
+        firebaseMessagingManager.sendGroupNotification(members, title, content, data);
     }
 }
