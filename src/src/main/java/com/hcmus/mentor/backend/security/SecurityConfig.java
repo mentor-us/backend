@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.security;
 
 import com.hcmus.mentor.backend.security.filter.JwtAuthFilter;
 import com.hcmus.mentor.backend.security.handler.FirebaseClearingLogoutHandler;
+import com.hcmus.mentor.backend.security.handler.Http401UnauthorizedEntryPoint;
 import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationFailureHandler;
 import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationSuccessHandler;
 import com.hcmus.mentor.backend.security.principal.oauth2.CustomOidcUserService;
@@ -99,6 +100,7 @@ public class SecurityConfig {
                     l.addLogoutHandler(firebaseClearingLogoutHandler);
                 })
                 .addFilterBefore(jwtAuthFilter, BasicAuthenticationFilter.class)
+                .exceptionHandling(e -> e.authenticationEntryPoint(new Http401UnauthorizedEntryPoint()))
                 .build();
     }
 }

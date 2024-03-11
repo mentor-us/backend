@@ -12,9 +12,12 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.util.Date;
 
 @Component
 @RequiredArgsConstructor
@@ -32,20 +35,50 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             FilterChain chain) {
         var authorizationHeader = request.getHeader("Authorization");
 
-        if (StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
-            var token = authorizationHeader.substring(BEARER_SCHEME.length() + 1);
-            var email = getTokenEmail(token);
-
-            var userDetails = userDetailsService.loadUserByUsername(email);
-            if (userDetails != null) {
-                var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+        if (!StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
+            chain.doFilter(request, response);
+            return;
         }
 
+        var token = authorizationHeader.substring(BEARER_SCHEME.length() + 1);
+        var email = getTokenEmail(token);
+
+        if (StringUtils.isEmpty(email)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        var user = userDetailsService.loadUserByUsername(email);
+        if (user == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        if (!isTokenValid(token, user)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         chain.doFilter(request, response);
+    }
+
+    private boolean isTokenValid(String token, UserDetails user) {
+        return !getTokenExpired(token).before(new Date());
+    }
+
+    private Date getTokenExpired(String token) {
+        try {
+            Claims claims = getTokenClaims(token);
+
+            return claims.getExpiration();
+        } catch (Exception ex) {
+            throw new DomainException("Token expired claim cannot be found. Invalid token");
+        }
     }
 
     private String getTokenEmail(String token) {
