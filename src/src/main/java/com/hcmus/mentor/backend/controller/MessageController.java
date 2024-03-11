@@ -99,9 +99,9 @@ public class MessageController {
         }
         Message message = messageWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(message.getChannelId());
         if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
+            Optional<Channel> channelWrapper = channelRepository.findById(message.getChannelId());
             if (channelWrapper.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
@@ -132,7 +132,7 @@ public class MessageController {
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannelId());
 
         return ResponseEntity.ok().build();
     }
@@ -154,7 +154,7 @@ public class MessageController {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), customerUserDetails.getId())) {
+        if (!groupService.isGroupMember(message.getChannelId(), customerUserDetails.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (!customerUserDetails.getId().equals(message.getSenderId())) {
@@ -170,7 +170,7 @@ public class MessageController {
                         .newContent(message.getContent())
                         .action(UpdateMessageResponse.Action.update)
                         .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannelId());
 
         return ResponseEntity.ok().build();
     }

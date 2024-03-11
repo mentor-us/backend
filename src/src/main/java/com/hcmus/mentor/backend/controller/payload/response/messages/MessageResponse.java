@@ -58,7 +58,7 @@ public class MessageResponse implements Serializable {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getGroupId())
+                .groupId(message.getChannelId())
                 .voteId(message.getVoteId())
                 .meetingId(message.getMeetingId())
                 .taskId(message.getTaskId())

@@ -111,9 +111,9 @@ public class SocketController {
             if (message.getReply() != null) {
                 response = messageService.fulfillTextMessage(buffer);
             }
-            socketIOService.sendMessage(socketIOClient, response, newMessage.getGroupId());
+            socketIOService.sendMessage(socketIOClient, response, newMessage.getChannelId());
             notificationService.sendNewMessageNotification(response);
-            groupService.updateLastMessageId(message.getGroupId(), message.getId());
+            groupService.updateLastMessageId(message.getChannelId(), message.getId());
         };
     }
 

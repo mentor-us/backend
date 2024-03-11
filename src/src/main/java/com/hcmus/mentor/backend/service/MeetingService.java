@@ -88,7 +88,7 @@ public class MeetingService implements IRemindableService {
                         .content("NEW MEETING")
                         .createdDate(new Date())
                         .type(Message.Type.MEETING)
-                        .groupId(request.getGroupId())
+                        .channelId(request.getGroupId())
                         .meetingId(newMeeting.getId())
                         .build();
         messageService.saveMessage(newMessage);

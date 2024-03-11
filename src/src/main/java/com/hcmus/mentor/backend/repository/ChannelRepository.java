@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ChannelRepository extends MongoRepository<Channel, String> {
@@ -19,6 +20,8 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
             String parentId, ChannelType type, List<String> userIds);
 
     List<Channel> findByParentId(String parentId);
+
+    List<Channel> findByParentIdInAndStatus(Collection<String> parentId, ChannelStatus status);
 
     Channel findTopByParentIdAndName(String parentId, String name);
 
@@ -37,4 +40,6 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
 
     })
     List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
+
+    List<Channel> findByUserIdsContainingAndStatusIs(String userId, ChannelStatus status);
 }

@@ -1320,7 +1320,7 @@ public class GroupServiceImpl implements GroupService {
                         Collectors.toMap(
                                 ProfileResponse::getId, sender -> sender, (sender1, sender2) -> sender2));
 
-        List<Message> mediaMessages = messageRepository.findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
+        List<Message> mediaMessages = messageRepository.findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(
                 groupId,
                 Arrays.asList(Message.Type.IMAGE, Message.Type.FILE),
                 Arrays.asList(Message.Status.SENT, Message.Status.EDITED));

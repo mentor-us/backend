@@ -408,13 +408,13 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(message.getChannelId());
         if (!groupWrapper.isPresent()) {
             return;
         }
         Group group = groupWrapper.get();
 
-        Map<String, String> data = attachDataNotification(message.getGroupId(), NEW_REACTION);
+        Map<String, String> data = attachDataNotification(message.getChannelId(), NEW_REACTION);
         com.google.firebase.messaging.Notification notification =
                 com.google.firebase.messaging.Notification.builder()
                         .setTitle(group.getName())

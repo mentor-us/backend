@@ -19,5 +19,5 @@ public class AddTaskRequest {
     private Date deadline;
     private List<String> userIds = new ArrayList<>();
     private String parentTask;
-    private String groupId;
+    private String channelId;
 }

@@ -3,11 +3,6 @@ package com.hcmus.mentor.backend.repository;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.domain.Message;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
@@ -23,7 +18,7 @@ public interface MessageRepository extends MongoRepository<Message, String> {
     @NotNull
     Optional<Message> findByIdAndStatusNot(String id, Message.Status status);
 
-    Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
+//    Slice<Message> findByChannelId(String groupId, PageRequest pageRequest);
 
     Optional<Message> findByVoteId(String voteId);
 
@@ -37,7 +32,7 @@ public interface MessageRepository extends MongoRepository<Message, String> {
                     "{$skip: ?1}",
                     "{$limit: ?2}"
             })
-    List<MessageResponse> getGroupMessagesByGroupId(String groupId, int offset, int size);
+    List<MessageResponse> getGroupMessagesByChannelId(String groupId, int offset, int size);
 
     @Aggregation(
             pipeline = {
@@ -55,22 +50,22 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     long countByCreatedDateBetween(Date start, Date end);
 
-    long countByGroupId(String groupId);
+    long countByChannelId(String channelId);
 
-    Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
+    Message findFirstByChannelIdOrderByCreatedDateDesc(String channelId);
 
-    long countByGroupIdAndSenderId(String groupId, String senderId);
+    long countByChannelIdAndSenderId(String groupId, String senderId);
 
-    Message findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(String groupId, String senderId);
+    Message findFirstByChannelIdAndSenderIdOrderByCreatedDateDesc(String channelId, String senderId);
 
-    long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    long countByChannelIdInAndCreatedDateBetween(List<String> channelIds, Date start, Date end);
 
-    long countByGroupIdIn(List<String> groupIds);
+    long countByChannelIdIn(List<String> channelIds);
 
-    List<Message> findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
+    List<Message> findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(
             String groupId, List<Message.Type> type, List<Message.Status> statuses);
 
-    Optional<Message> findTopByGroupIdOrderByCreatedDateDesc(String groupId);
+    Optional<Message> findTopByChannelIdOrderByCreatedDateDesc(String groupId);
 
     @Aggregation(
             pipeline = {
@@ -80,9 +75,9 @@ public interface MessageRepository extends MongoRepository<Message, String> {
                     "{$unwind: '$sender'}",
                     "{$sort: {createdDate: -1}}",
             })
-    List<MessageResponse> getAllGroupMessagesByGroupId(String groupId);
+    List<MessageResponse> getAllGroupMessagesByChannelId(String groupId);
 
-    Page<Message> findByGroupId(String groupId, TextCriteria criteria, Pageable pageable);
+//    Page<Message> findByChannelId(String groupId, TextCriteria criteria, Pageable pageable);
 
-    void deleteByGroupId(String groupId);
+    void deleteByChannelId(String groupId);
 }

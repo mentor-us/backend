@@ -165,7 +165,7 @@ public class TaskController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
         String emailUser = customerUserDetails.getEmail();
-        TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByGroupId(emailUser, groupId);
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByChannelId(emailUser, groupId);
         return new ApiResponseDto(
                 taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
@@ -238,8 +238,7 @@ public class TaskController {
             @RequestParam("groupId") String groupId) {
         TaskServiceImpl.TaskReturnService taskReturn =
                 taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
