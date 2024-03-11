@@ -62,6 +62,8 @@ public class Message {
 
     private String reply;
 
+    private Boolean isForward = false;
+
     public ReactionDto react(String userId, EmojiType emoji) {
         Optional<ReactionDto> reactionWrapper =
                 reactions.stream().filter(r -> r.getUserId().equals(userId)).findFirst();
@@ -109,8 +111,7 @@ public class Message {
         TASK,
         VOTE,
         NOTIFICATION,
-        SYSTEM,
-        FORWARD
+        SYSTEM
     }
 
     public enum Status {

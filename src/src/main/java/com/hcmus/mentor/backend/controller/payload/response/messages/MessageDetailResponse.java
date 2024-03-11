@@ -75,7 +75,7 @@ public class MessageDetailResponse {
                 .status(message.getStatus())
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
-                .isForward(message.getType() == Message.Type.FORWARD)
+                .isForward(message.getIsForward())
                 .build();
     }
 

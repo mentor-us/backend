@@ -27,6 +27,7 @@ import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
@@ -37,9 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.hcmus.mentor.backend.domain.Message.Type.FORWARD;
-import static com.hcmus.mentor.backend.domain.Message.Type.TEXT;
 
 /**
  * {@inheritDoc}
@@ -358,11 +356,10 @@ public class MessageServiceImpl implements MessageService {
             response.setReply(replyMessage);
         }
 
-        if(response.getType() == FORWARD)
-        {
-            response.setType(TEXT);
-            response.setIsForward(true);
-        }
+//        if (response.getType() == FORWARD) {
+//            response.setType(TEXT);
+//            response.setIsForward(true);
+//        }
         return response;
     }
 
@@ -422,7 +419,7 @@ public class MessageServiceImpl implements MessageService {
             case MEETING -> fulfillMeetingMessage(message);
             case TASK -> fulfillTaskMessage(message);
             case VOTE -> fulfillVotingMessage(message);
-            case TEXT, FORWARD -> fulfillTextMessage(message);
+//            case TEXT, FORWARD -> fulfillTextMessage(message);
             default -> MessageDetailResponse.from(message);
         };
     }
@@ -471,39 +468,22 @@ public class MessageServiceImpl implements MessageService {
 
     /**
      * Only forward message type TEXT
+     *
      * @param userId  String
      * @param request ForwardRequest
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
-        // check message
-
-        Message message = messageRepository.findById(request.getMessageId()).orElse(null);
-        if (message == null) {
-            throw new DomainException("Message not found");
+        List<String> typeAllow = List.of(Message.Type.TEXT.name(), Message.Type.IMAGE.name(), Message.Type.FILE.name(), Message.Type.VIDEO.name());
+        var message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
+        if (!typeAllow.contains(message.getType().name())) {
+            throw new DomainException("Message type not allow forward");
         }
+        User user = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
 
-        if(message.getType()!= Message.Type.TEXT){
-            throw new DomainException("Message type is not TEXT");
-        }
-
-        // Todo: check message content
-        if(message.getContent() == null ){
-            throw new DomainException("Message content is null");
-        }
-
-
-        // check user
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            throw new DomainException("User not found");
-        }
-
-        // get list channels can forward
         var channelIds = new ArrayList<>(channelRepository.findByIdIn(request.getChannelIds()).stream().map(Channel::getId).toList());
 
-        // add general channel
         groupRepository.findByIdIn(request.getChannelIds()).forEach(g -> channelIds.add(g.getId()));
 
         try {
@@ -513,11 +493,14 @@ public class MessageServiceImpl implements MessageService {
                         .senderId(userId)
                         .groupId(cId)
                         .createdDate(new Date())
-                        .type(FORWARD)
                         .content(message.getContent())
-                        .reply(message.getReply()).build();
+                        .type(message.getType())
+                        .reply(message.getReply())
+                        .images(message.getImages())
+                        .file(message.getFile())
+                        .isForward(true)
+                        .build();
 
-                logger.debug("Forward message: ", m.toString());
                 messages.add(messageRepository.save(m));
                 pingGroup(cId);
             });
@@ -527,6 +510,7 @@ public class MessageServiceImpl implements MessageService {
             });
             return messages;
         } catch (Exception e) {
+            logger.log(Level.INFO, "Forward message failed", e);
             throw new DomainException("Forward message failed");
         }
     }
