@@ -82,8 +82,7 @@ public class MeetingService implements IRemindableService {
         }
 
         Meeting newMeeting = meetingRepository.save(Meeting.from(request));
-        Message newMessage =
-                Message.builder()
+        Message newMessage = Message.builder()
                         .senderId(request.getOrganizerId())
                         .content("NEW MEETING")
                         .createdDate(new Date())
@@ -94,9 +93,7 @@ public class MeetingService implements IRemindableService {
         messageService.saveMessage(newMessage);
         groupService.pingGroup(request.getGroupId());
 
-        MessageDetailResponse response =
-                messageService.fulfillMeetingMessage(
-                        MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
+        MessageDetailResponse response = messageService.fulfillMeetingMessage(MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
         notificationService.sendNewMeetingNotification(response);
         saveToReminder(newMeeting);

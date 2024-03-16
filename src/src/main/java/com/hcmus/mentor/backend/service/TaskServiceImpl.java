@@ -95,9 +95,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .build();
         messageService.saveMessage(message);
 
-        MessageDetailResponse response =
-                messageService.fulfillTaskMessage(
-                        MessageResponse.from(message, ProfileResponse.from(assigner.get())));
+        MessageDetailResponse response = messageService.fulfillTaskMessage(MessageResponse.from(message, ProfileResponse.from(assigner.get())));
         socketIOService.sendBroadcastMessage(response, task.getChannelId());
         saveToReminder(task);
         notificationService.sendNewTaskNotification(response);
@@ -113,11 +111,10 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<Task> tasks = taskRepository.findByChannelId(channelId);
-        List<TaskDetailResponse> taskDetailResponses =
-                tasks.stream()
-                        .map(task -> generateTaskDetailFromTask(emailUser, task))
-                        .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
-                        .toList();
+        List<TaskDetailResponse> taskDetailResponses = tasks.stream()
+                .map(task -> generateTaskDetailFromTask(emailUser, task))
+                .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
+                .toList();
         return new TaskReturnService(SUCCESS, "", taskDetailResponses);
     }
 
@@ -151,44 +148,39 @@ public class TaskServiceImpl implements IRemindableService {
         reminderRepository.deleteByRemindableId(task.getId());
 
         List<Task> childrenTasks = taskRepository.findAllByParentTask(id);
-        childrenTasks.forEach(
-                childrenTask -> {
-                    task.setParentTask(null);
-                    taskRepository.save(childrenTask);
-                });
+        childrenTasks.forEach(childrenTask -> {
+            task.setParentTask(null);
+            taskRepository.save(childrenTask);
+        });
 
         return new TaskReturnService(SUCCESS, "", task);
     }
 
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
-        TaskDetailResponse.Assigner assigner =
-                userRepository
-                        .findById(task.getAssignerId())
-                        .map(TaskDetailResponse.Assigner::from)
-                        .orElse(null);
+        TaskDetailResponse.Assigner assigner = userRepository
+                .findById(task.getAssignerId())
+                .map(TaskDetailResponse.Assigner::from)
+                .orElse(null);
 
-        TaskDetailResponse.Group groupInfo =
-                groupRepository
-                        .findById(task.getChannelId())
-                        .map(TaskDetailResponse.Group::from)
-                        .orElse(null);
+        TaskDetailResponse.Group groupInfo = groupRepository
+                .findById(task.getChannelId())
+                .map(TaskDetailResponse.Group::from)
+                .orElse(null);
 
-        TaskDetailResponse.Role role =
-                permissionService.isMentor(emailUser, task.getChannelId())
-                        ? TaskDetailResponse.Role.MENTOR
-                        : TaskDetailResponse.Role.MENTEE;
+        TaskDetailResponse.Role role = permissionService.isMentor(emailUser, task.getChannelId())
+                ? TaskDetailResponse.Role.MENTOR
+                : TaskDetailResponse.Role.MENTEE;
 
         Optional<User> userWrapper = userRepository.findByEmail(emailUser);
         if (!userWrapper.isPresent()) {
             return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
         }
 
-        TaskStatus status =
-                task.getAssigneeIds().stream()
-                        .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
-                        .findFirst()
-                        .map(AssigneeDto::getStatus)
-                        .orElse(null);
+        TaskStatus status = task.getAssigneeIds().stream()
+                .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
+                .findFirst()
+                .map(AssigneeDto::getStatus)
+                .orElse(null);
         return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
 
@@ -341,16 +333,13 @@ public class TaskServiceImpl implements IRemindableService {
                 .map(Channel::getId)
                 .toList();
 
-        List<Task> tasks =
-                taskRepository
-                        .findAllByChannelIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
-                                channelIds,
-                                Arrays.asList("*", userId),
-                                new Date(),
-                                PageRequest.of(0, 5, Sort.by("deadline").descending()))
-                        .getContent();
-        return tasks.stream()
-                .map(task -> {
+        List<Task> tasks = taskRepository.findAllByChannelIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
+                        channelIds,
+                        Arrays.asList("*", userId),
+                        new Date(),
+                        PageRequest.of(0, 5, Sort.by("deadline").descending()))
+                .getContent();
+        return tasks.stream().map(task -> {
                     Group group = groupRepository.findByChannelIdsContains(task.getChannelId());
                     User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
                     AssigneeDto assignee = task.getAssigneeIds().stream()
@@ -380,14 +369,13 @@ public class TaskServiceImpl implements IRemindableService {
         var joinedChannelIds = channelRepository.findByUserIdsContainingAndStatusIs(userId, ChannelStatus.ACTIVE).stream()
                 .map(Channel::getId)
                 .toList();
-        MatchOperation match = Aggregation.match(
-                Criteria.where("channelId")
-                        .in(joinedChannelIds)
-                        .and("assigneeIds.userId")
-                        .in(Arrays.asList("*", userId))
-                        .and("deadline")
-                        .gte(startTime)
-                        .lte(endTime));
+        MatchOperation match = Aggregation.match(Criteria.where("channelId")
+                .in(joinedChannelIds)
+                .and("assigneeIds.userId")
+                .in(Arrays.asList("*", userId))
+                .and("deadline")
+                .gte(startTime)
+                .lte(endTime));
         Aggregation aggregation = Aggregation.newAggregation(match);
         return mongoTemplate.aggregate(aggregation, "task", Task.class).getMappedResults();
     }
@@ -413,7 +401,7 @@ public class TaskServiceImpl implements IRemindableService {
         return new TaskReturnService(SUCCESS, "", ownTasks);
     }
 
-    private TaskReturnService validateChannel(String channelId, String userId){
+    private TaskReturnService validateChannel(String channelId, String userId) {
         if (!userRepository.existsById(userId)) {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
@@ -439,9 +427,8 @@ public class TaskServiceImpl implements IRemindableService {
             return Collections.emptyList();
         }
 
-        List<Task> tasks =
-                taskRepository.findAllByChannelIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-                        channelId, Arrays.asList("*", userId));
+        List<Task> tasks = taskRepository.findAllByChannelIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
+                channelId, Arrays.asList("*", userId));
         return tasks.stream()
                 .map(task -> {
                     User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
@@ -465,7 +452,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     private List<TaskResponse> getAssignedByMeTasks(String channelId, String userId) {
         var group = groupRepository.findByChannelIdsContains(channelId);
-        if(group == null){
+        if (group == null) {
             return Collections.emptyList();
         }
 
