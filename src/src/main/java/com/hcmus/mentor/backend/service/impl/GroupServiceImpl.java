@@ -111,7 +111,7 @@ public class GroupServiceImpl implements GroupService {
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
         Slice<Group> wrapper = groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                        mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
+                mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
@@ -547,14 +547,14 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
         for (Group group : groups) {
-            switch (group.getStatus()) {
-                case GroupStatus.DISABLED, GroupStatus.DELETED:
-                    break;
-                default:
-                    group.setStatus(getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd()));
+            if (group.getStatus() == GroupStatus.DISABLED || group.getStatus() == GroupStatus.DELETED) {
+                continue;
             }
+
+            group.setStatus(getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd()));
             groupRepository.save(group);
         }
+
         return groups;
     }
 

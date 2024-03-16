@@ -91,8 +91,7 @@ public class GroupController {
         }
 
         boolean isSuperAdmin = permissionService.isSuperAdmin(customerUserDetails.getEmail());
-        Pageable pageRequest =
-                PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
         if (isSuperAdmin) {
             groups = groupRepository.findAll(pageRequest);
         } else {
@@ -104,8 +103,7 @@ public class GroupController {
             groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
         }
 
-        var groupsTemp = groupService.validateTimeGroups(groups.getContent());
-        groups = new PageImpl<>(groupsTemp, pageRequest, groupsTemp.size());
+        groups = new PageImpl<>(groupService.validateTimeGroups(groups.getContent()), pageRequest, groups.getTotalElements());
         return ApiResponseDto.success(pagingResponse(groups));
     }
 
