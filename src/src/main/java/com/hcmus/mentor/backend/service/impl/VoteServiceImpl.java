@@ -13,7 +13,7 @@ import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
+import com.hcmus.mentor.backend.domain.dto.Choice;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
@@ -46,18 +46,18 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(userId, vote.getGroupId())) {
+        if (!permissionService.isUserIdInGroup(userId, vote.getGroup().getId())) {
             return null;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroup().getId());
         if (groupWrapper.isEmpty()) {
             return null;
         }
         Group group = groupWrapper.get();
 
         VoteDetailResponse voteDetail = fulfillChoices(vote);
-        voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreatorId().equals(userId));
+        voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreator().getId().equals(userId));
         return voteDetail;
     }
 
@@ -73,7 +73,7 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
-        ShortProfile creator = userRepository.findShortProfile(vote.getCreatorId());
+        ShortProfile creator = userRepository.findShortProfile(vote.getCreator().getId());
         List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
                 .map(this::fulfillChoice)
                 .filter(Objects::nonNull)
@@ -83,11 +83,11 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(Choice choice) {
         if (choice == null) {
             return null;
         }
-        List<ShortProfile> voters = userRepository.findByIds(choice.getVoters());
+        List<ShortProfile> voters = userRepository.findByIds(choice.getVoters().stream().map(User::getId).toList());
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 
@@ -97,15 +97,20 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         request.setCreatorId(userId);
-        Vote newVote = voteRepository.save(Vote.from(request));
+        Vote newVote = voteRepository.save(Vote.builder().question(request.getQuestion())
+                .group(groupRepository.findById(request.getGroupId()).orElse(null))
+                .creator(userRepository.findById(request.getCreatorId()).orElse(null))
+                .timeEnd(request.getTimeEnd())
+                .choices(request.getChoices())
+                .isMultipleChoice(request.getIsMultipleChoice()).build());
 
         Message message = messageService.saveVoteMessage(newVote);
         User sender = userRepository.findById(message.getSenderId()).orElse(null);
         MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(newVote.getCreatorId(), newVote);
-        groupService.pingGroup(newVote.getGroupId());
+        notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
+        groupService.pingGroup(newVote.getGroup().getId());
         return newVote;
     }
 
@@ -116,8 +121,8 @@ public class VoteServiceImpl implements VoteService {
             return false;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
+                && !vote.getGroup().getId().equals(user.getId())) {
             return false;
         }
 
@@ -133,8 +138,8 @@ public class VoteServiceImpl implements VoteService {
             return false;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), vote.getCreator().getId())
+                && !vote.getGroup().getId().equals(user.getId())) {
             return false;
         }
         voteRepository.delete(vote);
@@ -166,7 +171,7 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroupId())) {
+        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
             return null;
         }
 
@@ -180,7 +185,7 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroupId())) {
+        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
             return null;
         }
 
@@ -194,13 +199,13 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public boolean closeVote(CustomerUserDetails user, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
             return false;
         }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+
+        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
+                && !vote.getGroup().getId().equals(user.getId())) {
             return false;
         }
         if (Vote.Status.CLOSED.equals(vote.getStatus())) {
@@ -214,12 +219,12 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public boolean reopenVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        if (voteWrapper.isEmpty()) {
             return false;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
+                && !vote.getCreator().getId().equals(user.getId())) {
             return false;
         }
         if (Vote.Status.OPEN.equals(vote.getStatus())) {

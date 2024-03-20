@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -32,53 +33,40 @@ public class ChannelServiceImpl implements ChannelService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
 
-    @Override
-    public Channel addChannel(String adderId, AddChannelRequest request) {
-        Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
-        Group group;
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(request.getGroupId());
-            if (channelWrapper.isEmpty()) {
-                return null;
-            }
-            Channel channel = channelWrapper.get();
-            group = groupRepository.findById(channel.getParentId()).orElse(null);
-        } else {
-            group = groupWrapper.get();
-        }
-        if (group == null) {
-            return null;
-        }
+    public Channel createChannel(String creatorId, AddChannelRequest request) {
+        Group group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
 
         if (ChannelType.PRIVATE_MESSAGE.equals(request.getType())) {
-            return addPrivateChat(adderId, request, group);
+            return addPrivateChat(creatorId, request, group);
         }
 
-        if (!group.isMentor(adderId)) {
-            return null;
+        if (!group.isMentor(creatorId)) {
+            throw new ForbiddenException("Chỉ có mentor được tạo kênh mới");
         }
 
-        String channelName = request.getChannelName();
-        if (channelRepository.existsByParentIdAndName(group.getId(), channelName)) {
-            return null;
+        var name = request.getChannelName();
+        if (channelRepository.existsByParentIdAndName(group.getId(), name)) {
+            throw new DomainException("Tên nhóm " + name + " đã tồn tại. Xin vui lòng tạo tên khác");
         }
 
-        Channel data =
-                Channel.builder()
-                        .name(channelName)
-                        .description(request.getDescription())
-                        .type(request.getType())
-                        .userIds(
-                                ChannelType.PUBLIC.equals(request.getType())
-                                        ? group.getMembers()
-                                        : request.getUserIds())
-                        .parentId(group.getId())
-                        .creatorId(request.getCreatorId())
-                        .build();
-        Channel newChannel = channelRepository.save(data);
-        group.addChannel(newChannel.getId());
-        groupRepository.save(group);
-        return newChannel;
+        var usersInChannel = ChannelType.PUBLIC.equals(request.getType())
+                ? Stream.concat(group.getMentors().stream(), group.getMentees().stream()).toList()
+                : userRepository.findByIdIn(request.getUserIds());
+        Channel channel = channelRepository.save(Channel.builder()
+                .name(name)
+                .description(request.getDescription())
+                .type(request.getType())
+                .users(usersInChannel)
+                .parentId(group.getId())
+                .creatorId(request.getCreatorId())
+                .build());
+
+        if (!group.getChannels().contains(channel)){
+            group.getChannels().add(channel);
+            groupRepository.save(group);
+        }
+
+        return channel;
     }
 
     @Override
@@ -92,19 +80,23 @@ public class ChannelServiceImpl implements ChannelService {
             return existedChannel;
         }
 
-        Channel data = Channel.builder()
+        var users = userRepository.findByIdIn(memberIds);
+
+        Channel channel = channelRepository.save(Channel.builder()
                 .name(channelName)
                 .description(request.getDescription())
                 .type(ChannelType.PRIVATE_MESSAGE)
-                .userIds(memberIds)
+                .users(users)
                 .parentId(group.getId())
                 .creatorId(request.getCreatorId())
-                .build();
+                .build());
 
-        Channel newChannel = channelRepository.save(data);
-        group.addPrivate(newChannel.getId());
-        groupRepository.save(group);
-        return newChannel;
+        if (!group.getPrivateChannels().contains(channel)){
+            group.getPrivateChannels().add(channel);
+            groupRepository.save(group);
+        }
+
+        return channel;
     }
 
     @Override
@@ -115,11 +107,13 @@ public class ChannelServiceImpl implements ChannelService {
         }
 
         Group group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Group not found"));
-        if (group.getDefaultChannelId().equals(channelId)) {
+        if (group.getDefaultChannel().equals(channelId)) {
             throw new DomainException("You cannot remove the default channel");
         }
 
-        group.removeChannel(channelId);
+        group.getChannels().remove(channel);
+        group.getPrivateChannels().remove(channel);
+
         groupRepository.save(group);
 
         channelRepository.delete(channel);
@@ -163,7 +157,13 @@ public class ChannelServiceImpl implements ChannelService {
             return null;
         }
 
-        channel.update(request);
+        channel.setName(request.getChannelName());
+        channel.setDescription(request.getDescription());
+        channel.setType(request.getType());
+
+        var users = userRepository.findByIdIn(request.getUserIds());
+        channel.setUsers(users);
+
         return channelRepository.save(channel);
     }
 
@@ -185,6 +185,6 @@ public class ChannelServiceImpl implements ChannelService {
             return Collections.emptyList();
         }
 
-        return userRepository.findByIds(channel.getUserIds());
+        return userRepository.findByIds(channel.getUsers().stream().map(String::valueOf).toList());
     }
 }

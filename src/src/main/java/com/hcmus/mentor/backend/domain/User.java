@@ -7,38 +7,36 @@ import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.security.principal.oauth2.CustomerOidcUser;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 
 @Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Document("user")
+@Entity
+@Table(name = "users")
+//@Document("user")
 public class User implements Serializable {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Builder.Default
     private String name = "";
+
     @Email
     private String email;
 
     @Builder.Default
+    @ElementCollection
     private List<String> additionalEmails = new ArrayList<>();
 
     @Builder.Default
@@ -69,18 +67,18 @@ public class User implements Serializable {
     private Date birthDate;
 
     @Builder.Default
-    private String personalEmail = "";
-
-    @Builder.Default
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
+    @ElementCollection
     private List<String> groupIds = new ArrayList<>();
 
     @Builder.Default
+    @ElementCollection
     private List<String> pinnedGroupsId = new ArrayList<>();
 
     @Builder.Default
+    @ElementCollection
     private List<UserRole> roles = new ArrayList<>(List.of(USER));
 
     @Builder.Default
@@ -93,6 +91,10 @@ public class User implements Serializable {
     private double studyingPoint;
 
     private String initialName;
+
+    public User() {
+
+    }
 
     public boolean isPinnedGroup(String groupId) {
         return pinnedGroupsId.contains(groupId);
@@ -130,10 +132,8 @@ public class User implements Serializable {
         if (name == null || name.equals("") || name.equals(initialName)) {
             name = customerOidcUser.getName();
         }
-        if (!("https://graph.microsoft.com/v1.0/me/photo/$value")
-                .equals(customerOidcUser.getImageUrl())) {
-            imageUrl =
-                    (imageUrl == null || imageUrl.equals("")) ? customerOidcUser.getImageUrl() : imageUrl;
+        if (!("https://graph.microsoft.com/v1.0/me/photo/$value").equals(customerOidcUser.getImageUrl())) {
+            imageUrl = (imageUrl == null || imageUrl.equals("")) ? customerOidcUser.getImageUrl() : imageUrl;
         }
     }
 
@@ -142,7 +142,6 @@ public class User implements Serializable {
         imageUrl = request.getImageUrl();
         phone = request.getPhone();
         birthDate = request.getBirthDate();
-        personalEmail = request.getPersonalEmail();
         gender = request.getGender();
     }
 
@@ -151,7 +150,6 @@ public class User implements Serializable {
         phone = request.getPhone();
         status = request.isStatus();
         birthDate = request.getBirthDate();
-        personalEmail = request.getPersonalEmail();
         gender = request.getGender();
     }
 

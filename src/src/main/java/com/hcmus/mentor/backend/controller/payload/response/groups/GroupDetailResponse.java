@@ -3,6 +3,8 @@ package com.hcmus.mentor.backend.controller.payload.response.groups;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -73,14 +75,14 @@ public class GroupDetailResponse {
         this.description = group.getDescription();
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors();
-        this.mentees = group.getMentees();
+        this.mentors = group.getMentors().stream().map(User::getId).toList();
+        this.mentees = group.getMentees().stream().map(User::getId).toList();
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
         this.duration = group.getDuration();
         this.imageUrl = group.getImageUrl();
         this.parentId = group.getParentId();
-        this.defaultChannelId = group.getDefaultChannelId();
+        this.defaultChannelId = group.getDefaultChannel().getId();
     }
 
     public Integer getTotalMember() {
@@ -163,13 +165,13 @@ public class GroupDetailResponse {
                     .description(channel.getDescription())
                     .createdDate(channel.getCreatedDate())
                     .updatedDate(channel.getUpdatedDate())
-                    .userIds(channel.getUserIds())
+                    .userIds(channel.getUsers().stream().map(User::getId).toList())
                     .status(channel.getStatus())
                     .type(channel.getType())
                     .creatorId(channel.getCreatorId())
                     .hasNewMessage(channel.getHasNewMessage())
                     .imageUrl(channel.getImageUrl())
-                    .pinnedMessageIds(channel.getPinnedMessageIds())
+                    .pinnedMessageIds(channel.getPinnedMessageIds().stream().map(Message::getId).toList())
                     .parentId(channel.getParentId())
                     .build();
         }

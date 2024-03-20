@@ -107,15 +107,12 @@ public class MessageController {
             }
 
             Channel channel = channelWrapper.get();
-            channel.unpinMessage(messageId);
-            channelRepository.save(channel);
-        } else {
-            Group group = groupWrapper.get();
-            if (!group.isMember(customerUserDetails.getId())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            if (channel.getPinnedMessageIds().contains(message)) {
+                channel.getPinnedMessageIds().remove(message);
+                channel.ping();
+
+                channelRepository.save(channel);
             }
-            group.unpinMessage(message.getId());
-            groupRepository.save(group);
         }
 
         if (!customerUserDetails.getId().equals(message.getSenderId())) {

@@ -1,24 +1,25 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import com.hcmus.mentor.backend.domain.constant.UserRole;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
-import org.springframework.stereotype.Repository;
-
 @Repository
-public interface UserRepository extends MongoRepository<User, String> {
+public interface UserRepository extends CrudRepository<User, String> {
 
     Optional<User> findByEmail(String email);
+    List<User> findByEmailIn(List<String> emails);
+
 
     Optional<User> findByAdditionalEmailsContains(String email);
 
@@ -46,9 +47,16 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
-    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
+    Optional<User> findById(String id);
+
+//    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
+    // TODO: Fix this
+    @Query("SELECT id, name, imageUrl FROM User WHERE id = ?1")
     ShortProfile findShortProfile(String id);
 
-    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
+//    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
+    // TODO: Fix this
     List<ShortProfile> findByIds(List<String> senderIds);
+
+
 }

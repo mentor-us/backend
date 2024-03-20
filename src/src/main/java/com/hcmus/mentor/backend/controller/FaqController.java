@@ -33,7 +33,7 @@ public class FaqController {
     /**
      * Retrieves all FAQs of a group.
      *
-     * @param customerUserDetails The current user's principal information.
+     * @param loggedUser    The current user's principal information.
      * @param groupId       The ID of the group to retrieve FAQs.
      * @return ResponseEntity containing a list of FAQs for the specified group.
      */
@@ -41,9 +41,10 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<Faq>> all(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestParam String groupId) {
-        List<Faq> faqs = faqService.getByGroupId(customerUserDetails.getId(), groupId);
+        List<Faq> faqs = faqService.getByGroupId(loggedUser.getId(), groupId);
+
         return ResponseEntity.ok(faqs);
     }
 
@@ -80,7 +81,7 @@ public class FaqController {
     public ResponseEntity<String> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody CreateFaqRequest request) {
-        Faq faq = faqService.addNewFaq(customerUserDetails.getId(), request);
+        Faq faq = faqService.createFaq(customerUserDetails.getId(), request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -112,7 +113,7 @@ public class FaqController {
     /**
      * Deletes an existing FAQ from a group.
      *
-     * @param customerUserDetails The current user's principal information.
+     * @param loggedUser    The current user's principal information.
      * @param faqId         The ID of the FAQ to be deleted.
      * @return ResponseEntity indicating the success of the deletion operation.
      */
@@ -120,28 +121,30 @@ public class FaqController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> delete(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @PathVariable String faqId) {
-        faqService.deleteFaq(customerUserDetails.getId(), faqId);
+        faqService.deleteFaq(loggedUser.getId(), faqId);
+        
         return ResponseEntity.ok().build();
     }
 
     /**
      * Imports existing FAQs from another group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param faqId         The ID of the FAQ to which FAQs will be imported.
+     * @param loggedUser    The current user's principal information.
+     * @param destGroupId   The ID of the FAQ to which FAQs will be imported.
      * @param request       The request containing information about the FAQs to import.
      * @return ResponseEntity indicating the success of the import operation.
      */
-    @PostMapping("{faqId}/import")
+    @PostMapping("{groupIdgroupId}/import")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> importFAQs(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @PathVariable String faqId,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
+            @PathVariable String destGroupId,
             @RequestBody ImportFAQsRequest request) {
-        faqService.importFAQs(customerUserDetails, faqId, request);
+        faqService.importFaqs(loggedUser.getId(), destGroupId, request);
+
         return ResponseEntity.ok().build();
     }
 

@@ -4,24 +4,24 @@ import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResp
 import com.hcmus.mentor.backend.domain.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Date;
 import java.util.List;
 
-public interface MeetingRepository extends MongoRepository<Meeting, String> {
+public interface MeetingRepository extends JpaRepository<Meeting, String> {
 
-    @Aggregation(pipeline = {
-            "{$match: {groupId: ?0}}",
-            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
-            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
-            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
-            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
-            "{'$unwind': '$group'}",
-            "{'$unwind': '$organizer'}",
-            "{'$sort':  {'createdDate':  -1}}"
-    })
+//    @Aggregation(pipeline = {
+//            "{$match: {groupId: ?0}}",
+//            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+//            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
+//            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+//            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
+//            "{'$unwind': '$group'}",
+//            "{'$unwind': '$organizer'}",
+//            "{'$sort':  {'createdDate':  -1}}"
+//    })
+    // TODO: Fix this
     List<MeetingResponse> findAllByGroupId(String groupId);
 
     Page<Meeting> findByGroupId(String groupId, PageRequest pageRequest);

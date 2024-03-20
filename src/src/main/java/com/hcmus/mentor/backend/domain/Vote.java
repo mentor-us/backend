@@ -1,36 +1,38 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.hcmus.mentor.backend.domain.dto.Choice;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Document("voting")
+@Data
+@Entity
+@Table(name = "votes")
 public class Vote {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
     private String question;
 
     @Builder.Default
-    private List<ChoiceDto> choices = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "choice_id")
+    private List<Choice> choices = new ArrayList<>();
 
-    private String groupId;
+    @ManyToOne
+    private Group group;
 
-    private String creatorId;
+    @ManyToOne
+    private User creator;
 
     private Date timeEnd;
 
@@ -45,18 +47,11 @@ public class Vote {
     @Builder.Default
     private Status status = Status.OPEN;
 
-    public static Vote from(CreateVoteRequest request) {
-        return Vote.builder()
-                .question(request.getQuestion())
-                .groupId(request.getGroupId())
-                .creatorId(request.getCreatorId())
-                .timeEnd(request.getTimeEnd())
-                .choices(request.getChoices())
-                .isMultipleChoice(request.getIsMultipleChoice())
-                .build();
+    public Vote() {
+
     }
 
-    public ChoiceDto getChoice(String id) {
+    public Choice getChoice(String id) {
         return choices.stream().filter(choice -> choice.getId().equals(id)).findFirst().orElse(null);
     }
 
@@ -64,8 +59,8 @@ public class Vote {
         this.question = request.getQuestion();
         this.timeEnd = request.getTimeEnd();
 
-        for (ChoiceDto newChoice : request.getChoices()) {
-            ChoiceDto oldChoice = getChoice(newChoice.getId());
+        for (Choice newChoice : request.getChoices()) {
+            Choice oldChoice = getChoice(newChoice.getId());
             if (oldChoice == null) {
                 choices.add(newChoice);
             } else {
@@ -78,7 +73,7 @@ public class Vote {
         String voterId = request.getVoterId();
         choices.forEach(choice -> choice.removeVoting(voterId));
         request.getChoices().forEach(choice -> {
-            ChoiceDto oldChoice = getChoice(choice.getId());
+            Choice oldChoice = getChoice(choice.getId());
             if (oldChoice == null) {
                 choices.add(choice);
                 return;
@@ -101,7 +96,7 @@ public class Vote {
     }
 
     public void sortChoicesDesc() {
-        List<ChoiceDto> newChoices = choices.stream()
+        List<Choice> newChoices = choices.stream()
                 .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
                 .toList();
         setChoices(newChoices);

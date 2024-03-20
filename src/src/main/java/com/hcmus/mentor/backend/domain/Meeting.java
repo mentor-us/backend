@@ -9,7 +9,6 @@ import com.hcmus.mentor.backend.domain.method.IRemindable;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;

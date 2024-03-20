@@ -127,8 +127,7 @@ public class GroupCategoryController {
             @PathVariable String id) {
         String email = customerUserDetails.getEmail();
         String newGroupCategoryId = request.getNewGroupCategoryId();
-        GroupCategoryServiceDto groupCategoryReturn =
-                groupCategoryService.delete(email, id, newGroupCategoryId);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.delete(email, id, newGroupCategoryId);
         return new ApiResponseDto(
                 groupCategoryReturn.getData(),
                 groupCategoryReturn.getReturnCode(),

@@ -1,27 +1,23 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Getter
-@Setter
+@Data
 @Builder
-@AllArgsConstructor
 @ToString
-@Document("group")
+@Entity
+@Table(name = "groups")
+//@Document("group")
 public class Group implements Serializable {
-
-    /**
-     * Maximum number of pinned messages in a group
-     */
-    public static final int MAX_PINNED_MESSAGES = 5;
 
     /**
      * Map of group status
@@ -32,6 +28,7 @@ public class Group implements Serializable {
      * Group identifier
      */
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     /**
@@ -47,19 +44,28 @@ public class Group implements Serializable {
     /**
      * List of mentors
      */
+    @OneToMany
+    @JoinColumn(name = "mentor_id")
     @Builder.Default
-    private List<String> mentors = new ArrayList<>();
+    private List<User> mentors = new ArrayList<>();
+
 
     /**
      * List of mentees
      */
+    @OneToMany
+    @JoinColumn(name = "mentee_id")
     @Builder.Default
-    private List<String> mentees = new ArrayList<>();
+    private List<User> mentees = new ArrayList<>();
+
 
     /**
      * Group category identifier
      */
-    private String groupCategory;
+    @ManyToOne
+    @JoinColumn(name = "group_category_id")
+    private GroupCategory groupCategory;
+
 
     /**
      * Creator identifier
@@ -102,37 +108,52 @@ public class Group implements Serializable {
     /**
      * List of pinned message identifiers
      */
-    @Builder.Default
-    private List<String> pinnedMessageIds = new ArrayList<>();
+//    @Builder.Default
+//    private List<String> pinnedMessageIds;
+
+    @OneToMany
+    @JoinColumn(name = "pinned_message_ids")
+    private List<Message> pinnedMessages;
+
 
     /**
      * Default channel identifier
      */
-    private String defaultChannelId;
+    @OneToOne
+    @JoinColumn(name = "default_channel_id")
+    private Channel defaultChannel;
 
     /**
      * List of channel identifiers
      */
     @Builder.Default
-    private List<String> channelIds = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "channel_id")
+    private List<Channel> channels = new ArrayList<>();
 
     /**
      * List of private channel identifiers
      */
     @Builder.Default
-    private List<String> privateIds = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "private_id")
+    private List<Channel> privateChannels = new ArrayList<>();
 
     /**
      * List of FAQ identifiers
      */
     @Builder.Default
-    private List<String> faqIds = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "faq_id")
+    private List<Faq> faqIds = new ArrayList<>();
 
     /**
      * List of marked mentee identifiers
      */
     @Builder.Default
-    private List<String> markedMenteeIds = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "marked_mentee_id")
+    private List<User> markedMentees = new ArrayList<>();
 
     /**
      * Time start of the group
@@ -178,19 +199,19 @@ public class Group implements Serializable {
     }
 
     public boolean isMentor(String userId) {
-        return mentors.contains(userId);
+        return mentors.stream().anyMatch(mentor -> mentor.getId().equals(userId));
+    }
+
+    public boolean isMentor(User user) {
+        return mentees.stream().anyMatch(mentor -> mentor.getId().equals(user.getId()));
     }
 
     public boolean isMentee(String userId) {
-        return mentees.contains(userId);
+        return mentees.stream().anyMatch(mentee -> mentee.getId().equals(userId));
     }
 
-    public void addMentee(String menteeId) {
-        mentees.add(menteeId);
-    }
-
-    public void addMentor(String mentorId) {
-        mentors.add(mentorId);
+    public boolean isMentee(User user) {
+        return mentees.stream().anyMatch(menteee -> menteee.getId().equals(user.getId()));
     }
 
     public boolean isMember(String userId) {
@@ -228,158 +249,7 @@ public class Group implements Serializable {
         }
     }
 
-    public Integer getTotalMember() {
-        return getMentees().size() + getMentors().size();
-    }
-
     public void ping() {
         setUpdatedDate(new Date());
     }
-
-    public void normalize() {
-        if (pinnedMessageIds == null) {
-            setPinnedMessageIds(new ArrayList<>());
-        }
-
-        if (faqIds == null) {
-            setFaqIds(new ArrayList<>());
-        }
-
-        if (channelIds == null) {
-            setChannelIds(new ArrayList<>());
-        }
-
-        if (privateIds == null) {
-            setPrivateIds(new ArrayList<>());
-        }
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
-    }
-
-    public void pinMessage(String messageId) {
-        normalize();
-
-        if (isMaximumPinnedMessages()) {
-            return;
-        }
-        if (pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.add(messageId);
-    }
-
-    public void unpinMessage(String messageId) {
-        normalize();
-
-        if (!pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.remove(messageId);
-    }
-
-    public boolean isMaximumPinnedMessages() {
-        normalize();
-
-        return pinnedMessageIds.size() >= MAX_PINNED_MESSAGES;
-    }
-
-    public void addChannel(String channelId) {
-        normalize();
-
-        if (channelIds.contains(channelId)) {
-            return;
-        }
-        channelIds.add(channelId);
-        setChannelIds(channelIds);
-    }
-
-    public void addPrivate(String channelId) {
-        normalize();
-
-        if (privateIds.contains(channelId)) {
-            return;
-        }
-        privateIds.add(channelId);
-        setPrivateIds(privateIds);
-    }
-
-    public void removeChannel(String channelId) {
-        normalize();
-
-        channelIds.remove(channelId);
-        privateIds.remove(channelId);
-    }
-
-    public void addFaq(String faqId) {
-        normalize();
-
-        if (faqIds.contains(faqId)) {
-            return;
-        }
-        faqIds.add(faqId);
-    }
-
-    public void importFaq(List<String> faqIds) {
-        normalize();
-
-        faqIds.forEach(this::addFaq);
-    }
-
-    public void deleteFaq(String faqId) {
-        normalize();
-
-        if (!faqIds.contains(faqId)) {
-            return;
-        }
-        faqIds.remove(faqId);
-    }
-
-    public boolean isStopWorking() {
-        return Arrays.asList(GroupStatus.DISABLED, GroupStatus.INACTIVE, GroupStatus.DELETED).contains(status);
-    }
-
-    public List<String> getMembers() {
-        return Stream.concat(mentees.stream(), mentors.stream())
-                .distinct()
-                .toList();
-    }
-
-    public void markMentee(String menteeId) {
-        normalize();
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
-
-        if (!mentees.contains(menteeId)) {
-            return;
-        }
-
-        if (markedMenteeIds.contains(menteeId)) {
-            return;
-        }
-
-        markedMenteeIds.add(menteeId);
-    }
-
-    public void unmarkMentee(String menteeId) {
-        normalize();
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
-
-        if (!mentees.contains(menteeId)) {
-            return;
-        }
-
-        if (!markedMenteeIds.contains(menteeId)) {
-            return;
-        }
-
-        markedMenteeIds.remove(menteeId);
-    }
-
 }

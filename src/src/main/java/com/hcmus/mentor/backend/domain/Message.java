@@ -4,23 +4,22 @@ import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.TextIndexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Data
 @Builder
-@Document("group_message")
 @ToString
+@Entity
+@Table(name = "messages")
+//@Document("group_message")
 public class Message {
 
     @Id
@@ -28,7 +27,7 @@ public class Message {
 
     private String senderId;
 
-    @TextIndexed(weight = 3)
+//    @TextIndexed(weight = 3)
     private String content;
 
     private Date createdDate;

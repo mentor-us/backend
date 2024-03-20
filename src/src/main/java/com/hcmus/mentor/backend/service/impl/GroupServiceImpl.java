@@ -26,6 +26,7 @@ import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetai
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
+import com.hcmus.mentor.backend.service.query.GroupSpecification;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
@@ -43,9 +44,7 @@ import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -78,7 +77,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserService userService;
     private final MailService mailService;
     private final PermissionService permissionService;
-    private final MongoTemplate mongoTemplate;
+    //    private final MongoTemplate mongoTemplate;
     private final MailUtils mailUtils;
     private final SystemConfigRepository systemConfigRepository;
     private final MessageRepository messageRepository;
@@ -326,12 +325,13 @@ public class GroupServiceImpl implements GroupService {
         if (userOptional.isPresent()) {
             creatorId = userOptional.get().getId();
         }
+
         Group group = Group.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .mentees(menteeIds)
-                .mentors(mentorIds)
-                .groupCategory(request.getGroupCategory())
+                .mentees((List<User>) userRepository.findAllById(menteeIds))
+                .mentors((List<User>) userRepository.findAllById(mentorIds))
+                .groupCategory(groupCategoryRepository.findById(request.getGroupCategory()).orElse(null))
                 .status(status)
                 .timeStart(timeStart)
                 .timeEnd(timeEnd)
@@ -357,8 +357,8 @@ public class GroupServiceImpl implements GroupService {
         addUsersToChannel(channel.getId(), userIds);
 
 
-        group.setChannelIds(List.of(channel.getId()));
-        group.setDefaultChannelId(channel.getId());
+        group.setChannels(List.of(channel));
+        group.setDefaultChannel(channel);
         groupRepository.save(group);
 
         menteeEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
@@ -468,9 +468,9 @@ public class GroupServiceImpl implements GroupService {
                     .name(groupName)
                     .description(description)
                     .createdDate(new Date())
-                    .mentees(menteeEmails)
-                    .mentors(mentorEmails)
-                    .groupCategory(groupCategoryId)
+                    .mentees(userRepository.findByEmailIn(menteeEmails))
+                    .mentors(userRepository.findByEmailIn(mentorEmails))
+                    .groupCategory(groupCategoryRepository.findById(groupCategoryId).orElse(null))
                     .timeStart(timeStart)
                     .timeEnd(timeEnd)
                     .build();
@@ -510,7 +510,9 @@ public class GroupServiceImpl implements GroupService {
             throw new DomainException(String.valueOf(e));
         }
         for (Group group : groups.values()) {
-            GroupServiceDto isValidMails = validateListMentorsMentees(group.getMentors(), group.getMentees());
+            GroupServiceDto isValidMails = validateListMentorsMentees(
+                    group.getMentors().stream().map(User::getId).toList(),
+                    group.getMentees().stream().map(User::getId).toList());
             if (!Objects.equals(isValidMails.getReturnCode(), SUCCESS)) {
                 return isValidMails;
             }
@@ -521,9 +523,9 @@ public class GroupServiceImpl implements GroupService {
                         .map(group -> CreateGroupCommand.builder()
                                 .name(group.getName())
                                 .createdDate(new Date())
-                                .menteeEmails(group.getMentees())
-                                .mentorEmails(group.getMentors())
-                                .groupCategory(group.getGroupCategory())
+                                .menteeEmails(group.getMentees().stream().map(User::getEmail).toList())
+                                .mentorEmails(group.getMentors().stream().map(User::getEmail).toList())
+                                .groupCategory(group.getGroupCategory().getName())
                                 .timeStart(group.getTimeStart())
                                 .timeEnd(group.getTimeEnd())
                                 .build())
@@ -607,50 +609,23 @@ public class GroupServiceImpl implements GroupService {
             String status,
             int page,
             int pageSize) {
-        Query query = new Query();
-        if (name != null && !name.isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(name, "i"));
-        }
+        Specification<Group> spec = GroupSpecification.withConditions(
+                name,
+                mentorEmail,
+                menteeEmail,
+                groupCategory,
+                status,
+                timeStart1,
+                timeEnd1,
+                timeStart2,
+                timeEnd2
+        );
 
-        if (menteeEmail != null && !menteeEmail.isEmpty()) {
-            User mentee = userService.findByEmail(menteeEmail);
-            String menteeId = "";
-            if (mentee != null) {
-                menteeId = mentee.getId();
-            }
-            query.addCriteria(Criteria.where("mentees").in(menteeId));
-        }
+        Pageable pageable = PageRequest.of(page, pageSize);
+        Page<Group> groupPage = groupRepository.findAll(spec, pageable);
 
-        if (mentorEmail != null && !mentorEmail.isEmpty()) {
-            User mentor = userService.findByEmail(mentorEmail);
-            String mentorId = "";
-            if (mentor != null) {
-                mentorId = mentor.getId();
-            }
-            query.addCriteria(Criteria.where("mentors").in(mentorId));
-        }
-
-        if (groupCategory != null && !groupCategory.isEmpty()) {
-            query.addCriteria(Criteria.where("groupCategory").is(groupCategory));
-        }
-
-        if (status != null) {
-            query.addCriteria(Criteria.where("status").is(status));
-        }
-
-        if (timeStart1 != null && timeEnd1 != null) {
-            query.addCriteria(Criteria.where("timeStart").gte(timeStart1).lte(timeEnd1));
-        }
-
-        if (timeStart2 != null && timeEnd2 != null) {
-            query.addCriteria(Criteria.where("timeEnd").gte(timeStart2).lte(timeEnd2));
-        }
-        validateSupperAdmin(emailUser, query, permissionService, userRepository);
-
-        long count = mongoTemplate.count(query, Group.class);
-        query.with(PageRequest.of(page, pageSize));
-
-        List<Group> data = mongoTemplate.find(query, Group.class);
+        List<Group> data = groupPage.getContent();
+        long count = groupPage.getTotalElements();
         data = validateTimeGroups(data);
         return new Pair<>(count, data);
     }
@@ -668,71 +643,62 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupServiceDto addMentees(
-            String emailUser, String groupId, AddMenteesRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+    public GroupServiceDto addMentees(String emailUser, String groupId, AddMenteesRequest request) {
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
-        List<String> emails = request.getEmails();
-        List<String> ids =
-                emails.stream()
-                        .filter(email -> !email.isEmpty())
-                        .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                        .toList();
+        Group group = (Group) groupServiceDto.getData();
+        return new GroupServiceDto(NOT_FOUND, "Group not found", null);
 
-        if (hasDuplicateElements(ids, group.getMentees())
-                || hasDuplicateElements(ids, group.getMentors())) {
+        List<String> emails = request.getEmails();
+        List<String> ids = emails.stream()
+                .filter(email -> !email.isEmpty())
+                .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
+                .toList();
+
+        if (hasDuplicateElements(ids, group.getMentees().stream().map(User::getId).toList())
+                || hasDuplicateElements(ids, group.getMentors().stream().map(User::getId).toList())) {
             return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", null);
         }
         group.getMentees().addAll(ids);
-        List<String> listMenteesAfterRemoveDuplicate =
-                new ArrayList<>(new HashSet<>(group.getMentees()));
+        List<String> listMenteesAfterRemoveDuplicate = new ArrayList<>(new HashSet<>(group.getMentees()));
         group.setMentees(listMenteesAfterRemoveDuplicate);
         groupRepository.save(group);
         for (String emailAddress : emails) {
             mailService.sendInvitationToGroupMail(emailAddress, group);
         }
 
-        addUsersToChannel(group.getDefaultChannelId(), ids);
+        addUsersToChannel(group.getDefaultChannel(), ids);
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
     @Override
-    public GroupServiceDto addMentors(
-            String emailUser, String groupId, AddMentorsRequest request) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+    public GroupServiceDto addMentors(String emailUser, String groupId, AddMentorsRequest request) {
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
         List<String> emails = request.getEmails();
-        List<String> ids =
-                emails.stream()
-                        .filter(email -> !email.isEmpty())
-                        .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                        .toList();
+        List<String> ids = emails.stream()
+                .filter(email -> !email.isEmpty())
+                .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
+                .toList();
 
-        if (hasDuplicateElements(ids, group.getMentees())
-                || hasDuplicateElements(ids, group.getMentors())) {
+        if (hasDuplicateElements(ids, group.getMentees().stream().map(User::getId).toList())
+                || hasDuplicateElements(ids, group.getMentors().stream().map(User::getId).toList())) {
             return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", null);
         }
 
-        group.getMentors().addAll(ids);
-        List<String> listMentorsAfterRemoveDuplicate =
+        group.getMentors().addAll((Collection<? extends User>) userRepository.findAllById(ids));
+        var listMentorsAfterRemoveDuplicate =
                 new ArrayList<>(new HashSet<>(group.getMentors()));
         group.setMentors(listMentorsAfterRemoveDuplicate);
 
-        addUsersToChannel(group.getDefaultChannelId(), ids);
+        addUsersToChannel(group.getDefaultChannel().getId(), ids);
 
         groupRepository.save(group);
         for (String emailAddress : emails) {
@@ -741,6 +707,7 @@ public class GroupServiceImpl implements GroupService {
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
+
 
     private Channel addUsersToChannel(String channelId, List<String> userIds) {
         Channel channel = channelRepository.findById(channelId).orElse(null);
@@ -748,27 +715,34 @@ public class GroupServiceImpl implements GroupService {
             return null;
         }
 
-        for (String userId : userIds) {
-            var lstUserIds = channel.getUserIds();
-            if (!lstUserIds.contains(userId)) {
-                lstUserIds.add(userId);
-                channel.setUserIds(lstUserIds);
-            }
+        var userIdInChannel = channel.getUsers().stream().map(User::getId).toList();
+        var userNotInChannel = userIds.stream().filter(id -> !userIdInChannel.contains(id)).toList();
+
+        if (userNotInChannel.isEmpty()) {
+            return channel;
         }
+
+        var userInChannel = channel.getUsers();
+        for (String userId : userNotInChannel) {
+            var user = userRepository.findById(userId).orElse(null);
+            if (user == null) {
+                continue;
+            }
+
+            userInChannel.add(user);
+        }
+
         return channelRepository.save(channel);
     }
 
 
     @Override
     public GroupServiceDto deleteMentee(String emailUser, String groupId, String menteeId) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
         if (group.getMentees().remove(menteeId)) {
             group.setMentees(group.getMentees());
@@ -780,14 +754,11 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto deleteMentor(String emailUser, String groupId, String mentorId) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
         if (group.getMentors().remove(mentorId)) {
             group.setMentors(group.getMentors());
@@ -800,39 +771,42 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto promoteToMentor(String emailUser, String groupId, String menteeId) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
-        if (group.getMentees().remove(menteeId)) {
-            group.getMentors().add(menteeId);
+        var userOpt = userRepository.findById(menteeId);
+        if (userOpt.isPresent()) {
+            var user = userOpt.get();
+            group.getMentees().remove(user);
+            group.getMentors().add(user);
             groupRepository.save(group);
+
             return new GroupServiceDto(SUCCESS, null, group);
         }
+
         return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
     }
 
     @Override
     public GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
-        if (group.getMentors().remove(mentorId)) {
-            group.getMentees().add(mentorId);
+        var userOpt = userRepository.findById(mentorId);
+        if (userOpt.isPresent()) {
+            var user = userOpt.get();
+            group.getMentors().remove(user);
+            group.getMentees().add(user);
             groupRepository.save(group);
             return new GroupServiceDto(SUCCESS, null, group);
         }
+
         return new GroupServiceDto(MENTOR_NOT_FOUND, "Mentor not found", null);
     }
 
@@ -880,9 +854,7 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-    @Override
-    public GroupServiceDto updateGroup(
-            String emailUser, String groupId, UpdateGroupRequest request) {
+    private GroupServiceDto getGroupById(String emailUser, String groupId) {
         if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -891,6 +863,15 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
+    }
+
+    @Override
+    public GroupServiceDto updateGroup(String emailUser, String groupId, UpdateGroupRequest request) {
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
+        }
+        Group group = (Group) groupServiceDto.getData();
 
         if (groupRepository.existsByName(request.getName())
                 && !request.getName().equals(group.getName())) {
@@ -905,7 +886,7 @@ public class GroupServiceImpl implements GroupService {
                 timeStart,
                 timeEnd,
                 request.getGroupCategory());
-        if (!groupCategoryRepository.existsById(group.getGroupCategory())) {
+        if (!groupCategoryRepository.existsById(group.getGroupCategory().getId())) {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
@@ -928,16 +909,13 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto deleteGroup(String emailUser, String groupId) {
-        if (!permissionService.hasPermissionOnGroup(emailUser, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var groupServiceDto = getGroupById(emailUser, groupId);
+        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
+            return groupServiceDto;
         }
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-        }
-        Group group = groupWrapper.get();
+        Group group = (Group) groupServiceDto.getData();
 
-        if (group.getDefaultChannelId() == groupId) {
+        if (Objects.equals(group.getDefaultChannel().getId(), groupId)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -1075,8 +1053,8 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(NOT_FOUND, "Group not found", null);
             }
 
-            mentorIds = channel.getUserIds().stream().filter(group::isMentor).toList();
-            menteeIds = channel.getUserIds().stream().filter(group::isMentee).toList();
+            mentorIds = channel.getUsers().stream().filter(group::isMentor).map(User::getId).toList();
+            menteeIds = channel.getUsers().stream().filter(group::isMentee).map(User::getId).toList();
         }
 
         if (groupWrapper.isPresent()) {
@@ -1085,15 +1063,15 @@ public class GroupServiceImpl implements GroupService {
             }
 
             group = groupWrapper.get();
-            mentorIds = group.getMentors();
-            menteeIds = group.getMentees();
+            mentorIds = group.getMentors().stream().map(User::getId).toList();
+            menteeIds = group.getMentees().stream().map(User::getId).toList();
         }
 
         List<GroupMembersResponse.GroupMember> mentors = userRepository.findAllByIdIn(mentorIds).stream()
                 .map(ProfileResponse::normalize)
                 .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
                 .toList();
-        List<String> markedMentees = group.getMarkedMenteeIds() != null ? group.getMarkedMenteeIds() : new ArrayList<>();
+        List<String> markedMentees = group.getMarkedMentees() != null ? group.getMarkedMentees().stream().map(User::getId).toList() : new ArrayList<>();
         List<GroupMembersResponse.GroupMember> mentees = userRepository.findAllByIdIn(menteeIds).stream()
                 .map(ProfileResponse::normalize)
                 .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTEE", markedMentees.contains(profile.getId())))
@@ -1166,7 +1144,8 @@ public class GroupServiceImpl implements GroupService {
         String imageUrl = null;
 
         if (ChannelType.PRIVATE_MESSAGE.equals(channel.getType())) {
-            String penpalId = channel.getUserIds().stream()
+            String penpalId = channel.getUsers().stream()
+                    .map(User::getId)
                     .filter(id -> !id.equals(userId))
                     .findFirst()
                     .orElse(null);
@@ -1185,18 +1164,15 @@ public class GroupServiceImpl implements GroupService {
                 .id(channel.getId())
                 .name(channelName)
                 .description(channel.getDescription())
-                .pinnedMessageIds(channel.getPinnedMessageIds())
+                .pinnedMessageIds(channel.getPinnedMessageIds().stream().map(Message::getId).toList())
                 .imageUrl(imageUrl)
                 .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
                 .parentId(parentGroup.getId())
-                .totalMember(channel.getUserIds().size())
+                .totalMember(channel.getUsers().size())
                 .type(channel.getType())
                 .build();
 
-        GroupCategory groupCategory = groupCategoryRepository
-                .findById(parentGroup.getGroupCategory())
-                .orElse(null);
-
+        GroupCategory groupCategory = parentGroup.getGroupCategory();
         if (groupCategory != null) {
             response.setPermissions(groupCategory.getPermissions());
             response.setGroupCategory(groupCategory.getName());
@@ -1217,7 +1193,7 @@ public class GroupServiceImpl implements GroupService {
                     .toList();
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        response.setTotalMember(channel.getUserIds().size());
+        response.setTotalMember(channel.getUsers().size());
         return response;
     }
 
@@ -1264,7 +1240,8 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = wrapper.get();
         return group.getMentees().stream()
-                .filter(userRepository::existsById)
+//                .filter(userRepository::existsById)
+                .map(User::getId)
                 .distinct()
                 .toList();
     }
@@ -1302,7 +1279,7 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
-            senderIds = channel.getUserIds();
+            senderIds = channel.getUsers().stream().map(User::getId).toList();
         }
 
         if (groupWrapper.isPresent()) {
@@ -1311,7 +1288,7 @@ public class GroupServiceImpl implements GroupService {
                 return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
-            senderIds = Stream.concat(group.getMentees().stream(), group.getMentors().stream())
+            senderIds = Stream.concat(group.getMentees().stream().map(User::getId), group.getMentors().stream().map(User::getId))
                     .toList();
         }
 
@@ -1399,11 +1376,6 @@ public class GroupServiceImpl implements GroupService {
         for (Group group : groups) {
             List<String> row = new ArrayList<>();
 
-            Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(group.getGroupCategory());
-            String groupCategoryName =
-                    groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
-
             Map<GroupStatus, String> statusMap = Group.getStatusMap();
             String status = statusMap.get(group.getStatus());
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
@@ -1413,7 +1385,7 @@ public class GroupServiceImpl implements GroupService {
 
             row.add(Integer.toString(index));
             row.add(group.getName());
-            row.add(groupCategoryName);
+            row.add(group.getGroupCategory().getName());
             row.add(status);
             row.add(dateStart);
             row.add(dateEnd);
@@ -1508,9 +1480,9 @@ public class GroupServiceImpl implements GroupService {
         List<String> memberIds = new ArrayList<>();
         if (groupOptional.isPresent()) {
             if (type.equals("MENTOR")) {
-                memberIds = groupOptional.get().getMentors();
+                memberIds = groupOptional.get().getMentors().stream().map(User::getId).toList();
             } else if (type.equals("MENTEE")) {
-                memberIds = groupOptional.get().getMentees();
+                memberIds = groupOptional.get().getMentees().stream().map(User::getId).toList();
             }
         }
         List<List<String>> data = new ArrayList<>();
@@ -1561,15 +1533,19 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void pinChannelMessage(String userId, String channelId, String messageId) {
         Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        if (channel.isMaximumPinnedMessages()) {
+        if (channel.getPinnedMessageIds().size() >= 5) {
             throw new DomainException("Maximum pinned messages");
         }
 
         Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
         User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
-        channel.pinMessage(messageId);
-        channel.ping();
-        channelRepository.save(channel);
+
+        if (!channel.getPinnedMessageIds().contains(message)) {
+            channel.getPinnedMessageIds().add(message);
+
+            channel.ping();
+            channelRepository.save(channel);
+        }
 
         MessageDetailResponse messageDetail = MessageDetailResponse.from(message, sender);
         socketIOService.sendNewPinMessage(messageDetail);
@@ -1584,8 +1560,13 @@ public class GroupServiceImpl implements GroupService {
         Message message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
         User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
 
-        channel.unpinMessage(messageId);
+        if (!channel.getPinnedMessageIds().contains(message)) {
+            return;
+        }
+
+        channel.getPinnedMessageIds().remove(message);
         channel.ping();
+
         channelRepository.save(channel);
         socketIOService.sendNewUnpinMessage(channelId, messageId);
 
@@ -1619,8 +1600,8 @@ public class GroupServiceImpl implements GroupService {
         }
         GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.getFirst());
 
-        List<String> channelIds = group.getChannelIds() != null
-                ? group.getChannelIds()
+        List<String> channelIds = group.getChannels() != null
+                ? group.getChannels().stream().map(Channel::getId).toList()
                 : new ArrayList<>();
         List<GroupDetailResponse.GroupChannel> channels = channelRepository.findByIdIn(channelIds).stream()
                 .map(GroupDetailResponse.GroupChannel::from)
@@ -1633,10 +1614,11 @@ public class GroupServiceImpl implements GroupService {
                         .findByParentIdAndTypeAndUserIdsIn(groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
                         .stream()
                         .map(channel -> {
-                            String userId = channel.getUserIds().stream()
-                                    .filter(id -> !id.equals(user.getId()))
-                                    .findFirst()
-                                    .orElse(null);
+                            String userId = Objects.requireNonNull(channel.getUsers().stream()
+                                            .filter(id -> !id.equals(user.getId()))
+                                            .findFirst()
+                                            .orElse(null))
+                                    .getId();
                             if (userId == null) {
                                 return null;
                             }
@@ -1647,8 +1629,8 @@ public class GroupServiceImpl implements GroupService {
                             channel.setName(penpal.getName());
                             channel.setImageUrl(penpal.getImageUrl());
 
-                            List<String> markedMentees = group.getMarkedMenteeIds() != null
-                                    ? group.getMarkedMenteeIds()
+                            List<String> markedMentees = group.getMarkedMentees() != null
+                                    ? group.getMarkedMentees().stream().map(User::getId).toList()
                                     : new ArrayList<>();
                             return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
                         })
@@ -1662,23 +1644,42 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + groupId);
         if (!group.isMentor(user.getId())) {
             throw new ForbiddenException("You are not mentor");
         }
 
-        group.markMentee(menteeId);
+        if (group.getMentees().stream().anyMatch(m -> m.getId().equals(menteeId))) {
+            throw new DomainException("User not in group");
+        }
+
+        var markedMentees = group.getMarkedMentees();
+        if (markedMentees.stream().anyMatch(m -> m.getId().equals(menteeId)) {
+            throw new DomainException("Mentee already marked");
+        }
+
+        markedMentees.add(userRepository.findById(menteeId).orElseThrow(() -> new DomainException("Mentee not found")));
         groupRepository.save(group);
     }
 
     @Override
     public void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
+        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + groupId));
         if (!group.isMentor(user.getId())) {
             throw new ForbiddenException("You are not mentor");
         }
 
-        group.unmarkMentee(menteeId);
+        if (group.getMentees().stream().anyMatch(m -> m.getId().equals(menteeId))) {
+            throw new DomainException("User not in group");
+        }
+
+        var markedMentees = group.getMarkedMentees();
+
+        if (markedMentees == null || !markedMentees.stream().anyMatch(m -> m.getId().equals(menteeId))) {
+            throw new DomainException("Mentee not marked");
+        }
+
+        markedMentees.remove(userRepository.findById(menteeId).orElseThrow(() -> new DomainException("Mentee not found")));
         groupRepository.save(group);
     }
 
@@ -1691,9 +1692,11 @@ public class GroupServiceImpl implements GroupService {
     public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
 
-        var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
-        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
-
+        var channels = groups.stream().map(Group::getChannels).toList();
+        List<String> lstChannelIds = new ArrayList<>();
+        for (List<Channel> channel : channels) {
+            lstChannelIds.addAll(channel.stream().map(Channel::getId).toList());
+        }
 
         return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
     }

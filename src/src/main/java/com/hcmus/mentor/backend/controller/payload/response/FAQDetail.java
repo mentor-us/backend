@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.hcmus.mentor.backend.domain.User;
 import lombok.*;
 
 @Getter
@@ -45,7 +46,7 @@ public class FAQDetail {
                 .updatedDate(faq.getUpdatedDate())
                 .creator(creator)
                 .group(group)
-                .voters(faq.getVoters())
+                .voters(faq.getVoters().stream().map(User::getId).toList())
                 .build();
     }
 }

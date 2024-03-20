@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,8 +59,8 @@ public class GroupHomepageResponse {
         this.description = group.getDescription();
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors();
-        this.mentees = group.getMentees();
+        this.mentors = group.getMentors().stream().map(User::getId).toList();
+        this.mentees = group.getMentees().stream().map(User::getId).toList();
         this.groupCategory = groupCategory;
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
@@ -69,7 +70,7 @@ public class GroupHomepageResponse {
         this.hasNewMessage = group.getHasNewMessage();
         this.newMessage = group.getLastMessage();
         this.newMessageId = group.getLastMessageId();
-        this.defaultChannelId = group.getDefaultChannelId();
+        this.defaultChannelId = group.getDefaultChannel().getId();
     }
 
     public static GroupHomepageResponse from(Group group, String groupCategory, String role) {

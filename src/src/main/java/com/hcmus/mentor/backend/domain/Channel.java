@@ -1,98 +1,66 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
-@AllArgsConstructor
+@Data
+@Entity
 @Builder
 @ToString
-    @Document("channel")
-    public class Channel {
+@Table(name = "channels")
+public class Channel {
 
-        public static final int MAX_PINNED_MESSAGES = 5;
+    @Id
+    private String id;
 
-        @Id
-        private String id;
+    private String name;
 
-        private String name;
-
-        private String description;
-
-        @Builder.Default
-        private Date createdDate = new Date();
-
-        @Builder.Default
-        private Date updatedDate = new Date();
+    private String description;
 
     @Builder.Default
-    private List<String> userIds = new ArrayList<>();
+    private Date createdDate = new Date();
 
-        @Builder.Default
-        private ChannelStatus status = ChannelStatus.ACTIVE;
+    @Builder.Default
+    private Date updatedDate = new Date();
 
-        @Builder.Default
-        private ChannelType type = ChannelType.PUBLIC;
+    @Builder.Default
+    @OneToMany
+    @JoinColumn(name = "user_id")
+    private List<User> users = new ArrayList<>();
 
-        private String creatorId;
+    @Builder.Default
+    private ChannelStatus status = ChannelStatus.ACTIVE;
 
-        private Boolean hasNewMessage;
+    @Builder.Default
+    private ChannelType type = ChannelType.PUBLIC;
 
-        private String imageUrl;
+    private String creatorId;
 
-        @Builder.Default
-        private List<String> pinnedMessageIds = new ArrayList<>();
+    private Boolean hasNewMessage;
 
-        @Builder.Default
-        private String parentId = null;
+    private String imageUrl;
+
+    @Builder.Default
+    @OneToMany
+    @JoinColumn(name = "message_id")
+    private List<Message> pinnedMessageIds = new ArrayList<>();
+
+    @Builder.Default
+    private String parentId = null;
+
+    public Channel() {
+    }
 
     public boolean isMember(String userId) {
-        return userIds.contains(userId);
-    }
-
-    public void update(UpdateChannelRequest request) {
-        this.name = request.getChannelName();
-        this.description = request.getDescription();
-        this.type = request.getType();
-        this.userIds = request.getUserIds();
-    }
-
-    public void normalize() {
-        if (pinnedMessageIds == null) {
-            pinnedMessageIds = new ArrayList<>();
-        }
-    }
-
-    public boolean isMaximumPinnedMessages() {
-        normalize();
-        return pinnedMessageIds.size() >= MAX_PINNED_MESSAGES;
-    }
-
-    public void unpinMessage(String messageId) {
-        normalize();
-
-        if (!pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.remove(messageId);
-    }
-
-    public void pinMessage(String messageId) {
-        normalize();
-
-        if (pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.add(messageId);
+        return users.contains(userId);
     }
 
     public void ping() {

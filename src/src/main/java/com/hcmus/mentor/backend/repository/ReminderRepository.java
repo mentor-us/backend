@@ -1,12 +1,12 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Reminder;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Date;
 import java.util.List;
 
-public interface ReminderRepository extends MongoRepository<Reminder, String> {
+public interface ReminderRepository extends JpaRepository<Reminder, String> {
     List<Reminder> findByReminderDateBefore(Date date);
 
     Boolean existsByRemindableId(String id);

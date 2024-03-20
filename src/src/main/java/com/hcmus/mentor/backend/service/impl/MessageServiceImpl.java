@@ -236,8 +236,8 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public Message saveVoteMessage(Vote vote) {
         var message = Message.builder()
-                .senderId(vote.getCreatorId())
-                .groupId(vote.getGroupId())
+                .senderId(vote.getCreator().getId())
+                .groupId(vote.getGroup().getId())
                 .createdDate(new Date())
                 .type(Message.Type.VOTE)
                 .voteId(vote.getId())

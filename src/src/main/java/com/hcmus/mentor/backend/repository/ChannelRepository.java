@@ -4,12 +4,11 @@ import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwa
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ChannelRepository extends MongoRepository<Channel, String> {
+public interface ChannelRepository extends JpaRepository<Channel, String> {
 
     List<Channel> findByIdIn(List<String> channelIds);
 
@@ -24,17 +23,18 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
 
     boolean existsByParentIdAndName(String parentId, String name);
 
-    @Aggregation(pipeline = {
-            "{ $match: { 'id': { $in: ?0 }, 'status': ?1 } }",
-            "{ $addFields: { groupObjectId: { $toObjectId: '$parentId' } } }",
-            "{ $lookup: { from: 'group', localField: 'groupObjectId', foreignField: '_id' ,as: 'groups' } }",
-            "{ $unwind: '$groups' }",
-            "{ $set: { parentId: { _id: '$groups._id', name: '$groups.name', imageUrl: '$groups.imageUrl' } } }",
-            "{ $project: { id: 1, name: 1, group: '$parentId' } }",
-            "{ $unset: 'groups' }",
-            "{ $unset: 'groupObjectId' }",
-            "{ $sort: { 'group.name': 1, 'name': 1 } }"
-
-    })
+//    @Aggregation(pipeline = {
+//            "{ $match: { 'id': { $in: ?0 }, 'status': ?1 } }",
+//            "{ $addFields: { groupObjectId: { $toObjectId: '$parentId' } } }",
+//            "{ $lookup: { from: 'group', localField: 'groupObjectId', foreignField: '_id' ,as: 'groups' } }",
+//            "{ $unwind: '$groups' }",
+//            "{ $set: { parentId: { _id: '$groups._id', name: '$groups.name', imageUrl: '$groups.imageUrl' } } }",
+//            "{ $project: { id: 1, name: 1, group: '$parentId' } }",
+//            "{ $unset: 'groups' }",
+//            "{ $unset: 'groupObjectId' }",
+//            "{ $sort: { 'group.name': 1, 'name': 1 } }"
+//
+//    })
+    // TODO: Implement this method
     List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
 }

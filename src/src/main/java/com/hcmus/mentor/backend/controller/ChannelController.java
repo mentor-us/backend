@@ -42,10 +42,8 @@ public class ChannelController {
     public ResponseEntity<Channel> addChannel(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody AddChannelRequest request) {
-        Channel channel = channelService.addChannel(customerUserDetails.getId(), request);
-        if (channel == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        Channel channel = channelService.createChannel(customerUserDetails.getId(), request);
+
         return ResponseEntity.ok(channel);
     }
 

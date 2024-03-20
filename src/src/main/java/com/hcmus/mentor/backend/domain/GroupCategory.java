@@ -2,23 +2,22 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Document("group_category")
+@Entity
+@Table(name = "groups_categories")
 public class GroupCategory {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     private String name;
@@ -26,12 +25,20 @@ public class GroupCategory {
     private String description;
 
     private String iconUrl;
+
     @Builder.Default
     private Date createdDate = new Date();
+
     @Builder.Default
     private GroupCategoryStatus status = GroupCategoryStatus.ACTIVE;
+
     @Builder.Default
+    @ElementCollection
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
+
+    public GroupCategory() {
+
+    }
 
     public void update(
             String name, String description, String iconUrl, List<GroupCategoryPermission> permissions) {

@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.service.ReminderService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -36,18 +37,7 @@ public class ReminderServiceImpl implements ReminderService {
 
         for (Reminder reminder : reminders) {
             String template = reminder.getType().toString() + "_REMINDER";
-            String subject = reminder.getSubject();
-            Map<String, Object> properties = reminder.getProperties();
-            properties.put("frontendUrl", frontendUrl);
-            List<String> recipients = reminder.getRecipients();
-            List<String> receiverIds = new ArrayList<>();
-            recipients.forEach(recipient -> {
-                mailService.sendEmailTemplate(template, properties, subject, Collections.singletonList(recipient));
-                logger.info("Send reminder {} to {}", reminder.getType(), recipient);
-
-                Optional<User> userOptional = userRepository.findByEmail(recipient);
-                userOptional.ifPresent(user -> receiverIds.add(user.getId()));
-            });
+            List<String> receiverIds = getStrings(reminder, template);
             Optional<Group> groupOptional = groupRepository.findById(reminder.getGroupId());
             String title = groupOptional.isPresent() ? groupOptional.get().getName() : "MentorUS";
             String body = "";
@@ -62,5 +52,22 @@ public class ReminderServiceImpl implements ReminderService {
         if (!reminders.isEmpty()) {
             reminderRepository.deleteAll(reminders);
         }
+    }
+
+    @NotNull
+    private List<String> getStrings(Reminder reminder, String template) {
+        String subject = reminder.getSubject();
+        Map<String, Object> properties = reminder.getProperties();
+        properties.put("frontendUrl", frontendUrl);
+        List<String> recipients = reminder.getRecipients();
+        List<String> receiverIds = new ArrayList<>();
+        recipients.forEach(recipient -> {
+            mailService.sendEmailTemplate(template, properties, subject, Collections.singletonList(recipient));
+            logger.info("Send reminder {} to {}", reminder.getType(), recipient);
+
+            Optional<User> userOptional = userRepository.findByEmail(recipient);
+            userOptional.ifPresent(user -> receiverIds.add(user.getId()));
+        });
+        return receiverIds;
     }
 }

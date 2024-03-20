@@ -1,16 +1,15 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Date;
 import java.util.List;
 
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.repository.MongoRepository;
-
-public interface TaskRepository extends MongoRepository<Task, String> {
+public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByGroupId(String groupId);
 
     List<Task> findByAssigneeIdsUserId(String userId);
@@ -59,4 +58,7 @@ public interface TaskRepository extends MongoRepository<Task, String> {
 
     long countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
             String groupId, String assigneeId, TaskStatus status);
+
+    List<Task> findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(List<String> groupIds, String userId, Date startTime, Date endTime);
+
 }

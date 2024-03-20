@@ -1,15 +1,12 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.*;
@@ -19,13 +16,14 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,97 +42,12 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
 
-    @Override
-    public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
-        PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Slice<Notification> slice = notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
-        List<String> senderIds = slice.get().map(Notification::getSenderId).toList();
-        Map<String, ShortProfile> senders = userRepository.findByIds(senderIds).stream()
-                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
-        List<NotificationResponse> notifications = slice.getContent().stream()
-                .map(notification -> NotificationResponse.from(notification, senders.getOrDefault(notification.getSenderId(), null)))
-                .toList();
-        return pagingResponse(slice, notifications);
-    }
-
     private Map<String, Object> pagingResponse(
             Slice<Notification> slice, List<NotificationResponse> notifications) {
         Map<String, Object> response = new HashMap<>();
         response.put("notifications", notifications);
         response.put("hasMore", slice.hasNext());
         return response;
-    }
-
-    @Override
-    public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notification notif = Notification.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
-                .type(NotificationType.NEED_RESPONSE)
-                .senderId(senderId)
-                .receiverIds(Collections.singletonList(request.getReceiverId()))
-                .createdDate(request.getCreatedDate())
-                .build();
-        return notificationRepository.save(notif);
-    }
-
-    @Override
-    public Notification responseNotification(String userId, String notificationId, String action) {
-        Optional<Notification> notificationWrapper = notificationRepository.findById(notificationId);
-        if (!notificationWrapper.isPresent()) {
-            return null;
-        }
-
-        Notification notif = notificationWrapper.get();
-        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
-            return null;
-        }
-
-        switch (action) {
-            case "seen":
-                notif.seen(userId);
-                break;
-            case "accept":
-                notif.accept(userId);
-                break;
-            case "refuse":
-                notif.refuse(userId);
-                break;
-            default:
-                break;
-        }
-        return notificationRepository.save(notif);
-    }
-
-    @Override
-    public void subscribeNotification(SubscribeNotificationRequest request) {
-        if (request == null) {
-            return;
-        }
-
-        unsubscribeNotification(request.getUserId());
-
-        if (request.getToken().isEmpty()) {
-            logger.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
-            return;
-        }
-        logger.info("[*] Subscribe user notification: userID({}) | Token({})", request.getUserId(), request.getToken());
-
-        List<NotificationSubscriber> subscribes =
-                notificationSubscriberRepository.findByUserIdOrToken(
-                        request.getUserId(), request.getToken());
-        if (subscribes.isEmpty()) {
-            NotificationSubscriber subscriber =
-                    NotificationSubscriber.builder()
-                            .userId(request.getUserId())
-                            .token(request.getToken())
-                            .build();
-            notificationSubscriberRepository.save(subscriber);
-            return;
-        }
-
-        subscribes.forEach(subscriber -> subscriber.update(request));
-        notificationSubscriberRepository.saveAll(subscribes);
     }
 
     @Override
@@ -149,7 +62,7 @@ public class NotificationServiceImpl implements NotificationService {
         List<String> members;
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
             if (!channelWrapper.isPresent()) {
                 return;
@@ -160,8 +73,9 @@ public class NotificationServiceImpl implements NotificationService {
             title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
-            members = channel.getUserIds().stream()
+            members = channel.getUsers().stream()
                     .filter(id -> !id.equals(message.getSender().getId()))
+                    .map(User::getId)
                     .distinct()
                     .toList();
         } else {
@@ -169,6 +83,7 @@ public class NotificationServiceImpl implements NotificationService {
             title = group.getName();
             members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                     .filter(id -> !id.equals(message.getSender().getId()))
+                    .map(User::getId)
                     .distinct()
                     .toList();
         }
@@ -227,7 +142,7 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notif = createNewTaskNotification(title, content, message.getSender().getId(), task);
         try {
             firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
+                    notif.getReceivers().stream().map(User::getId).toList(),
                     title,
                     content,
                     attachDataNotification(message.getGroupId(), NEW_TASK));
@@ -237,23 +152,21 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification createNewTaskNotification(
-            String title, String content, String senderId, TaskMessageResponse task) {
-        List<String> assigneeIds =
-                task.getAssignees().stream().map(TaskAssigneeResponse::getId).toList();
-        List<String> receiverIds =
-                Stream.concat(assigneeIds.stream(), Stream.of(task.getAssignerId()))
-                        .distinct()
-                        .toList();
-        Notification inAppNotification =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_TASK)
-                        .senderId(senderId)
-                        .refId(task.getId())
-                        .receiverIds(receiverIds)
-                        .build();
+    public Notification createNewTaskNotification(String title, String content, String senderId, TaskMessageResponse task) {
+        User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
+        var assignees = userRepository.findByIdIn(task.getAssignees().stream().map(TaskAssigneeResponse::getId).toList());
+        List<User> receivers = Stream.concat(assignees.stream(), Stream.of(assigner))
+                .distinct()
+                .toList();
+
+        Notification inAppNotification = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(NEW_TASK)
+                .senderId(senderId)
+                .refId(task.getId())
+                .receivers(receivers)
+                .build();
         return notificationRepository.save(inAppNotification);
     }
 
@@ -278,7 +191,7 @@ public class NotificationServiceImpl implements NotificationService {
                 createNewMeetingNotification(title, content, message.getSender().getId(), meeting);
         try {
             firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
+                    notif.getReceivers().stream().map(User::getId).toList(),
                     title,
                     content,
                     attachDataNotification(message.getGroupId(), NEW_MEETING));
@@ -294,14 +207,14 @@ public class NotificationServiceImpl implements NotificationService {
                 Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizerId()))
                         .distinct()
                         .toList();
-        Notification notif =
-                Notification.builder()
+        List<User> receivers = userRepository.findByIdIn(receiverIds);
+        Notification notif = Notification.builder()
                         .title(title)
                         .content(content)
                         .type(NEW_MEETING)
                         .senderId(senderId)
                         .refId(meeting.getId())
-                        .receiverIds(receiverIds)
+                        .receivers(receivers)
                         .build();
         return notificationRepository.save(notif);
     }
@@ -334,14 +247,14 @@ public class NotificationServiceImpl implements NotificationService {
             title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
-            members = channel.getUserIds().stream()
+            members = channel.getUsers().stream().map(User::getId)
                     .filter(id -> !id.equals(message.getSender().getId()))
                     .distinct()
                     .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+            members = Stream.concat(group.getMentors().stream().map(User::getId), group.getMentees().stream().map(User::getId))
                     .filter(id -> !id.equals(message.getSender().getId()))
                     .distinct()
                     .toList();
@@ -370,26 +283,6 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (FirebaseMessagingException e) {
             logger.error("Error sending media message notification", e);
         }
-    }
-
-    @Override
-    public Notification createNewMediaNotification(
-            String title, String content, String senderId, Group group) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                        .filter(id -> !id.equals(senderId))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_FILE_MESSAGE)
-                        .senderId(senderId)
-                        .refId(group.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(notif);
     }
 
     @Override
@@ -452,7 +345,7 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notif = createRescheduleMeetingNotification(title, content, modifierId, group, meeting);
         try {
             firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
+                    notif.getReceivers().stream().map(User::getId).toList(),
                     title,
                     content,
                     attachDataNotification(meeting.getGroupId(), RESCHEDULE_MEETING));
@@ -464,26 +357,20 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public Notification createRescheduleMeetingNotification(
             String title, String content, String senderId, Group group, Meeting meeting) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+        var receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                         .filter(id -> !id.equals(senderId))
                         .distinct()
                         .toList();
-        Notification notif =
-                Notification.builder()
+
+        Notification notif = Notification.builder()
                         .title(title)
                         .content(content)
                         .type(RESCHEDULE_MEETING)
                         .senderId(senderId)
                         .refId(meeting.getId())
-                        .receiverIds(receiverIds)
+                        .receivers(receiverIds)
                         .build();
         return notificationRepository.save(notif);
-    }
-
-    @Override
-    public long getUnreadNumber(String userId) {
-        return notificationRepository.countDistinctByReceiverIdsIn(Collections.singletonList(userId));
     }
 
     @Override
@@ -493,7 +380,7 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroup().getId());
         if (!groupWrapper.isPresent()) {
             return;
         }
@@ -504,32 +391,31 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notif = createNewVoteNotification(title, content, creatorId, group, vote);
         try {
             firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
+                    notif.getReceivers().stream().map(User::getId).toList(),
                     title,
                     content,
-                    attachDataNotification(vote.getGroupId(), NEW_VOTE));
+                    attachDataNotification(vote.getGroup().getId(), NEW_VOTE));
         } catch (FirebaseMessagingException e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public Notification createNewVoteNotification(
-            String title, String content, String senderId, Group group, Vote vote) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                        .filter(id -> !id.equals(senderId))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_VOTE)
-                        .senderId(senderId)
-                        .refId(vote.getId())
-                        .receiverIds(receiverIds)
-                        .build();
+    public Notification createNewVoteNotification(String title, String content, String senderId, Group group, Vote vote) {
+        var receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                .filter(user -> !user.getId().equals(senderId))
+                .distinct()
+                .toList();
+
+        Notification notif = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(NEW_VOTE)
+                .senderId(senderId)
+                .refId(vote.getId())
+                .receivers(receiverIds)
+                .build();
+
         return notificationRepository.save(notif);
     }
 
@@ -548,18 +434,18 @@ public class NotificationServiceImpl implements NotificationService {
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
         if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (channelWrapper.isEmpty()) {
+            var channel = channelRepository.findById(message.getGroupId()).orElse(null);
+            if (channel == null) {
                 return;
             }
 
-            Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
             title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
-            members = channel.getUserIds().stream()
+            members = channel.getUsers().stream()
                     .filter(id -> !id.equals(message.getSender().getId()))
+                    .map(User::getId)
                     .distinct()
                     .toList();
         } else {
@@ -568,6 +454,7 @@ public class NotificationServiceImpl implements NotificationService {
             members =
                     Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                             .filter(id -> !id.equals(message.getSender().getId()))
+                            .map(User::getId)
                             .distinct()
                             .toList();
         }
@@ -615,8 +502,9 @@ public class NotificationServiceImpl implements NotificationService {
                             ? parentGroup.getName() + "\n" + message.getSender().getName()
                             : channel.getName();
             members =
-                    channel.getUserIds().stream()
+                    channel.getUsers().stream()
                             .filter(id -> !id.equals(message.getSender().getId()))
+                            .map(User::getId)
                             .distinct()
                             .toList();
         } else {
@@ -624,6 +512,7 @@ public class NotificationServiceImpl implements NotificationService {
             title = group.getName();
             members =
                     Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                            .map(User::getId)
                             .filter(id -> !id.equals(message.getSender().getId()))
                             .distinct()
                             .toList();
@@ -643,31 +532,6 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (FirebaseMessagingException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * @param title    Title of notification
-     * @param content  Content of notification
-     * @param senderId Sender
-     * @param group    Group
-     * @return A notification
-     */
-    @Override
-    public Notification createForwardNotification(String title, String content, String senderId, Group group) {
-        List<String> receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                .filter(id -> !id.equals(senderId))
-                .distinct()
-                .toList();
-
-        Notification notif = Notification.builder()
-                .title(title)
-                .content(content)
-                .type(FORWARD)
-                .senderId(senderId)
-                .refId(group.getId())
-                .receiverIds(receiverIds)
-                .build();
-        return notificationRepository.save(notif);
     }
 
     /**
@@ -695,11 +559,11 @@ public class NotificationServiceImpl implements NotificationService {
             Channel channel = channelWrapper.get();
             Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
             title = PRIVATE_MESSAGE.equals(channel.getType()) ? parentGroup.getName() + "\n" + message.getSender().getName() : channel.getName();
-            members = channel.getUserIds().stream().filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+            members = channel.getUsers().stream().map(User::getId).filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream()).filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+            members = Stream.concat(group.getMentors().stream().map(User::getId), group.getMentees().stream().map(User::getId)).filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
         }
 
         if (members.isEmpty()) {

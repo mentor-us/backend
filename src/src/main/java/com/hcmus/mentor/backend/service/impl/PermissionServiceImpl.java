@@ -1,17 +1,16 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
-import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
-
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +32,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isGroupCreator(String email, String groupId) {
         Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return false;
         }
         String userId = userWrapper.get().getId();
@@ -48,7 +47,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isInGroup(String email, String groupId) {
         Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return false;
         }
         String userId = userWrapper.get().getId();
@@ -58,7 +57,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isMentor(String email, String groupId) {
         Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return false;
         }
         String userId = userWrapper.get().getId();

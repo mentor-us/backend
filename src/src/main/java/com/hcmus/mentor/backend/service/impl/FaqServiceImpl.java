@@ -1,25 +1,27 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.Faq;
-import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.response.FAQDetail;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Faq;
+import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.repository.FaqRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.FaqService;
-import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.hcmus.mentor.backend.service.FaqService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,16 +30,11 @@ public class FaqServiceImpl implements FaqService {
     private final FaqRepository faqRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
-    private final PermissionService permissionService;
 
     @Override
     public List<Faq> getByGroupId(String userId, String groupId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
-            return Collections.emptyList();
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
+        var group = groupRepository.findById(groupId).orElse(null);
+        if (group == null || !group.isMember(userId)) {
             return Collections.emptyList();
         }
 
@@ -48,48 +45,42 @@ public class FaqServiceImpl implements FaqService {
 
     @Override
     public FAQDetail getById(String userId, String faqId) {
-        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
-        if (!faqWrapper.isPresent()) {
+        var faq = faqRepository.findById(faqId).orElse(null);
+        if (faq == null) {
             return null;
         }
-        Faq faq = faqWrapper.get();
 
-        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(faq.getGroupId());
+        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(faq.getGroup().getId());
         if (groupWrapper.size() == 0) {
             return null;
         }
         GroupDetailResponse group = groupWrapper.get(0);
         group.setRole(userId);
-        ShortProfile creator = userRepository.findShortProfile(faq.getCreatorId());
+        ShortProfile creator = userRepository.findShortProfile(faq.getCreator().getId());
         return FAQDetail.from(faq, creator, group);
     }
 
     @Override
-    public Faq addNewFaq(String userId, CreateFaqRequest request) {
-        Optional<Group> groupWrapper = groupRepository.findById(request.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return null;
-        }
-        Group group = groupWrapper.get();
+    public Faq createFaq(String userId, CreateFaqRequest request) {
+        Group group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
+
         if (!group.isMentor(userId)) {
-            return null;
+            throw new ForbiddenException("Chỉ có mentor được tạo câu hỏi mới");
         }
 
-        Faq data =
-                Faq.builder()
-                        .question(request.getQuestion())
-                        .answer(request.getAnswer())
-                        .creatorId(userId)
-                        .groupId(request.getGroupId())
-                        .build();
-        Faq newFAQ = faqRepository.save(data);
-        if (newFAQ == null) {
-            return null;
-        }
+        Faq faq = faqRepository.save(Faq.builder()
+                .question(request.getQuestion())
+                .answer(request.getAnswer())
+                .creator(userRepository.findById(userId).orElse(null))
+                .group(groupRepository.findById(request.getGroupId()).orElse(null))
+                .build());
 
-        group.addFaq(newFAQ.getId());
+        if (!group.getFaqIds().contains(faq)) {
+            group.getFaqIds().add(faq);
+        }
         groupRepository.save(group);
-        return newFAQ;
+
+        return faq;
     }
 
     @Override
@@ -113,74 +104,70 @@ public class FaqServiceImpl implements FaqService {
     }
 
     @Override
-    public boolean deleteFaq(String userId, String faqId) {
-        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
-        if (!faqWrapper.isPresent()) {
-            return false;
-        }
-        Faq faq = faqWrapper.get();
+    public void deleteFaq(String deleter, String faqId) {
+        Faq faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
 
-        Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return false;
+        var group = faq.getGroup();
+        if (!group.isMentor(deleter)) {
+            throw new ForbiddenException("Chỉ có mentor được xoá câu hỏi");
         }
-        Group group = groupWrapper.get();
-        if (!group.isMentor(userId)) {
-            return false;
+
+        if (group.getFaqIds().contains(faqId)) {
+            group.getFaqIds().remove(faq);
+
+            groupRepository.save(group);
         }
-        group.deleteFaq(faqId);
-        groupRepository.save(group);
+
         faqRepository.deleteById(faqId);
-        return true;
     }
 
     @Override
-    public void importFAQs(CustomerUserDetails user, String toGroupId, ImportFAQsRequest request) {
-        if (!permissionService.isMentor(user.getEmail(), toGroupId)) {
-            return;
+    public void importFaqs(String creatorId, String toGroupId, ImportFAQsRequest request) {
+        Group group = groupRepository.findById(toGroupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + toGroupId));
+
+        if (!group.isMentor(creatorId)) {
+            throw new ForbiddenException("Chỉ có mentor được tạo câu hỏi mới");
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(toGroupId);
-        if (!groupWrapper.isPresent()) {
-            return;
+        var creator = userRepository.findById(creatorId).orElse(null);
+        List<Faq> faqs = faqRepository.findByIdIn(request.getFaqIds()).stream()
+                .map(faq -> Faq.builder()
+                        .question(faq.getQuestion())
+                        .answer(faq.getAnswer())
+                        .creator(creator)
+                        .group(group)
+                        .build())
+                .toList();
+
+        faqRepository.saveAll(faqs);
+
+        var groupFaq = group.getFaqIds();
+        for (Faq faq : faqs) {
+            if (!groupFaq.contains(faq)) {
+                groupFaq.add(faq);
+            }
         }
 
-        List<Faq> newFAQs =
-                faqRepository.findByIdIn(request.getFaqIds()).stream()
-                        .map(
-                                faq ->
-                                        Faq.builder()
-                                                .question(faq.getQuestion())
-                                                .answer(faq.getAnswer())
-                                                .creatorId(user.getId())
-                                                .groupId(toGroupId)
-                                                .build())
-                        .toList();
-
-        Group group = groupWrapper.get();
-        group.importFaq(newFAQs.stream().map(Faq::getId).toList());
         groupRepository.save(group);
-        faqRepository.saveAll(newFAQs);
     }
 
     @Override
-    public boolean upvote(CustomerUserDetails user, String faqId) {
-        Optional<Faq> faqWrapper = faqRepository.findById(faqId);
-        if (!faqWrapper.isPresent()) {
-            return false;
-        }
-        Faq faq = faqWrapper.get();
-
-        Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return false;
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(user.getId())) {
+    public boolean upvote(CustomerUserDetails userDetails, String faqId) {
+        var faq = faqRepository.findById(faqId).orElse(null);
+        if (faq == null) {
             return false;
         }
 
-        faq.upvote(user.getId());
+        var user = userRepository.findById(userDetails.getId()).orElse(null);
+        if (user == null) {
+            return false;
+        }
+
+        if (!faq.getGroup().isMember(user.getId())) {
+            return false;
+        }
+
+        faq.addVoter(user);
         faqRepository.save(faq);
         return true;
     }
@@ -193,7 +180,7 @@ public class FaqServiceImpl implements FaqService {
         }
         Faq faq = faqWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(faq.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(faq.getGroup().getId());
         if (!groupWrapper.isPresent()) {
             return false;
         }
@@ -202,7 +189,7 @@ public class FaqServiceImpl implements FaqService {
             return false;
         }
 
-        faq.downVote(user.getId());
+        faq.removeVote(userRepository.findById(user.getId()).orElse(null));
         faqRepository.save(faq);
         return true;
     }

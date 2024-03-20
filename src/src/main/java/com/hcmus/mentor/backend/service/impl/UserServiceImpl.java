@@ -21,7 +21,13 @@ import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
@@ -31,10 +37,10 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -63,10 +69,10 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
-    private final MongoTemplate mongoTemplate;
     private final GroupCategoryRepository groupCategoryRepository;
     private final BlobStorage blobStorage;
     private final ShareService shareService;
+    private final EntityManager entityManager;
 
     @Override
     public String getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -127,7 +133,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto listAll() {
-        List<User> users = userRepository.findAll();
+        List<User> users = IteratorUtils.toList(userRepository.findAll().iterator());
         List<UserDataResponse> userDataResponses = getUsersData(users);
         return new UserServiceDto(SUCCESS, null, userDataResponses);
     }
@@ -230,12 +236,12 @@ public class UserServiceImpl implements UserService {
         mailService.sendWelcomeMail(email);
 
         UserDataResponse userDataResponse = UserDataResponse.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .status(user.isStatus())
-                        .role(role)
-                        .build();
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.isStatus())
+                .role(role)
+                .build();
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
@@ -347,29 +353,60 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    List<User> getUsersByConditions(
-            String emailUser, FindUserRequest request, int page, int pageSize) {
-        Query query = new Query();
+    //    List<User> getUsersByConditions(
+//            String emailUser, FindUserRequest request, int page, int pageSize) {
+//        Query query = new Query();
+//
+//        if (request.getName() != null && !request.getName().isEmpty()) {
+//            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
+//        }
+//        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+//            query.addCriteria(Criteria.where("email").regex(request.getEmail(), "i"));
+//        }
+//        if (request.getStatus() != null) {
+//            query.addCriteria(Criteria.where("status").is(request.getStatus()));
+//        }
+//        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
+//            query.addCriteria(Criteria.where("roles").nin(SUPER_ADMIN));
+//        }
+//        if (request.getRole() != null) {
+//            query.addCriteria(Criteria.where("roles").in(request.getRole()));
+//        }
+//        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+//
+//        List<User> users = mongoTemplate.find(query, User.class);
+//        return users;
+//    }
+    // TODO: Implement this method
+    List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> criteriaQuery = cb.createQuery(User.class);
+        Root<User> root = criteriaQuery.from(User.class);
+        List<Predicate> predicates = new ArrayList<>();
 
         if (request.getName() != null && !request.getName().isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
+            predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
         }
         if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            query.addCriteria(Criteria.where("email").regex(request.getEmail(), "i"));
+            predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
         }
         if (request.getStatus() != null) {
-            query.addCriteria(Criteria.where("status").is(request.getStatus()));
+            predicates.add(cb.equal(root.get("status"), request.getStatus()));
         }
         if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-            query.addCriteria(Criteria.where("roles").nin(SUPER_ADMIN));
+            predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
         }
         if (request.getRole() != null) {
-            query.addCriteria(Criteria.where("roles").in(request.getRole()));
+            predicates.add(root.get("roles").in(request.getRole()));
         }
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
 
-        List<User> users = mongoTemplate.find(query, User.class);
-        return users;
+        criteriaQuery.where(predicates.toArray(new Predicate[0]));
+        criteriaQuery.orderBy(cb.desc(root.get("createdDate")));
+
+        return entityManager.createQuery(criteriaQuery)
+                .setFirstResult(page * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
     }
 
     @Override
@@ -412,7 +449,6 @@ public class UserServiceImpl implements UserService {
                 .emailVerified(user.getEmailVerified())
                 .gender(user.getGender())
                 .phone(user.getPhone())
-                .personalEmail(user.getPersonalEmail())
                 .build();
     }
 

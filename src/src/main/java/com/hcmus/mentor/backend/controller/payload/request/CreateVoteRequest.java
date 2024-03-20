@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request;
 
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
+import com.hcmus.mentor.backend.domain.dto.Choice;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,7 +23,7 @@ public class CreateVoteRequest {
 
     private Date timeEnd;
 
-    private List<ChoiceDto> choices;
+    private List<Choice> choices;
 
     private Boolean isMultipleChoice = false;
 }

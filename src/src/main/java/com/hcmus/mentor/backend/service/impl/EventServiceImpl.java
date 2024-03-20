@@ -26,8 +26,6 @@ public class EventServiceImpl implements EventService {
 
     private final MeetingService meetingService;
     private final TaskServiceImpl taskService;
-    private final MeetingRepository meetingRepository;
-    private final TaskRepository taskRepository;
 
     @Override
     public List<EventDto> getMostRecentEvents(String userId) {

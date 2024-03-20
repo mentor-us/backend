@@ -1,28 +1,18 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.DUPLICATE_GROUP_CATEGORY;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.NOT_ENOUGH_FIELDS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.NOT_FOUND;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import com.hcmus.mentor.backend.service.PermissionService;
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.util.FileUtils;
-
-import java.io.IOException;
-import java.util.*;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.core.io.FileSystemResource;
@@ -30,13 +20,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.*;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +39,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     private final GroupCategoryRepository groupCategoryRepository;
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
-    private final MongoTemplate mongoTemplate;
+//    private final MongoTemplate mongoTemplate;
 
     @Override
     public List<GroupCategory> findAll() {
@@ -138,8 +132,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!newGroupCategoryId.isEmpty()) {
             groupCategoryOptional = groupCategoryRepository.findById(newGroupCategoryId);
             if (!groupCategoryOptional.isPresent()) {
-                return new GroupCategoryServiceDto(
-                        NOT_FOUND, "Not found new group category", newGroupCategoryId);
+                return new GroupCategoryServiceDto(NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
                 group.setGroupCategory(newGroupCategoryId);
@@ -159,23 +152,26 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     private Pair<Long, List<GroupCategory>> getGroupCategoriesBySearchConditions(
             FindGroupCategoryRequest request, int page, int pageSize) {
-        Query query = new Query();
-
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
-        }
-        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
-            query.addCriteria(Criteria.where("description").regex(request.getDescription(), "i"));
-        }
-        if (request.getStatus() != null) {
-            query.addCriteria(Criteria.where("status").is(request.getStatus()));
-        }
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
-
-        long count = mongoTemplate.count(query, GroupCategory.class);
-        query.with(PageRequest.of(page, pageSize));
-
-        List<GroupCategory> groupCategories = mongoTemplate.find(query, GroupCategory.class);
+//        Query query = new Query();
+//
+//        if (request.getName() != null && !request.getName().isEmpty()) {
+//            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
+//        }
+//        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
+//            query.addCriteria(Criteria.where("description").regex(request.getDescription(), "i"));
+//        }
+//        if (request.getStatus() != null) {
+//            query.addCriteria(Criteria.where("status").is(request.getStatus()));
+//        }
+//        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+//
+//        long count = mongoTemplate.count(query, GroupCategory.class);
+//        query.with(PageRequest.of(page, pageSize));
+//
+//        List<GroupCategory> groupCategories = mongoTemplate.find(query, GroupCategory.class);
+        // TODO: Fix this
+        var count = (long) groupCategoryRepository.findAll().size();
+        var groupCategories = groupCategoryRepository.findAll();
         return new Pair<>(count, groupCategories);
     }
 

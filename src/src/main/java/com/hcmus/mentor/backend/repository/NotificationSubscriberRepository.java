@@ -1,14 +1,13 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.NotificationSubscriber;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-
 public interface NotificationSubscriberRepository
-        extends MongoRepository<NotificationSubscriber, String> {
+        extends JpaRepository<NotificationSubscriber, String> {
 
     Optional<NotificationSubscriber> findByUserId(String userId);
 

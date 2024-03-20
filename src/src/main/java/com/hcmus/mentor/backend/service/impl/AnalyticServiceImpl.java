@@ -20,6 +20,12 @@ import com.hcmus.mentor.backend.service.AnalyticService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -28,10 +34,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +50,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
@@ -68,7 +69,9 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
-    private final MongoTemplate mongoTemplate;
+//    private final MongoTemplate mongoTemplate;
+    @PersistenceContext
+    private EntityManager entityManager;
     private final SpringTemplateEngine templateEngine;
 
     private SystemAnalyticResponse getGeneralInformationForSuperAdmin() {
@@ -183,8 +186,8 @@ public class AnalyticServiceImpl implements AnalyticService {
         Set<String> userIds = new HashSet<>();
         groups.forEach(
                 group -> {
-                    userIds.addAll(group.getMentors());
-                    userIds.addAll(group.getMentees());
+                    userIds.addAll(group.getMentors().stream().map(User::getId).toList());
+                    userIds.addAll(group.getMentees().stream().map(User::getId).toList());
                 });
         long totalUsers = userIds.size();
         long activeUsers = userRepository.countByIdInAndStatus(new ArrayList<>(userIds), true);
@@ -338,8 +341,8 @@ public class AnalyticServiceImpl implements AnalyticService {
         Set<String> userIds = new HashSet<>();
         groups.forEach(
                 group -> {
-                    userIds.addAll(group.getMentors());
-                    userIds.addAll(group.getMentees());
+                    userIds.addAll(group.getMentors().stream().map(User::getId).toList());
+                    userIds.addAll(group.getMentees().stream().map(User::getId).toList());
                 });
         for (LocalDate localDate = timeStart;
              localDate.isBefore(timeEnd);
@@ -405,9 +408,8 @@ public class AnalyticServiceImpl implements AnalyticService {
     private GroupAnalyticResponse getGeneralGroupAnalytic(Group group) {
         String groupId = group.getId();
 
-        String categoryName =
-                groupCategoryRepository
-                        .findById(group.getGroupCategory())
+        String categoryName = groupCategoryRepository
+                        .findById(group.getGroupCategory().getId())
                         .map(GroupCategory::getName)
                         .orElse(null);
 
@@ -421,8 +423,8 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalMeetings = meetingRepository.countByGroupId(groupId);
 
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
-        addMembersToAnalytics(members, group.getMentors(), "MENTOR", groupId);
-        addMembersToAnalytics(members, group.getMentees(), "MENTEE", groupId);
+        addMembersToAnalytics(members, group.getMentors().stream().map(User::getId).toList(), "MENTOR", groupId);
+        addMembersToAnalytics(members, group.getMentees().stream().map(User::getId).toList(), "MENTEE", groupId);
 
         return GroupAnalyticResponse.builder()
                 .id(group.getId())
@@ -442,8 +444,8 @@ public class AnalyticServiceImpl implements AnalyticService {
     private List<GroupAnalyticResponse.Member> getMembers(Group group) {
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
         if (group != null) {
-            addMembersToAnalytics(members, group.getMentors(), "MENTOR", group.getId());
-            addMembersToAnalytics(members, group.getMentees(), "MENTEE", group.getId());
+            addMembersToAnalytics(members, group.getMentors().stream().map(User::getId).toList(), "MENTOR", group.getId());
+            addMembersToAnalytics(members, group.getMentees().stream().map(User::getId).toList(), "MENTEE", group.getId());
         }
 
         return members;
@@ -648,9 +650,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             }
         }
         String groupId = group.getId();
-        String categoryName =
-                groupCategoryRepository
-                        .findById(group.getGroupCategory())
+        String categoryName = groupCategoryRepository
+                        .findById(group.getGroupCategory().getId())
                         .map(GroupCategory::getName)
                         .orElse(null);
 
@@ -811,39 +812,80 @@ public class AnalyticServiceImpl implements AnalyticService {
         return response;
     }
 
-    private List<GroupGeneralResponse> getGroupGeneralAnalyticBySearchConditions(
-            String emailUser, FindGroupGeneralAnalyticRequest request) {
+//    private List<GroupGeneralResponse> getGroupGeneralAnalyticBySearchConditions(
+//            String emailUser, FindGroupGeneralAnalyticRequest request) {
+//        String groupName = request.getGroupName();
+//        String groupCategory = request.getGroupCategory();
+//        GroupStatus status = request.getStatus();
+//        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+//        CriteriaQuery<Group> query = cb.createQuery(Group.class);
+//        Root<Group> root = query.from(Group.class);
+//
+//
+//        if (groupName != null && !groupName.isEmpty()) {
+//            query.addCriteria(Criteria.where("name").regex(groupName, "i"));
+//        }
+//
+//        if (groupCategory != null && !groupCategory.isEmpty()) {
+//            query.addCriteria(Criteria.where("groupCategory").is(groupCategory));
+//        }
+//
+//        if (status != null) {
+//            query.addCriteria(Criteria.where("status").is(status));
+//        }
+//
+//        GroupServiceImpl.validateSupperAdmin(emailUser, query, permissionService, userRepository);
+//        List<Group> groups = mongoTemplate.find(query, Group.class);
+//
+//        List<GroupGeneralResponse> responses = getGroupGeneralAnalyticFromGroups(groups);
+//        if (request.getTimeStart() != null && request.getTimeEnd() != null) {
+//            responses =responses.stream().filter(response ->
+//                            response.getLastTimeActive() != null
+//                            && response.getLastTimeActive().after(request.getTimeStart())
+//                            && response.getLastTimeActive().before(request.getTimeEnd()))
+//                            .toList();
+//        }
+//        return responses;
+//    }
+    // TODO: Make sure this function works correctly
+
+    private List<GroupGeneralResponse> getGroupGeneralAnalyticBySearchConditions(String emailUser, FindGroupGeneralAnalyticRequest request) {
         String groupName = request.getGroupName();
         String groupCategory = request.getGroupCategory();
         GroupStatus status = request.getStatus();
-        Query query = new Query();
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Group> query = cb.createQuery(Group.class);
+        Root<Group> root = query.from(Group.class);
+
+        List<Predicate> predicates = new ArrayList<>();
 
         if (groupName != null && !groupName.isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(groupName, "i"));
+            predicates.add(cb.like(cb.lower(root.get("name")), "%" + groupName.toLowerCase() + "%"));
         }
 
         if (groupCategory != null && !groupCategory.isEmpty()) {
-            query.addCriteria(Criteria.where("groupCategory").is(groupCategory));
+            predicates.add(cb.equal(root.get("groupCategory"), groupCategory));
         }
 
         if (status != null) {
-            query.addCriteria(Criteria.where("status").is(status));
+            predicates.add(cb.equal(root.get("status"), status));
         }
 
-        GroupServiceImpl.validateSupperAdmin(emailUser, query, permissionService, userRepository);
-        List<Group> groups = mongoTemplate.find(query, Group.class);
+        query.where(predicates.toArray(new Predicate[0]));
+
+        List<Group> groups = entityManager.createQuery(query).getResultList();
 
         List<GroupGeneralResponse> responses = getGroupGeneralAnalyticFromGroups(groups);
+
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {
-            responses =
-                    responses.stream()
-                            .filter(
-                                    response ->
-                                            response.getLastTimeActive() != null
-                                                    && response.getLastTimeActive().after(request.getTimeStart())
-                                                    && response.getLastTimeActive().before(request.getTimeEnd()))
-                            .toList();
+            responses = responses.stream()
+                    .filter(response -> response.getLastTimeActive() != null &&
+                            response.getLastTimeActive().after(request.getTimeStart()) &&
+                            response.getLastTimeActive().before(request.getTimeEnd()))
+                    .toList();
         }
+
         return responses;
     }
 
@@ -868,57 +910,119 @@ public class AnalyticServiceImpl implements AnalyticService {
         return new ApiResponseDto(pagingResponse(responsesPage), SUCCESS, "");
     }
 
-    private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
-            String emailUser, String groupId, FindUserAnalyticRequest request) {
-        Query query = new Query();
-        String name = request.getName();
-        String email = request.getEmail();
-        FindUserAnalyticRequest.Role role = request.getRole();
+//    private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
+//            String emailUser, String groupId, FindUserAnalyticRequest request) {
+//        Query query = new Query();
+//        String name = request.getName();
+//        String email = request.getEmail();
+//        FindUserAnalyticRequest.Role role = request.getRole();
+//
+//        if (name != null && !name.isEmpty()) {
+//            query.addCriteria(Criteria.where("name").regex(name, "i"));
+//        }
+//        if (email != null && !email.isEmpty()) {
+//            query.addCriteria(Criteria.where("email").regex(email, "i"));
+//        }
+//
+//        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+//
+//        List<User> users = mongoTemplate.find(query, User.class);
+//
+//        List<String> mentorIds = new ArrayList<>();
+//        List<String> menteeIds = new ArrayList<>();
+//
+//        for (User user : users) {
+//            if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
+//                mentorIds.add(user.getId());
+//            }
+//            if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
+//                menteeIds.add(user.getId());
+//            }
+//        }
+//        List<GroupAnalyticResponse.Member> members = new ArrayList<>();
+//        if (role != null) {
+//            if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
+//                addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+//            } else {
+//                addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
+//            }
+//        } else {
+//            addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+//            addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
+//        }
+//        if (request.getTimeStart() != null && request.getTimeEnd() != null) {
+//            members =
+//                    members.stream()
+//                            .filter(
+//                                    response ->
+//                                            response.getLastTimeActive() != null
+//                                                    && response.getLastTimeActive().after(request.getTimeStart())
+//                                                    && response.getLastTimeActive().before(request.getTimeEnd()))
+//                            .toList();
+//        }
+//        return members;
+//    }
+    // TODO: Make sure this function works correctly
+private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
+        String emailUser, String groupId, FindUserAnalyticRequest request) {
+    String name = request.getName();
+    String email = request.getEmail();
+    FindUserAnalyticRequest.Role role = request.getRole();
 
-        if (name != null && !name.isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(name, "i"));
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<User> criteriaQuery = cb.createQuery(User.class);
+    Root<User> root = criteriaQuery.from(User.class);
+
+    List<Predicate> predicates = new ArrayList<>();
+
+    if (name != null && !name.isEmpty()) {
+        predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+    }
+    if (email != null && !email.isEmpty()) {
+        predicates.add(cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase() + "%"));
+    }
+
+    criteriaQuery.where(predicates.toArray(new Predicate[0]));
+    criteriaQuery.orderBy(cb.desc(root.get("createdDate")));
+
+    List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
+
+    List<String> mentorIds = new ArrayList<>();
+    List<String> menteeIds = new ArrayList<>();
+
+    for (User user : users) {
+        if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
+            mentorIds.add(user.getId());
         }
-        if (email != null && !email.isEmpty()) {
-            query.addCriteria(Criteria.where("email").regex(email, "i"));
+        if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
+            menteeIds.add(user.getId());
         }
+    }
 
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+    List<GroupAnalyticResponse.Member> members = new ArrayList<>();
 
-        List<User> users = mongoTemplate.find(query, User.class);
-        List<String> mentorIds = new ArrayList<>();
-        List<String> menteeIds = new ArrayList<>();
-
-        for (User user : users) {
-            if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
-                mentorIds.add(user.getId());
-            }
-            if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
-                menteeIds.add(user.getId());
-            }
-        }
-        List<GroupAnalyticResponse.Member> members = new ArrayList<>();
-        if (role != null) {
-            if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
-                addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
-            } else {
-                addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
-            }
-        } else {
+    if (role != null) {
+        if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
             addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+        } else {
             addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
         }
-        if (request.getTimeStart() != null && request.getTimeEnd() != null) {
-            members =
-                    members.stream()
-                            .filter(
-                                    response ->
-                                            response.getLastTimeActive() != null
-                                                    && response.getLastTimeActive().after(request.getTimeStart())
-                                                    && response.getLastTimeActive().before(request.getTimeEnd()))
-                            .toList();
-        }
-        return members;
+    } else {
+        addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+        addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
     }
+
+    if (request.getTimeStart() != null && request.getTimeEnd() != null) {
+        members = members.stream()
+                .filter(response ->
+                        response.getLastTimeActive() != null &&
+                                response.getLastTimeActive().after(request.getTimeStart()) &&
+                                response.getLastTimeActive().before(request.getTimeEnd()))
+                .toList();
+    }
+
+    return members;
+}
 
     @Override
     public ApiResponseDto<List<GroupAnalyticResponse.Member>> findUserAnalytic(

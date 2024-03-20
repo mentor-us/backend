@@ -25,10 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.MatchOperation;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -50,7 +46,6 @@ public class TaskServiceImpl implements IRemindableService {
     private final PermissionService permissionService;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
-    private final MongoTemplate mongoTemplate;
     private final GroupService groupService;
     private final MessageService messageService;
     private final SocketIOService socketIOService;
@@ -146,7 +141,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService deleteTask(CustomerUserDetails user, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -202,7 +197,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTask(String emailUser, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -215,7 +210,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTaskAssigner(String emailUser, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -229,7 +224,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTaskAssigneesWrapper(String emailUser, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
@@ -239,7 +234,7 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(task.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found group", null);
         }
         return new TaskReturnService(SUCCESS, "", getTaskAssignees(task.getId()));
@@ -277,7 +272,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     private boolean isAssigned(String emailUser, Task task) {
         Optional<User> userOptional = userRepository.findByEmail(emailUser);
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             return false;
         }
         User user = userOptional.get();
@@ -286,7 +281,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService updateStatus(String emailUser, String id, TaskStatus status) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -310,7 +305,7 @@ public class TaskServiceImpl implements IRemindableService {
     public TaskReturnService updateStatusByMentor(
             String emailUser, String id, UpdateStatusByMentorRequest request) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -321,7 +316,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Optional<User> userOptional = userRepository.findByEmail(request.getEmailUserAssigned());
-        if (!userOptional.isPresent()) {
+        if (userOptional.isEmpty()) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         User user = userOptional.get();
@@ -336,7 +331,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService updateTask(CustomerUserDetails user, String id, UpdateTaskRequest request) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -412,16 +407,20 @@ public class TaskServiceImpl implements IRemindableService {
                 groupService.getAllActiveOwnGroups(userId).stream()
                         .map(Group::getId)
                         .toList();
-        MatchOperation match = Aggregation.match(
-                Criteria.where("groupId")
-                        .in(joinedGroupIds)
-                        .and("assigneeIds.userId")
-                        .in(Arrays.asList("*", userId))
-                        .and("deadline")
-                        .gte(startTime)
-                        .lte(endTime));
-        Aggregation aggregation = Aggregation.newAggregation(match);
-        return mongoTemplate.aggregate(aggregation, "task", Task.class).getMappedResults();
+//        MatchOperation match = Aggregation.match(
+//                Criteria.where("groupId")
+//                        .in(joinedGroupIds)
+//                        .and("assigneeIds.userId")
+//                        .in(Arrays.asList("*", userId))
+//                        .and("deadline")
+//                        .gte(startTime)
+//                        .lte(endTime));
+//        Aggregation aggregation = Aggregation.newAggregation(match);
+//        return mongoTemplate.aggregate(aggregation, "task", Task.class).getMappedResults();
+        // TODO: Make sure this is correct
+
+        return taskRepository.findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(
+                joinedGroupIds, userId, startTime, endTime);
     }
 
     public List<Task> getAllOwnTasksByMonth(String userId, Date date) {
@@ -436,7 +435,7 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found group", null);
         }
         Group group = groupWrapper.get();
@@ -460,7 +459,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     private List<TaskResponse> getOwnAssignedTasks(String groupId, String userId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -485,7 +484,7 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found group", null);
         }
         Group group = groupWrapper.get();
@@ -498,7 +497,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     private List<TaskResponse> getAssignedByMeTasks(String groupId, String userId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return Collections.emptyList();
         }
         User assigner = userRepository.findById(userId).orElse(null);
@@ -515,7 +514,7 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (!groupWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found group", null);
         }
         Group group = groupWrapper.get();
@@ -533,9 +532,7 @@ public class TaskServiceImpl implements IRemindableService {
         List<String> emailUsers = new ArrayList<>();
         for (AssigneeDto assignee : task.getAssigneeIds()) {
             Optional<User> userOptional = userRepository.findById(assignee.getUserId());
-            if (userOptional.isPresent()) {
-                emailUsers.add(userOptional.get().getEmail());
-            }
+            userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
         }
         reminder.setRecipients(emailUsers);
         reminder.setSubject("Bạn có 1 công việc sắp tới hạn");

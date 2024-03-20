@@ -12,13 +12,6 @@ import org.springframework.scheduling.annotation.Async;
 import java.util.Map;
 
 public interface NotificationService {
-    Map<String, Object> getOwnNotifications(String userId, int page, int size);
-
-    Notification createResponseNotification(String senderId, AddNotificationRequest request);
-
-    Notification responseNotification(String userId, String notificationId, String action);
-
-    void subscribeNotification(SubscribeNotificationRequest request);
 
     void unsubscribeNotification(String userId);
 
@@ -40,7 +33,6 @@ public interface NotificationService {
     @Async
     void sendNewMediaMessageNotification(MessageDetailResponse message);
 
-    Notification createNewMediaNotification(String title, String content, String senderId, Group group);
 
     @Async
     void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId);
@@ -52,7 +44,6 @@ public interface NotificationService {
     Notification createRescheduleMeetingNotification(
             String title, String content, String senderId, Group group, Meeting meeting);
 
-    long getUnreadNumber(String userId);
 
     @Async
     void sendNewVoteNotification(String creatorId, Vote vote);
@@ -63,9 +54,6 @@ public interface NotificationService {
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 
     void sendNewUnpinNotification(MessageDetailResponse message, User pinner);
-
-    @Async
-    Notification createForwardNotification(String title, String content, String senderId, Group group);
 
     void sendForwardNotification(MessageDetailResponse message, String groupIds);
 }

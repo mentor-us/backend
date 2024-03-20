@@ -6,13 +6,13 @@ import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Date;
 import java.util.List;
 
-public interface GroupRepository extends MongoRepository<Group, String> {
+public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group> {
     Page<Group> findAllOrderByCreatedDate(Pageable pageable);
 
     List<Group> findAllByOrderByCreatedDate();
@@ -87,16 +87,17 @@ public interface GroupRepository extends MongoRepository<Group, String> {
 
     List<Group> findAllById(List<String> ids);
 
-    @Aggregation(
-            pipeline = {
-                    "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
-                    "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
-                    "{$lookup: {from: 'group_category', localField: 'groupCategoryObjectId', foreignField: '_id', as: 'category'}}",
-                    "{$unwind: '$category'}",
-                    "{$set: {groupCategory: '$category.name'}}",
-                    "{$unset: 'category'}",
-                    "{$unset: 'groupCategoryObjectId'}"
-            })
+//    @Aggregation(
+//            pipeline = {
+//                    "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
+//                    "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
+//                    "{$lookup: {from: 'group_category', localField: 'groupCategoryObjectId', foreignField: '_id', as: 'category'}}",
+//                    "{$unwind: '$category'}",
+//                    "{$set: {groupCategory: '$category.name'}}",
+//                    "{$unset: 'category'}",
+//                    "{$unset: 'groupCategoryObjectId'}"
+//            })
+    // TODO: Fix this
     List<GroupDetailResponse> getGroupDetail(String groupId);
 
 

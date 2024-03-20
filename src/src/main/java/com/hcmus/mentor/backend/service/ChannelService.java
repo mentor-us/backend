@@ -10,7 +10,7 @@ import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetai
 import java.util.List;
 
 public interface ChannelService {
-    Channel addChannel(String adderId, AddChannelRequest request);
+    Channel createChannel(String creatorId, AddChannelRequest request);
 
     Channel addPrivateChat(String adderId, AddChannelRequest request, Group group);
 

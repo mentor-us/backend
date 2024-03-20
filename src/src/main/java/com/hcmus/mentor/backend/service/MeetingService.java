@@ -169,8 +169,7 @@ public class MeetingService implements IRemindableService {
                         .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
         List<MeetingHistoryDetail> historyDetails =
                 meeting.getHistories().stream()
-                        .map(
-                                history -> {
+                        .map(history -> {
                                     ShortProfile user = modifiers.getOrDefault(history.getModifierId(), null);
                                     return MeetingHistoryDetail.from(history, user);
                                 })
@@ -189,8 +188,7 @@ public class MeetingService implements IRemindableService {
                 .group(group)
                 .isAll(appliedAllGroup)
                 .canEdit(group.isMentor(userId) || organizer.getId().equals(userId))
-                .totalAttendees(
-                        appliedAllGroup ? group.getTotalMember() - 1 : meeting.getAttendees().size())
+                .totalAttendees(appliedAllGroup ? group.getMentees().size() + group.getMentors().size() - 1 : meeting.getAttendees().size())
                 .histories(historyDetails)
                 .build();
     }
@@ -211,7 +209,7 @@ public class MeetingService implements IRemindableService {
         List<String> attendeeIds;
         boolean appliedAllGroup = meeting.getAttendees().contains("*");
         if (appliedAllGroup) {
-            attendeeIds = Stream.concat(group.getMentees().stream(), group.getMentors().stream())
+            attendeeIds = Stream.concat(group.getMentees().stream().map(User::getId), group.getMentors().stream().map(User::getId))
                     .filter(id -> !id.equals(meeting.getOrganizerId()))
                     .toList();
         } else {

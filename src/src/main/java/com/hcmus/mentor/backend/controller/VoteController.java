@@ -236,7 +236,7 @@ public class VoteController {
 
         messageService.updateCreatedDateVoteMessage(voteId);
 
-        socketServer.getRoomOperations(vote.getGroupId()).sendEvent("receive_voting", vote);
+        socketServer.getRoomOperations(vote.getGroup().getId()).sendEvent("receive_voting", vote);
 
         return ResponseEntity.ok().build();
     }

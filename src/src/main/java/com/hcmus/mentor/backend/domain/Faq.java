@@ -1,23 +1,22 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-@Setter
+@Data
+@Entity
 @Builder
-@Document("faq")
+@Table(name = "faqs")
 public class Faq {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
     private String question;
@@ -25,7 +24,9 @@ public class Faq {
     private String answer;
 
     @Builder.Default
-    private List<String> voters = new ArrayList<>();
+    @OneToMany
+    @JoinColumn(name = "voter_id")
+    private List<User> voters = new ArrayList<>();
 
     @Builder.Default
     private Date createdDate = new Date();
@@ -33,26 +34,31 @@ public class Faq {
     @Builder.Default
     private Date updatedDate = new Date();
 
-    private String creatorId;
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    private User creator;
 
-    private String groupId;
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private Group group;
 
-    @Builder.Default
-    private List<String> topicIds = new ArrayList<>();
+    public Faq() {
 
-    public void upvote(String userId) {
-        if (voters.contains(userId)) {
-            return;
-        }
-        voters.add(userId);
     }
 
-    public void downVote(String userId) {
-        if (!voters.contains(userId)) {
-            return;
-        }
-        voters.remove(userId);
-    }
+//    public void upvote(String userId) {
+//        if (voters.contains(userId)) {
+//            return;
+//        }
+//        voters.add(userId);
+//    }
+
+//    public void downVote(String userId) {
+//        if (!voters.contains(userId)) {
+//            return;
+//        }
+//        voters.remove(userId);
+//    }
 
     public void update(UpdateFaqRequest request) {
         if (request.getQuestion() != null) {
@@ -64,6 +70,18 @@ public class Faq {
             setAnswer(request.getAnswer());
             setUpdatedDate(new Date());
         }
+    }
+
+    public void addVoter(User user) {
+        if(user == null)
+            return;
+        voters.add(user);
+    }
+
+    public void removeVote(User user) {
+        if(user == null)
+            return;
+        voters.remove(user);
     }
 
     public int getRating() {
