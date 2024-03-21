@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.service.query;
 
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -13,8 +14,12 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class GroupSpecification {
+    private static UserRepository userRepository;
+    private static PermissionService permissionService;
+
     public static Specification<Group> hasName(String name) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
@@ -40,6 +45,7 @@ public class GroupSpecification {
     }
 
     public static Specification<Group> withConditions(
+            String emailUser,
             String name,
             String mentorEmail,
             String menteeEmail,
@@ -81,16 +87,23 @@ public class GroupSpecification {
                 predicates.add(builder.between(root.get("timeEnd"), timeStart2, timeEnd2));
             }
 
+            if (emailUser != null && !emailUser.isEmpty() && !permissionService.isSuperAdmin(emailUser)) {
+                String userId = getUserIdByEmail(emailUser);
+                if (!StringUtils.isEmpty(userId)) {
+                    predicates.add(builder.equal(root.get("creatorId"), userId));
+                }
+            }
+
+
             return builder.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    public static Specification<Group> withSuperAdminCheck(String emailUser, UserRepository userRepository, PermissionService permissionService) {
-        return (root, query, builder) -> {
-            if (!StringUtils.isEmpty(emailUser) && !permissionService.isSuperAdmin(emailUser)) {
-                return builder.equal(root.get("creator").get("email"), emailUser);
-            }
-            return null;
-        };
+
+    private static String getUserIdByEmail(String emailUser) {
+        Optional<User> userOptional = userRepository.findByEmail(emailUser);
+        return userOptional.map(User::getId).orElse(null);
     }
+
+
 }

@@ -5,6 +5,8 @@ import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -35,6 +37,16 @@ public interface ChannelRepository extends JpaRepository<Channel, String> {
 //            "{ $sort: { 'group.name': 1, 'name': 1 } }"
 //
 //    })
-    // TODO: Implement this method
-    List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
+//    // TODO: Implement this method
+//    List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
+
+    @Query(value =
+            "SELECT c.id as channelId, c.name as channelName, g.id as groupId, g.name as groupName, g.image_url as groupImageUrl " +
+                    "FROM channel c " +
+                    "JOIN group_table g ON c.parent_id = g.id " +
+                    "WHERE c.id IN :channelIds AND c.status = :status " +
+                    "ORDER BY g.name, c.name",
+            nativeQuery = true)
+    List<ChannelForwardResponse> getListChannelForward(@Param("channelIds") List<String> channelIds, @Param("status") String status);
+
 }

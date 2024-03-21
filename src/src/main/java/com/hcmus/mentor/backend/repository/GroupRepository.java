@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
@@ -87,7 +88,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     List<Group> findAllById(List<String> ids);
 
-//    @Aggregation(
+    //    @Aggregation(
 //            pipeline = {
 //                    "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
 //                    "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
@@ -97,9 +98,12 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 //                    "{$unset: 'category'}",
 //                    "{$unset: 'groupCategoryObjectId'}"
 //            })
-    // TODO: Fix this
+//    List<GroupDetailResponse> getGroupDetail(String groupId);
+    @Query(value = "SELECT g.*, gc.name AS groupCategory " +
+            "FROM group_detail g " +
+            "JOIN group_category gc ON g.groupCategory = gc._id " +
+            "WHERE g._id = ?1", nativeQuery = true)
     List<GroupDetailResponse> getGroupDetail(String groupId);
-
 
 
     long countByStatus(GroupStatus status);
@@ -126,6 +130,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     List<Group> findAllByCreatorId(String creatorId);
 
     List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
+
     List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
 
     List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
