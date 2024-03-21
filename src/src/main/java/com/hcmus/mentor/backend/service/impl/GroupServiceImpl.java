@@ -1609,54 +1609,59 @@ public class GroupServiceImpl implements GroupService {
         if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
             return null;
         }
-        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
-        if (groupWrapper.isEmpty()) {
+
+        List<GroupDetailResponse> groupDetailResponses = groupRepository.getGroupDetail(groupId);
+        if (groupDetailResponses.isEmpty()) {
             return null;
         }
+
         Group group = groupRepository.findById(groupId).orElse(null);
         if (group == null) {
             return null;
         }
-        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupWrapper.getFirst());
+
+        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupDetailResponses.getFirst());
 
         List<String> channelIds = group.getChannelIds() != null
                 ? group.getChannelIds()
                 : new ArrayList<>();
         List<GroupDetailResponse.GroupChannel> channels = channelRepository.findByIdIn(channelIds).stream()
+                .filter(channel -> channel.isMember(user.getId()))
                 .map(GroupDetailResponse.GroupChannel::from)
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .toList();
         detail.setChannels(channels);
 
-        List<GroupDetailResponse.GroupChannel> privates =
-                channelRepository
-                        .findByParentIdAndTypeAndUserIdsIn(groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
-                        .stream()
-                        .map(channel -> {
-                            String userId = channel.getUserIds().stream()
-                                    .filter(id -> !id.equals(user.getId()))
-                                    .findFirst()
-                                    .orElse(null);
-                            if (userId == null) {
-                                return null;
-                            }
-                            ShortProfile penpal = userRepository.findShortProfile(userId);
-                            if (penpal == null) {
-                                return null;
-                            }
-                            channel.setName(penpal.getName());
-                            channel.setImageUrl(penpal.getImageUrl());
+        List<GroupDetailResponse.GroupChannel> privates = channelRepository
+                .findByParentIdAndTypeAndUserIdsIn(groupId, ChannelType.PRIVATE_MESSAGE, Collections.singletonList(user.getId()))
+                .stream()
+                .map(channel -> {
+                    String userId = channel.getUserIds().stream()
+                            .filter(id -> !id.equals(user.getId()))
+                            .findFirst()
+                            .orElse(null);
+                    if (userId == null) {
+                        return null;
+                    }
+                    ShortProfile penpal = userRepository.findShortProfile(userId);
+                    if (penpal == null) {
+                        return null;
+                    }
+                    channel.setName(penpal.getName());
+                    channel.setImageUrl(penpal.getImageUrl());
 
-                            List<String> markedMentees = group.getMarkedMenteeIds() != null
-                                    ? group.getMarkedMenteeIds()
-                                    : new ArrayList<>();
-                            return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
-                        })
-                        .filter(Objects::nonNull)
-                        .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                        .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
-                        .toList();
+                    List<String> markedMentees = group.getMarkedMenteeIds() != null
+                            ? group.getMarkedMenteeIds()
+                            : new ArrayList<>();
+                    return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
+                .toList();
+
         detail.setPrivates(privates);
+
         return detail;
     }
 

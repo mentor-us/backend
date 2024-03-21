@@ -1,17 +1,17 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
-import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
-
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
+import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +19,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final ChannelRepository channelRepository;
 
     @Override
     public boolean isAdmin(String email) {
@@ -67,7 +68,10 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public boolean isUserIdInGroup(String userId, String groupId) {
-        return groupRepository.existsByIdAndMentorsIn(groupId, userId)
-                || groupRepository.existsByIdAndMenteesIn(groupId, userId);
+        return groupRepository.existsByIdAndMentorsIn(groupId, userId) || groupRepository.existsByIdAndMenteesIn(groupId, userId);
+    }
+
+    public boolean isUserInChannel(String channelId, String userId) {
+        return channelRepository.existsByIdAndUserIdsContains(channelId, userId);
     }
 }

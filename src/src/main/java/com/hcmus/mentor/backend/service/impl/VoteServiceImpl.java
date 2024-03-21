@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.corundumstudio.socketio.SocketIOServer;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
@@ -91,21 +92,23 @@ public class VoteServiceImpl implements VoteService {
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 
-    @Override
-    public Vote createNewVote(String userId, CreateVoteRequest request) {
-        if (!permissionService.isUserIdInGroup(userId, request.getGroupId())) {
-            return null;
-        }
-        request.setCreatorId(userId);
-        Vote newVote = voteRepository.save(Vote.from(request));
+        @Override
+        public Vote createNewVote(String userId, CreateVoteRequest request) {
+            if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
+                throw new DomainException("Người dùng không có trong channel!");
+            }
 
-        Message message = messageService.saveVoteMessage(newVote);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
+            request.setCreatorId(userId);
+            Vote newVote = voteRepository.save(Vote.from(request));
+
+            Message message = messageService.saveVoteMessage(newVote);
+            User sender = userRepository.findById(message.getSenderId()).orElse(null);
         MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
         notificationService.sendNewVoteNotification(newVote.getCreatorId(), newVote);
         groupService.pingGroup(newVote.getGroupId());
+
         return newVote;
     }
 
