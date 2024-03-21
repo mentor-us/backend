@@ -68,7 +68,7 @@ public class MessageDetailResponse {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getGroupId())
+                .groupId(message.getChannelId())
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())

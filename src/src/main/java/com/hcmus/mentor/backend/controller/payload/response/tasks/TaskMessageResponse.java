@@ -43,7 +43,7 @@ public class TaskMessageResponse {
                 .deadline(task.getDeadline())
                 .createdDate(task.getCreatedDate())
                 .assignerId(task.getAssignerId())
-                .groupId(task.getGroupId())
+                .groupId(task.getChannelId())
                 .build();
     }
 }

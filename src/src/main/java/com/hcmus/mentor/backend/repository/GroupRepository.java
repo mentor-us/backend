@@ -128,4 +128,6 @@ public interface GroupRepository extends MongoRepository<Group, String> {
     List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
 
     List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
+
+    Group findByChannelIdsContains(String channelIds);
 }

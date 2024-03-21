@@ -48,7 +48,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
@@ -105,12 +104,12 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         List<String> groupIds = groups.stream().map(Group::getId).toList();
 
-        List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
+        List<Task> tasks = taskRepository.findAllByChannelIdIn(groupIds);
         long totalTasks =
                 tasks.stream().map(task -> task.getAssigneeIds().size()).reduce(0, Integer::sum);
 
         long totalMeetings = meetingRepository.countByGroupIdIn(groupIds);
-        long totalMessages = messageRepository.countByGroupIdIn(groupIds);
+        long totalMessages = messageRepository.countByChannelIdIn(groupIds);
 
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByStatus(true);
@@ -173,12 +172,12 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         long totalGroups = groups.size();
         List<String> groupIds = groups.stream().map(Group::getId).toList();
-        List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
+        List<Task> tasks = taskRepository.findAllByChannelIdIn(groupIds);
         long totalTasks =
                 tasks.stream().map(task -> task.getAssigneeIds().size()).reduce(0, Integer::sum);
 
         long totalMeetings = meetingRepository.countByGroupIdIn(groupIds);
-        long totalMessages = messageRepository.countByGroupIdIn(groupIds);
+        long totalMessages = messageRepository.countByChannelIdIn(groupIds);
 
         Set<String> userIds = new HashSet<>();
         groups.forEach(
@@ -277,10 +276,10 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newGroups =
                     groupRepository.countByCreatedDateBetweenAndCreatorId(date, dateAfterOneMonth, adminId);
             long newMessages =
-                    messageRepository.countByGroupIdInAndCreatedDateBetween(
+                    messageRepository.countByChannelIdInAndCreatedDateBetween(
                             groupIds, date, dateAfterOneMonth);
             List<Task> tasks =
-                    taskRepository.findByGroupIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
+                    taskRepository.findByChannelIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
             long newTasks = 0;
             for (Task task : tasks) {
                 newTasks += task.getAssigneeIds().size();
@@ -351,10 +350,10 @@ public class AnalyticServiceImpl implements AnalyticService {
                     groupRepository.countByGroupCategoryAndCreatedDateBetween(
                             groupCategoryId, date, dateAfterOneMonth);
             long newMessages =
-                    messageRepository.countByGroupIdInAndCreatedDateBetween(
+                    messageRepository.countByChannelIdInAndCreatedDateBetween(
                             groupIds, date, dateAfterOneMonth);
             List<Task> tasks =
-                    taskRepository.findByGroupIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
+                    taskRepository.findByChannelIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
             long newTasks = 0;
             for (Task task : tasks) {
                 newTasks += task.getAssigneeIds().size();
@@ -413,9 +412,9 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         Date lastTimeActive = getLastTimeActive(groupId);
 
-        long totalMessages = messageRepository.countByGroupId(groupId);
+        long totalMessages = messageRepository.countByChannelId(groupId);
 
-        List<Task> tasks = taskRepository.findByGroupId(groupId);
+        List<Task> tasks = taskRepository.findByChannelId(groupId);
         long totalTasks = getTotalTasks(tasks);
 
         long totalMeetings = meetingRepository.countByGroupId(groupId);
@@ -549,27 +548,27 @@ public class AnalyticServiceImpl implements AnalyticService {
                 continue;
             }
 
-            long totalMessagesMember = messageRepository.countByGroupIdAndSenderId(groupId, memberId);
+            long totalMessagesMember = messageRepository.countByChannelIdAndSenderId(groupId, memberId);
             long totalMeetingsMember =
                     meetingRepository.countByGroupIdAndAttendeesIn(groupId, memberId)
                             + meetingRepository.countByGroupIdAndOrganizerId(groupId, memberId);
 
             long totalTasksMember =
-                    taskRepository.countByGroupIdAndAssigneeIdsUserIdIn(groupId, memberId);
+                    taskRepository.countByChannelIdAndAssigneeIdsUserIdIn(groupId, memberId);
             long totalDoneTasks =
-                    taskRepository.countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
+                    taskRepository.countByChannelIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
                             groupId, memberId, TaskStatus.DONE);
 
             Date lastTimeTaskMember =
                     Optional.ofNullable(
-                                    taskRepository.findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
+                                    taskRepository.findFirstByChannelIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
                                             groupId, memberId))
                             .map(Task::getCreatedDate)
                             .orElse(null);
 
             Date lastTimeMessageMember =
                     Optional.ofNullable(
-                                    messageRepository.findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(
+                                    messageRepository.findFirstByChannelIdAndSenderIdOrderByCreatedDateDesc(
                                             groupId, memberId))
                             .map(Message::getCreatedDate)
                             .orElse(null);
@@ -615,12 +614,12 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private Date getLastTimeActive(String groupId) {
         Date lastTimeMessage =
-                Optional.ofNullable(messageRepository.findFirstByGroupIdOrderByCreatedDateDesc(groupId))
+                Optional.ofNullable(messageRepository.findFirstByChannelIdOrderByCreatedDateDesc(groupId))
                         .map(Message::getCreatedDate)
                         .orElse(null);
 
         Date lastTimeTask =
-                Optional.ofNullable(taskRepository.findFirstByGroupIdOrderByCreatedDateDesc(groupId))
+                Optional.ofNullable(taskRepository.findFirstByChannelIdOrderByCreatedDateDesc(groupId))
                         .map(Task::getCreatedDate)
                         .orElse(null);
 
@@ -656,13 +655,13 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         Date lastTimeActive = getLastTimeActive(groupId);
 
-        long totalMessages = messageRepository.countByGroupId(groupId);
-        List<Task> tasks = taskRepository.findByGroupId(groupId);
+        long totalMessages = messageRepository.countByChannelId(groupId);
+        List<Task> tasks = taskRepository.findByChannelId(groupId);
         long totalTasks = getTotalTasks(tasks);
         long totalMeetings = meetingRepository.countByGroupId(groupId);
 
         long totalDoneTasks =
-                taskRepository.countByGroupIdAndAssigneeIdsStatusIn(groupId, TaskStatus.DONE);
+                taskRepository.countByChannelIdAndAssigneeIdsStatusIn(groupId, TaskStatus.DONE);
 
         return GroupGeneralResponse.builder()
                 .id(group.getId())
@@ -1254,12 +1253,12 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         if (attributes.contains(AnalyticAttribute.TASKS)) {
             Sheet tasksSheet = workbook.createSheet("Công việc");
-            List<Task> tasks = taskRepository.findAllByGroupId(groupId);
+            List<Task> tasks = taskRepository.findAllByChannelId(groupId);
             addTasksData(tasksSheet, tasks);
         }
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
             Sheet messagesSheet = workbook.createSheet("Tin nhắn");
-            List<MessageResponse> messages = messageRepository.getAllGroupMessagesByGroupId(groupId);
+            List<MessageResponse> messages = messageRepository.getAllGroupMessagesByChannelId(groupId);
             addMessagesData(messagesSheet, messages);
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

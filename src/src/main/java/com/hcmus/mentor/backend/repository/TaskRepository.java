@@ -1,17 +1,16 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
-
-import java.util.Date;
-import java.util.List;
-
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Date;
+import java.util.List;
+
 public interface TaskRepository extends MongoRepository<Task, String> {
-    List<Task> findByGroupId(String groupId);
+    List<Task> findByChannelId(String channelId);
 
     List<Task> findByAssigneeIdsUserId(String userId);
 
@@ -19,44 +18,42 @@ public interface TaskRepository extends MongoRepository<Task, String> {
 
     List<Task> findAllByParentTask(String parentTask);
 
-    Page<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
-            List<String> groupIds, List<String> id, Date now, PageRequest pageRequest);
+    Page<Task> findAllByChannelIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
+            List<String> channelIds, List<String> id, Date now, PageRequest pageRequest);
 
-    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
+    List<Task> findAllByChannelIdInAndAssigneeIdsUserIdIn(List<String> channelIds, List<String> id);
 
-    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThanAndDeadlineLessThan(
-            List<String> groupIds, List<String> id, Date start, Date end);
 
     long countByCreatedDateBetween(Date start, Date end);
 
     List<Task> findByCreatedDateBetween(Date start, Date end);
 
-    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    List<Task> findByChannelIdInAndCreatedDateBetween(List<String> channelIds, Date start, Date end);
 
-    Task findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
+    Task findFirstByChannelIdOrderByCreatedDateDesc(String channelId);
 
-    List<Task> findByGroupIdAndAssignerId(String groupId, String assignerId);
+    List<Task> findByChannelIdAndAssignerId(String channelId, String assignerId);
 
-    long countByGroupIdAndAssigneeIdsUserIdIn(String groupId, String assigneeId);
+    long countByChannelIdAndAssigneeIdsUserIdIn(String channelId, String assigneeId);
 
-    Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
+    Task findFirstByChannelIdAndAssignerIdOrderByCreatedDateDesc(String channelId, String assignerId);
 
-    Task findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, String assigneeId);
+    Task findFirstByChannelIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
+            String channelId, String assigneeId);
 
-    List<Task> findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, List<String> userIds);
+    List<Task> findAllByChannelIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
+            String channelId, List<String> userIds);
 
-    List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
+    List<Task> findAllByChannelIdAndAssignerIdOrderByCreatedDateDesc(String channelId, String assignerId);
 
     List<Task> findAllByDeadlineBetween(Date date1, Date date2);
 
-    List<Task> findAllByGroupIdIn(List<String> groupIds);
+    List<Task> findAllByChannelIdIn(List<String> channelIds);
 
-    List<Task> findAllByGroupId(String groupId);
+    List<Task> findAllByChannelId(String channelId);
 
-    long countByGroupIdAndAssigneeIdsStatusIn(String groupId, TaskStatus status);
+    long countByChannelIdAndAssigneeIdsStatusIn(String channelId, TaskStatus status);
 
-    long countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
-            String groupId, String assigneeId, TaskStatus status);
+    long countByChannelIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
+            String channelId, String assigneeId, TaskStatus status);
 }

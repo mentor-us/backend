@@ -35,7 +35,7 @@ public class Message {
 
     private Type type = Type.TEXT;
 
-    private String groupId;
+    private String channelId;
 
     private String voteId;
 

@@ -123,7 +123,7 @@ public class ChannelServiceImpl implements ChannelService {
         groupRepository.save(group);
 
         channelRepository.delete(channel);
-        messageRepository.deleteByGroupId(channel.getId());
+        messageRepository.deleteByChannelId(channel.getId());
     }
 
     @Override
