@@ -9,7 +9,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Stream;
 
 @Data
 @Builder
@@ -45,7 +44,7 @@ public class Group implements Serializable {
      * List of mentors
      */
     @OneToMany
-    @JoinColumn(name = "mentor_id")
+    @JoinColumn(name = "group_mentor")
     @Builder.Default
     private List<User> mentors = new ArrayList<>();
 
@@ -54,7 +53,7 @@ public class Group implements Serializable {
      * List of mentees
      */
     @OneToMany
-    @JoinColumn(name = "mentee_id")
+    @JoinColumn(name = "group_mentee")
     @Builder.Default
     private List<User> mentees = new ArrayList<>();
 
@@ -112,7 +111,7 @@ public class Group implements Serializable {
 //    private List<String> pinnedMessageIds;
 
     @OneToMany
-    @JoinColumn(name = "pinned_message_ids")
+    @JoinColumn(name = "pinned_message")
     private List<Message> pinnedMessages;
 
 
@@ -128,7 +127,7 @@ public class Group implements Serializable {
      */
     @Builder.Default
     @OneToMany
-    @JoinColumn(name = "channel_id")
+    @JoinColumn(name = "channel")
     private List<Channel> channels = new ArrayList<>();
 
     /**
@@ -136,7 +135,7 @@ public class Group implements Serializable {
      */
     @Builder.Default
     @OneToMany
-    @JoinColumn(name = "private_id")
+    @JoinColumn(name = "private_channel")
     private List<Channel> privateChannels = new ArrayList<>();
 
     /**
@@ -144,15 +143,15 @@ public class Group implements Serializable {
      */
     @Builder.Default
     @OneToMany
-    @JoinColumn(name = "faq_id")
+    @JoinColumn(name = "faq")
     private List<Faq> faqIds = new ArrayList<>();
 
     /**
      * List of marked mentee identifiers
      */
     @Builder.Default
-    @OneToMany
-    @JoinColumn(name = "marked_mentee_id")
+    @ManyToMany
+    @JoinColumn(name = "group_marked_mentee")
     private List<User> markedMentees = new ArrayList<>();
 
     /**
@@ -218,36 +217,36 @@ public class Group implements Serializable {
         return isMentee(userId) || isMentor(userId);
     }
 
-    public void update(
-            String name,
-            String description,
-            GroupStatus status,
-            Date timeStart,
-            Date timeEnd,
-            String groupCategory) {
-        if (name != null) {
-            this.setName(name);
-        }
-        if (description != null) {
-            this.setDescription(description);
-        }
-        if (status != null) {
-            this.setStatus(status);
-        }
-        if (timeStart != null) {
-            timeStart.setHours(0);
-            timeStart.setMinutes(0);
-            this.setTimeStart(timeStart);
-        }
-        if (timeEnd != null) {
-            timeStart.setHours(23);
-            timeStart.setMinutes(59);
-            this.setTimeEnd(timeEnd);
-        }
-        if (groupCategory != null) {
-            this.setGroupCategory(groupCategory);
-        }
-    }
+//    public void update(
+//            String name,
+//            String description,
+//            GroupStatus status,
+//            Date timeStart,
+//            Date timeEnd,
+//            String groupCategory) {
+//        if (name != null) {
+//            this.setName(name);
+//        }
+//        if (description != null) {
+//            this.setDescription(description);
+//        }
+//        if (status != null) {
+//            this.setStatus(status);
+//        }
+//        if (timeStart != null) {
+//            timeStart.setHours(0);
+//            timeStart.setMinutes(0);
+//            this.setTimeStart(timeStart);
+//        }
+//        if (timeEnd != null) {
+//            timeStart.setHours(23);
+//            timeStart.setMinutes(59);
+//            this.setTimeEnd(timeEnd);
+//        }
+//        if (groupCategory != null) {
+//            this.setGroupCategory(groupCategory);
+//        }
+//    }
 
     public void ping() {
         setUpdatedDate(new Date());

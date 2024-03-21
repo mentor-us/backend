@@ -198,14 +198,18 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
-            Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-            if (!groupCategoryOptional.isPresent()) {
-                notFoundIds.add(id);
-            }
+            groupCategoryRepository.findById(id).ifPresentOrElse(
+                    groupCategory -> {
+                        if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
+                            notFoundIds.add(id);
+                        }
+                    },
+                    () -> notFoundIds.add(id));
         }
         if (!notFoundIds.isEmpty()) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", notFoundIds);
         }
+
         List<Group> groups = groupRepository.findAllByGroupCategoryIn(ids);
         List<GroupCategory> groupCategories = groupCategoryRepository.findByIdIn(ids);
         if (!newGroupCategoryId.isEmpty()) {

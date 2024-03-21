@@ -21,7 +21,6 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document("meeting")
 public class Meeting implements IRemindable, Serializable {
 
     @Id
