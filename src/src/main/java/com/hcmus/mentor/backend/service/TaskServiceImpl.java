@@ -13,10 +13,7 @@ import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.ReminderRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.Getter;
@@ -56,23 +53,26 @@ public class TaskServiceImpl implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
+    private final ChannelRepository channelRepository;
 
-    public TaskReturnService addTask(String emailUser, AddTaskRequest request) {
-        if (!groupRepository.existsById(request.getGroupId())) {
-            return new TaskReturnService(NOT_FOUND_GROUP, "Not found group", null);
+    public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
+        if (!channelRepository.existsById(request.getGroupId())) {
+            return new TaskReturnService(NOT_FOUND_GROUP, "Not found channel", null);
         }
+
+        /*
         if (request.getParentTask() != null && !taskRepository.existsById(request.getParentTask())) {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
-        if (request.getTitle() == null
-                || request.getTitle().isEmpty()
-                || request.getDeadline() == null) {
+        */
+
+        if (request.getTitle() == null || request.getTitle().isEmpty() || request.getDeadline() == null) {
             return new TaskReturnService(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
 
         if (!request.getUserIds().contains("*")) {
             for (String userId : request.getUserIds()) {
-                if (!permissionService.isUserIdInGroup(userId, request.getGroupId())) {
+                if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
                     return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
                 }
             }
@@ -81,14 +81,16 @@ public class TaskServiceImpl implements IRemindableService {
         List<String> userIds = request.getUserIds().contains("*")
                 ? groupService.findAllMenteeIdsGroup(request.getGroupId())
                 : request.getUserIds();
-        Optional<User> assigner = userRepository.findByEmail(emailUser);
+
+        User assigner = userRepository.findById(loggedUserId).orElse(null);
         List<AssigneeDto> assigneeIds = userIds.stream().map(Task::newTask).toList();
+
         Task task = Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
                 .groupId(request.getGroupId())
-                .assignerId(assigner.map(User::getId).orElse(null))
+                .assignerId(assigner.getId())
                 .parentTask(request.getParentTask())
                 .assigneeIds(assigneeIds)
                 .build();
@@ -103,9 +105,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .build();
         messageService.saveMessage(message);
 
-        MessageDetailResponse response =
-                messageService.fulfillTaskMessage(
-                        MessageResponse.from(message, ProfileResponse.from(assigner.get())));
+        MessageDetailResponse response = messageService.fulfillTaskMessage(MessageResponse.from(message, ProfileResponse.from(assigner)));
         socketIOService.sendBroadcastMessage(response, task.getGroupId());
         saveToReminder(task);
         notificationService.sendNewTaskNotification(response);

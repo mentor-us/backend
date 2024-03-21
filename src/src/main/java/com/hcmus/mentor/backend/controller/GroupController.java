@@ -823,9 +823,11 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
         GroupDetailResponse workspace = groupService.getGroupWorkspace(customerUserDetails, groupId);
+
         if (workspace == null) {
             return ResponseEntity.badRequest().build();
         }
+
         return ResponseEntity.ok(workspace);
     }
 

@@ -24,6 +24,8 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
 
     boolean existsByParentIdAndName(String parentId, String name);
 
+    boolean existsByIdAndUserIdsContains(String id, String userId);
+
     @Aggregation(pipeline = {
             "{ $match: { 'id': { $in: ?0 }, 'status': ?1 } }",
             "{ $addFields: { groupObjectId: { $toObjectId: '$parentId' } } }",
