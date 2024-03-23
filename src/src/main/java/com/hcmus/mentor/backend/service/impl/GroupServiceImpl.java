@@ -317,6 +317,7 @@ public class GroupServiceImpl implements GroupService {
                 .map(email -> userService.importUser(email, request.getName()))
                 .filter(Objects::nonNull)
                 .toList();
+
         Date timeStart = changeGroupTime(request.getTimeStart(), "START");
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
         Duration duration = calculateDuration(timeStart, timeEnd);
@@ -326,6 +327,7 @@ public class GroupServiceImpl implements GroupService {
         if (userOptional.isPresent()) {
             creatorId = userOptional.get().getId();
         }
+
         Group group = Group.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -337,6 +339,7 @@ public class GroupServiceImpl implements GroupService {
                 .timeEnd(timeEnd)
                 .duration(duration)
                 .creatorId(creatorId)
+                .channelIds(new ArrayList<>())
                 .build();
         groupRepository.save(group);
 
@@ -357,7 +360,7 @@ public class GroupServiceImpl implements GroupService {
         addUsersToChannel(channel.getId(), userIds);
 
 
-        group.setChannelIds(List.of(channel.getId()));
+        group.setChannelIds(new ArrayList<>());
         group.setDefaultChannelId(channel.getId());
         groupRepository.save(group);
 

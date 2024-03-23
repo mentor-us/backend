@@ -348,7 +348,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         for (String assigneeId : request.getUserIds()) {
-            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroupId())) {
+            if (!permissionService.isUserInChannel(task.getGroupId(), assigneeId)) {
                 return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
             }
         }

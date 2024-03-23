@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -66,22 +65,6 @@ public class GroupDetailResponse {
     private ChannelType type = ChannelType.PUBLIC;
 
     private String defaultChannelId;
-
-    public GroupDetailResponse(Group group) {
-        this.id = group.getId();
-        this.name = group.getName();
-        this.description = group.getDescription();
-        this.createdDate = group.getCreatedDate();
-        this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors();
-        this.mentees = group.getMentees();
-        this.timeStart = group.getTimeStart();
-        this.timeEnd = group.getTimeEnd();
-        this.duration = group.getDuration();
-        this.imageUrl = group.getImageUrl();
-        this.parentId = group.getParentId();
-        this.defaultChannelId = group.getDefaultChannelId();
-    }
 
     public Integer getTotalMember() {
         if (mentees == null || mentors == null) {

@@ -48,7 +48,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             // other public endpoints of your API may be appended to this array
             "**/oauth2/**",
-            "/actuator/**"
+            "/actuator/**",
+            // For the FileController
+            "/api/files/"
     };
 
     @Bean

@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
@@ -13,10 +14,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.ReminderRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,6 +38,7 @@ public class MeetingService implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
+    private final ChannelRepository channelRepository;
 
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
         List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
@@ -156,25 +155,20 @@ public class MeetingService implements IRemindableService {
         }
         User organizer = organizerWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(meeting.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-        Group group = groupWrapper.get();
+        var channel = channelRepository.findById(meeting.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
+        var group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
 
-        Map<String, ShortProfile> modifiers =
-                meeting.getHistories().stream()
-                        .map(Meeting.MeetingHistory::getModifierId)
-                        .map(userRepository::findShortProfile)
-                        .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
-        List<MeetingHistoryDetail> historyDetails =
-                meeting.getHistories().stream()
-                        .map(
-                                history -> {
-                                    ShortProfile user = modifiers.getOrDefault(history.getModifierId(), null);
-                                    return MeetingHistoryDetail.from(history, user);
-                                })
-                        .toList();
+        Map<String, ShortProfile> modifiers = meeting.getHistories().stream()
+                .map(Meeting.MeetingHistory::getModifierId)
+                .map(userRepository::findShortProfile)
+                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
+
+        List<MeetingHistoryDetail> historyDetails = meeting.getHistories().stream()
+                .map(history -> {
+                    ShortProfile user = modifiers.getOrDefault(history.getModifierId(), null);
+                    return MeetingHistoryDetail.from(history, user);
+                })
+                .toList();
 
         boolean appliedAllGroup = meeting.getAttendees().contains("*");
         return MeetingDetailResponse.builder()
@@ -189,8 +183,7 @@ public class MeetingService implements IRemindableService {
                 .group(group)
                 .isAll(appliedAllGroup)
                 .canEdit(group.isMentor(userId) || organizer.getId().equals(userId))
-                .totalAttendees(
-                        appliedAllGroup ? group.getTotalMember() - 1 : meeting.getAttendees().size())
+                .totalAttendees(appliedAllGroup ? group.getTotalMember() - 1 : meeting.getAttendees().size())
                 .histories(historyDetails)
                 .build();
     }

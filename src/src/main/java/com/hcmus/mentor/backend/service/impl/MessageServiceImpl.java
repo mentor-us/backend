@@ -309,14 +309,12 @@ public class MessageServiceImpl implements MessageService {
     public List<MessageDetailResponse> fulfillMessages(
             List<MessageResponse> messages,
             String viewerId) {
-        List<String> userIds =
-                messages.stream()
-                        .flatMap(response -> response.getReactions().stream())
-                        .map(ReactionDto::getUserId)
-                        .toList();
-        Map<String, User> reactors =
-                userRepository.findByIdIn(userIds).stream()
-                        .collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
+        List<String> userIds = messages.stream()
+                .flatMap(response -> response.getReactions().stream())
+                .map(ReactionDto::getUserId)
+                .toList();
+        Map<String, User> reactors = userRepository.findByIdIn(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
         return messages.stream()
                 .map(this::fulfillMessage)
                 .filter(Objects::nonNull)

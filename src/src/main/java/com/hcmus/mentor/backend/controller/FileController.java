@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Tag(name = "files")
 @RestController
 @RequestMapping("api/files")
-@SecurityRequirement(name = "bearer")
 @RequiredArgsConstructor
 @Validated
 public class FileController {
@@ -41,7 +40,6 @@ public class FileController {
      */
     @GetMapping("")
     @ApiResponse(responseCode = "200")
-    @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<InputStreamResource> getFile(@ParameterObject DownloadFileReq request) {
         var stream = blobStorage.get(request.getKey());
         var contentType = new Tika().detect(request.getKey());
@@ -57,6 +55,7 @@ public class FileController {
      * @param file The file to be uploaded.
      * @return A ResponseEntity containing the UploadFileResponse.
      */
+    @SecurityRequirement(name = "bearer")
     @SneakyThrows
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiResponse(responseCode = "200")
@@ -76,6 +75,7 @@ public class FileController {
      * @param request Contains the details for the file deletion request.
      * @return A ResponseEntity containing a success message if deletion is successful.
      */
+    @SecurityRequirement(name = "bearer")
     @DeleteMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -97,6 +97,7 @@ public class FileController {
      * @param request Contains the details for the file sharing request.
      * @return A ResponseEntity containing the ShareFileResponse with the file URL.
      */
+    @SecurityRequirement(name = "bearer")
     @GetMapping("url")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
