@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.controller.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.security.core.AuthenticationException;
@@ -29,13 +30,13 @@ public class CustomHttp403UnauthorizedEntryPoint implements AuthenticationEntryP
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         logger.debug("Pre-authenticated entry point called. Rejecting access");
 
-//        var authorizationHeader = request.getHeader("Authorization");
-//
-//        if (!StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
-//            handleUnauthorizedRequest(response);
-//
-//            return;
-//        }
+        var authorizationHeader = request.getHeader("Authorization");
+
+        if (!StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
+            handleUnauthorizedRequest(response);
+
+            return;
+        }
 
         handleNotFoundRequest(response);
     }
