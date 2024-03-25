@@ -82,10 +82,9 @@ public class SecurityConfig {
                 .cors(c -> {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(requests -> {
-                    requests.requestMatchers(AUTH_WHITELIST).permitAll();
-                    requests.anyRequest().authenticated();
-                })
+                .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(e -> {
                             e.baseUri("/oauth2/authorize");

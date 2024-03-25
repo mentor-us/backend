@@ -1,9 +1,6 @@
 package com.hcmus.mentor.backend.security.handler;
 
-import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.exception.UnauthorizedException;
-import com.hcmus.mentor.backend.controller.exception.ValidationException;
+import com.hcmus.mentor.backend.controller.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -35,7 +32,8 @@ public class GlobalControllerExceptionHandler {
             Map.ofEntries(
                     entry(DomainException.class, HttpStatus.BAD_REQUEST),
                     entry(UnauthorizedException.class, HttpStatus.UNAUTHORIZED),
-                    entry(ForbiddenException.class, HttpStatus.FORBIDDEN)
+                    entry(ForbiddenException.class, HttpStatus.FORBIDDEN),
+                    entry(NotFoundException.class, HttpStatus.NOT_FOUND)
             );
     private final Environment environment;
 

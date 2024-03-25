@@ -39,7 +39,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             var authorizationHeader = request.getHeader("Authorization");
 
             if (!StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
-                throw new UnauthorizedException("Not found Bearer scheme in Authorization header");
+                chain.doFilter(request, response);
+                return;
             }
 
             var token = authorizationHeader.substring(BEARER_SCHEME.length() + 1);
