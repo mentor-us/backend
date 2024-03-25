@@ -91,7 +91,7 @@ public class ChannelController {
      * @param id the ID of the member
      * @return ResponseEntity containing a list of short profiles
      */
-    @GetMapping("{id}/member")
+    @GetMapping("{id}/members")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ShortProfile>> getMembersById(

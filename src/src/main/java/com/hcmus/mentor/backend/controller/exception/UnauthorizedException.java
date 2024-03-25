@@ -3,73 +3,85 @@ package com.hcmus.mentor.backend.controller.exception;
 import lombok.Getter;
 
 /**
- * Domain forbidden security exception. Can be mapped to the 403 HTTP status code.
+ * A domain user is not unauthorized exception. It can be mapped to 401 HTTP status code.
  */
 @Getter
-public class ForbiddenException extends DomainException {
+public class UnauthorizedException extends DomainException {
 
     /**
      * Constructor.
      */
-    public ForbiddenException() {
-        super("Forbidden");
+    public UnauthorizedException() {
+        super("Unauthorized");
     }
 
-
     /**
-     * @param code Optional description code for this exception
+     * Constructor.
+     *
+     * @param code Optional description code for this exception.
      */
-    public ForbiddenException(int code) {
-        super("Forbidden", 403);
+    public UnauthorizedException(int code) {
+        super("Unauthorized", 401);
     }
 
     /**
+     * Constructor.
+     *
      * @param message The message that describes the error.
      */
-    public ForbiddenException(String message) {
+    public UnauthorizedException(String message) {
         super(message);
     }
 
     /**
+     * Constructor.
+     *
      * @param message The message that describes the error.
      * @param code    Optional description code for this exception.
      */
-    public ForbiddenException(String message, int code) {
+    public UnauthorizedException(String message, int code) {
         super(message, code);
     }
 
     /**
+     * Constructor.
+     *
      * @param message The message that describes the error.
      * @param code    Optional description code for this exception.
      */
-    public ForbiddenException(String message, String code) {
+    public UnauthorizedException(String message, String code) {
         super(message, code);
     }
 
     /**
-     * @param message        The message that describes the error
-     * @param innerException The exception that is the cause of the current exception
+     * Constructor.
+     *
+     * @param message        The message that describes the error.
+     * @param innerException The exception that is the cause of the current exception.
      */
-    public ForbiddenException(String message, Exception innerException) {
+    public UnauthorizedException(String message, Exception innerException) {
         super(message, innerException);
     }
 
     /**
+     * Constructor.
+     *
      * @param message        The message that describes the error.
      * @param innerException The exception that is the cause of the current exception.
      * @param code           Optional description code for this exception.
      */
-    public ForbiddenException(String message, Exception innerException, int code) {
+    public UnauthorizedException(String message, Exception innerException, int code) {
         super(message, innerException, code);
     }
 
     /**
+     * Constructor.
+     *
      * @param message        The message that describes the error.
      * @param innerException The exception that is the cause of the current exception.
      * @param code           Optional description code for this exception.
      */
-    public ForbiddenException(String message, Exception innerException, String code) {
+    public UnauthorizedException(String message, Exception innerException, String code) {
         super(message, innerException, code);
     }
-
 }

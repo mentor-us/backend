@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.security.handler;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
+import com.hcmus.mentor.backend.controller.exception.UnauthorizedException;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -33,6 +34,7 @@ public class GlobalControllerExceptionHandler {
     private static final Map<Class, HttpStatus> exceptionStatusCodes =
             Map.ofEntries(
                     entry(DomainException.class, HttpStatus.BAD_REQUEST),
+                    entry(UnauthorizedException.class, HttpStatus.UNAUTHORIZED),
                     entry(ForbiddenException.class, HttpStatus.FORBIDDEN)
             );
     private final Environment environment;
@@ -58,7 +60,7 @@ public class GlobalControllerExceptionHandler {
     }
 
     private static void addCodeToProblemDetails(ProblemDetail problemDetail, String code) {
-        if (code != null) {
+        if (code != null && !code.isEmpty()) {
             problemDetail.setProperty(CODE_KEY, code);
         }
     }
@@ -68,7 +70,7 @@ public class GlobalControllerExceptionHandler {
             return HttpStatus.BAD_REQUEST;
         }
         for (Map.Entry<Class, HttpStatus> entry : exceptionStatusCodes.entrySet()) {
-            if (entry.getKey().isAssignableFrom(exceptionType)) {
+            if (entry.getKey() == exceptionType) {
                 return entry.getValue();
             }
         }
@@ -83,12 +85,11 @@ public class GlobalControllerExceptionHandler {
             problem.setProperty(
                     ERRORS_KEY,
                     validationException.getErrors().entrySet().stream()
-                            .flatMap(
-                                    error -> {
-                                        var field = error.getKey();
-                                        return error.getValue().stream()
-                                                .map(detail -> new ProblemFieldDto(field, detail));
-                                    }));
+                            .flatMap(error -> {
+                                var field = error.getKey();
+                                return error.getValue().stream()
+                                        .map(detail -> new ProblemFieldDto(field, detail));
+                            }));
             addExceptionInfoToProblemDetails(problem, validationException);
         } else if (exception instanceof DomainException domainException) {
             addExceptionInfoToProblemDetails(problem, domainException);
