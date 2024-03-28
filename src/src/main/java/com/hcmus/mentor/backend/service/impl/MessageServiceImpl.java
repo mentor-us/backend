@@ -354,10 +354,6 @@ public class MessageServiceImpl implements MessageService {
             response.setReply(replyMessage);
         }
 
-//        if (response.getType() == FORWARD) {
-//            response.setType(TEXT);
-//            response.setIsForward(true);
-//        }
         return response;
     }
 
