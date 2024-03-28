@@ -1597,17 +1597,6 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public void updateLastMessageId(String groupId, String messageId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return;
-        }
-        Group group = groupWrapper.get();
-        group.setLastMessageId(messageId);
-        groupRepository.save(group);
-    }
-
-    @Override
     public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {
         if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
             return null;

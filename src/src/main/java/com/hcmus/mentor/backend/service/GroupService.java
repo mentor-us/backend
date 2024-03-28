@@ -130,8 +130,6 @@ public interface GroupService {
 
     void unpinChannelMessage(String userId, String channelId, String messageId);
 
-    void updateLastMessageId(String groupId, String messageId);
-
     GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
     void markMentee(CustomerUserDetails user, String groupId, String menteeId);
