@@ -550,13 +550,12 @@ public class GroupController {
     }
 
     /**
-     * (Use /api/channels/{id}/member) Get members of a group.
+     * Get members of a group.
      *
      * @param customerUserDetails The current user's principal information.
      * @param groupId             The ID of the group for which members are requested.
      * @return APIResponse containing the group members' information.
      */
-    @Deprecated(forRemoval = true)
     @GetMapping("{id}/members")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")

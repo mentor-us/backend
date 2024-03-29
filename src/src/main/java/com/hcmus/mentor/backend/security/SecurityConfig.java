@@ -41,14 +41,13 @@ public class SecurityConfig {
 
     private static final String[] AUTH_WHITELIST = {
             "/api/auth/**",
+            "/api/files/**",
             // -- Swagger UI v3 (OpenAPI)
             "/v3/api-docs/**",
             "/swagger-ui/**",
             // other public endpoints of your API may be appended to this array
             "**/oauth2/**",
             "/actuator/**",
-            // For the FileController
-            "/api/files/"
     };
 
     @Bean

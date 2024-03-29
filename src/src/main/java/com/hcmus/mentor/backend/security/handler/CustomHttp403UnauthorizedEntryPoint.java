@@ -11,6 +11,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.util.AntPathMatcher;
 
 import java.io.IOException;
 
@@ -29,6 +30,10 @@ public class CustomHttp403UnauthorizedEntryPoint implements AuthenticationEntryP
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         logger.debug("Pre-authenticated entry point called. Rejecting access");
+
+        if (!(new AntPathMatcher().match("/api/auth/**", request.getServletPath())) || !(new AntPathMatcher().match("/api/files/**", request.getServletPath()))) {
+            return;
+        }
 
         var authorizationHeader = request.getHeader("Authorization");
 
