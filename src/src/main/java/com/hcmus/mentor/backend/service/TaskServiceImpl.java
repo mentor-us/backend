@@ -202,7 +202,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTask(String emailUser, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
@@ -229,7 +229,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTaskAssigneesWrapper(String emailUser, String id) {
         Optional<Task> taskOptional = taskRepository.findById(id);
-        if (!taskOptional.isPresent()) {
+        if (taskOptional.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
@@ -238,23 +238,14 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(task.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return new TaskReturnService(NOT_FOUND, "Not found group", null);
+        var channel = channelRepository.findById(task.getGroupId());
+        if (channel.isEmpty()) {
+            return new TaskReturnService(NOT_FOUND_GROUP, "Not found channel", null);
         }
-        return new TaskReturnService(SUCCESS, "", getTaskAssignees(task.getId()));
-    }
 
-    public List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        Optional<Task> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Task task = taskOpt.get();
-
-        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
+        Optional<Group> groupOpt = groupRepository.findById(channel.get().getParentId());
         if (groupOpt.isEmpty()) {
-            return Collections.emptyList();
+            return new TaskReturnService(SUCCESS, "", Collections.emptyList());
         }
         Group group = groupOpt.get();
 
@@ -266,13 +257,15 @@ public class TaskServiceImpl implements IRemindableService {
         Map<String, TaskStatus> statuses = task.getAssigneeIds().stream()
                 .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
 
-        return assignees.stream()
+        var data = assignees.stream()
                 .map(assignee -> {
                     TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, status, isMentor);
                 })
                 .toList();
+
+        return new TaskReturnService(SUCCESS, "", data);
     }
 
     private boolean isAssigned(String emailUser, Task task) {
@@ -371,14 +364,12 @@ public class TaskServiceImpl implements IRemindableService {
         List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
                 .map(Group::getId)
                 .toList();
-        List<Task> tasks =
-                taskRepository
-                        .findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
-                                groupIds,
-                                Arrays.asList("*", userId),
-                                new Date(),
-                                PageRequest.of(0, 5, Sort.by("deadline").descending()))
-                        .getContent();
+        List<Task> tasks = taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
+                        groupIds,
+                        Arrays.asList("*", userId),
+                        new Date(),
+                        PageRequest.of(0, 5, Sort.by("deadline").descending()))
+                .getContent();
         return tasks.stream()
                 .map(task -> {
                     Group group = groupRepository.findById(task.getGroupId()).orElse(null);
@@ -408,18 +399,16 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<Task> getAllOwnTasksBetween(String userId, Date startTime, Date endTime) {
-        List<String> joinedGroupIds =
-                groupService.getAllActiveOwnGroups(userId).stream()
-                        .map(Group::getId)
-                        .toList();
-        MatchOperation match = Aggregation.match(
-                Criteria.where("groupId")
-                        .in(joinedGroupIds)
-                        .and("assigneeIds.userId")
-                        .in(Arrays.asList("*", userId))
-                        .and("deadline")
-                        .gte(startTime)
-                        .lte(endTime));
+        List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
+                .map(Group::getId)
+                .toList();
+        MatchOperation match = Aggregation.match(Criteria.where("groupId")
+                .in(joinedGroupIds)
+                .and("assigneeIds.userId")
+                .in(Arrays.asList("*", userId))
+                .and("deadline")
+                .gte(startTime)
+                .lte(endTime));
         Aggregation aggregation = Aggregation.newAggregation(match);
         return mongoTemplate.aggregate(aggregation, "task", Task.class).getMappedResults();
     }
@@ -464,9 +453,8 @@ public class TaskServiceImpl implements IRemindableService {
             return Collections.emptyList();
         }
 
-        List<Task> tasks =
-                taskRepository.findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-                        groupId, Arrays.asList("*", userId));
+        List<Task> tasks = taskRepository.findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
+                groupId, Arrays.asList("*", userId));
         return tasks.stream()
                 .map(task -> {
                     User assigner = userRepository.findById(task.getAssignerId()).orElse(null);

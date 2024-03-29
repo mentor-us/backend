@@ -31,7 +31,7 @@ public class CustomHttp403UnauthorizedEntryPoint implements AuthenticationEntryP
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         logger.debug("Pre-authenticated entry point called. Rejecting access");
 
-        if (!(new AntPathMatcher().match("/api/auth/**", request.getServletPath())) || !(new AntPathMatcher().match("/api/files/**", request.getServletPath()))) {
+        if (new AntPathMatcher().match("/api/auth/**", request.getServletPath()) || new AntPathMatcher().match("/api/files/**", request.getServletPath())) {
             return;
         }
 
@@ -43,7 +43,7 @@ public class CustomHttp403UnauthorizedEntryPoint implements AuthenticationEntryP
             return;
         }
 
-        handleNotFoundRequest(response);
+//        handleNotFoundRequest(response);
     }
 
     private void handleUnauthorizedRequest(HttpServletResponse response) throws IOException {

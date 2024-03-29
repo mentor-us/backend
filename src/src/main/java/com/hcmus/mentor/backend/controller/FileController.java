@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,7 @@ public class FileController {
      * @param request Contains the details for the file download request.
      * @return A ResponseEntity containing the InputStreamResource of the file.
      */
+    @Cacheable("controller_getFile")
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<InputStreamResource> getFile(@ParameterObject DownloadFileReq request) {
