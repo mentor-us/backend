@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
-import com.hcmus.mentor.backend.controller.payload.FileModel;
+import com.hcmus.mentor.backend.controller.payload.File;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import com.hcmus.mentor.backend.domain.Reaction;
 import lombok.*;
 
 import java.io.Serializable;
@@ -39,11 +39,11 @@ public class MessageResponse implements Serializable {
 
     private String taskId;
 
-    private List<ReactionDto> reactions;
+    private List<Reaction> reactions;
 
     private List<String> images;
 
-    private FileModel file;
+    private File file;
 
     private Message.Status status;
 

@@ -107,15 +107,15 @@ public class MessageController {
             }
 
             Channel channel = channelWrapper.get();
-            if (channel.getPinnedMessageIds().contains(message)) {
-                channel.getPinnedMessageIds().remove(message);
+            if (channel.getPinnedMessages().contains(message)) {
+                channel.getPinnedMessages().remove(message);
                 channel.ping();
 
                 channelRepository.save(channel);
             }
         }
 
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSender())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (message.isDeleted()) {
@@ -154,7 +154,7 @@ public class MessageController {
         if (!groupService.isGroupMember(message.getGroupId(), customerUserDetails.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSender())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -197,7 +197,7 @@ public class MessageController {
                 .file(file)
                 .build();
         Message message = messageService.saveFileMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
+        User sender = userRepository.findById(message.getSender()).orElse(null);
 
         MessageDetailResponse response = MessageDetailResponse.from(message, sender);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
@@ -256,7 +256,7 @@ public class MessageController {
                 .files(files)
                 .build();
         Message message = messageService.saveImageMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
+        User sender = userRepository.findById(message.getSender()).orElse(null);
 
         MessageDetailResponse response = MessageDetailResponse.from(message, sender);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);

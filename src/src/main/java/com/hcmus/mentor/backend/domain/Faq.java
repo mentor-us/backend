@@ -1,9 +1,10 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,73 +17,44 @@ import java.util.List;
 public class Faq {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "question", nullable = false)
     private String question;
 
+    @Column(name = "answer")
     private String answer;
 
     @Builder.Default
-    @OneToMany
-    @JoinColumn(name = "voter_id")
-    private List<User> voters = new ArrayList<>();
-
-    @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
     @Builder.Default
+    @Column(name = "updated_date", nullable = false)
     private Date updatedDate = new Date();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     private User creator;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
 
+    @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "rel_faq_user_voter",
+            joinColumns = @JoinColumn(name = "faq_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private List<User> voters = new ArrayList<>();
+
     public Faq() {
-
     }
 
-//    public void upvote(String userId) {
-//        if (voters.contains(userId)) {
-//            return;
-//        }
-//        voters.add(userId);
-//    }
-
-//    public void downVote(String userId) {
-//        if (!voters.contains(userId)) {
-//            return;
-//        }
-//        voters.remove(userId);
-//    }
-
-    public void update(UpdateFaqRequest request) {
-        if (request.getQuestion() != null) {
-            setQuestion(request.getQuestion());
-            setUpdatedDate(new Date());
-        }
-
-        if (request.getAnswer() != null) {
-            setAnswer(request.getAnswer());
-            setUpdatedDate(new Date());
-        }
-    }
-
-    public void addVoter(User user) {
-        if(user == null)
-            return;
-        voters.add(user);
-    }
-
-    public void removeVote(User user) {
-        if(user == null)
-            return;
-        voters.remove(user);
-    }
 
     public int getRating() {
         return voters.size();

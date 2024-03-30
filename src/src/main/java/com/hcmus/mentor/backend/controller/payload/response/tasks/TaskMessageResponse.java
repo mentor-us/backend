@@ -42,7 +42,7 @@ public class TaskMessageResponse {
                 .description(task.getDescription())
                 .deadline(task.getDeadline())
                 .createdDate(task.getCreatedDate())
-                .assignerId(task.getAssignerId())
+                .assignerId(task.getAssigner())
                 .groupId(task.getGroupId())
                 .build();
     }

@@ -1,12 +1,11 @@
 package com.hcmus.mentor.backend.controller.payload.response.tasks;
 
 import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import lombok.*;
 
 import java.util.Date;
-
-import lombok.*;
 
 @Getter
 @Setter
@@ -44,7 +43,7 @@ public class TaskDetailResponse {
                 .description(task.getDescription())
                 .deadline(task.getDeadline())
                 .createdDate(task.getCreatedDate())
-                .totalAssignees(task.getAssigneeIds().size())
+                .totalAssignees(task.getAssignees().size())
                 .build();
     }
 

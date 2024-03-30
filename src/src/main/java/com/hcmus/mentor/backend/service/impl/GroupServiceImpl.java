@@ -33,6 +33,8 @@ import com.hcmus.mentor.backend.util.MailUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
@@ -68,7 +70,7 @@ import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
     private static final Integer MAX_YEAR_FROM_TIME_START_AND_NOW = 4;
-    //    private final Logger logger = LogManager.getLogger(this.getClass());
+    private final Logger logger = LogManager.getLogger(this.getClass());
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserRepository userRepository;
@@ -861,27 +863,25 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = (Group) groupServiceDto.getData();
 
-        if (groupRepository.existsByName(request.getName())
-                && !request.getName().equals(group.getName())) {
+        if (groupRepository.existsByName(request.getName()) && !request.getName().equals(group.getName())) {
             return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
+
         Date timeStart = changeGroupTime(request.getTimeStart(), "START");
         Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
-        group.update(
-                request.getName(),
-                request.getDescription(),
-                request.getStatus(),
-                timeStart,
-                timeEnd,
-                request.getGroupCategory());
-        if (!groupCategoryRepository.existsById(group.getGroupCategory().getId())) {
+
+        var groupCategory = groupCategoryRepository.findById(request.getGroupCategory()).orElse(null);
+        if (groupCategory == null) {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
+        group.update(request.getName(), request.getDescription(), request.getStatus(), timeStart, timeEnd, groupCategory);
+
 
         GroupServiceDto isValidTimeRange = validateTimeRange(group.getTimeStart(), group.getTimeEnd());
         if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
             return isValidTimeRange;
         }
+
         Duration duration = calculateDuration(group.getTimeStart(), group.getTimeEnd());
         group.setDuration(duration);
         GroupStatus status =
@@ -890,8 +890,10 @@ public class GroupServiceImpl implements GroupService {
         if (request.getStatus().equals(GroupStatus.DISABLED)) {
             group.setStatus(GroupStatus.DISABLED);
         }
+
         group.setUpdatedDate(new Date());
         groupRepository.save(group);
+
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
@@ -918,7 +920,7 @@ public class GroupServiceImpl implements GroupService {
         if (user == null) {
             return new ArrayList<>();
         }
-        List<Group> groups = groupRepository.findByIdIn(user.getPinnedGroupsId());
+        List<Group> groups = groupRepository.findByIdIn(user.getPinnedGroups());
         return mappingGroupHomepageResponse(groups, userId);
     }
 
@@ -1152,7 +1154,7 @@ public class GroupServiceImpl implements GroupService {
                 .id(channel.getId())
                 .name(channelName)
                 .description(channel.getDescription())
-                .pinnedMessageIds(channel.getPinnedMessageIds().stream().map(Message::getId).toList())
+                .pinnedMessageIds(channel.getPinnedMessages().stream().map(Message::getId).toList())
                 .imageUrl(imageUrl)
                 .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
                 .parentId(parentGroup.getId())
@@ -1175,7 +1177,7 @@ public class GroupServiceImpl implements GroupService {
                     .map(Optional::get)
                     .filter(message -> !message.isDeleted())
                     .map(message -> {
-                        User user = userRepository.findById(message.getSenderId()).orElse(null);
+                        User user = userRepository.findById(message.getSender()).orElse(null);
                         return MessageResponse.from(message, ProfileResponse.from(user));
                     })
                     .toList();
@@ -1212,7 +1214,7 @@ public class GroupServiceImpl implements GroupService {
                     .map(Optional::get)
                     .filter(message -> !message.isDeleted())
                     .map(message -> {
-                        User user = userRepository.findById(message.getSenderId()).orElse(null);
+                        User user = userRepository.findById(message.getSender()).orElse(null);
                         return MessageResponse.from(message, ProfileResponse.from(user));
                     })
                     .toList();
@@ -1292,7 +1294,7 @@ public class GroupServiceImpl implements GroupService {
 
         List<ShortMediaMessage> media = new ArrayList<>();
         mediaMessages.forEach(message -> {
-            ProfileResponse sender = senders.getOrDefault(message.getSenderId(), null);
+            ProfileResponse sender = senders.getOrDefault(message.getSender(), null);
 
             if (Message.Type.IMAGE.equals(message.getType())) {
                 List<ShortMediaMessage> images = message.getImages().stream()
@@ -1521,15 +1523,15 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void pinChannelMessage(String userId, String channelId, String messageId) {
         Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        if (channel.getPinnedMessageIds().size() >= 5) {
+        if (channel.getPinnedMessages().size() >= 5) {
             throw new DomainException("Maximum pinned messages");
         }
 
         Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
-        User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
+        User sender = userRepository.findById(message.getSender()).orElseThrow(() -> new DomainException("Sender not found"));
 
-        if (!channel.getPinnedMessageIds().contains(message)) {
-            channel.getPinnedMessageIds().add(message);
+        if (!channel.getPinnedMessages().contains(message)) {
+            channel.getPinnedMessages().add(message);
 
             channel.ping();
             channelRepository.save(channel);
@@ -1546,13 +1548,13 @@ public class GroupServiceImpl implements GroupService {
     public void unpinChannelMessage(String userId, String channelId, String messageId) {
         Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
         Message message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
-        User sender = userRepository.findById(message.getSenderId()).orElseThrow(() -> new DomainException("Sender not found"));
-
-        if (!channel.getPinnedMessageIds().contains(message)) {
+        if (!channel.getMessagesPinned().contains(message)) {
             return;
         }
 
-        channel.getPinnedMessageIds().remove(message);
+        User sender = message.getSender();
+
+        channel.getMessagesPinned().remove(message);
         channel.ping();
 
         channelRepository.save(channel);
@@ -1567,9 +1569,10 @@ public class GroupServiceImpl implements GroupService {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (groupWrapper.isEmpty()) {
             return;
-        }
+        }        Group group = groupWrapper.get();
+
         Group group = groupWrapper.get();
-        group.setLastMessageId(messageId);
+        group.setLastMessage(messageId);
         groupRepository.save(group);
     }
 
@@ -1657,7 +1660,7 @@ public class GroupServiceImpl implements GroupService {
             throw new ForbiddenException("You are not mentor");
         }
 
-        if (group.getMentees().stream().anyMatch(m -> m.getId().equals(menteeId))) {
+        if (group.getGroupUsers().stream().anyMatch(groupUser -> groupUser.getUser().getId().equals(menteeId) && groupUser.isMentor()){
             throw new DomainException("User not in group");
         }
 

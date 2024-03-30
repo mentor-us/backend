@@ -6,9 +6,9 @@ import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetin
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
+import jakarta.persistence.*;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.data.annotation.Id;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -16,40 +16,61 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Data
 @Builder
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "meetings")
 public class Meeting implements IRemindable, Serializable {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "time_start")
     private Date timeStart;
 
+    @Column(name = "time_end")
     private Date timeEnd;
 
+    @Column(name = "repeated")
+    @Enumerated(EnumType.STRING)
     private MeetingRepeated repeated;
 
+    @Column(name = "place")
     private String place;
 
-    private String organizerId;
-
     @Builder.Default
-    private List<String> attendees = new ArrayList<>();
-
-    private String groupId;
-
-    @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
+    @ManyToOne
+    @JoinColumn(name = "organizer_id")
+    private User organizer;
+
+    @ManyToOne
+    @JoinColumn(name = "channel_id")
+    private Channel group;
+
     @Builder.Default
+    @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY)
     private List<MeetingHistory> histories = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "rel_user_meeting_attendees",
+            joinColumns = @JoinColumn(name = "meeting_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private List<User> attendees = new ArrayList<>();
 
     public static Meeting from(CreateMeetingRequest request) {
         Meeting meeting = new Meeting();
@@ -69,7 +90,7 @@ public class Meeting implements IRemindable, Serializable {
         properties.put("id", id);
 
         return Reminder.builder()
-                .groupId(groupId)
+                .group(group.getGroup())
                 .name(title)
                 .type(ReminderType.MEETING)
                 .reminderDate(getReminderDate())
@@ -92,16 +113,16 @@ public class Meeting implements IRemindable, Serializable {
         timeEnd = request.getTimeEnd();
         repeated = request.getRepeated();
         place = request.getPlace();
-        organizerId = request.getOrganizerId();
+        organizer = request.getOrganizerId();
         attendees = request.getAttendees();
-        groupId = request.getGroupId();
+        group = request.getGroupId();
 
         MeetingHistory creatingEvent =
                 MeetingHistory.builder()
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(request.getPlace())
-                        .modifierId(request.getOrganizerId())
+                        .modifier(request.getOrganizerId())
                         .build();
         histories = Collections.singletonList(creatingEvent);
     }
@@ -122,7 +143,7 @@ public class Meeting implements IRemindable, Serializable {
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(request.getPlace())
-                        .modifierId(modifierId)
+                        .modifier(modifierId)
                         .build();
         histories.add(history);
 
@@ -137,7 +158,7 @@ public class Meeting implements IRemindable, Serializable {
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(place)
-                        .modifierId(modifierId)
+                        .modifier(modifierId)
                         .build();
         histories.add(history);
 
@@ -146,42 +167,5 @@ public class Meeting implements IRemindable, Serializable {
         place = request.getPlace();
     }
 
-    @Getter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class MeetingHistory implements Serializable {
 
-        @Builder.Default
-        private String id = UUID.randomUUID().toString();
-
-        private Date timeStart;
-
-        private Date timeEnd;
-
-        private String place;
-
-        private String modifierId;
-
-        @Builder.Default
-        private Date modifyDate = new Date();
-
-        @Override
-        public String toString() {
-            return "\tLịch hẹn: "
-                    + "id='"
-                    + id
-                    + '\''
-                    + ", Thời gian bắt đầu="
-                    + timeStart
-                    + ", Thời gian kết thúc="
-                    + timeEnd
-                    + ", Địa điểm='"
-                    + place
-                    + '\''
-                    + ", Ngày cập nhật ="
-                    + modifyDate
-                    + '\n';
-        }
-    }
 }

@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response;
 
-import com.hcmus.mentor.backend.controller.payload.FileModel;
+import com.hcmus.mentor.backend.controller.payload.File;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Message;
 
@@ -23,7 +23,7 @@ public class ShortMediaMessage {
 
     private String imageUrl;
 
-    private FileModel file;
+    private File file;
 
     private Message.Type type;
 

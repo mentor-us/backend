@@ -22,7 +22,7 @@ public interface FaqService {
 
     void importFaqs(String creatorId, String destGroupId, ImportFAQsRequest request);
 
-    boolean upvote(CustomerUserDetails user, String faqId);
+    void upvote(CustomerUserDetails user, String faqId);
 
     boolean downVote(CustomerUserDetails user, String faqId);
 }

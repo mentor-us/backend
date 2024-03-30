@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.repository;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group> {
     Page<Group> findAllOrderByCreatedDate(Pageable pageable);
@@ -78,7 +80,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     boolean existsByMenteesIn(List<String> menteeIds);
 
-    List<Group> findByIdIn(List<String> ids);
 
     List<Group> findAllByGroupCategory(String groupCategoryId);
 
@@ -134,4 +135,11 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
 
     List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
+    List<Group> findByIdIn(List<String> ids);
+
+    @NotNull
+    Optional<Group> findById(@NotNull String id);
+
+    @Query("SELECT g FROM Group g JOIN FETCH g.channels join FETCH WHERE g.id :id")
+    Optional<Group> findByIdAndFetchChannel(String id);
 }

@@ -171,7 +171,7 @@ public class GroupDetailResponse {
                     .creatorId(channel.getCreatorId())
                     .hasNewMessage(channel.getHasNewMessage())
                     .imageUrl(channel.getImageUrl())
-                    .pinnedMessageIds(channel.getPinnedMessageIds().stream().map(Message::getId).toList())
+                    .pinnedMessageIds(channel.getPinnedMessages().stream().map(Message::getId).toList())
                     .parentId(channel.getParentId())
                     .build();
         }

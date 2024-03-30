@@ -82,7 +82,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
-                .groupId(request.getGroupId())
+                .group(groupRepository.findById(request.getGroupId()).orElse(null))
                 .assignerId(assigner.map(User::getId).orElse(null))
                 .parentTask(request.getParentTask())
                 .assigneeIds(assigneeIds)
@@ -90,18 +90,18 @@ public class TaskServiceImpl implements IRemindableService {
         taskRepository.save(task);
 
         Message message = Message.builder()
-                .senderId(task.getAssignerId())
-                .groupId(task.getGroupId())
+                .sender(task.getAssigner())
+                .channel(task.getGroup())
                 .createdDate(task.getCreatedDate())
                 .type(Message.Type.TASK)
-                .taskId(task.getId())
+                .task(task)
                 .build();
         messageService.saveMessage(message);
 
         MessageDetailResponse response =
                 messageService.fulfillTaskMessage(
                         MessageResponse.from(message, ProfileResponse.from(assigner.get())));
-        socketIOService.sendBroadcastMessage(response, task.getGroupId());
+        socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
         saveToReminder(task);
         notificationService.sendNewTaskNotification(response);
 
@@ -145,8 +145,8 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
         Task task = taskOptional.get();
-        if (!permissionService.isMentor(user.getEmail(), task.getGroupId())
-                && !task.getAssignerId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), task.getGroup().getId())
+                && !task.getAssigner().equals(user.getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -166,104 +166,98 @@ public class TaskServiceImpl implements IRemindableService {
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
         TaskDetailResponse.Assigner assigner =
                 userRepository
-                        .findById(task.getAssignerId())
+                        .findById(task.getAssigner())
                         .map(TaskDetailResponse.Assigner::from)
                         .orElse(null);
 
-        TaskDetailResponse.Group groupInfo =
-                groupRepository
-                        .findById(task.getGroupId())
-                        .map(TaskDetailResponse.Group::from)
-                        .orElse(null);
+        TaskDetailResponse.Group groupInfo = TaskDetailResponse.Group.from(task.getGroup().getGroup());
 
         TaskDetailResponse.Role role =
-                permissionService.isMentor(emailUser, task.getGroupId())
+                permissionService.isMentor(emailUser, task.getGroup().getGroup().getId())
                         ? TaskDetailResponse.Role.MENTOR
                         : TaskDetailResponse.Role.MENTEE;
 
-        Optional<User> userWrapper = userRepository.findByEmail(emailUser);
-        if (!userWrapper.isPresent()) {
+        var user = userRepository.findByEmail(emailUser).orElse(null);
+        if (user == null) {
             return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
         }
 
-        TaskStatus status =
-                task.getAssigneeIds().stream()
-                        .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
-                        .findFirst()
-                        .map(AssigneeDto::getStatus)
-                        .orElse(null);
+        TaskStatus status = task.getAssignees().stream()
+                .filter(assignee -> assignee.equals(user))
+                .findFirst()
+                .map(Assignee::getStatus)
+                .orElse(null);
         return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
 
     public TaskReturnService getTask(String emailUser, String id) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Task task = taskOptional.get();
-        if (!permissionService.isInGroup(emailUser, task.getGroupId())) {
+
+        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
+
         TaskDetailResponse taskDetailResponse = generateTaskDetailFromTask(emailUser, task);
         return new TaskReturnService(SUCCESS, "", taskDetailResponse);
     }
 
     public TaskReturnService getTaskAssigner(String emailUser, String id) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Task task = taskOptional.get();
-        if (!permissionService.isInGroup(emailUser, task.getGroupId())) {
+
+        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
-        User user = userRepository.findById(task.getAssignerId()).get();
+
+        User user = task.getAssigner();
         ProfileResponse response = ProfileResponse.from(user);
         return new TaskReturnService(SUCCESS, "", response);
     }
 
     public TaskReturnService getTaskAssigneesWrapper(String emailUser, String id) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        Task task = taskOptional.get();
-        if (!permissionService.isInGroup(emailUser, task.getGroupId())) {
+        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(task.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            return new TaskReturnService(NOT_FOUND, "Not found group", null);
-        }
         return new TaskReturnService(SUCCESS, "", getTaskAssignees(task.getId()));
     }
 
     public List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        Optional<Task> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) {
+        var task = taskRepository.findById(taskId).orElse(null);
+        if (task == null) {
             return Collections.emptyList();
         }
-        Task task = taskOpt.get();
+//
+//        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
+//        if (groupOpt.isEmpty()) {
+//            return Collections.emptyList();
+//        }
+//        Group group = groupOpt.get();
+        Group group = task.getGroup().getGroup();
 
-        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
-        if (groupOpt.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Group group = groupOpt.get();
+        var assigneesDto = task.getAssignees().stream()
+                .map(Assignee::getUser).toList();
 
-        List<String> assigneeIds = task.getAssigneeIds().stream()
-                .map(AssigneeDto::getUserId).toList();
+        List<ProfileResponse> assignees = assigneesDto.stream()
+                .map(ProfileResponse::from)
+                .toList();
 
-        List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
-
-        Map<String, TaskStatus> statuses = task.getAssigneeIds().stream()
-                .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+        Map<User, TaskStatus> statuses = task.getAssignees().stream()
+                .collect(Collectors.toMap(Assignee::getUser, Assignee::getStatus, (s1, s2) -> s2));
 
         return assignees.stream()
                 .map(assignee -> {
-                    TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
+                    TaskStatus status = statuses.getOrDefault(assignee, null);
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, status, isMentor);
                 })
@@ -280,70 +274,70 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public TaskReturnService updateStatus(String emailUser, String id, TaskStatus status) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Task task = taskOptional.get();
-        if (!isAssigned(emailUser, task)) {
+
+        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Optional<User> userOptional = userRepository.findByEmail(emailUser);
-        if (!userOptional.isPresent()) {
+
+        var user = userRepository.findByEmail(emailUser);
+        if (user.isEmpty()) {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
-        User user = userOptional.get();
-        task.getAssigneeIds().stream()
-                .filter(assignee -> assignee.getUserId().equals(user.getId()))
+
+        task.getAssignees().stream()
+                .filter(assignee -> assignee.getUser().equals(user))
                 .forEach(assignee -> assignee.setStatus(status));
         taskRepository.save(task);
-        groupService.pingGroup(task.getGroupId());
+        groupService.pingGroup(task.getGroup().getId());
 
         return new TaskReturnService(SUCCESS, "", task);
     }
 
-    public TaskReturnService updateStatusByMentor(
-            String emailUser, String id, UpdateStatusByMentorRequest request) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+    public TaskReturnService updateStatusByMentor(String emailUser, String id, UpdateStatusByMentorRequest request) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Task task = taskOptional.get();
-        if (!permissionService.isMentor(emailUser, task.getGroupId())) {
+
+        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
+
         if (!isAssigned(request.getEmailUserAssigned(), task)) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmailUserAssigned());
-        if (userOptional.isEmpty()) {
+        var user = userRepository.findByEmail(request.getEmailUserAssigned());
+        if (user.isEmpty()) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
-        User user = userOptional.get();
-        task.getAssigneeIds().stream()
-                .filter(assignee -> assignee.getUserId().equals(user.getId()))
+
+        task.getAssignees().stream()
+                .filter(assignee -> assignee.getUser().equals(user))
                 .forEach(assignee -> assignee.setStatus(request.getStatus()));
         taskRepository.save(task);
-        groupService.pingGroup(task.getGroupId());
+        groupService.pingGroup(task.getGroup().getId());
 
         return new TaskReturnService(SUCCESS, "", task);
     }
 
     public TaskReturnService updateTask(CustomerUserDetails user, String id, UpdateTaskRequest request) {
-        Optional<Task> taskOptional = taskRepository.findById(id);
-        if (taskOptional.isEmpty()) {
+        var task = taskRepository.findById(id).orElse(null);
+        if (task == null) {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        Task task = taskOptional.get();
-        if (!permissionService.isMentor(user.getEmail(), task.getGroupId())
-                && !task.getAssignerId().equals(user.getId())) {
+
+        if (!permissionService.isInGroup(user.getEmail(), task.getGroup().getGroup().getId())) {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (request.getParentTask() != null && !taskRepository.existsById(request.getParentTask())) {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         for (String assigneeId : request.getUserIds()) {
-            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroupId())) {
+            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroup().)) {
                 return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
             }
         }
@@ -377,8 +371,8 @@ public class TaskServiceImpl implements IRemindableService {
         return tasks.stream()
                 .map(task -> {
                     Group group = groupRepository.findById(task.getGroupId()).orElse(null);
-                    User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                    AssigneeDto assignee = task.getAssigneeIds().stream()
+                    User assigner = userRepository.findById(task.getAssigner()).orElse(null);
+                    AssigneeDto assignee = task.getAssignees().stream()
                             .filter(a -> a.getUserId().equals(userId))
                             .findFirst()
                             .orElse(null);
@@ -468,8 +462,8 @@ public class TaskServiceImpl implements IRemindableService {
                         groupId, Arrays.asList("*", userId));
         return tasks.stream()
                 .map(task -> {
-                    User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-                    AssigneeDto assignee = task.getAssigneeIds().stream()
+                    User assigner = userRepository.findById(task.getAssigner()).orElse(null);
+                    AssigneeDto assignee = task.getAssignees().stream()
                             .filter(a -> a.getUserId().equals(userId))
                             .findFirst()
                             .orElse(null);
@@ -530,7 +524,7 @@ public class TaskServiceImpl implements IRemindableService {
         Reminder reminder = remindable.toReminder();
         Task task = (Task) remindable;
         List<String> emailUsers = new ArrayList<>();
-        for (AssigneeDto assignee : task.getAssigneeIds()) {
+        for (AssigneeDto assignee : task.getAssignees()) {
             Optional<User> userOptional = userRepository.findById(assignee.getUserId());
             userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
         }

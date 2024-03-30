@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller.payload.response.votes;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.domain.dto.Choice;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 

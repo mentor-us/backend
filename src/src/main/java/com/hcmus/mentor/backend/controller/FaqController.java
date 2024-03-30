@@ -158,13 +158,11 @@ public class FaqController {
     @PostMapping("{faqId}/upvote")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "400", description = "Domain exception")
     public ResponseEntity<String> upVote(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String faqId) {
-        boolean isSuccess = faqService.upvote(customerUserDetails, faqId);
-        if (!isSuccess) {
-            return ResponseEntity.badRequest().build();
-        }
+        faqService.upvote(customerUserDetails, faqId);
         return ResponseEntity.ok().build();
     }
 

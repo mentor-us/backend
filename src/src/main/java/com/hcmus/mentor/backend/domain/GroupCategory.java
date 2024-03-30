@@ -17,27 +17,40 @@ import java.util.List;
 public class GroupCategory {
 
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "icon_url")
     private String iconUrl;
 
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private GroupCategoryStatus status = GroupCategoryStatus.ACTIVE;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(targetClass = GroupCategoryPermission.class)
+    @CollectionTable(name = "group_category_permissions", joinColumns = @JoinColumn(name = "category_id"))
+    @Column(name = "permission", nullable = false)
+    @Enumerated(EnumType.STRING)
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
 
-    public GroupCategory() {
+    @Builder.Default
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+    private List<Group> groups = new ArrayList<>();
 
+    public GroupCategory() {
     }
 
     public void update(

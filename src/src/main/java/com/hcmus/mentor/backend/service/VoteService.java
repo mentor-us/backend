@@ -1,11 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.dto.Choice;
-import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.Choice;
+import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public interface VoteService {
 
     Vote createNewVote(String userId, CreateVoteRequest request);
 
-    boolean updateVote(CustomerUserDetails user, String voteId, UpdateVoteRequest request);
+    boolean updateVote(CustomerUserDetails userDetails, String voteId, UpdateVoteRequest request);
 
     boolean deleteVote(CustomerUserDetails user, String voteId);
 

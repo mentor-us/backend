@@ -7,7 +7,7 @@ import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardReque
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import com.hcmus.mentor.backend.domain.Reaction;
 
 import java.util.List;
 
@@ -158,7 +158,7 @@ public interface MessageService {
      * @param reactor  The user who reacted.
      * @return The fulfilled reaction.
      */
-    ReactionDto fulfillReaction(ReactionDto reaction, User reactor);
+    Reaction fulfillReaction(Reaction reaction, User reactor);
 
     List<Message> saveForwardMessage(String userId, ForwardRequest request);
 

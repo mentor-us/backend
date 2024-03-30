@@ -1,24 +1,36 @@
 package com.hcmus.mentor.backend.domain;
 
-import lombok.*;
-import org.springframework.data.annotation.Id;
+import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Document("system-config")
+@Entity
+@Table(name = "system-config")
 public class SystemConfig {
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "name")
     private String name;
 
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "type")
     private String type;
+
+    @Column(name = "key")
     private String key;
 
-    private Object value;
+    @Lob
+    @Column(name = "value", columnDefinition = "jsonb")
+    private String value;
+
+    public SystemConfig() {
+
+    }
 }

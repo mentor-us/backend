@@ -163,7 +163,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .title(title)
                 .content(content)
                 .type(NEW_TASK)
-                .senderId(senderId)
+                .sender(senderId)
                 .refId(task.getId())
                 .receivers(receivers)
                 .build();
@@ -204,7 +204,7 @@ public class NotificationServiceImpl implements NotificationService {
     public Notification createNewMeetingNotification(
             String title, String content, String senderId, Meeting meeting) {
         List<String> receiverIds =
-                Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizerId()))
+                Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizer()))
                         .distinct()
                         .toList();
         List<User> receivers = userRepository.findByIdIn(receiverIds);
@@ -293,11 +293,11 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        if (message.getSenderId() == null || senderId == null) {
+        if (message.getSender() == null || senderId == null) {
             return;
         }
 
-        if (senderId.equals(message.getSenderId())) {
+        if (senderId.equals(message.getSender())) {
             return;
         }
 
@@ -315,7 +315,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .build();
         try {
             Optional<NotificationSubscriber> wrapper =
-                    notificationSubscriberRepository.findByUserId(message.getSenderId());
+                    notificationSubscriberRepository.findByUserId(message.getSender());
             if (!wrapper.isPresent()) {
                 return;
             }

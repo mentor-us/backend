@@ -81,7 +81,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<Task> tasks = taskRepository.findAll();
         long totalTasks = 0;
         for (Task task : tasks) {
-            totalTasks += task.getAssigneeIds().size();
+            totalTasks += task.getAssignees().size();
         }
 
         long totalMeetings = meetingRepository.count();
@@ -110,7 +110,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
         long totalTasks =
-                tasks.stream().map(task -> task.getAssigneeIds().size()).reduce(0, Integer::sum);
+                tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
 
         long totalMeetings = meetingRepository.countByGroupIdIn(groupIds);
         long totalMessages = messageRepository.countByGroupIdIn(groupIds);
@@ -178,7 +178,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<String> groupIds = groups.stream().map(Group::getId).toList();
         List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
         long totalTasks =
-                tasks.stream().map(task -> task.getAssigneeIds().size()).reduce(0, Integer::sum);
+                tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
 
         long totalMeetings = meetingRepository.countByGroupIdIn(groupIds);
         long totalMessages = messageRepository.countByGroupIdIn(groupIds);
@@ -247,7 +247,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             List<Task> tasks = taskRepository.findByCreatedDateBetween(date, dateAfterOneMonth);
             long newTasks = 0;
             for (Task task : tasks) {
-                newTasks += task.getAssigneeIds().size();
+                newTasks += task.getAssignees().size();
             }
             long newMeetings = meetingRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
@@ -286,7 +286,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                     taskRepository.findByGroupIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
             long newTasks = 0;
             for (Task task : tasks) {
-                newTasks += task.getAssigneeIds().size();
+                newTasks += task.getAssignees().size();
             }
             long newMeetings =
                     meetingRepository.countByGroupIdInAndCreatedDateBetween(
@@ -360,7 +360,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                     taskRepository.findByGroupIdInAndCreatedDateBetween(groupIds, date, dateAfterOneMonth);
             long newTasks = 0;
             for (Task task : tasks) {
-                newTasks += task.getAssigneeIds().size();
+                newTasks += task.getAssignees().size();
             }
             long newMeetings =
                     meetingRepository.countByGroupIdInAndCreatedDateBetween(
@@ -610,7 +610,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     private long getTotalTasks(List<Task> tasks) {
         long totalTasks = 0;
         for (Task task : tasks) {
-            totalTasks += task.getAssigneeIds().size();
+            totalTasks += task.getAssignees().size();
         }
         return totalTasks;
     }

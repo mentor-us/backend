@@ -1,87 +1,117 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.FileModel;
+import com.hcmus.mentor.backend.controller.payload.File;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Data
+@Entity
 @Builder
 @ToString
-@Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "messages")
-//@Document("group_message")
 public class Message {
 
     @Id
+    @Column(name = "id")
     private String id;
 
-    private String senderId;
-
-//    @TextIndexed(weight = 3)
+    @Column(name = "content")
     private String content;
 
-    private Date createdDate;
+    @Builder.Default
+    @Column(name = "created_date", nullable = false)
+    private Date createdDate = new Date();
 
-    private Type type = Type.TEXT;
-
-    private String groupId;
-
-    private String voteId;
-
-    private String meetingId;
-
-    private String taskId;
-
+    @Builder.Default
+    @Column(name = "is_edited", nullable = false)
     private Boolean isEdited = false;
 
+    @Builder.Default
+    @Column(name = "edited_at")
     private Date editedAt = null;
 
     @Builder.Default
-    private List<ReactionDto> reactions = new ArrayList<>();
+    @Column(name = "type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Type type = Type.TEXT;
 
     @Builder.Default
-    private List<String> images = new ArrayList<>();
-
-    private FileModel file;
-
-    @Builder.Default
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private Status status = Status.SENT;
 
-    private SystemLog systemLog;
+//    private SystemLog systemLog;
 
+    @Column(name = "reply")
     private String reply;
 
+    @Builder.Default
+    @Column(name = "is_forward", nullable = false)
     private Boolean isForward = false;
 
-    public ReactionDto react(String userId, EmojiType emoji) {
-        Optional<ReactionDto> reactionWrapper =
-                reactions.stream().filter(r -> r.getUserId().equals(userId)).findFirst();
-        if (!reactionWrapper.isPresent()) {
-            ReactionDto newReaction = ReactionDto.builder().userId(userId).total(0).build();
-            newReaction.react(emoji);
+    @Builder.Default
+    @ElementCollection
+    private List<String> images = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    private User sender;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_id")
+    private Channel channel;
+
+    @Builder.Default
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vote_id")
+    private Vote vote = null;
+
+    @Builder.Default
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_id")
+    private File file = null;
+
+    @Builder.Default
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_id")
+    private Meeting meeting = null;
+
+    @Builder.Default
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id")
+    private Task task = null;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Reaction> reactions = new ArrayList<>();
+
+
+    public Reaction react(User user, EmojiType emoji) {
+        var reaction = reactions.stream().filter(r -> r.getUser().equals(user) && r.getEmojiType().equals(emoji)).findFirst().orElse(null);
+        if (reaction == null) {
+            Reaction newReaction = Reaction.builder().user(user).message(this).emojiType(emoji).total(0).build();
+            newReaction.react();
             reactions.add(newReaction);
             return newReaction;
         }
-        ReactionDto reaction = reactionWrapper.get();
-        reaction.react(emoji);
+
+        reaction.react();
         setReactions(reactions);
         return reaction;
     }
 
-    public void removeReact(String userId) {
-        List<ReactionDto> filteredReactions =
+    public void removeReact(User user) {
+        List<Reaction> filteredReactions =
                 reactions.stream()
-                        .filter(reaction -> !reaction.getUserId().equals(userId))
+                        .filter(reaction -> !reaction.getUser().equals(user))
                         .toList();
         setReactions(filteredReactions);
     }

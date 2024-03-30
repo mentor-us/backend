@@ -596,8 +596,7 @@ public class UserServiceImpl implements UserService {
         List<Group> groupMentors = groupRepository.findAllByMentorsIn(id);
         List<UserDetailResponse.GroupInfo> groupInfos = new ArrayList<>();
         for (Group group : groupMentees) {
-            String groupCategoryName =
-                    groupCategoryRepository.findById(group.getGroupCategory()).get().getName();
+            String groupCategoryName = groupCategoryRepository.findById(group.getGroupCategory().getId()).get().getName();
             UserDetailResponse.GroupInfo groupInfo =
                     UserDetailResponse.GroupInfo.builder()
                             .id(group.getId())
@@ -609,7 +608,7 @@ public class UserServiceImpl implements UserService {
         }
         for (Group group : groupMentors) {
             String groupCategoryName =
-                    groupCategoryRepository.findById(group.getGroupCategory()).get().getName();
+                    groupCategoryRepository.findById(group.getGroupCategory().getId()).get().getName();
             UserDetailResponse.GroupInfo groupInfo =
                     UserDetailResponse.GroupInfo.builder()
                             .id(group.getId())
@@ -788,7 +787,7 @@ public class UserServiceImpl implements UserService {
         int index = 1;
         for (Group group : groups) {
             Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(group.getGroupCategory());
+                    groupCategoryRepository.findById(group.getGroupCategory().getId() );
             String groupCategoryName =
                     groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
             List<String> row = new ArrayList<>();

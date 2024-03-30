@@ -16,41 +16,35 @@ import java.util.List;
 public class Notification {
 
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "title")
     private String title;
 
+    @Column(name = "content")
     private String content;
 
-    private NotificationType type;
-
-    private String senderId;
-
-    private String refId;
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private NotificationType type = NotificationType.NEW_MESSAGE;
 
     @Builder.Default
-    @OneToMany
-    @JoinColumn(name = "receiver_id")
-    private List<User> receivers = new ArrayList<>();
-
-    @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    @Builder.Default
-    @OneToMany()
-    @JoinColumn(name = "reader_id")
-    private List<User> readers = new ArrayList<>();
+    @Column(name = "ref_id")
+    private String refId;
+
+    @ManyToOne
+    @JoinColumn(name = "sender_id")
+    private User sender;
 
     @Builder.Default
-    @OneToMany
-    @JoinColumn(name = "agrees_id")
-    private List<User> agrees = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany
-    @JoinColumn(name = "refusers_id")
-    private List<User> refusers = new ArrayList<>();
+    @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
+    private List<NotificationUser> receivers = new ArrayList<>();
 
     public Notification() {
 

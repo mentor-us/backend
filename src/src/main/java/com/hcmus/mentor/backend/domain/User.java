@@ -22,7 +22,6 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 @Builder
 @Entity
 @Table(name = "users")
-//@Document("user")
 public class User implements Serializable {
 
     @Id
@@ -67,21 +66,6 @@ public class User implements Serializable {
     private Date birthDate;
 
     @Builder.Default
-    private UserGender gender = UserGender.MALE;
-
-    @Builder.Default
-    @ElementCollection
-    private List<String> groupIds = new ArrayList<>();
-
-    @Builder.Default
-    @ElementCollection
-    private List<String> pinnedGroupsId = new ArrayList<>();
-
-    @Builder.Default
-    @ElementCollection
-    private List<UserRole> roles = new ArrayList<>(List.of(USER));
-
-    @Builder.Default
     private Date createdDate = new Date();
 
     private int trainingPoint;
@@ -92,26 +76,152 @@ public class User implements Serializable {
 
     private String initialName;
 
+    @Builder.Default
+    private UserGender gender = UserGender.MALE;
+
+    @Builder.Default
+    @ElementCollection
+    private List<UserRole> roles = new ArrayList<>(List.of(USER));
+
+
+
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<Reaction> reactions = new ArrayList<>();
+
+
+
+
+    @Builder.Default
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    private List<Message> messages = new ArrayList<>();
+
+
+
+    // === Vote ===
+    @Builder.Default
+    @OneToMany(mappedBy = "creator")
+    private List<Vote> votesCreated = new ArrayList<>();
+
+
+    // === Choice ===
+    @Builder.Default
+    @OneToMany(mappedBy = "creator")
+    private List<Choice> choicesCreated = new ArrayList<>();
+
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "voters")
+    private List<Choice> choices = new ArrayList<>();
+
+
+
+    // === Meeting ===
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<MeetingHistory> meetingHistories = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "organizer")
+    private List<Meeting> meetingsOrganizer = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "attendees")
+    private List<Meeting> meetingAttendees = new ArrayList<>();
+
+
+    // === Notification ===
+    @Builder.Default
+    @OneToMany(mappedBy = "sender")
+    private List<Notification> notificationsSent = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<NotificationUser> notifications = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
+
+    // === Reaction ===
+
+    // === Reminder ===
+    @Builder.Default
+    @ManyToMany(mappedBy = "recipients")
+    private List<Reminder> reminders = new ArrayList<>();
+
+
+    // === Faq ===
+    @Builder.Default
+    @OneToMany(mappedBy = "creator")
+    private List<Faq> faqsCreated = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "voters")
+    private List<Faq> faqs = new ArrayList<>();
+
+
+    // === Group ===
+    @Builder.Default
+    @OneToMany(mappedBy = "creator")
+    private List<Group> groupsCreated = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<GroupUser> groupUsers = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "menteesMarked")
+    private List<Group> groupsMenteeMarked = new ArrayList<>();
+
+    @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "ref_user_group_pinned",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id"))
+    private List<Group> groupsPinned = new ArrayList<>();
+
+
+    // === Channel ===
+    @OneToMany(mappedBy = "creator")
+    private List<Channel> channelsCreated;
+
+    @ManyToMany(mappedBy = "users")
+    private List<Channel> channels;
+
+
+    // === Task ===
+    @Builder.Default
+    @OneToMany(mappedBy = "assigner")
+    private List<Task> tasksAssigner = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<Assignee> tasksAssignee = new ArrayList<>();
+
+
     public User() {
 
     }
 
     public boolean isPinnedGroup(String groupId) {
-        return pinnedGroupsId.contains(groupId);
+        return groupsPinned.stream().anyMatch(group -> group.getId().equals(groupId));
     }
 
-    public void pinGroup(String groupId) {
-        if (pinnedGroupsId.contains(groupId)) {
+    public void pinGroup(Group group) {
+        if (isPinnedGroup(group.getId())) {
             return;
         }
-        pinnedGroupsId.add(groupId);
+        groupsPinned.add(group);
     }
 
     public void unpinGroup(String groupId) {
-        if (!pinnedGroupsId.contains(groupId)) {
+        if (!isPinnedGroup(groupId)) {
             return;
         }
-        pinnedGroupsId.remove(groupId);
+        groupsPinned.add(groupsPinned.stream().filter(group -> group.getId().equals(groupId)).findFirst().get());
     }
 
     @Override
