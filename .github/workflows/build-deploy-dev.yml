@@ -17,6 +17,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
     defaults:
       run:
         working-directory: ./src
@@ -95,6 +96,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    environment: development
     needs: build
     steps:
       - name: Load secret
