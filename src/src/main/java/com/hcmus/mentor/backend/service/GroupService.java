@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.request.groups.*;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
@@ -15,9 +16,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
@@ -38,7 +38,7 @@ public interface GroupService {
 
     Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize);
 
-    GroupServiceDto createNewGroup(String emailUser, CreateGroupRequest request);
+    GroupServiceDto createGroup(String creatorEmail, CreateGroupCommand request);
 
     GroupServiceDto readGroups(Workbook workbook) throws ParseException;
 
@@ -72,7 +72,7 @@ public interface GroupService {
 
     GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId);
 
-    void loadTemplate(File file) throws Exception;
+    InputStream loadTemplate(String pathToTemplate) throws Exception;
 
     GroupServiceDto updateGroup(String emailUser, String groupId, UpdateGroupRequest request);
 
@@ -104,8 +104,7 @@ public interface GroupService {
 
     GroupServiceDto getGroupMedia(String userId, String groupId);
 
-    GroupServiceDto updateAvatar(String userId, String groupId, MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException;
+    UpdateGroupAvatarResponse updateAvatar(String userId, String groupId, MultipartFile file);
 
     ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
             throws IOException;
@@ -127,25 +126,16 @@ public interface GroupService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String groupId, String type) throws IOException;
 
-    boolean pinMessage(String userId, String groupId, String messageId);
+    void pinChannelMessage(String userId, String channelId, String messageId);
 
-    boolean pinChannelMessage(String userId, String groupId, String messageId);
-
-    boolean unpinMessage(String userId, String groupId, String messageId);
-
-    boolean unpinChannelMessage(String userId, String groupId, String messageId);
-
-    void updateLastMessageId(String groupId, String messageId);
-
-    void updateLastMessage(String groupId, String message);
+    void unpinChannelMessage(String userId, String channelId, String messageId);
 
     GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
-    boolean markMentee(CustomerUserDetails user, String groupId, String menteeId);
+    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
 
-    boolean unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
+    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
 
     List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
-    void updateGroupImage(UpdateGroupImageRequest request);
 }

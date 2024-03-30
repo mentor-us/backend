@@ -1,15 +1,14 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
-import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
-import lombok.*;
 
 @Getter
 @AllArgsConstructor
@@ -50,6 +49,8 @@ public class MessageResponse implements Serializable {
 
     private String reply;
 
+    private Boolean isForward = false;
+
     public static MessageResponse from(Message message, ProfileResponse sender) {
         return MessageResponse.builder()
                 .id(message.getId())
@@ -68,6 +69,7 @@ public class MessageResponse implements Serializable {
                 .reply(message.getReply())
                 .isEdited(message.getIsEdited())
                 .editedAt(message.getEditedAt())
+                .isForward(message.getIsForward())
                 .build();
     }
 

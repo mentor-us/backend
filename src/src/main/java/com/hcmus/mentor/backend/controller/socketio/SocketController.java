@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.socketio;
 
+import an.awesome.pipelinr.Pipeline;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
@@ -10,6 +11,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
@@ -41,6 +43,8 @@ public class SocketController {
 
     private final GroupService groupService;
 
+    private final Pipeline pipeline;
+
     public SocketController(
             SocketIOServer server,
             SocketIOService socketIOService,
@@ -49,7 +53,8 @@ public class SocketController {
             NotificationService notificationService,
             VoteService voteService,
             VoteRepository voteRepository,
-            GroupService groupService) {
+            GroupService groupService,
+            Pipeline pipeline) {
         this.server = server;
         this.socketIOService = socketIOService;
         this.userRepository = userRepository;
@@ -58,6 +63,7 @@ public class SocketController {
         this.voteService = voteService;
         this.voteRepository = voteRepository;
         this.groupService = groupService;
+        this.pipeline = pipeline;
         configureServer(this.server);
     }
 
@@ -111,9 +117,14 @@ public class SocketController {
             if (message.getReply() != null) {
                 response = messageService.fulfillTextMessage(buffer);
             }
+
             socketIOService.sendMessage(socketIOClient, response, newMessage.getGroupId());
             notificationService.sendNewMessageNotification(response);
-            groupService.updateLastMessageId(message.getGroupId(), message.getId());
+
+            var updateLastMessageCommand = UpdateLastMessageCommand.builder()
+                    .messageId(newMessage.getId())
+                    .channelId(message.getGroupId()).build();
+            pipeline.send(updateLastMessageCommand);
         };
     }
 

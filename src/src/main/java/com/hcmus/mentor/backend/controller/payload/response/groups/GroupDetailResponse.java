@@ -1,18 +1,17 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.domain.*;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import lombok.*;
 import org.springframework.data.annotation.Id;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -65,20 +64,7 @@ public class GroupDetailResponse {
 
     private ChannelType type = ChannelType.PUBLIC;
 
-    public GroupDetailResponse(Group group) {
-        this.id = group.getId();
-        this.name = group.getName();
-        this.description = group.getDescription();
-        this.createdDate = group.getCreatedDate();
-        this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors();
-        this.mentees = group.getMentees();
-        this.timeStart = group.getTimeStart();
-        this.timeEnd = group.getTimeEnd();
-        this.duration = group.getDuration();
-        this.imageUrl = group.getImageUrl();
-        this.parentId = group.getParentId();
-    }
+    private String defaultChannelId;
 
     public Integer getTotalMember() {
         if (mentees == null || mentors == null) {

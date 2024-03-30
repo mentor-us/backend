@@ -15,7 +15,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -112,16 +111,12 @@ public class Task implements IRemindable, Serializable {
             this.setDeadline(request.getDeadline());
         }
         if (request.getUserIds() != null) {
-            List<AssigneeDto> assignees =
-                    assigneeIds.stream()
-                            .filter(assignee -> request.getUserIds().contains(assignee.getUserId()))
-                            .toList();
+            List<AssigneeDto> assignees = new ArrayList<>(assigneeIds.stream()
+                    .filter(assignee -> request.getUserIds().contains(assignee.getUserId()))
+                    .toList());
             request.getUserIds().stream()
                     .filter(userId -> !getAllAssigneeIds().contains(userId))
-                    .forEach(
-                            userId -> {
-                                assignees.add(AssigneeDto.builder().userId(userId).build());
-                            });
+                    .forEach(userId -> assignees.add(AssigneeDto.builder().userId(userId).build()));
             this.setAssigneeIds(assignees);
         }
         if (request.getParentTask() != null) {

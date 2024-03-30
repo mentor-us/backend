@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.corundumstudio.socketio.SocketIOServer;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
@@ -9,12 +10,11 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
-import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -32,12 +32,12 @@ public class VoteServiceImpl implements VoteService {
 
     private final VoteRepository voteRepository;
     private final GroupService groupService;
-    private final GroupRepository groupRepository;
     private final PermissionService permissionService;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final MessageService messageService;
     private final SocketIOServer socketServer;
+    private final ChannelRepository channelRepository;
 
     @Override
     public VoteDetailResponse get(String userId, String voteId) {
@@ -46,18 +46,15 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(userId, vote.getGroupId())) {
+        if (!permissionService.isUserInChannel(vote.getGroupId(), userId)) {
             return null;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-        Group group = groupWrapper.get();
+        var channel = channelRepository.findById(vote.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
+        var isMentor = permissionService.isMentor(userId, channel.getParentId());
 
         VoteDetailResponse voteDetail = fulfillChoices(vote);
-        voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreatorId().equals(userId));
+        voteDetail.setCanEdit(isMentor || vote.getCreatorId().equals(userId));
         return voteDetail;
     }
 
@@ -93,9 +90,10 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public Vote createNewVote(String userId, CreateVoteRequest request) {
-        if (!permissionService.isUserIdInGroup(userId, request.getGroupId())) {
-            return null;
+        if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
+            throw new DomainException("Người dùng không có trong channel!");
         }
+
         request.setCreatorId(userId);
         Vote newVote = voteRepository.save(Vote.from(request));
 
@@ -106,6 +104,7 @@ public class VoteServiceImpl implements VoteService {
 
         notificationService.sendNewVoteNotification(newVote.getCreatorId(), newVote);
         groupService.pingGroup(newVote.getGroupId());
+
         return newVote;
     }
 

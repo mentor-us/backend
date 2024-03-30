@@ -24,4 +24,6 @@ public class CreateVoteRequest {
     private Date timeEnd;
 
     private List<ChoiceDto> choices;
+
+    private Boolean isMultipleChoice = false;
 }

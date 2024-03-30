@@ -23,7 +23,4 @@ public interface SocketIOService {
     void sendNewPinMessage(MessageDetailResponse message);
 
     void sendNewUnpinMessage(String groupId, String messageId);
-
-    void sendForwardMessage(MessageDetailResponse message, String groupId);
-
 }

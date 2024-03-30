@@ -19,11 +19,8 @@ public class TokenModelGenerator {
      * @return Token model.
      */
     public static TokenModel generate(
-            AuthenticationTokenService authenticationTokenService, Map<String, Object> claims) {
-
-        long epoch = System.currentTimeMillis() / 1000;
-        claims.put("iat", epoch);
-
+            AuthenticationTokenService authenticationTokenService,
+            Map<String, Object> claims) {
         var accessToken = authenticationTokenService.generateToken(claims, AuthenticateConstant.ACCESS_TOKEN_EXPIRATION_TIME);
 
         return TokenModel.builder()

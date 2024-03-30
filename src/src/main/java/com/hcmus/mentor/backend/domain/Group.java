@@ -8,56 +8,157 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 @ToString
 @Document("group")
 public class Group implements Serializable {
 
+    /**
+     * Maximum number of pinned messages in a group
+     */
     public static final int MAX_PINNED_MESSAGES = 5;
+
+    /**
+     * Map of group status
+     */
     private static Map<GroupStatus, String> statusMap;
+
+    /**
+     * Group identifier
+     */
     @Id
     private String id;
+
+    /**
+     * Group name
+     */
     private String name;
+
+    /**
+     * Group description
+     */
     private String description;
-    @Builder.Default
-    private Date createdDate = new Date();
-    @Builder.Default
-    private Date updatedDate = new Date();
+
+    /**
+     * List of mentors
+     */
     @Builder.Default
     private List<String> mentors = new ArrayList<>();
+
+    /**
+     * List of mentees
+     */
     @Builder.Default
     private List<String> mentees = new ArrayList<>();
+
+    /**
+     * Group category identifier
+     */
     private String groupCategory;
-    @Builder.Default
-    private GroupStatus status = GroupStatus.ACTIVE;
-    private Date timeStart;
-    private Date timeEnd;
-    private Duration duration;
-    private String imageUrl;
+
+    /**
+     * Creator identifier
+     */
     private String creatorId;
-    private Boolean hasNewMessage;
-    @Builder.Default
-    private List<String> pinnedMessageIds = new ArrayList<>();
+
+    /**
+     * Status of the group
+     */
+    private GroupStatus status = GroupStatus.ACTIVE;
+
+    /**
+     * Avatar image URL
+     */
+    private String imageUrl;
+
+    /**
+     * Parent group identifier
+     */
     @Builder.Default
     private String parentId = null;
-    @Builder.Default
-    private List<String> channelIds = new ArrayList<>();
-    @Builder.Default
-    private List<String> privateIds = new ArrayList<>();
-    @Builder.Default
-    private List<String> faqIds = new ArrayList<>();
+
+    /**
+     * Flag to indicate if the group has new message
+     */
+    private Boolean hasNewMessage;
+
+    /**
+     * Last message
+     */
     @Builder.Default
     private String lastMessage = null;
+
+    /**
+     * Last message identifier
+     */
     @Builder.Default
     private String lastMessageId = null;
+
+    /**
+     * List of pinned message identifiers
+     */
+    @Builder.Default
+    private List<String> pinnedMessageIds = new ArrayList<>();
+
+    /**
+     * Default channel identifier
+     */
+    private String defaultChannelId;
+
+    /**
+     * List of channel identifiers
+     */
+    @Builder.Default
+    private List<String> channelIds = new ArrayList<>();
+
+    /**
+     * List of private channel identifiers
+     */
+    @Builder.Default
+    private List<String> privateIds = new ArrayList<>();
+
+    /**
+     * List of FAQ identifiers
+     */
+    @Builder.Default
+    private List<String> faqIds = new ArrayList<>();
+
+    /**
+     * List of marked mentee identifiers
+     */
     @Builder.Default
     private List<String> markedMenteeIds = new ArrayList<>();
+
+    /**
+     * Time start of the group
+     */
+    private Date timeStart;
+
+    /**
+     * Time end of the group
+     */
+    private Date timeEnd;
+
+    /**
+     * Duration of the group
+     */
+    private Duration duration;
+
+    /**
+     * Created date
+     */
+    @Builder.Default
+    private Date createdDate = new Date();
+    /**
+     * Updated date
+     */
+    @Builder.Default
+    private Date updatedDate = new Date();
 
     public Group() {
         statusMap = new EnumMap<>(GroupStatus.class);

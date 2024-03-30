@@ -95,6 +95,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    environment: development
     needs: build
     steps:
       - name: Load secret

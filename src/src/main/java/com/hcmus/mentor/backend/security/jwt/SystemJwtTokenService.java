@@ -4,13 +4,12 @@ import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.Authent
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.time.Duration;
 import java.util.Date;
 import java.util.Map;
@@ -30,9 +29,14 @@ public class SystemJwtTokenService implements AuthenticationTokenService {
     @Override
     public String generateToken(Map<String, Object> claims, Duration expirationTime) {
         return Jwts.builder()
-                .setClaims(claims)
-                .setExpiration(new Date(new Date().getTime() + expirationTime.toMillis()))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .header()
+                .type("JWT")
+                .and()
+                .claims(claims)
+                .issuer(constants.issuer)
+                .issuedAt(new Date())
+                .expiration(new Date(new Date().getTime() + expirationTime.toMillis()))
+                .signWith(getSigningKey(), Jwts.SIG.HS512)
                 .compact();
     }
 
@@ -41,15 +45,14 @@ public class SystemJwtTokenService implements AuthenticationTokenService {
      */
     @Override
     public Claims getTokenClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    private Key getSigningKey() {
-        byte[] keyBytes = constants.secretKey.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(constants.secretKey.getBytes(StandardCharsets.UTF_8));
     }
 }

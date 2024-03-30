@@ -1,15 +1,18 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.*;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
+import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -17,20 +20,18 @@ import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.dto.EventDto;
-import io.minio.errors.*;
+import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -40,15 +41,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
@@ -77,9 +72,9 @@ public class GroupController {
      * Admins can get all groups (Paging), while users can get mentee groups or mentor groups (Paging).
      *
      * @param customerUserDetails The current user's principal information.
-     * @param page          The page number for pagination.
-     * @param pageSize      The number of items per page.
-     * @param type          The type of groups to retrieve ("admin" for all groups).
+     * @param page                The page number for pagination.
+     * @param pageSize            The number of items per page.
+     * @param type                The type of groups to retrieve ("admin" for all groups).
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
      */
     @GetMapping("")
@@ -96,31 +91,19 @@ public class GroupController {
         }
 
         boolean isSuperAdmin = permissionService.isSuperAdmin(customerUserDetails.getEmail());
-        Pageable pageRequest =
-                PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
         if (isSuperAdmin) {
             groups = groupRepository.findAll(pageRequest);
         } else {
             var user = userRepository.findByEmail(customerUserDetails.getEmail());
-            if(user.isEmpty()){
+            if (user.isEmpty()) {
                 return ApiResponseDto.notFound(NOT_FOUND);
             }
             String creatorId = user.get().getId();
             groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
         }
 
-        for (Group group : groups) {
-            if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-                if (group.getTimeEnd().before(new Date())) {
-                    group.setStatus(GroupStatus.OUTDATED);
-                    groupRepository.save(group);
-                }
-                if (group.getTimeStart().after(new Date())) {
-                    group.setStatus(GroupStatus.INACTIVE);
-                    groupRepository.save(group);
-                }
-            }
-        }
+        groups = new PageImpl<>(groupService.validateTimeGroups(groups.getContent()), pageRequest, groups.getTotalElements());
         return ApiResponseDto.success(pagingResponse(groups));
     }
 
@@ -129,9 +112,9 @@ public class GroupController {
      * Retrieves the user's own groups based on the specified type (mentor, mentee, or all).
      *
      * @param customerUserDetails The current user's principal information.
-     * @param page          The page number for pagination.
-     * @param pageSize      The number of items per page.
-     * @param type          The type of groups to retrieve ("mentor", "mentee", or empty for all).
+     * @param page                The page number for pagination.
+     * @param pageSize            The number of items per page.
+     * @param type                The type of groups to retrieve ("mentor", "mentee", or empty for all).
      * @return APIResponse containing a Page of GroupHomepageResponse entities.
      */
     @GetMapping("own")
@@ -168,8 +151,8 @@ public class GroupController {
      * Retrieves recent groups of any user based on their last update.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param page          The page number for pagination.
-     * @param pageSize      The number of items per page.
+     * @param page                The page number for pagination.
+     * @param pageSize            The number of items per page.
      * @return APIResponse containing a Page of Group entities.
      */
     @GetMapping("recent")
@@ -201,27 +184,26 @@ public class GroupController {
     /**
      * Creates a new group (Only Admins).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param request       The request body containing information to create a new group.
+     * @param loggedUser The current user's principal information.
+     * @param command    The request body containing information to create a new group.
      * @return APIResponse containing the created Group entity or an error response.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody CreateGroupRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.createNewGroup(email, request);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
+            @RequestBody CreateGroupCommand command) {
+        String creatorEmail = loggedUser.getEmail();
+        GroupServiceDto groupReturn = groupService.createGroup(creatorEmail, command);
+        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
      * Imports multiple groups by a template file.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param file          The template file containing group information.
+     * @param file                The template file containing group information.
      * @return APIResponse containing a list of imported Group entities or an error response.
      * @throws IOException If an I/O error occurs during the import process.
      */
@@ -242,17 +224,17 @@ public class GroupController {
      * Finds groups with multiple filters.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param name          The name filter for groups.
-     * @param mentorEmail   The mentor's email filter for groups.
-     * @param menteeEmail   The mentee's email filter for groups.
-     * @param groupCategory The group category filter for groups.
-     * @param timeStart1    The start time filter for groups (first range).
-     * @param timeEnd1      The end time filter for groups (first range).
-     * @param timeStart2    The start time filter for groups (second range).
-     * @param timeEnd2      The end time filter for groups (second range).
-     * @param status        The status filter for groups.
-     * @param page          The page number for pagination.
-     * @param size          The number of items per page.
+     * @param name                The name filter for groups.
+     * @param mentorEmail         The mentor's email filter for groups.
+     * @param menteeEmail         The mentee's email filter for groups.
+     * @param groupCategory       The group category filter for groups.
+     * @param timeStart1          The start time filter for groups (first range).
+     * @param timeEnd1            The end time filter for groups (first range).
+     * @param timeStart2          The start time filter for groups (second range).
+     * @param timeEnd2            The end time filter for groups (second range).
+     * @param status              The status filter for groups.
+     * @param page                The page number for pagination.
+     * @param size                The number of items per page.
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
      * @throws InvocationTargetException If an invocation target exception occurs during the method invocation.
      * @throws NoSuchMethodException     If a method is not found during reflection.
@@ -307,8 +289,8 @@ public class GroupController {
      * Adds mentees to a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to which mentees will be added.
-     * @param request       The request body containing mentee information.
+     * @param groupId             The ID of the group to which mentees will be added.
+     * @param request             The request body containing mentee information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentees")
@@ -328,8 +310,8 @@ public class GroupController {
      * Adds mentors to a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to which mentors will be added.
-     * @param request       The request body containing mentor information.
+     * @param groupId             The ID of the group to which mentors will be added.
+     * @param request             The request body containing mentor information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentors")
@@ -349,8 +331,8 @@ public class GroupController {
      * Deletes a mentee from a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group from which the mentee will be deleted.
-     * @param menteeId      The ID of the mentee to be deleted from the group.
+     * @param groupId             The ID of the group from which the mentee will be deleted.
+     * @param menteeId            The ID of the mentee to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentees/{menteeId}")
@@ -370,8 +352,8 @@ public class GroupController {
      * Deletes a mentor from a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group from which the mentor will be deleted.
-     * @param mentorId      The ID of the mentor to be deleted from the group.
+     * @param groupId             The ID of the group from which the mentor will be deleted.
+     * @param mentorId            The ID of the mentor to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentors/{mentorId}")
@@ -391,8 +373,8 @@ public class GroupController {
      * Promotes a mentee to a mentor within a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group in which the promotion will occur.
-     * @param menteeId      The ID of the mentee to be promoted to mentor.
+     * @param groupId             The ID of the group in which the promotion will occur.
+     * @param menteeId            The ID of the mentee to be promoted to mentor.
      * @return APIResponse indicating the success or failure of the promotion.
      */
     @PatchMapping("{groupId}/mentors/{menteeId}")
@@ -412,8 +394,8 @@ public class GroupController {
      * Demotes a mentor to a mentee within a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group in which the demotion will occur.
-     * @param mentorId      The ID of the mentor to be demoted to mentee.
+     * @param groupId             The ID of the group in which the demotion will occur.
+     * @param mentorId            The ID of the mentor to be demoted to mentee.
      * @return APIResponse indicating the success or failure of the demotion.
      */
     @PatchMapping("{groupId}/mentees/{mentorId}")
@@ -439,22 +421,13 @@ public class GroupController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Resource> getTemplate() throws Exception {
-        InputStream tempStream = getClass().getResourceAsStream("/templates/temp-import-groups.xlsx");
-        File tempFile = new File(TEMP_TEMPLATE_PATH);
-        FileUtils.copyInputStreamToFile(tempStream, tempFile);
+        InputStream generateTemplateStream = groupService.loadTemplate("/templates/temp-import-groups.xlsx");
 
-        InputStream templateStream = getClass().getResourceAsStream("/templates/import-groups.xlsx");
-        File templateFile = new File(TEMPLATE_PATH);
-        FileUtils.copyInputStreamToFile(templateStream, templateFile);
-
-        Files.copy(templateFile.toPath(), tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-        groupService.loadTemplate(tempFile);
-        Resource resource = new FileSystemResource(tempFile.getAbsolutePath());
+        Resource resource = new InputStreamResource(generateTemplateStream);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + "import-groups.xlsx")
                 .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
+                .contentLength(generateTemplateStream.available())
                 .body(resource);
     }
 
@@ -462,7 +435,7 @@ public class GroupController {
      * Deletes a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the group to be deleted.
+     * @param id                  The ID of the group to be deleted.
      * @return APIResponse indicating the success or failure of the group deletion.
      */
     @DeleteMapping(value = "{id}")
@@ -480,8 +453,8 @@ public class GroupController {
      * Updates a group's information.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the group to be updated.
-     * @param request       The request body containing the updated information.
+     * @param id                  The ID of the group to be updated.
+     * @param request             The request body containing the updated information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PatchMapping("{id}")
@@ -523,7 +496,7 @@ public class GroupController {
      * Deletes multiple groups.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param ids           The list of group IDs to be deleted.
+     * @param ids                 The list of group IDs to be deleted.
      * @return APIResponse indicating the success or failure of the group deletion.
      */
     @DeleteMapping("")
@@ -542,7 +515,7 @@ public class GroupController {
      * Disables multiple groups.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param ids           The list of group IDs to be disabled.
+     * @param ids                 The list of group IDs to be disabled.
      * @return APIResponse indicating the success or failure of disabling the groups.
      */
     @PatchMapping(value = "disable")
@@ -561,7 +534,7 @@ public class GroupController {
      * Enables multiple groups, checking time start and time end to generate status.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param ids           The list of group IDs to be enabled.
+     * @param ids                 The list of group IDs to be enabled.
      * @return APIResponse indicating the success or failure of enabling the groups.
      */
     @PatchMapping(value = "enable")
@@ -577,10 +550,10 @@ public class GroupController {
     }
 
     /**
-     * Get members of a group for mobile.
+     * Get members of a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which members are requested.
+     * @param groupId             The ID of the group for which members are requested.
      * @return APIResponse containing the group members' information.
      */
     @GetMapping("{id}/members")
@@ -600,7 +573,7 @@ public class GroupController {
      * Pin a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to be pinned.
+     * @param groupId             The ID of the group to be pinned.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @PostMapping("{id}/pin")
@@ -617,7 +590,7 @@ public class GroupController {
      * Unpin a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to be unpinned.
+     * @param groupId             The ID of the group to be unpinned.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @PostMapping("{id}/unpin")
@@ -631,12 +604,13 @@ public class GroupController {
     }
 
     /**
-     * Get detailed information about a group for mobile users.
+     * (Use /api/channels/{id}) Get detailed information about a channel.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which details are requested.
+     * @param groupId             The ID of the group for which details are requested.
      * @return APIResponse containing detailed information about the group.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("{id}/detail")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -648,12 +622,13 @@ public class GroupController {
     }
 
     /**
-     * Get media (images and files) of a group for mobile users.
+     * (Use /api/channels/{id}/media) Get media (images and files) of a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which media is requested.
+     * @param groupId             The ID of the group for which media is requested.
      * @return APIResponse containing media information of the group.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("{id}/media")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -668,35 +643,28 @@ public class GroupController {
      * Update the avatar of a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which the avatar is updated.
-     * @param file          The multipart file containing the new avatar.
+     * @param groupId             The ID of the group for which the avatar is updated.
+     * @param file                The multipart file containing the new avatar.
      * @return APIResponse containing the updated avatar information.
-     * @throws GeneralSecurityException  If a security exception occurs during the process.
-     * @throws IOException               If an I/O exception occurs during the process.
-     * @throws ServerException           If a server exception occurs during the process.
-     * @throws InsufficientDataException If there is insufficient data for the process.
-     * @throws ErrorResponseException    If an error response occurs during the process.
-     * @throws InvalidResponseException  If an invalid response occurs during the process.
-     * @throws XmlParserException        If an XML parsing exception occurs during the process.
-     * @throws InternalException         If an internal exception occurs during the process.
      */
-    @PostMapping(value = "{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SneakyThrows
+    @PostMapping(value = "{groupId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<String> updateGroupAvatar(
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    public ResponseEntity<UpdateGroupAvatarResponse> updateGroupAvatar(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam String groupId,
-            @RequestParam(value = "file", required = false) MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        GroupServiceDto groupData = groupService.updateAvatar(customerUserDetails.getId(), groupId, file);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+            @PathVariable String groupId,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+        UpdateGroupAvatarResponse groupData = groupService.updateAvatar(customerUserDetails.getId(), groupId, file);
+        return ResponseEntity.ok(groupData);
     }
 
     /**
      * Export the table of groups.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param remainColumns List of columns to remain in the export.
+     * @param remainColumns       List of columns to remain in the export.
      * @return ResponseEntity containing the exported group table.
      * @throws IOException If an I/O exception occurs during the export process.
      */
@@ -714,8 +682,8 @@ public class GroupController {
      * Export the table of mentors in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which mentors are exported.
-     * @param remainColumns List of columns to remain in the export.
+     * @param groupId             The ID of the group for which mentors are exported.
+     * @param remainColumns       List of columns to remain in the export.
      * @return ResponseEntity containing the exported mentors' group table.
      * @throws IOException If an I/O exception occurs during the export process.
      */
@@ -734,8 +702,8 @@ public class GroupController {
      * Export the table of mentees in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which mentees are exported.
-     * @param remainColumns List of columns to remain in the export.
+     * @param groupId             The ID of the group for which mentees are exported.
+     * @param remainColumns       List of columns to remain in the export.
      * @return ResponseEntity containing the exported mentees' group table.
      * @throws IOException If an I/O exception occurs during the export process.
      */
@@ -754,8 +722,8 @@ public class GroupController {
      * Pin a message for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group where the message is pinned.
-     * @param messageId     The ID of the message to be pinned.
+     * @param groupId             The ID of the group where the message is pinned.
+     * @param messageId           The ID of the message to be pinned.
      * @return ResponseEntity indicating the success or failure of the operation.
      */
     @PostMapping("{groupId}/pin-message")
@@ -765,10 +733,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String messageId) {
-        boolean isPinned = groupService.pinMessage(customerUserDetails.getId(), groupId, messageId);
-        if (!isPinned) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.pinChannelMessage(customerUserDetails.getId(), groupId, messageId);
         return ResponseEntity.ok().build();
     }
 
@@ -776,8 +741,8 @@ public class GroupController {
      * Unpin a message for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group where the message is unpinned.
-     * @param messageId     The ID of the message to be unpinned.
+     * @param groupId             The ID of the group where the message is unpinned.
+     * @param messageId           The ID of the message to be unpinned.
      * @return ResponseEntity indicating the success or failure of the operation.
      */
     @PostMapping("{groupId}/unpin-message")
@@ -787,10 +752,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String messageId) {
-        boolean isPinned = groupService.unpinMessage(customerUserDetails.getId(), groupId, messageId);
-        if (!isPinned) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.unpinChannelMessage(customerUserDetails.getId(), groupId, messageId);
         return ResponseEntity.ok().build();
     }
 
@@ -798,16 +760,16 @@ public class GroupController {
      * Export groups table based on search conditions.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param name          The name to search for in groups.
-     * @param mentorEmail   The email of the mentor to search for in groups.
-     * @param menteeEmail   The email of the mentee to search for in groups.
-     * @param groupCategory The category of the group to search for.
-     * @param timeStart1    The start time of the first time range.
-     * @param timeEnd1      The end time of the first time range.
-     * @param timeStart2    The start time of the second time range.
-     * @param timeEnd2      The end time of the second time range.
-     * @param status        The status to search for in groups.
-     * @param remainColumns List of columns to remain in the export.
+     * @param name                The name to search for in groups.
+     * @param mentorEmail         The email of the mentor to search for in groups.
+     * @param menteeEmail         The email of the mentee to search for in groups.
+     * @param groupCategory       The category of the group to search for.
+     * @param timeStart1          The start time of the first time range.
+     * @param timeEnd1            The end time of the first time range.
+     * @param timeStart2          The start time of the second time range.
+     * @param timeEnd2            The end time of the second time range.
+     * @param status              The status to search for in groups.
+     * @param remainColumns       List of columns to remain in the export.
      * @return ResponseEntity containing the exported group table based on search conditions.
      * @throws IOException If an I/O exception occurs during the export process.
      */
@@ -853,7 +815,7 @@ public class GroupController {
      * Get the central workspace of a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which the workspace is requested.
+     * @param groupId             The ID of the group for which the workspace is requested.
      * @return ResponseEntity containing the group workspace information.
      */
     @GetMapping("{groupId}/workspace")
@@ -863,9 +825,11 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
         GroupDetailResponse workspace = groupService.getGroupWorkspace(customerUserDetails, groupId);
+
         if (workspace == null) {
             return ResponseEntity.badRequest().build();
         }
+
         return ResponseEntity.ok(workspace);
     }
 
@@ -873,8 +837,8 @@ public class GroupController {
      * Mark a mentee in a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group where the mentee is marked.
-     * @param menteeId      The ID of the mentee to be marked.
+     * @param groupId             The ID of the group where the mentee is marked.
+     * @param menteeId            The ID of the mentee to be marked.
      * @return ResponseEntity indicating the success or failure of the operation.
      */
     @PostMapping("{groupId}/star")
@@ -884,10 +848,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        boolean isMarked = groupService.markMentee(customerUserDetails, groupId, menteeId);
-        if (!isMarked) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.markMentee(customerUserDetails, groupId, menteeId);
         return ResponseEntity.ok().build();
     }
 
@@ -895,8 +856,8 @@ public class GroupController {
      * Unmark a mentee in a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group where the mentee is unmarked.
-     * @param menteeId      The ID of the mentee to be unmarked.
+     * @param groupId             The ID of the group where the mentee is unmarked.
+     * @param menteeId            The ID of the mentee to be unmarked.
      * @return ResponseEntity indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/star")
@@ -906,10 +867,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        boolean isMarked = groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
-        if (!isMarked) {
-            return ResponseEntity.badRequest().build();
-        }
+        groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
         return ResponseEntity.ok().build();
     }
 
@@ -917,17 +875,8 @@ public class GroupController {
      * Get the list of group forwards for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param name          Optional name parameter for filtering the list.
+     * @param name                Optional name parameter for filtering the list.
      * @return ResponseEntity containing the list of group forwards.
-     * @throws ServerException           If a server exception occurs during the process.
-     * @throws InsufficientDataException If there is insufficient data for the process.
-     * @throws ErrorResponseException    If an error response occurs during the process.
-     * @throws IOException               If an I/O exception occurs during the process.
-     * @throws NoSuchAlgorithmException  If no such algorithm is found during the process.
-     * @throws InvalidKeyException       If an invalid key is encountered during the process.
-     * @throws InvalidResponseException  If an invalid response occurs during the process.
-     * @throws XmlParserException        If an XML parsing exception occurs during the process.
-     * @throws InternalException         If an internal exception occurs during the process.
      */
     @GetMapping("forward")
     @SneakyThrows
@@ -938,14 +887,6 @@ public class GroupController {
         List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
 
         return ResponseEntity.ok(listChannelForward);
-    }
-
-    @PostMapping(value = "{groupId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ApiResponse(responseCode = "200", description = "Group image updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden")
-    public ResponseEntity<Void> uploadImage(@PathVariable String groupId,@RequestPart MultipartFile file) {
-        groupService.updateGroupImage(UpdateGroupImageRequest.builder().groupId(groupId).file(file).build());
-        return ResponseEntity.ok().build();
     }
 
     private Map<String, Object> pagingResponse(Page<Group> groups) {

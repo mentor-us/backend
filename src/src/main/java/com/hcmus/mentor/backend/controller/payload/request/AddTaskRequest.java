@@ -14,10 +14,16 @@ import java.util.List;
 @NoArgsConstructor
 @Setter
 public class AddTaskRequest {
+
     private String title;
+
     private String description;
+
     private Date deadline;
+
     private List<String> userIds = new ArrayList<>();
+
     private String parentTask;
+
     private String groupId;
 }

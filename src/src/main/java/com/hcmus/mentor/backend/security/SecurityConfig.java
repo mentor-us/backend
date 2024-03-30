@@ -1,15 +1,12 @@
 package com.hcmus.mentor.backend.security;
 
 import com.hcmus.mentor.backend.security.filter.JwtAuthFilter;
-import com.hcmus.mentor.backend.security.handler.FirebaseClearingLogoutHandler;
-import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationFailureHandler;
-import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationSuccessHandler;
+import com.hcmus.mentor.backend.security.handler.*;
 import com.hcmus.mentor.backend.security.principal.oauth2.CustomOidcUserService;
 import com.hcmus.mentor.backend.security.principal.oauth2.OAuth2AuthorizationRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -20,7 +17,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -35,6 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final GlobalControllerExceptionHandler exceptionHandler;
     private final CustomOidcUserService customOidcUserService;
     private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
@@ -44,12 +41,13 @@ public class SecurityConfig {
 
     private static final String[] AUTH_WHITELIST = {
             "/api/auth/**",
+            "/api/files/**",
             // -- Swagger UI v3 (OpenAPI)
             "/v3/api-docs/**",
             "/swagger-ui/**",
             // other public endpoints of your API may be appended to this array
             "**/oauth2/**",
-            "/actuator/**"
+            "/actuator/**",
     };
 
     @Bean
@@ -83,10 +81,9 @@ public class SecurityConfig {
                 .cors(c -> {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(requests -> {
-                    requests.requestMatchers(AUTH_WHITELIST).permitAll();
-                    requests.anyRequest().authenticated();
-                })
+                .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(e -> {
                             e.baseUri("/oauth2/authorize");
@@ -101,7 +98,7 @@ public class SecurityConfig {
                     l.addLogoutHandler(firebaseClearingLogoutHandler);
                 })
                 .addFilterBefore(jwtAuthFilter, BasicAuthenticationFilter.class)
-                .exceptionHandling(handling -> handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .exceptionHandling(e -> e.authenticationEntryPoint(new CustomHttp403UnauthorizedEntryPoint(exceptionHandler)))
                 .build();
     }
 }
