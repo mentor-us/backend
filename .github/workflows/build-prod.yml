@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  pull_request:
     branches:
       - "main"
 
@@ -17,7 +16,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
     defaults:
       run:
         working-directory: ./src
