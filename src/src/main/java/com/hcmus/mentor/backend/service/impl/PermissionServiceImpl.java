@@ -49,7 +49,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isInGroup(String email, String groupId) {
         Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return false;
         }
         String userId = userWrapper.get().getId();
@@ -59,7 +59,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isMentor(String email, String groupId) {
         Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return false;
         }
         String userId = userWrapper.get().getId();

@@ -121,11 +121,10 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<Task> tasks = taskRepository.findByGroupId(groupId);
-        List<TaskDetailResponse> taskDetailResponses =
-                tasks.stream()
-                        .map(task -> generateTaskDetailFromTask(emailUser, task))
-                        .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
-                        .toList();
+        List<TaskDetailResponse> taskDetailResponses = tasks.stream()
+                .map(task -> generateTaskDetailFromTask(emailUser, task))
+                .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
+                .toList();
         return new TaskReturnService(SUCCESS, "", taskDetailResponses);
     }
 
@@ -169,34 +168,30 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
-        TaskDetailResponse.Assigner assigner =
-                userRepository
-                        .findById(task.getAssignerId())
-                        .map(TaskDetailResponse.Assigner::from)
-                        .orElse(null);
+        TaskDetailResponse.Assigner assigner = userRepository
+                .findById(task.getAssignerId())
+                .map(TaskDetailResponse.Assigner::from)
+                .orElse(null);
 
-        TaskDetailResponse.Group groupInfo =
-                groupRepository
-                        .findById(task.getGroupId())
-                        .map(TaskDetailResponse.Group::from)
-                        .orElse(null);
+        TaskDetailResponse.Group groupInfo = groupRepository
+                .findById(task.getGroupId())
+                .map(TaskDetailResponse.Group::from)
+                .orElse(null);
 
-        TaskDetailResponse.Role role =
-                permissionService.isMentor(emailUser, task.getGroupId())
-                        ? TaskDetailResponse.Role.MENTOR
-                        : TaskDetailResponse.Role.MENTEE;
+        TaskDetailResponse.Role role = permissionService.isMentor(emailUser, task.getGroupId())
+                ? TaskDetailResponse.Role.MENTOR
+                : TaskDetailResponse.Role.MENTEE;
 
         Optional<User> userWrapper = userRepository.findByEmail(emailUser);
         if (!userWrapper.isPresent()) {
             return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
         }
 
-        TaskStatus status =
-                task.getAssigneeIds().stream()
-                        .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
-                        .findFirst()
-                        .map(AssigneeDto::getStatus)
-                        .orElse(null);
+        TaskStatus status = task.getAssigneeIds().stream()
+                .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
+                .findFirst()
+                .map(AssigneeDto::getStatus)
+                .orElse(null);
         return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
 

@@ -13,7 +13,7 @@ import java.util.List;
 public interface VoteService {
     VoteDetailResponse get(String userId, String voteId);
 
-    List<VoteDetailResponse> getGroupVotes(String userId, String groupId);
+    List<VoteDetailResponse> getGroupVotes(String userId, String channelId);
 
     VoteDetailResponse fulfillChoices(Vote vote);
 
