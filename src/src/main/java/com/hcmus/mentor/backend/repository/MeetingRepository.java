@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
+import com.hcmus.mentor.backend.controller.usecase.meeting.common.MeetingResult;
 import com.hcmus.mentor.backend.domain.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,6 +10,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Date;
 import java.util.List;
+
 
 public interface MeetingRepository extends MongoRepository<Meeting, String> {
 
@@ -23,6 +25,18 @@ public interface MeetingRepository extends MongoRepository<Meeting, String> {
             "{'$sort':  {'createdDate':  -1}}"
     })
     List<MeetingResponse> findAllByGroupId(String groupId);
+
+    @Aggregation(pipeline = {
+            "{$match: {groupId: ?0}}",
+            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
+            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+            "{$lookup: {from: 'channel', localField: 'groupObjectId', foreignField: '_id', as: 'channel'}}",
+            "{'$unwind': '$channel'}",
+            "{'$unwind': '$organizer'}",
+            "{'$sort':  {'createdDate':  -1}}"
+    })
+    List<MeetingResult> findAllByChannelId(String channelId);
 
     Page<Meeting> findByGroupId(String groupId, PageRequest pageRequest);
 
