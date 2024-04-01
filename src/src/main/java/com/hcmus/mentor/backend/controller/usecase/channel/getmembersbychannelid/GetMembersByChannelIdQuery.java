@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.channel.getmembersbyid;
+package com.hcmus.mentor.backend.controller.usecase.channel.getmembersbychannelid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
@@ -14,7 +14,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class GetMembersByIdQuery implements Command<List<ShortProfile>> {
+public class GetMembersByChannelIdQuery implements Command<List<ShortProfile>> {
 
     /**
      * The ID of the members to retrieve.
