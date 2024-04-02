@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.channel.getmediabyid;
+package com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
@@ -20,11 +20,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Handler for {@link GetMediaByIdQuery}.
+ * Handler for {@link GetMediaByChannelIdQuery}.
  */
 @Component
 @RequiredArgsConstructor
-public class GetMediaByIdQueryHandler implements Command.Handler<GetMediaByIdQuery, List<ShortMediaMessage>> {
+public class GetMediaByChannelIdQueryHandler implements Command.Handler<GetMediaByChannelIdQuery, List<ShortMediaMessage>> {
 
     private final LoggedUserAccessor loggedUserAccessor;
     private final ChannelRepository channelRepository;
@@ -35,7 +35,7 @@ public class GetMediaByIdQueryHandler implements Command.Handler<GetMediaByIdQue
      * {@inheritDoc}
      */
     @Override
-    public List<ShortMediaMessage> handle(GetMediaByIdQuery query) {
+    public List<ShortMediaMessage> handle(GetMediaByChannelIdQuery query) {
         var userId = loggedUserAccessor.getCurrentUserId();
         List<String> senderIds;
 

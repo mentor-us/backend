@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class UpdateLastMessageHandler implements Command.Handler<UpdateLastMessageCommand, Channel>{
+public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLastMessageCommand, Channel>{
 
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;

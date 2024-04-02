@@ -1,14 +1,13 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
-
-import java.util.Date;
-import java.util.List;
-
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Date;
+import java.util.List;
 
 public interface TaskRepository extends MongoRepository<Task, String> {
     List<Task> findByGroupId(String groupId);

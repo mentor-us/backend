@@ -3,14 +3,20 @@ package com.hcmus.mentor.backend.controller;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.addchannel.AddChannelCommand;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelsbygroupid.GetChannelsByGroupIdQuery;
-import com.hcmus.mentor.backend.controller.usecase.channel.getmediabyid.GetMediaByIdQuery;
-import com.hcmus.mentor.backend.controller.usecase.channel.getmembersbyid.GetMembersByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getmeetingsbychannelid.GetMeetingsByChannelIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getmembersbychannelid.GetMembersByChannelIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.gettasksbychannelid.GetTasksByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getvotesbychannelid.GetVotesByChannelIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.removechannel.RemoveChannelCommand;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatechannel.UpdateChannelCommand;
+import com.hcmus.mentor.backend.controller.usecase.meeting.common.MeetingResult;
 import com.hcmus.mentor.backend.domain.Channel;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -78,7 +84,7 @@ public class ChannelController {
     @GetMapping("{id}/media")
     public ResponseEntity<List<ShortMediaMessage>> getMediaById(
             @PathVariable String id) {
-        var quey = GetMediaByIdQuery.builder()
+        var quey = GetMediaByChannelIdQuery.builder()
                 .id(id)
                 .build();
 
@@ -96,7 +102,37 @@ public class ChannelController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ShortProfile>> getMembersById(
             @PathVariable String id) {
-        var query = GetMembersByIdQuery.builder()
+        var query = GetMembersByChannelIdQuery.builder()
+                .id(id)
+                .build();
+
+        return ResponseEntity.ok(pipeline.send(query));
+    }
+
+    @GetMapping("{id}/meetings")
+    public ResponseEntity<List<MeetingResult>> getMeetingsById(
+            @PathVariable String id) {
+        var query = GetMeetingsByChannelIdQuery.builder()
+                .id(id)
+                .build();
+
+        return ResponseEntity.ok(pipeline.send(query));
+    }
+
+    @GetMapping("{id}/votes")
+    public ResponseEntity<List<VoteDetailResponse>> getVotesById(
+            @PathVariable String id) {
+        var query = GetVotesByChannelIdQuery.builder()
+                .id(id)
+                .build();
+
+        return ResponseEntity.ok(pipeline.send(query));
+    }
+
+    @GetMapping("{id}/tasks")
+    public ResponseEntity<List<TaskDetailResponse>> getTasksById(
+            @PathVariable String id) {
+        var query = GetTasksByIdQuery.builder()
                 .id(id)
                 .build();
 
