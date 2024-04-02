@@ -27,7 +27,7 @@ public class SystemConfig {
     private String key;
 
     @Lob
-    @Column(name = "value", columnDefinition = "jsonb")
+    @Column(name = "value", columnDefinition = "clob")
     private String value;
 
     public SystemConfig() {

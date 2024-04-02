@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.payload;
+package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
 import lombok.Builder;

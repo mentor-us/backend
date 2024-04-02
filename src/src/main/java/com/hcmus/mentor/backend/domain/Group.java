@@ -192,6 +192,7 @@ public class Group implements Serializable {
         return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId));
     }
 
+
     public void update(
             String name,
             String description,

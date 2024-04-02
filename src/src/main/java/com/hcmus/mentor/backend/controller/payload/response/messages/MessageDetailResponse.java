@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
-import com.hcmus.mentor.backend.controller.payload.File;
+import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Meeting;
@@ -49,7 +49,7 @@ public class MessageDetailResponse {
 
     private List<Image> images;
 
-    private File file;
+    private FileModel file;
 
     private Message.Status status;
 

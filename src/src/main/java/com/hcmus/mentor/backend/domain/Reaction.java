@@ -32,7 +32,7 @@ public class Reaction implements Serializable {
     private Integer total;
 
     @Builder.Default
-//    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)
     @Column(name = "emoji_type", nullable = false)
     private EmojiType emojiType = EmojiType.LIKE;
 

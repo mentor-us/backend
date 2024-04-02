@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
-import com.hcmus.mentor.backend.controller.payload.File;
+import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.Reaction;
@@ -43,7 +43,7 @@ public class MessageResponse implements Serializable {
 
     private List<String> images;
 
-    private File file;
+    private FileModel file;
 
     private Message.Status status;
 

@@ -4,6 +4,8 @@ import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -43,6 +45,7 @@ public class Notification {
     private User sender;
 
     @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
     private List<NotificationUser> receivers = new ArrayList<>();
 

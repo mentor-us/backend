@@ -18,6 +18,10 @@ public class GroupUser {
     @Column(name = "is_mentor")
     private boolean isMentor = false;
 
+    @Builder.Default
+    @Column(name = "is_pinned")
+    private boolean isPinned = false;
+
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group group;

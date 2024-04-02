@@ -24,7 +24,7 @@ public class NotificationSubscriber {
     @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
     public NotificationSubscriber() {

@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -26,18 +28,24 @@ import java.util.*;
 public class Task implements IRemindable, Serializable {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "deadline")
     private Date deadline;
 
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "assigner_id")
     private User assigner;
 
@@ -51,11 +59,13 @@ public class Task implements IRemindable, Serializable {
     private Channel group;
 
     @Builder.Default
-    @OneToMany(mappedBy = "parentTask")
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
     private List<Task> subTasks = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "task")
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Assignee> assignees = new ArrayList<>();
 
     public static AssigneeDto newTask(String userId) {
@@ -74,12 +84,11 @@ public class Task implements IRemindable, Serializable {
         properties.put("id", id);
 
         return Reminder.builder()
-                .group(group.getGroup())
+                .group(group)
                 .name(title)
                 .type(ReminderType.TASK)
                 .reminderDate(getReminderDate())
-                .properties(properties)
-                .remindableId(id)
+                .propertiesMap(properties)
                 .build();
     }
 

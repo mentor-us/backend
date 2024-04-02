@@ -3,6 +3,8 @@ package com.hcmus.mentor.backend.domain;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,38 +17,43 @@ import java.util.List;
 public class Vote {
 
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
+    @Column(name = "question")
     private String question;
 
+    @Column(name = "time_end")
     private Date timeEnd;
 
+    @Column(name = "closed_date")
     private Date closedDate;
 
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
     @Builder.Default
+    @Column(name = "is_multiple_choice", nullable = false)
     private Boolean isMultipleChoice = false;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private Status status = Status.OPEN;
 
-    @OneToOne
-    @JoinColumn(name = "message_id")
-    private Message message;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     private User creator;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     private Channel group;
 
     @Builder.Default
-    @OneToMany(mappedBy = "vote", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @Fetch(FetchMode.SUBSELECT)
     private List<Choice> choices = new ArrayList<>();
 
     public Vote() {

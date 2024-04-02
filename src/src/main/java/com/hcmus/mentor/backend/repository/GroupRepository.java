@@ -10,6 +10,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
 import java.util.List;
@@ -64,6 +65,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             GroupStatus status2,
             Pageable pageable);
 
+
     List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
             List<String> mentorIds, GroupStatus status1, List<String> menteeIds, GroupStatus status2);
 
@@ -106,6 +108,13 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             "WHERE g._id = ?1", nativeQuery = true)
     List<GroupDetailResponse> getGroupDetail(String groupId);
 
+    @Query(value = "SELECT g.*, gc.*, gu.* " +
+            "FROM group g" +
+            "JOIN FETCH g.groupCategory gc " +
+            "JOIN FETCH g.groupUsers gu " +
+            "WHERE g.id = :id", nativeQuery = true)
+    Optional<Group> findByIdAndFetchGroupCategoryAndFetch(@Param("id") String id);
+
 
     long countByStatus(GroupStatus status);
 
@@ -140,6 +149,11 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     @NotNull
     Optional<Group> findById(@NotNull String id);
 
-    @Query("SELECT g FROM Group g JOIN FETCH g.channels join FETCH WHERE g.id :id")
-    Optional<Group> findByIdAndFetchChannel(String id);
+    @Query(value = "SELECT * " +
+            "FROM group g" +
+            "JOIN group_user gu on g.id == gu.id " +
+            "WHERE status =  " +
+            "ORDER BY created_date DESC", nativeQuery = true)
+    List<Group> findAllByStatusAnd(@Param("status") GroupStatus status);
+
 }

@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.mapper.UserMapper;
-import com.hcmus.mentor.backend.controller.payload.File;
+import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
@@ -294,7 +294,7 @@ public class MessageServiceImpl implements MessageService {
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
         blobStorage.post(file, key);
 
-        File fileModel = File.builder()
+        FileModel fileModel = FileModel.builder()
                 .id(key)
                 .filename(request.getFile().getOriginalFilename())
                 .size(request.getFile().getSize())

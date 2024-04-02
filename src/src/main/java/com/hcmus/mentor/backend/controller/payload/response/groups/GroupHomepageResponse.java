@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.GroupUser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,23 +53,24 @@ public class GroupHomepageResponse {
 
     private String defaultChannelId;
 
-    public GroupHomepageResponse(Group group, String groupCategory, String role) {
+    public GroupHomepageResponse(Group group, String role) {
+        var users = group.getGroupUsers();
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors().stream().map(User::getId).toList();
-        this.mentees = group.getMentees().stream().map(User::getId).toList();
-        this.groupCategory = groupCategory;
+        this.mentors = users.stream().filter(GroupUser::isMentor).map(GroupUser::getId).toList();
+        this.mentees = users.stream().filter(groupUser-> !groupUser.isMentor()).map(GroupUser::getId).toList();
+        this.groupCategory = group.getGroupCategory().getId();
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
         this.duration = group.getDuration();
         this.role = role;
         this.imageUrl = group.getImageUrl();
         this.hasNewMessage = group.getHasNewMessage();
-        this.newMessage = group.getLastMessage();
-        this.newMessageId = group.getLastMessageId();
+        this.newMessage = group.getLastMessage().getContent();
+        this.newMessageId = group.getLastMessage().getId();
         this.defaultChannelId = group.getDefaultChannel().getId();
     }
 

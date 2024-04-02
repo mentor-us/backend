@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
+import com.hcmus.mentor.backend.controller.mapper.GroupMapper;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
@@ -30,6 +31,7 @@ import com.hcmus.mentor.backend.service.query.GroupSpecification;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
@@ -51,6 +53,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.*;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -70,6 +73,8 @@ import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
     private static final Integer MAX_YEAR_FROM_TIME_START_AND_NOW = 4;
+    private static final String MENTOR = "MENTOR";
+    private static final String MENTEE = "MENTEE";
     private final Logger logger = LogManager.getLogger(this.getClass());
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
@@ -86,6 +91,7 @@ public class GroupServiceImpl implements GroupService {
     private final ChannelRepository channelRepository;
     private final BlobStorage blobStorage;
     private final ShareService shareService;
+
 
     private static Date changeGroupTime(Date time, String type) {
         LocalDateTime timeInstant =
@@ -108,25 +114,37 @@ public class GroupServiceImpl implements GroupService {
         Pageable pageRequest = PageRequest.of(page, pageSize);
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
-        Slice<Group> wrapper = groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
+        Slice<Group> wrapper = groupRepository
+                .findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
+
+        Specification<Group> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(criteriaBuilder.equal(root.get("status"), GroupStatus.ACTIVE));
+            predicates.add()
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        var groups = groupRepository.findAll()
         List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
         return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
     }
 
-    private List<GroupHomepageResponse> mappingGroupHomepageResponse(
-            List<Group> groups,
-            String userId) {
+    /**
+     * @param groups List of groups
+     * @param userId current user id
+     * @return List of GroupHomepageResponse to show in home page.
+     */
+    private List<GroupHomepageResponse> mappingGroupHomepageResponse(List<Group> groups, String userId) {
+
         Map<String, GroupCategory> categories = groupCategoryRepository.findAll().stream()
                 .collect(Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
+
         return groups.stream()
                 .map(group -> {
-                    String role = group.isMentee(userId) ? "MENTEE" : "MENTOR";
-                    GroupCategory category = categories.get(group.getGroupCategory().getId());
-                    String lastMessage = messageService.getLastGroupMessage(group.getId());
-                    GroupHomepageResponse response = new GroupHomepageResponse(group, category.getName(), role);
-                    response.setNewMessage(lastMessage);
-                    return response;
+                    String role = group.isMentor(userId) ? MENTOR : MENTEE;
+                    return new GroupHomepageResponse(group, role);
                 })
                 .sorted(Comparator.comparing(GroupHomepageResponse::getUpdatedDate).reversed())
                 .toList();
@@ -1094,36 +1112,42 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto getGroupDetail(String userId, String groupId) {
-        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (channelWrapper.isEmpty()) {
-                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-            }
-            Channel channel = channelWrapper.get();
-            Optional<Group> parentGroupWrapper = groupRepository.findById(channel.getParentId());
-            if (parentGroupWrapper.isEmpty()) {
-                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-            }
-
-            Group parentGroup = parentGroupWrapper.get();
-            if (!parentGroup.isMentor(userId) && !channel.isMember(userId)) {
-                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-            }
-            GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, parentGroup);
-            if (channelDetail == null) {
-                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
-            }
-            GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
-            return new GroupServiceDto(SUCCESS, null, response);
+        var group = groupRepository.findByIdAndFetchGroupCategoryAndFetch(groupId).orElse(null);
+        if (group == null) {
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
-        if (!permissionService.isUserIdInGroup(userId, groupId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+       if(!group.isMentor(userId)){
+           return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
+//        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(groupId);
+//        if (groupWrapper.isEmpty()) {
+//            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
+//            if (channelWrapper.isEmpty()) {
+//                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+//            }
+//            Channel channel = channelWrapper.get();
+//            Optional<Group> parentGroupWrapper = groupRepository.findById(channel.getParentId());
+//            if (parentGroupWrapper.isEmpty()) {
+//                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+//            }
+//
+//            Group parentGroup = parentGroupWrapper.get();
+//            if (!parentGroup.isMentor(userId) && !channel.isMember(userId)) {
+//                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+//            }
+//            GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, parentGroup);
+//            if (channelDetail == null) {
+//                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+//            }
+//            GroupDetailResponse response = fulfillGroupDetail(userId, channelDetail);
+//            return new GroupServiceDto(SUCCESS, null, response);
+//        }
 
-        GroupDetailResponse response = fulfillGroupDetail(userId, groupWrapper.get(0));
-        return new GroupServiceDto(SUCCESS, null, response);
+        var groupDetail = GroupMapper.INSTANCE.groupToGroupDetailResponse(group, userId);
+       groupDetail.setPinnedMessages(fullFillPinMessages(userId, groupDetail.getPinnedMessageIds()));
+
+        return new GroupServiceDto(SUCCESS, null, groupDetail);
     }
 
     private GroupDetailResponse fulfillChannelDetail(
@@ -1154,7 +1178,7 @@ public class GroupServiceImpl implements GroupService {
                 .id(channel.getId())
                 .name(channelName)
                 .description(channel.getDescription())
-                .pinnedMessageIds(channel.getPinnedMessages().stream().map(Message::getId).toList())
+                .pinnedMessageIds(channel.getMessagesPinned().stream().map(Message::getId).toList())
                 .imageUrl(imageUrl)
                 .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
                 .parentId(parentGroup.getId())
@@ -1177,7 +1201,7 @@ public class GroupServiceImpl implements GroupService {
                     .map(Optional::get)
                     .filter(message -> !message.isDeleted())
                     .map(message -> {
-                        User user = userRepository.findById(message.getSender()).orElse(null);
+                        User user = message.getSender();
                         return MessageResponse.from(message, ProfileResponse.from(user));
                     })
                     .toList();
