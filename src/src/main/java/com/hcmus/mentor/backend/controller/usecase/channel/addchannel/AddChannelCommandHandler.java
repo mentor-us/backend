@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.controller.usecase.channel.addchannel;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
@@ -33,10 +32,6 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
         var creatorId = loggedUserAccessor.getCurrentUserId();
 
         var group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
-
-        if (!group.getMentors().contains(creatorId)) {
-            throw new ForbiddenException("Không có quyền thêm kênh");
-        }
 
         if (ChannelType.PRIVATE_MESSAGE.equals(command.getType())) {
             return addPrivateChat(creatorId, command, group);
