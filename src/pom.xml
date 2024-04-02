@@ -35,7 +35,7 @@
 
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
 
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.32</lombok.version>
 
         <socketio.version>1.7.7</socketio.version>
 
