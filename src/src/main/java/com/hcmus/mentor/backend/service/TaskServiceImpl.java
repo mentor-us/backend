@@ -83,6 +83,9 @@ public class TaskServiceImpl implements IRemindableService {
                 : request.getUserIds();
 
         User assigner = userRepository.findById(loggedUserId).orElse(null);
+        if(assigner == null) {
+            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+        }
         List<AssigneeDto> assigneeIds = userIds.stream().map(Task::newTask).toList();
 
         Task task = Task.builder()
@@ -383,8 +386,15 @@ public class TaskServiceImpl implements IRemindableService {
                 .map(Group::getId)
                 .toList();
 
+        var channelIds = channelRepository.findAllByParentIdInAndUserIdsContaining(joinedGroupIds, userId)
+                .stream()
+                .map(Channel::getId)
+                .toList();
         return taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdIn(
-                joinedGroupIds, Arrays.asList("*", userId));
+                channelIds, Arrays.asList("*", userId));
+
+//        return taskRepository.findAllOwnTasks(
+//                channelIds, userId);
     }
 
     public List<Task> getAllOwnTaskByDate(String userId, Date date) {

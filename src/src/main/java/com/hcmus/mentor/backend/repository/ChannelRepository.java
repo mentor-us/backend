@@ -39,4 +39,6 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
 
     })
     List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
+
+    List<Channel> findAllByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
 }
