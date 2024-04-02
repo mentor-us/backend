@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
@@ -52,12 +51,11 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
             return null;
         }
         Notification notification = Notification.builder().setTitle(title).setBody(content).build();
-        MulticastMessage message =
-                MulticastMessage.builder()
-                        .setNotification(notification)
-                        .addAllTokens(tokens)
-                        .putAllData(data)
-                        .build();
+        MulticastMessage message = MulticastMessage.builder()
+                .setNotification(notification)
+                .addAllTokens(tokens)
+                .putAllData(data)
+                .build();
         return firebaseMessaging.sendMulticast(message);
     }
 

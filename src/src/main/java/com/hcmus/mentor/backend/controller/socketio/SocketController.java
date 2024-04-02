@@ -2,9 +2,7 @@ package com.hcmus.mentor.backend.controller.socketio;
 
 import an.awesome.pipelinr.Pipeline;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
-import com.corundumstudio.socketio.listener.DisconnectListener;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.JoinOutRoomRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
@@ -68,25 +66,12 @@ public class SocketController {
     }
 
     private void configureServer(SocketIOServer server) {
-        server.addConnectListener(onConnected());
-        server.addDisconnectListener(onDisconnected());
         server.addEventListener("join_room", JoinOutRoomRequest.class, onJoinRoom());
         server.addEventListener("out_room", JoinOutRoomRequest.class, onOutRoom());
         server.addEventListener("send_message", Message.class, onChatReceived());
         server.addEventListener("send_voting", DoVotingRequest.class, onVotingReceived());
 
         LOGGER.info("[*] Configure Socket IO Server listener.");
-    }
-
-    private ConnectListener onConnected() {
-        return client -> {
-            client.sendEvent("receive_message", Message.builder().content("Hello from server").build());
-        };
-    }
-
-    private DisconnectListener onDisconnected() {
-        return client -> {
-        };
     }
 
     private DataListener<JoinOutRoomRequest> onJoinRoom() {

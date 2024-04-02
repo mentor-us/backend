@@ -145,36 +145,25 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Async
     public void sendNewMessageNotification(MessageDetailResponse message) {
-        String title;
-        List<String> members;
+        var channel = channelRepository.findById(message.getGroupId()).orElse(null);
+        if (channel == null) {
+            return;
+        }
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (!channelWrapper.isPresent()) {
+        var members = channel.getUserIds().stream()
+                .filter(id -> !id.equals(message.getSender().getId()))
+                .distinct()
+                .toList();
+        String title;
+        if (channel.getType() == PRIVATE_MESSAGE) {
+            var group = groupRepository.findById(channel.getParentId()).orElse(null);
+            if (group == null) {
                 return;
             }
 
-            Channel channel = channelWrapper.get();
-            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title = PRIVATE_MESSAGE.equals(channel.getType())
-                    ? parentGroup.getName() + "\n" + message.getSender().getName()
-                    : channel.getName();
-            members = channel.getUserIds().stream()
-                    .filter(id -> !id.equals(message.getSender().getId()))
-                    .distinct()
-                    .toList();
+            title = String.format("%s%n%s", group.getName(), message.getSender().getName());
         } else {
-            Group group = groupWrapper.get();
-            title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                    .filter(id -> !id.equals(message.getSender().getId()))
-                    .distinct()
-                    .toList();
-        }
-
-        if (members.isEmpty()) {
-            return;
+            title = channel.getName();
         }
 
         Map<String, String> data = attachDataNotification(message.getGroupId(), NEW_MESSAGE);
@@ -182,12 +171,11 @@ public class NotificationServiceImpl implements NotificationService {
         if (message.getSender() != null) {
             senderName = message.getSender().getName();
             data.put("sender", senderName);
-            String imageUrl =
-                    message.getSender().getImageUrl() == null
-                            || ("https://graph.microsoft.com/v1.0/me/photo/$value")
-                            .equals(message.getSender().getImageUrl())
-                            ? ""
-                            : message.getSender().getImageUrl();
+            String imageUrl = message.getSender().getImageUrl() == null
+                    || ("https://graph.microsoft.com/v1.0/me/photo/$value")
+                    .equals(message.getSender().getImageUrl())
+                    ? ""
+                    : message.getSender().getImageUrl();
             data.put("imageUrl", imageUrl);
         }
 
