@@ -13,7 +13,7 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-    private static final String FIREBASE_ADMIN_CREDENTIALS = "/mentorus-firebase-admins.json";
+    private static final String FIREBASE_ADMIN_CREDENTIALS = "/mentorus-firebase-adminsdk-20240402.json";
     private static final String FIREBASE_APP_NAME = "mentor-hcmus";
 
     @Bean
