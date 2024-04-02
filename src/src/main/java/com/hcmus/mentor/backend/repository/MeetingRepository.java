@@ -16,25 +16,39 @@ public interface MeetingRepository extends MongoRepository<Meeting, String> {
 
     @Aggregation(pipeline = {
             "{$match: {groupId: ?0}}",
-            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+
             "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
             "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+            "{$unwind: '$organizer'}",
+            "{$set: {organizer: '$organizer'}}",
+            "{$unset: 'organizerObjectId'}",
+
+            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
             "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
-            "{'$unwind': '$group'}",
-            "{'$unwind': '$organizer'}",
+            "{$unwind: '$group'}",
+            "{$set: {channel: '$group'}}",
+            "{$unset: 'groupObjectId'}",
+
             "{'$sort':  {'createdDate':  -1}}"
     })
     List<MeetingResponse> findAllByGroupId(String groupId);
 
     @Aggregation(pipeline = {
             "{$match: {groupId: ?0}}",
-            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+
             "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
             "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+            "{$unwind: '$organizer'}",
+            "{$set: {organizer: '$organizer'}}",
+            "{$unset: 'organizerObjectId'}",
+
+            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
             "{$lookup: {from: 'channel', localField: 'groupObjectId', foreignField: '_id', as: 'channel'}}",
-            "{'$unwind': '$channel'}",
-            "{'$unwind': '$organizer'}",
-            "{'$sort':  {'createdDate':  -1}}"
+            "{$unwind: '$channel'}",
+            "{$set: {channel: '$channel'}}",
+            "{$unset: 'groupObjectId'}",
+
+            "{$sort:  {'createdDate':  -1}}"
     })
     List<MeetingResult> findAllByChannelId(String channelId);
 
