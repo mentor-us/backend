@@ -47,6 +47,8 @@ public class Channel {
 
     private Boolean hasNewMessage;
 
+    private String lastMessageId;
+
     private String imageUrl;
 
     @Builder.Default
