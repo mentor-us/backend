@@ -7,6 +7,8 @@ import com.hcmus.mentor.backend.repository.GroupRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 /**
  * Handler for {@link UpdateLastMessageCommand}.
  */
@@ -26,14 +28,18 @@ public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLa
         if (channel == null) {
             return null;
         }
+        channel.setLastMessageId(command.getMessageId());
+        channelRepository.save(channel);
 
         var group = groupRepository.findById(channel.getParentId()).orElse(null);
         if (group == null) {
             return null;
         }
 
-        group.setLastMessageId(command.getMessageId());
-        groupRepository.save(group);
+        if(Objects.equals(group.getDefaultChannelId(), command.getChannelId())) {
+            group.setLastMessageId(command.getMessageId());
+            groupRepository.save(group);
+        }
         return channel;
     }
 }

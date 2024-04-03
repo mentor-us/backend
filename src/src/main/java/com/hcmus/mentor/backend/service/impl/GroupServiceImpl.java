@@ -1622,6 +1622,7 @@ public class GroupServiceImpl implements GroupService {
                 .map(GroupDetailResponse.GroupChannel::from)
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .toList();
+        channels.forEach(ch -> ch.setNewMessage(messageService.getLastGroupMessage(ch.getNewMessageId())));
         detail.setChannels(channels);
 
         List<GroupDetailResponse.GroupChannel> privates = channelRepository
@@ -1651,6 +1652,7 @@ public class GroupServiceImpl implements GroupService {
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
                 .toList();
+        privates.forEach(ch -> ch.setNewMessage(messageService.getLastGroupMessage(ch.getNewMessageId())));
 
         detail.setPrivates(privates);
 
