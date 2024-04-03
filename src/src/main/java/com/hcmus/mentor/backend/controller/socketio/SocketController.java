@@ -14,7 +14,6 @@ import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.repository.VoteRepository;
 import com.hcmus.mentor.backend.service.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,10 +36,6 @@ public class SocketController {
 
     private final VoteService voteService;
 
-    private final VoteRepository voteRepository;
-
-    private final GroupService groupService;
-
     private final Pipeline pipeline;
 
     public SocketController(
@@ -50,8 +45,6 @@ public class SocketController {
             MessageService messageService,
             NotificationService notificationService,
             VoteService voteService,
-            VoteRepository voteRepository,
-            GroupService groupService,
             Pipeline pipeline) {
         this.server = server;
         this.socketIOService = socketIOService;
@@ -59,8 +52,6 @@ public class SocketController {
         this.messageService = messageService;
         this.notificationService = notificationService;
         this.voteService = voteService;
-        this.voteRepository = voteRepository;
-        this.groupService = groupService;
         this.pipeline = pipeline;
         configureServer(this.server);
     }
