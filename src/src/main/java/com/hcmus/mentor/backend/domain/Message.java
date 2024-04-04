@@ -62,6 +62,7 @@ public class Message {
 
     private String reply;
 
+    @Builder.Default
     private Boolean isForward = false;
 
     public ReactionDto react(String userId, EmojiType emoji) {

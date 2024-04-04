@@ -276,7 +276,7 @@ public class MessageServiceImpl implements MessageService {
             imageKeys.add(key);
         }
 
-        Message message =messageRepository.save( Message.builder()
+        Message message = messageRepository.save( Message.builder()
                 .id(request.getId())
                 .senderId(request.getSenderId())
                 .groupId(request.getGroupId())
@@ -395,7 +395,7 @@ public class MessageServiceImpl implements MessageService {
         }
         TaskMessageResponse taskDetail = TaskMessageResponse.from(taskWrapper.get());
 
-        List<TaskAssigneeResponse> assignees = getTaskAssignees(taskDetail.getId());
+        List<TaskAssigneeResponse> assignees = getTaskAssignees(message.getTaskId());
         taskDetail.setAssignees(assignees);
         return MessageDetailResponse.from(message, taskDetail);
     }
@@ -541,17 +541,15 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        Optional<Task> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) {
+       var task = taskRepository.findById(taskId).orElse(null);
+        if (task == null) {
             return Collections.emptyList();
         }
-        Task task = taskOpt.get();
 
-        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
-        if (groupOpt.isEmpty()) {
+        var group = groupRepository.findByChannelIdsContainingOrPrivateIdsContaining(task.getGroupId(), task.getGroupId()).orElse(null);
+        if (group == null) {
             return Collections.emptyList();
         }
-        Group group = groupOpt.get();
 
         List<String> assigneeIds = task.getAssigneeIds().stream()
                 .map(AssigneeDto::getUserId).toList();
