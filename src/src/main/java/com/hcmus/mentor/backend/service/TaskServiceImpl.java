@@ -99,14 +99,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .build();
         taskRepository.save(task);
 
-        Message message = Message.builder()
-                .senderId(task.getAssignerId())
-                .groupId(task.getGroupId())
-                .createdDate(task.getCreatedDate())
-                .type(Message.Type.TASK)
-                .taskId(task.getId())
-                .build();
-        messageService.saveMessage(message);
+        var message = messageService.saveTaskMessage(task);
 
         MessageDetailResponse response = messageService.fulfillTaskMessage(MessageResponse.from(message, ProfileResponse.from(assigner)));
         socketIOService.sendBroadcastMessage(response, task.getGroupId());
