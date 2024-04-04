@@ -187,17 +187,11 @@ public class MeetingService implements IRemindableService {
     }
 
     public List<MeetingAttendeeResponse> getMeetingAttendees(String meetingId) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Meeting meeting = wrapper.get();
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
 
-        Optional<Group> groupWrapper = groupRepository.findById(meeting.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Group group = groupWrapper.get();
+        Channel channel = channelRepository.findById(meeting.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
+
+        Group group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
 
         List<String> attendeeIds;
         boolean appliedAllGroup = meeting.getAttendees().contains("*");
