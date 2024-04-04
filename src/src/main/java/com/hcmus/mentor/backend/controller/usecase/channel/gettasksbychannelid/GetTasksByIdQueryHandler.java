@@ -2,12 +2,15 @@ package com.hcmus.mentor.backend.controller.usecase.channel.gettasksbychannelid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseAssigner;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseRole;
+import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResultChannel;
+import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResult;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
-import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -21,11 +24,11 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQuery, List<TaskDetailResponse>> {
+public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQuery, List<TaskDetailResult>> {
 
     private final LoggedUserAccessor loggedUserAccessor;
     private final TaskRepository taskRepository;
-    private final GroupRepository groupRepository;
+    private final ChannelRepository channelRepository;
     private final PermissionService permissionService;
     private final UserRepository userRepository;
 
@@ -33,7 +36,7 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
      * {@inheritDoc}
      */
     @Override
-    public List<TaskDetailResponse> handle(GetTasksByIdQuery query) {
+    public List<TaskDetailResult> handle(GetTasksByIdQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         if (!permissionService.isUserInChannel(query.getId(), currentUserId)) {
@@ -44,28 +47,28 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
 
         return tasks.stream()
                 .map(task -> generateTaskDetailFromTask(currentUserId, task))
-                .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
+                .sorted(Comparator.comparing(TaskDetailResult::getCreatedDate).reversed())
                 .toList();
     }
 
-    private TaskDetailResponse generateTaskDetailFromTask(String userId, Task task) {
-        TaskDetailResponse.Assigner assigner = userRepository
+    private TaskDetailResult generateTaskDetailFromTask(String userId, Task task) {
+        TaskDetailResponseAssigner assigner = userRepository
                 .findById(task.getAssignerId())
-                .map(TaskDetailResponse.Assigner::from)
+                .map(TaskDetailResponseAssigner::from)
                 .orElse(null);
 
-        TaskDetailResponse.Group groupInfo = groupRepository
+        TaskDetailResultChannel groupInfo = channelRepository
                 .findById(task.getGroupId())
-                .map(TaskDetailResponse.Group::from)
+                .map(TaskDetailResultChannel::from)
                 .orElse(null);
 
-        TaskDetailResponse.Role role = permissionService.isMentor(userId, task.getGroupId())
-                ? TaskDetailResponse.Role.MENTOR
-                : TaskDetailResponse.Role.MENTEE;
+        TaskDetailResponseRole role = permissionService.isMentor(userId, task.getGroupId())
+                ? TaskDetailResponseRole.MENTOR
+                : TaskDetailResponseRole.MENTEE;
 
         Optional<User> userWrapper = userRepository.findById(userId);
         if (userWrapper.isEmpty()) {
-            return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
+            return TaskDetailResult.from(task, assigner, groupInfo, role, null);
         }
 
         TaskStatus status = task.getAssigneeIds().stream()
@@ -73,6 +76,6 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
                 .findFirst()
                 .map(AssigneeDto::getStatus)
                 .orElse(null);
-        return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
+        return TaskDetailResult.from(task, assigner, groupInfo, role, status);
     }
 }

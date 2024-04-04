@@ -5,7 +5,6 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.EventType;
 import lombok.*;
 

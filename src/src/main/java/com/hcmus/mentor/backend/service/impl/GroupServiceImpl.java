@@ -142,6 +142,7 @@ public class GroupServiceImpl implements GroupService {
     public List<Group> getAllActiveOwnGroups(String userId) {
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
+
         return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
     }
 

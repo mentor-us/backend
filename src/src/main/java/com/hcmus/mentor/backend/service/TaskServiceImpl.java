@@ -5,9 +5,7 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorR
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -83,7 +81,7 @@ public class TaskServiceImpl implements IRemindableService {
                 : request.getUserIds();
 
         User assigner = userRepository.findById(loggedUserId).orElse(null);
-        if(assigner == null) {
+        if (assigner == null) {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
         List<AssigneeDto> assigneeIds = userIds.stream().map(Task::newTask).toList();
@@ -164,19 +162,19 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
-        TaskDetailResponse.Assigner assigner = userRepository
+        TaskDetailResponseAssigner assigner = userRepository
                 .findById(task.getAssignerId())
-                .map(TaskDetailResponse.Assigner::from)
+                .map(TaskDetailResponseAssigner::from)
                 .orElse(null);
 
-        TaskDetailResponse.Group groupInfo = groupRepository
+        TaskDetailResponseGroup groupInfo = groupRepository
                 .findById(task.getGroupId())
-                .map(TaskDetailResponse.Group::from)
+                .map(TaskDetailResponseGroup::from)
                 .orElse(null);
 
-        TaskDetailResponse.Role role = permissionService.isMentor(emailUser, task.getGroupId())
-                ? TaskDetailResponse.Role.MENTOR
-                : TaskDetailResponse.Role.MENTEE;
+        TaskDetailResponseRole role = permissionService.isMentor(emailUser, task.getGroupId())
+                ? TaskDetailResponseRole.MENTOR
+                : TaskDetailResponseRole.MENTEE;
 
         Optional<User> userWrapper = userRepository.findByEmail(emailUser);
         if (!userWrapper.isPresent()) {
@@ -383,6 +381,7 @@ public class TaskServiceImpl implements IRemindableService {
                 .stream()
                 .map(Channel::getId)
                 .toList();
+
         return taskRepository.findAllByGroupIdInAndAssigneeIdsUserIdIn(
                 channelIds, Arrays.asList("*", userId));
 

@@ -141,18 +141,8 @@ public class MeetingService implements IRemindableService {
     }
 
     public MeetingDetailResponse getMeetingById(String userId, String meetingId) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
-            return null;
-        }
-        Meeting meeting = wrapper.get();
-
-        Optional<User> organizerWrapper = userRepository.findById(meeting.getOrganizerId());
-        if (organizerWrapper.isEmpty()) {
-            return null;
-        }
-        User organizer = organizerWrapper.get();
-
+        var meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
+        var organizer = userRepository.findById(meeting.getOrganizerId()).orElseThrow(() -> new DomainException("Không tìm thấy người tổ chức"));
         var channel = channelRepository.findById(meeting.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
         var group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
 
@@ -212,8 +202,13 @@ public class MeetingService implements IRemindableService {
         List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
                 .map(Group::getId)
                 .toList();
+
+        List<String> joinedChannelIds = channelRepository.findAllByParentIdInAndUserIdsContaining(joinedGroupIds, userId).stream()
+                .map(Channel::getId)
+                .toList();
+
         return meetingRepository.findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(
-                joinedGroupIds, userId, joinedGroupIds, Arrays.asList("*", userId));
+                joinedChannelIds, userId, joinedChannelIds, Arrays.asList("*", userId));
     }
 
     public List<Meeting> getAllOwnMeetingsByDate(String userId, Date date) {

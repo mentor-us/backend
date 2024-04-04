@@ -3,7 +3,6 @@ package com.hcmus.mentor.backend.controller;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.addchannel.AddChannelCommand;
@@ -17,6 +16,7 @@ import com.hcmus.mentor.backend.controller.usecase.channel.getvotesbychannelid.G
 import com.hcmus.mentor.backend.controller.usecase.channel.removechannel.RemoveChannelCommand;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatechannel.UpdateChannelCommand;
 import com.hcmus.mentor.backend.controller.usecase.meeting.common.MeetingResult;
+import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResult;
 import com.hcmus.mentor.backend.domain.Channel;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -130,7 +130,7 @@ public class ChannelController {
     }
 
     @GetMapping("{id}/tasks")
-    public ResponseEntity<List<TaskDetailResponse>> getTasksById(
+    public ResponseEntity<List<TaskDetailResult>> getTasksById(
             @PathVariable String id) {
         var query = GetTasksByIdQuery.builder()
                 .id(id)

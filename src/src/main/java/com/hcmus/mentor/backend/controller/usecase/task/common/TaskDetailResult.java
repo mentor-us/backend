@@ -1,5 +1,7 @@
-package com.hcmus.mentor.backend.controller.payload.response.tasks;
+package com.hcmus.mentor.backend.controller.usecase.task.common;
 
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseAssigner;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseRole;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import lombok.*;
@@ -10,7 +12,7 @@ import java.util.Date;
 @Setter
 @AllArgsConstructor
 @Builder
-public class TaskDetailResponse {
+public class TaskDetailResult {
 
     private String id;
 
@@ -26,7 +28,7 @@ public class TaskDetailResponse {
 
     private String parentTask;
 
-    private TaskDetailResponseGroup group;
+    private TaskDetailResultChannel channel;
 
     private Date createdDate;
 
@@ -35,8 +37,8 @@ public class TaskDetailResponse {
     @Builder.Default
     private TaskStatus status = null;
 
-    public static TaskDetailResponse from(Task task) {
-        return TaskDetailResponse.builder()
+    public static TaskDetailResult from(Task task) {
+        return TaskDetailResult.builder()
                 .id(task.getId())
                 .title(task.getTitle())
                 .description(task.getDescription())
@@ -46,15 +48,15 @@ public class TaskDetailResponse {
                 .build();
     }
 
-    public static TaskDetailResponse from(
+    public static TaskDetailResult from(
             Task task,
             TaskDetailResponseAssigner assigner,
-            TaskDetailResponseGroup group,
+            TaskDetailResultChannel channel,
             TaskDetailResponseRole role,
             TaskStatus status) {
-        TaskDetailResponse response = from(task);
+        TaskDetailResult response = from(task);
         response.setAssigner(assigner);
-        response.setGroup(group);
+        response.setChannel(channel);
         response.setRole(role);
         response.setStatus(status);
         return response;
