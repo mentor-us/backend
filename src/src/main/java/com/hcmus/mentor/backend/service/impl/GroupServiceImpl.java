@@ -296,7 +296,8 @@ public class GroupServiceImpl implements GroupService {
         if (groupRepository.existsByName(request.getName())) {
             return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
-        if (!groupCategoryRepository.existsById(request.getGroupCategory())) {
+        var groupCategory = groupCategoryRepository.findById(request.getGroupCategory());
+        if (groupCategory.isEmpty()) {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
@@ -341,6 +342,7 @@ public class GroupServiceImpl implements GroupService {
                 .duration(duration)
                 .creatorId(creatorId)
                 .channelIds(new ArrayList<>())
+                .imageUrl(groupCategory.get().getIconUrl())
                 .build();
         groupRepository.save(group);
 
