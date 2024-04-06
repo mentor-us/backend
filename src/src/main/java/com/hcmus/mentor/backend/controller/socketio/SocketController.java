@@ -85,8 +85,8 @@ public class SocketController {
 
     private DataListener<Message> onChatReceived() {
         return (socketIOClient, message, ackRequest) -> {
-            Message newMessage = messageService.saveMessage(message);
             User user = userRepository.findById(message.getSenderId()).orElse(null);
+            Message newMessage = messageService.saveMessage(message);
 
             MessageDetailResponse response = MessageDetailResponse.from(message, user);
             MessageResponse buffer = MessageResponse.from(message, ProfileResponse.from(user));
