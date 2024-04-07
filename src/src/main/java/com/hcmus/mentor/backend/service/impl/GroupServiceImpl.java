@@ -142,6 +142,7 @@ public class GroupServiceImpl implements GroupService {
     public List<Group> getAllActiveOwnGroups(String userId) {
         List<String> mentorIds = Collections.singletonList(userId);
         List<String> menteeIds = Collections.singletonList(userId);
+
         return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
     }
 
@@ -295,7 +296,8 @@ public class GroupServiceImpl implements GroupService {
         if (groupRepository.existsByName(request.getName())) {
             return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
-        if (!groupCategoryRepository.existsById(request.getGroupCategory())) {
+        var groupCategory = groupCategoryRepository.findById(request.getGroupCategory());
+        if (groupCategory.isEmpty()) {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
 
@@ -340,6 +342,7 @@ public class GroupServiceImpl implements GroupService {
                 .duration(duration)
                 .creatorId(creatorId)
                 .channelIds(new ArrayList<>())
+                .imageUrl(groupCategory.get().getIconUrl())
                 .build();
         groupRepository.save(group);
 
@@ -1622,6 +1625,13 @@ public class GroupServiceImpl implements GroupService {
                 .map(GroupDetailResponse.GroupChannel::from)
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .toList();
+        channels.forEach(ch -> {
+            if (ch.getNewMessageId() != null) {
+                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
+            } else {
+                ch.setNewMessage(null);
+            }
+        });
         detail.setChannels(channels);
 
         List<GroupDetailResponse.GroupChannel> privates = channelRepository
@@ -1651,6 +1661,13 @@ public class GroupServiceImpl implements GroupService {
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
                 .toList();
+        privates.forEach(ch -> {
+            if (ch.getNewMessageId() != null) {
+                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
+            } else {
+                ch.setNewMessage(null);
+            }
+        });
 
         detail.setPrivates(privates);
 

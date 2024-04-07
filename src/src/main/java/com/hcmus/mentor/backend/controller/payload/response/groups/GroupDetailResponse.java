@@ -129,6 +129,10 @@ public class GroupDetailResponse {
 
         private Boolean hasNewMessage;
 
+        private String newMessage;
+
+        private String newMessageId;
+
         private String imageUrl;
 
         @Builder.Default
@@ -154,6 +158,7 @@ public class GroupDetailResponse {
                     .imageUrl(channel.getImageUrl())
                     .pinnedMessageIds(channel.getPinnedMessageIds())
                     .parentId(channel.getParentId())
+                    .newMessageId(channel.getLastMessageId())
                     .build();
         }
 

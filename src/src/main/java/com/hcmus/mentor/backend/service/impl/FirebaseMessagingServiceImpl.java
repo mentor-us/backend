@@ -4,15 +4,18 @@ import com.google.firebase.messaging.*;
 import com.hcmus.mentor.backend.domain.NotificationSubscriber;
 import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
 import com.hcmus.mentor.backend.service.FirebaseMessagingService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
+
+    private final static Logger logger = LogManager.getLogger(ReminderServiceImpl.class);
 
     private final FirebaseMessaging firebaseMessaging;
 
@@ -45,20 +48,27 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
 
     @Override
     public BatchResponse sendGroupNotification(
-            List<String> receiverIds, String title, String content, Map<String, String> data)
+            List<String> receiverIds,
+            String title,
+            String content,
+            Map<String, String> data)
             throws FirebaseMessagingException {
         List<String> tokens = getDeviceTokensFromUserIds(receiverIds);
-        if (tokens == null || tokens.size() == 0) {
+        if (tokens == null || tokens.isEmpty()) {
             return null;
         }
         Notification notification = Notification.builder().setTitle(title).setBody(content).build();
-        MulticastMessage message =
-                MulticastMessage.builder()
-                        .setNotification(notification)
-                        .addAllTokens(tokens)
-                        .putAllData(data)
-                        .build();
-        return firebaseMessaging.sendMulticast(message);
+        MulticastMessage message = MulticastMessage.builder()
+                .setNotification(notification)
+                .addAllTokens(tokens)
+                .putAllData(data)
+                .build();
+
+        for (String receiver : receiverIds) {
+            logger.info("Sending notification to receiver: {}", receiver);
+        }
+
+        return firebaseMessaging.sendEachForMulticast(message);
     }
 
     private List<String> getDeviceTokensFromUserIds(List<String> userIds) {

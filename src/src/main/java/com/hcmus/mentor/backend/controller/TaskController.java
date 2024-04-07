@@ -151,12 +151,13 @@ public class TaskController {
     }
 
     /**
-     * Retrieve all tasks of a group (mentor and mentee in group).
+     * (Use api /api/channels/tasks) Retrieve all tasks of a group (mentor and mentee in group).
      *
      * @param customerUserDetails The current user's principal information.
      * @param groupId             The ID of the group for which tasks are retrieved.
      * @return APIResponse containing a list of task details or an error response.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("group/{groupId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")

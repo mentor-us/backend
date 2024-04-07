@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class UpdateLastMessageHandler implements Command.Handler<UpdateLastMessageCommand, Channel>{
+public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLastMessageCommand, Channel> {
 
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
@@ -26,6 +26,8 @@ public class UpdateLastMessageHandler implements Command.Handler<UpdateLastMessa
         if (channel == null) {
             return null;
         }
+        channel.setLastMessageId(command.getMessageId());
+        channelRepository.save(channel);
 
         var group = groupRepository.findById(channel.getParentId()).orElse(null);
         if (group == null) {
@@ -34,6 +36,7 @@ public class UpdateLastMessageHandler implements Command.Handler<UpdateLastMessa
 
         group.setLastMessageId(command.getMessageId());
         groupRepository.save(group);
+
         return channel;
     }
 }

@@ -40,12 +40,13 @@ public class MeetingController {
     private final NotificationService notificationService;
 
     /**
-     * Retrieve all meetings of a group.
+     * (Use api /api/channels/{id}/meetings) Retrieve all meetings of a group.
      *
      * @param user    The current user's principal information.
      * @param groupId The ID of the group.
      * @return ResponseEntity containing a list of MeetingResponse.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")

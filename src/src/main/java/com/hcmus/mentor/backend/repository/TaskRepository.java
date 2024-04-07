@@ -1,14 +1,14 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
-
-import java.util.Date;
-import java.util.List;
-
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Date;
+import java.util.List;
 
 public interface TaskRepository extends MongoRepository<Task, String> {
     List<Task> findByGroupId(String groupId);
@@ -23,6 +23,12 @@ public interface TaskRepository extends MongoRepository<Task, String> {
             List<String> groupIds, List<String> id, Date now, PageRequest pageRequest);
 
     List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
+
+    @Aggregation(pipeline = {
+            "{$match: {$and: [{groupId: {$in: ?0}}, {$or: [{assignerId: ?1}, {assigneeIds: {$elemMatch: {userId: ?1}}} ]}]}}",
+            "{$sort: {createdDate: -1}}"
+    })
+    List<Task> findAllOwnTasks(List<String> groupId, String userId);
 
     List<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThanAndDeadlineLessThan(
             List<String> groupIds, List<String> id, Date start, Date end);
