@@ -1,14 +1,15 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.groups.*;
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
-import io.minio.errors.*;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -18,21 +19,18 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 public interface GroupService {
-    Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize);
+//    Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize);
 
     List<Group> getAllActiveOwnGroups(String userId);
 
-    Page<GroupHomepageResponse> findMentorGroups(String userId, int page, int pageSize);
-
-    Page<GroupHomepageResponse> findMenteeGroups(String userId, int page, int pageSize);
+//    Page<GroupHomepageResponse> findMentorGroups(String userId, int page, int pageSize);
+//
+//    Page<GroupHomepageResponse> findMenteeGroups(String userId, int page, int pageSize);
 
     Page<Group> findRecentGroupsOfUser(String userId, int page, int pageSize);
 
@@ -134,10 +132,10 @@ public interface GroupService {
 
     GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
-    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
-
-    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
-
-    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+//    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
+//
+//    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
+//
+//    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
 }

@@ -2,31 +2,26 @@ package com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail;
 
 
 import an.awesome.pipelinr.Command;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.DUPLICATE_EMAIL;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-import com.hcmus.mentor.backend.service.dto.UserServiceDto;
-import org.springframework.stereotype.Component;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.DUPLICATE_EMAIL;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 
 /**
  * Handler for {@link AddAdditionalEmailCommand}.
  */
 @Component
+@RequiredArgsConstructor
 public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAdditionalEmailCommand, UserServiceDto> {
 
     private final UserRepository userRepository;
-
-    /**
-     * @param userRepository repository of user.
-     */
-    public AddAdditionalEmailCommandHandler(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     /**
      * @param command command to add additional email to user account.

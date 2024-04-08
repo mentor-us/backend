@@ -144,6 +144,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
 
     List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
+
     List<Group> findByIdIn(List<String> ids);
 
     @NotNull
@@ -155,5 +156,13 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             "WHERE status =  " +
             "ORDER BY created_date DESC", nativeQuery = true)
     List<Group> findAllByStatusAnd(@Param("status") GroupStatus status);
+
+    @Query(value = "SELECT g.*, gu.*, c.* " +
+            "FROM groups g " +
+            "LEFT JOIN group_users gu ON g.id = gu.group_id " +
+            "LEFT JOIN channels c ON g.id = c.group_id " +
+            "WHERE g.status = :status AND gu.user_id = :userId",
+            nativeQuery = true)
+    List<Group> fetchWithUsersAndChannels(@Param("userId") String userId, @Param("status") GroupStatus status);
 
 }

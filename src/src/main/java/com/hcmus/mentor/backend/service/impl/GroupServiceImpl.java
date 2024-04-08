@@ -109,27 +109,27 @@ public class GroupServiceImpl implements GroupService {
         return Date.from(instant);
     }
 
-    @Override
-    public Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize) {
-        Pageable pageRequest = PageRequest.of(page, pageSize);
-        List<String> mentorIds = Collections.singletonList(userId);
-        List<String> menteeIds = Collections.singletonList(userId);
-        Slice<Group> wrapper = groupRepository
-                .findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
-
-        Specification<Group> spec = (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            predicates.add(criteriaBuilder.equal(root.get("status"), GroupStatus.ACTIVE));
-            predicates.add()
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-
-        var groups = groupRepository.findAll()
-        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
-        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
-    }
+//    @Override
+//    public Page<GroupHomepageResponse> findOwnGroups(String userId, int page, int pageSize) {
+//        Pageable pageRequest = PageRequest.of(page, pageSize);
+//        List<String> mentorIds = Collections.singletonList(userId);
+//        List<String> menteeIds = Collections.singletonList(userId);
+//        Slice<Group> wrapper = groupRepository
+//                .findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
+//
+//        Specification<Group> spec = (root, query, criteriaBuilder) -> {
+//            List<Predicate> predicates = new ArrayList<>();
+//
+//            predicates.add(criteriaBuilder.equal(root.get("status"), GroupStatus.ACTIVE));
+//            predicates.add()
+//
+//            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+//        };
+//
+//        var groups = groupRepository.findAll()
+//        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
+//        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
+//    }
 
     /**
      * @param groups List of groups
@@ -143,8 +143,12 @@ public class GroupServiceImpl implements GroupService {
 
         return groups.stream()
                 .map(group -> {
-                    String role = group.isMentor(userId) ? MENTOR : MENTEE;
-                    return new GroupHomepageResponse(group, role);
+                    Optional<GroupUser> groupUser = group.getGroupUsers().stream()
+                            .filter(gu -> gu.getUser().getId().equals(userId))
+                            .findFirst();
+                    String role = groupUser.map(gu -> gu.isMentor() ? "mentor" : "mentee").orElse("mentee");
+                    boolean isPinned = groupUser.map(GroupUser::isPinned).orElse(false);
+                    return new GroupHomepageResponse(group, role, isPinned);
                 })
                 .sorted(Comparator.comparing(GroupHomepageResponse::getUpdatedDate).reversed())
                 .toList();
@@ -161,37 +165,37 @@ public class GroupServiceImpl implements GroupService {
         return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
     }
 
-    /**
-     * @param userId   user identity
-     * @param page     page
-     * @param pageSize items of page
-     * @return list groupHomePageResponse user is mentor
-     */
-    @Override
-    public Page<GroupHomepageResponse> findMentorGroups(String userId, int page, int pageSize) {
-        Pageable pageRequest = PageRequest.of(page, pageSize);
-        List<String> mentorIds = Collections.singletonList(userId);
-        Page<Group> wrapper =
-                groupRepository.findAllByMentorsInAndStatus(mentorIds, GroupStatus.ACTIVE, pageRequest);
-        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
-        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
-    }
+//    /**
+//     * @param userId   user identity
+//     * @param page     page
+//     * @param pageSize items of page
+//     * @return list groupHomePageResponse user is mentor
+//     */
+//    @Override
+//    public Page<GroupHomepageResponse> findMentorGroups(String userId, int page, int pageSize) {
+//        Pageable pageRequest = PageRequest.of(page, pageSize);
+//        List<String> mentorIds = Collections.singletonList(userId);
+//        Page<Group> wrapper =
+//                groupRepository.findAllByMentorsInAndStatus(mentorIds, GroupStatus.ACTIVE, pageRequest);
+//        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
+//        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
+//    }
 
-    /**
-     * @param userId   user identity
-     * @param page     page
-     * @param pageSize items of page
-     * @return list groupHomePageResponse user is mentee
-     */
-    @Override
-    public Page<GroupHomepageResponse> findMenteeGroups(String userId, int page, int pageSize) {
-        Pageable pageRequest = PageRequest.of(page, pageSize);
-        List<String> menteeIds = Collections.singletonList(userId);
-        Page<Group> wrapper =
-                groupRepository.findAllByMenteesInAndStatus(menteeIds, GroupStatus.ACTIVE, pageRequest);
-        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
-        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
-    }
+//    /**
+//     * @param userId   user identity
+//     * @param page     page
+//     * @param pageSize items of page
+//     * @return list groupHomePageResponse user is mentee
+//     */
+//    @Override
+//    public Page<GroupHomepageResponse> findMenteeGroups(String userId, int page, int pageSize) {
+//        Pageable pageRequest = PageRequest.of(page, pageSize);
+//        List<String> menteeIds = Collections.singletonList(userId);
+//        Page<Group> wrapper =
+//                groupRepository.findAllByMenteesInAndStatus(menteeIds, GroupStatus.ACTIVE, pageRequest);
+//        List<GroupHomepageResponse> groups = mappingGroupHomepageResponse(wrapper.getContent(), userId);
+//        return new PageImpl<>(groups, pageRequest, wrapper.getNumberOfElements());
+//    }
 
     @Override
     public Page<Group> findRecentGroupsOfUser(String userId, int page, int pageSize) {
@@ -1657,62 +1661,4 @@ public class GroupServiceImpl implements GroupService {
         return detail;
     }
 
-    @Override
-    public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + groupId));
-        if (!group.isMentor(user.getId())) {
-            throw new ForbiddenException("You are not mentor");
-        }
-
-        if (group.getMentees().stream().anyMatch(m -> m.getId().equals(menteeId))) {
-            throw new DomainException("User not in group");
-        }
-
-        var markedMentees = group.getMarkedMentees();
-        if (markedMentees.stream().anyMatch(m -> m.getId().equals(menteeId))) {
-            throw new DomainException("Mentee already marked");
-        }
-
-        markedMentees.add(userRepository.findById(menteeId).orElseThrow(() -> new DomainException("Mentee not found")));
-        groupRepository.save(group);
-    }
-
-    @Override
-    public void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
-        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + groupId));
-        if (!group.isMentor(user.getId())) {
-            throw new ForbiddenException("You are not mentor");
-        }
-
-        if (group.getGroupUsers().stream().anyMatch(groupUser -> groupUser.getUser().getId().equals(menteeId) && groupUser.isMentor()){
-            throw new DomainException("User not in group");
-        }
-
-        var markedMentees = group.getMarkedMentees();
-
-        if (markedMentees == null || markedMentees.stream().noneMatch(m -> m.getId().equals(menteeId))) {
-            throw new DomainException("Mentee not marked");
-        }
-
-        markedMentees.remove(userRepository.findById(menteeId).orElseThrow(() -> new DomainException("Mentee not found")));
-        groupRepository.save(group);
-    }
-
-    /**
-     * @param user UserPrincipal
-     * @param name Optional name of groups.
-     * @return List<GroupForwardResponse>
-     */
-    @Override
-    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
-        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
-
-        var channels = groups.stream().map(Group::getChannels).toList();
-        List<String> lstChannelIds = new ArrayList<>();
-        for (List<Channel> channel : channels) {
-            lstChannelIds.addAll(channel.stream().map(Channel::getId).toList());
-        }
-
-        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE.name());
-    }
 }

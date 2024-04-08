@@ -53,8 +53,9 @@ public class GroupHomepageResponse {
 
     private String defaultChannelId;
 
-    public GroupHomepageResponse(Group group, String role) {
+    public GroupHomepageResponse(Group group, String role, boolean isPinned) {
         var users = group.getGroupUsers();
+
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
@@ -68,18 +69,12 @@ public class GroupHomepageResponse {
         this.duration = group.getDuration();
         this.role = role;
         this.imageUrl = group.getImageUrl();
+        this.pinned = isPinned;
         this.hasNewMessage = group.getHasNewMessage();
         this.newMessage = group.getLastMessage().getContent();
         this.newMessageId = group.getLastMessage().getId();
         this.defaultChannelId = group.getDefaultChannel().getId();
-    }
 
-    public static GroupHomepageResponse from(Group group, String groupCategory, String role) {
-        return new GroupHomepageResponse(group, groupCategory, role);
-    }
-
-    public static GroupHomepageResponse from(Group group, String groupCategory) {
-        return new GroupHomepageResponse(group, groupCategory, null);
     }
 
     public Integer getTotalMember() {

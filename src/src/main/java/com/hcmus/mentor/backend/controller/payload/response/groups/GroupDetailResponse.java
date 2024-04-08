@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -75,13 +72,13 @@ public class GroupDetailResponse {
         this.description = group.getDescription();
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
-        this.mentors = group.getMentors().stream().map(User::getId).toList();
-        this.mentees = group.getMentees().stream().map(User::getId).toList();
+        this.mentors = group.getGroupUsers().stream().filter(GroupUser::isMentor).map(gu -> gu.getUser().getId()).toList();
+        this.mentees = group.getGroupUsers().stream().filter(gu -> !gu.isMentor()).map(gu -> gu.getUser().getId()).toList();
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
         this.duration = group.getDuration();
         this.imageUrl = group.getImageUrl();
-        this.parentId = group.getParentId();
+        this.parentId = group.getP;
         this.defaultChannelId = group.getDefaultChannel().getId();
     }
 
