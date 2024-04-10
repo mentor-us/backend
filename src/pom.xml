@@ -53,7 +53,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <minio.version>8.5.9</minio.version>
 
-        <aws.sdk.version>2.25.0</aws.sdk.version>
+        <aws.sdk.version>2.25.28</aws.sdk.version>
     </properties>
 
     <dependencies>
