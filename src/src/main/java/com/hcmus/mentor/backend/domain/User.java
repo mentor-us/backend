@@ -245,26 +245,26 @@ public class User implements Serializable {
 
 
     public User() {
-
     }
 
     public boolean isPinnedGroup(String groupId) {
-        return groupsPinned.stream().anyMatch(group -> group.getId().equals(groupId));
+        return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
+//        return groupsPinned.stream().anyMatch(group -> group.getId().equals(groupId));
     }
 
-    public void pinGroup(Group group) {
-        if (isPinnedGroup(group.getId())) {
-            return;
-        }
-        groupsPinned.add(group);
-    }
-
-    public void unpinGroup(String groupId) {
-        if (!isPinnedGroup(groupId)) {
-            return;
-        }
-        groupsPinned.add(groupsPinned.stream().filter(group -> group.getId().equals(groupId)).findFirst().get());
-    }
+//    public void pinGroup(Group group) {
+//        if (isPinnedGroup(group.getId())) {
+//            return;
+//        }
+//        groupsPinned.add(group);
+//    }
+//
+//    public void unpinGroup(String groupId) {
+//        if (!isPinnedGroup(groupId)) {
+//            return;
+//        }
+//        groupsPinned.add(groupsPinned.stream().filter(group -> group.getId().equals(groupId)).findFirst().get());
+//    }
 
     @Override
     public String toString() {

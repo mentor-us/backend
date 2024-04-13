@@ -26,7 +26,6 @@ import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.service.query.GroupSpecification;
 import com.hcmus.mentor.backend.util.DateUtils;
-import com.hcmus.mentor.backend.util.FileUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -38,18 +37,17 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.tika.Tika;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
@@ -60,6 +58,7 @@ import java.util.stream.Stream;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
+import static com.hcmus.mentor.backend.service.impl.AnalyticServiceImpl.getResourceResponseEntity;
 
 @Service
 @RequiredArgsConstructor
@@ -455,7 +454,7 @@ public class GroupServiceImpl implements GroupService {
             return;
         }
 
-        var usersInGroup= channel.getUsers();
+        var usersInGroup = channel.getUsers();
         usersInGroup.addAll(users);
         channel.setUsers(usersInGroup);
 
@@ -521,7 +520,7 @@ public class GroupServiceImpl implements GroupService {
         }
         Group group = (Group) groupServiceDto.getData();
 
-       var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(mentorId)).findFirst().orElse(null);
+        var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(mentorId)).findFirst().orElse(null);
         if (user != null) {
             user.setMentor(false);
             groupUserRepository.save(user);
@@ -762,7 +761,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public GroupServiceDto getGroupMembers(String groupId, String userId) {
         var group = groupRepository.findById(groupId).orElse(Objects.requireNonNull(channelRepository.findById(groupId).orElse(null)).getGroup());
-        if(group == null) {
+        if (group == null) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
@@ -776,10 +775,10 @@ public class GroupServiceImpl implements GroupService {
                 .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
                 .toList();
         List<GroupMembersResponse.GroupMember> mentees = new ArrayList<>();
-                group.getGroupUsers().stream().filter(gu->!gu.isMentor()).forEach(gu->{
+        group.getGroupUsers().stream().filter(gu -> !gu.isMentor()).forEach(gu -> {
             var user = gu.getUser();
             var profile = ProfileResponse.from(user);
-            mentees.add( GroupMembersResponse.GroupMember.from(profile, "MENTEE", gu.isMarked()));
+            mentees.add(GroupMembersResponse.GroupMember.from(profile, "MENTEE", gu.isMarked()));
         });
 
         GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
@@ -789,7 +788,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void pinGroup(String userId, String groupId) {
         var group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(()-> new DomainException("User not found"));
+        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(() -> new DomainException("User not found"));
         groupUser.setPinned(true);
         groupUserRepository.save(groupUser);
     }
@@ -797,7 +796,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public void unpinGroup(String userId, String groupId) {
         var group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(()-> new DomainException("User not found"));
+        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(() -> new DomainException("User not found"));
         groupUser.setPinned(false);
         groupUserRepository.save(groupUser);
     }
@@ -924,7 +923,7 @@ public class GroupServiceImpl implements GroupService {
         Group group = wrapper.get();
         return group.getGroupUsers().stream()
                 .filter(gu -> !gu.isMentor())
-                .map(gu->gu.getUser().getId())
+                .map(gu -> gu.getUser().getId())
                 .distinct()
                 .toList();
     }
@@ -1082,15 +1081,14 @@ public class GroupServiceImpl implements GroupService {
     private ResponseEntity<Resource> generateExportTable(
             List<Group> groups, List<String> remainColumns) throws IOException {
         List<List<String>> data = generateExportData(groups);
-        List<String> headers =
-                Arrays.asList(
-                        "STT",
-                        "Tên nhóm",
-                        "Loại nhóm",
-                        "Trạng thái",
-                        "Thời gian bắt đầu",
-                        "Thời gian kết thúc",
-                        "Thời hạn");
+        List<String> headers = Arrays.asList(
+                "STT",
+                "Tên nhóm",
+                "Loại nhóm",
+                "Trạng thái",
+                "Thời gian bắt đầu",
+                "Thời gian kết thúc",
+                "Thời hạn");
         String fileName = "output.xlsx";
         Map<String, Integer> indexMap = new HashMap<>();
         indexMap.put("name", 1);
@@ -1099,22 +1097,7 @@ public class GroupServiceImpl implements GroupService {
         indexMap.put("timeStart", 4);
         indexMap.put("timeEnd", 5);
         indexMap.put("duration", 6);
-        List<Integer> remainColumnIndexes = new ArrayList<>();
-        remainColumnIndexes.add(0);
-        remainColumns.forEach(
-                remainColumn -> {
-                    if (indexMap.containsKey(remainColumn)) {
-                        remainColumnIndexes.add(indexMap.get(remainColumn));
-                    }
-                });
-
-        File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
-        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
-                .body(resource);
+        return getResourceResponseEntity(remainColumns, data, headers, fileName, indexMap);
     }
 
     @Override
@@ -1139,20 +1122,19 @@ public class GroupServiceImpl implements GroupService {
             List<String> remainColumns)
             throws IOException {
 
-        Pair<Long, List<Group>> groups =
-                getGroupsByConditions(
-                        emailUser,
-                        name,
-                        mentorEmail,
-                        menteeEmail,
-                        groupCategory,
-                        timeStart1,
-                        timeEnd1,
-                        timeStart2,
-                        timeEnd2,
-                        status,
-                        0,
-                        Integer.MAX_VALUE);
+        Pair<Long, List<Group>> groups = getGroupsByConditions(
+                emailUser,
+                name,
+                mentorEmail,
+                menteeEmail,
+                groupCategory,
+                timeStart1,
+                timeEnd1,
+                timeStart2,
+                timeEnd2,
+                status,
+                0,
+                Integer.MAX_VALUE);
         return generateExportTable(groups.getValue(), remainColumns);
     }
 
@@ -1193,22 +1175,7 @@ public class GroupServiceImpl implements GroupService {
         Map<String, Integer> indexMap = new HashMap<>();
         indexMap.put("email", 1);
         indexMap.put("name", 2);
-        List<Integer> remainColumnIndexes = new ArrayList<>();
-        remainColumnIndexes.add(0);
-        remainColumns.forEach(
-                remainColumn -> {
-                    if (indexMap.containsKey(remainColumn)) {
-                        remainColumnIndexes.add(indexMap.get(remainColumn));
-                    }
-                });
-
-        File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
-        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
-                .body(resource);
+        return getResourceResponseEntity(remainColumns, data, headers, fileName, indexMap);
     }
 
     @Override
