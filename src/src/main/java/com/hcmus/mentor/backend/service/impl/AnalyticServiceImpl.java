@@ -72,6 +72,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
+    private final GroupUserRepository groupUserRepository;
     @PersistenceContext
     private EntityManager entityManager;
     private final SpringTemplateEngine templateEngine;
@@ -354,14 +355,14 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         long totalMessages = messageRepository.countByGroupId(groupId);
 
-        List<Task> tasks = taskRepository.findByGroupId(groupId);
+        List<Task> tasks = taskRepository.findAllByGroupIdIn(group.getChannels().stream().map(Channel::getId).toList());
         long totalTasks = getTotalTasks(tasks);
 
         long totalMeetings = meetingRepository.countByGroupId(groupId);
 
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
-        addMembersToAnalytics(members, group.getMentors().stream().map(User::getId).toList(), "MENTOR", groupId);
-        addMembersToAnalytics(members, group.getMentees().stream().map(User::getId).toList(), "MENTEE", groupId);
+        addMembersToAnalytics(members, group.getMentors(), "MENTOR", group.getId());
+        addMembersToAnalytics(members, group.getMentees(), "MENTEE", group.getId());
 
         return GroupAnalyticResponse.builder()
                 .id(group.getId())
@@ -381,8 +382,8 @@ public class AnalyticServiceImpl implements AnalyticService {
     private List<GroupAnalyticResponse.Member> getMembers(Group group) {
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
         if (group != null) {
-            addMembersToAnalytics(members, group.getMentors().stream().map(User::getId).toList(), "MENTOR", group.getId());
-            addMembersToAnalytics(members, group.getMentees().stream().map(User::getId).toList(), "MENTEE", group.getId());
+            addMembersToAnalytics(members, group.getMentors(), "MENTOR", group.getId());
+            addMembersToAnalytics(members, group.getMentees(), "MENTEE", group.getId());
         }
 
         return members;
@@ -471,33 +472,22 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private void addMembersToAnalytics(
             List<GroupAnalyticResponse.Member> members,
-            List<String> memberIds,
+            List<User> users,
             String role,
             String groupId) {
-        for (String memberId : memberIds) {
-            User user = userRepository.findById(memberId).orElse(null);
-            if (user == null) {
-                continue;
-            }
+        for (User user : users) {
+            long totalMessagesMember = messageRepository.countByChannelIdInAndSenderId(groupId, user.getId());
+            long totalMeetingsMember = meetingRepository.countByGroupIdIdInAndIsMember(groupId, user.getId());
 
-            long totalMessagesMember = messageRepository.countByGroupIdAndSenderId(groupId, memberId);
-            long totalMeetingsMember = meetingRepository.countByGroupIdAndAttendeesIn(groupId, memberId)
-                    + meetingRepository.countByGroupIdAndOrganizerId(groupId, memberId);
+            long totalTasksMember = taskRepository.countAllOwnTaskOfGroup(groupId, user.getId());
+            long totalDoneTasks = taskRepository.countAllOwnTaskOfGroupWithStatus(groupId, user.getId(), TaskStatus.DONE);
 
-            long totalTasksMember = taskRepository.countByGroupIdAndAssigneeIdsUserIdIn(groupId, memberId);
-            long totalDoneTasks = taskRepository.countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(groupId, memberId, TaskStatus.DONE);
+//            Date lastTimeTaskMember = Optional.ofNullable(taskRepository.findLatestOwnTaskByGroup(groupId, user.getId())).map(Task::getCreatedDate).orElse(null);
 
-            Date lastTimeTaskMember = Optional.ofNullable(taskRepository.findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(groupId, memberId))
-                    .map(Task::getCreatedDate)
-                    .orElse(null);
-
-            Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(groupId, memberId))
-                    .map(Message::getCreatedDate)
-                    .orElse(null);
-            Date lastTimeMeetingMember = Optional.ofNullable(
-                            meetingRepository.findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(groupId, memberId))
-                    .map(Meeting::getCreatedDate)
-                    .orElse(null);
+            Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findLatestOwnMessageByChannel(groupId, user.getId())).map(Message::getCreatedDate).orElse(null);
+//            Date lastTimeMeetingMember = Optional.ofNullable(meetingRepository.findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(groupId, user.getId()))
+//                    .map(Meeting::getCreatedDate)
+//                    .orElse(null);
             Date lastTimeActiveMember = getLatestDate(lastTimeMessageMember, lastTimeTaskMember, lastTimeMeetingMember);
 
             GroupAnalyticResponse.Member member =
@@ -524,26 +514,19 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     private long getTotalTasks(List<Task> tasks) {
-        long totalTasks = 0;
-        for (Task task : tasks) {
-            totalTasks += task.getAssignees().size();
-        }
-        return totalTasks;
+        return tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
     }
 
-    private Date getLastTimeActive(String groupId) {
-        Date lastTimeMessage =
-                Optional.ofNullable(messageRepository.findFirstByGroupIdOrderByCreatedDateDesc(groupId))
+    private Date getLastTimeActive(List<String> channelIds) {
+        Date lastTimeMessage = Optional.ofNullable(messageRepository.findFirstByChannelIdInOrderByCreatedDateDesc(channelIds))
                         .map(Message::getCreatedDate)
                         .orElse(null);
 
-        Date lastTimeTask =
-                Optional.ofNullable(taskRepository.findFirstByGroupIdOrderByCreatedDateDesc(groupId))
+        Date lastTimeTask = Optional.ofNullable(taskRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
                         .map(Task::getCreatedDate)
                         .orElse(null);
 
-        Date lastTimeMeeting =
-                Optional.ofNullable(meetingRepository.findFirstByGroupIdOrderByCreatedDateDesc(groupId))
+        Date lastTimeMeeting = Optional.ofNullable(meetingRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
                         .map(Meeting::getCreatedDate)
                         .orElse(null);
 
@@ -895,15 +878,16 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
 
-        List<String> mentorIds = new ArrayList<>();
-        List<String> menteeIds = new ArrayList<>();
+        List<User> mentors = new ArrayList<>();
+        List<User> mentees = new ArrayList<>();
 
         for (User user : users) {
+            var gu = groupUserRepository.findAllB
             if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
-                mentorIds.add(user.getId());
+                mentors.add(user);
             }
             if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
-                menteeIds.add(user.getId());
+                mentees.add(user);
             }
         }
 
@@ -911,13 +895,13 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (role != null) {
             if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
-                addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+                addMembersToAnalytics(members, mentors, "MENTOR", groupId);
             } else {
-                addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
+                addMembersToAnalytics(members, mentees, "MENTEE", groupId);
             }
         } else {
-            addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
-            addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
+            addMembersToAnalytics(members, mentors, "MENTOR", groupId);
+            addMembersToAnalytics(members, mentees, "MENTEE", groupId);
         }
 
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {

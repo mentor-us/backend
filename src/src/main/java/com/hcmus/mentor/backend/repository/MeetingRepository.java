@@ -58,10 +58,18 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     long countByGroupId(String groupId);
 
     Meeting findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
+    Meeting findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
 
     long countByGroupIdAndOrganizerId(String groupId, String organizerId);
 
     long countByGroupIdAndAttendeesIn(String groupId, String attendeeId);
+
+    @Query("SELECT count(m) " +
+            "from Meeting m " +
+            "inner join m.group ch " +
+            "join m.attendees attendees " +
+            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2)")
+    long countByGroupIdIdInAndIsMember(List<String> channelIds, String userId);
 
     Meeting findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(
             String groupId,

@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
@@ -56,10 +57,18 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     long countByGroupId(String groupId);
 
     Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
+    Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
 
     long countByGroupIdAndSenderId(String groupId, String senderId);
+    long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
 
     Message findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(String groupId, String senderId);
+
+    @Query("SELECT m " +
+            "FROM Message m " +
+            "WHERE m.channel.id IN :channelIds AND m.sender.id = :senderId " +
+            "ORDER BY m.createdDate DESC ")
+    Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);
 
     long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
 

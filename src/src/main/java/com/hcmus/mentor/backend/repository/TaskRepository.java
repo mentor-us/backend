@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByGroupId(String groupId);
@@ -36,17 +37,33 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     Task findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
 
+    Task findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
+
     List<Task> findByGroupIdAndAssignerId(String groupId, String assignerId);
 
     long countByGroupIdAndAssigneeIdsUserIdIn(String groupId, String assigneeId);
 
+    @Query("select count(t) from Task t join t.group channel where channel.id in :groupId and t.assigner.id = :userId")
+    long countAllOwnTaskOfGroup(List<String> groupId, String userId);
+
+    @Query("SELECT count(t) " +
+            "FROM Task t " +
+            "JOIN t.assignees assignees " +
+            "WHERE t.group.id IN :groupId AND assignees.id = :userId AND assignees.status = :status")
+    long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
+
     Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 
-    Task findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, String assigneeId);
+    Task findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(String groupId, String assigneeId);
 
-    List<Task> findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, List<String> userIds);
+    @Query("SELECT t " +
+            "FROM Task t " +
+            "JOIN t.assignees assignees " +
+            "WHERE t.group.id IN :groupId AND assignees.id = :assigneeId " +
+            "ORDER BY t.createdDate DESC ")
+    Optional<Task> findLatestOwnTaskByGroup(List<String> groupId, String assigneeId);
+
+    List<Task> findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(String groupId, List<String> userIds);
 
     List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 

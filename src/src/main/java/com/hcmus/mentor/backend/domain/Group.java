@@ -184,6 +184,18 @@ public class Group implements Serializable {
         return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId));
     }
 
+    public List<User> getMentors() {
+        return groupUsers.stream().filter(GroupUser::isMentor).map(GroupUser::getUser).toList();
+    }
+
+    public List<User> getMentees() {
+        return groupUsers.stream().filter(member -> !member.isMentor()).map(GroupUser::getUser).toList();
+    }
+
+    public List<User> getMembers() {
+        return groupUsers.stream().map(GroupUser::getUser).toList();
+    }
+
 
     public void update(
             String name,
