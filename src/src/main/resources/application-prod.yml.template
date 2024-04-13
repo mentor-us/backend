@@ -37,13 +37,20 @@ spring:
             client-id: "op://mentorus/backend-prod/oauth2-client/google-client-id"
             client-secret: "op://mentorus/backend-prod/oauth2-client/google-client-secret"
             redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
-            scope: openid,email,profile
+            scope: openid, email, profile
           azure:
             client-id: "op://mentorus/backend-prod/oauth2-client/azure-client-id"
             client-secret: "op://mentorus/backend-prod/oauth2-client/azure-client-secret"
             redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
             authorization-grant-type: authorization_code
-            scope: openid,email,profile
+            scope: openid, email, profile
+          apple:
+            client-id: "op://mentorus/backend-prod/oauth2-client/apple-client-id"
+            client-secret: "op://mentorus/backend-prod/oauth2-client/apple-client-secret"
+            redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+            scope: openid, name, email
+            authorization-grant-type: authorization_code
+            client-authentication-method: post
         provider:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=select_account
@@ -51,3 +58,8 @@ spring:
             authorization-uri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
             token-uri: https://login.microsoftonline.com/common/oauth2/v2.0/token
             jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize?response_mode=form_post
+            token-uri: https://appleid.apple.com/auth/token
+            jwk-set-uri: https://appleid.apple.com/auth/keys
+            user-name-attribute: sub
