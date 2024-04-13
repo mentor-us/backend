@@ -5,13 +5,14 @@ import com.hcmus.mentor.backend.domain.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
 
 public interface MeetingRepository extends JpaRepository<Meeting, String> {
 
-//    @Aggregation(pipeline = {
+    //    @Aggregation(pipeline = {
 //            "{$match: {groupId: ?0}}",
 //            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
 //            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
@@ -34,6 +35,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
             List<String> ids,
             Date date,
             PageRequest pageRequest);
+
+    @Query("SELECT m " +
+            "from Meeting m " +
+            "inner join m.group ch " +
+            "join m.attendees attendees " +
+            "WHERE (m.organizer.id = ?1 or attendees.id = ?1) and m.group.id = ?2" +
+            "order by m.timeStart desc ")
+    Page<Meeting> findAllOwnerMeeting(String userId, PageRequest pageRequest);
 
     List<Meeting> findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(
             List<String> activeGroupIds, String id, List<String> groupIds, List<String> ids);

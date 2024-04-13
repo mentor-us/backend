@@ -206,11 +206,11 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
     private List<GroupUser> groupUsers = new ArrayList<>();
-
-    @Builder.Default
-    @ManyToMany(mappedBy = "menteesMarked", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
-    private List<Group> groupsMenteeMarked = new ArrayList<>();
+//
+//    @Builder.Default
+//    @ManyToMany(mappedBy = "menteesMarked", fetch = FetchType.LAZY)
+//    @Fetch(FetchMode.SUBSELECT)
+//    private List<Group> groupsMenteeMarked = new ArrayList<>();
 
 //    @Builder.Default
 //    @ManyToMany(fetch = FetchType.LAZY)
@@ -227,7 +227,7 @@ public class User implements Serializable {
     @Fetch(FetchMode.SUBSELECT)
     private List<Channel> channelsCreated;
 
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @Fetch(FetchMode.SUBSELECT)
     private List<Channel> channels;
 

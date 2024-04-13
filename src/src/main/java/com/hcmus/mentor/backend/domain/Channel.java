@@ -59,12 +59,17 @@ public class Channel {
     @Column(name = "is_private", nullable = false)
     private Boolean isPrivate = false;
 
+    @Builder.Default
+    @Column(name = "last_message")
+    @OneToOne(fetch = FetchType.LAZY)
+    private Message lastMessage = null;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_id")
+    @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
+    @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
     @Fetch(FetchMode.SUBSELECT)
@@ -86,7 +91,7 @@ public class Channel {
     private List<Message> messagesPinned = new ArrayList<>();
 
     @Fetch(FetchMode.SUBSELECT)
-    @ManyToMany(mappedBy = "channels", fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "rel_user_channel",
             joinColumns = @JoinColumn(name = "channel_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))

@@ -72,11 +72,11 @@ public class Meeting implements IRemindable, Serializable {
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> attendees = new ArrayList<>();
 
-    public static Meeting from(CreateMeetingRequest request) {
-        Meeting meeting = new Meeting();
-        meeting.create(request);
-        return meeting;
-    }
+//    public static Meeting from(CreateMeetingRequest request) {
+//        Meeting meeting = new Meeting();
+//        meeting.create(request);
+//        return meeting;
+//    }
 
     @Override
     public Reminder toReminder() {
@@ -89,14 +89,16 @@ public class Meeting implements IRemindable, Serializable {
         properties.put("dueDate", formattedTime);
         properties.put("id", id);
 
-        return Reminder.builder()
-                .group(group.getGroup())
+        var reminder = Reminder.builder()
+                .group(group)
                 .name(title)
                 .type(ReminderType.MEETING)
                 .reminderDate(getReminderDate())
-                .properties(properties)
-                .remindableId(id)
                 .build();
+
+        reminder.setPropertiesMap(properties);
+
+        return reminder;
     }
 
     public Date getReminderDate() {
@@ -113,37 +115,36 @@ public class Meeting implements IRemindable, Serializable {
         timeEnd = request.getTimeEnd();
         repeated = request.getRepeated();
         place = request.getPlace();
-        organizer = request.getOrganizerId();
-        attendees = request.getAttendees();
-        group = request.getGroupId();
+//        organizer = request.getOrganizerId();
+//        attendees = request.getAttendees();
+//        group = request.getGroupId();
 
-        MeetingHistory creatingEvent =
-                MeetingHistory.builder()
+        MeetingHistory creatingEvent = MeetingHistory.builder()
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(request.getPlace())
-                        .modifier(request.getOrganizerId())
+//                        .modifier(request.getOrganizerId())
                         .build();
         histories = Collections.singletonList(creatingEvent);
     }
 
-    public void update(UpdateMeetingRequest request) {
-        title = request.getTitle();
-        description = request.getDescription();
-        timeStart = request.getTimeStart();
-        timeEnd = request.getTimeEnd();
-        repeated = request.getRepeated();
-        place = request.getPlace();
-        attendees = request.getAttendees();
-    }
+//    public void update(UpdateMeetingRequest request) {
+//        title = request.getTitle();
+//        description = request.getDescription();
+//        timeStart = request.getTimeStart();
+//        timeEnd = request.getTimeEnd();
+//        repeated = request.getRepeated();
+//        place = request.getPlace();
+//        attendees = request.getAttendees();
+//    }
 
-    public void reschedule(String modifierId, RescheduleMeetingRequest request) {
+    public void reschedule(User modifier, RescheduleMeetingRequest request) {
         MeetingHistory history =
                 MeetingHistory.builder()
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(request.getPlace())
-                        .modifier(modifierId)
+                        .modifier(modifier)
                         .build();
         histories.add(history);
 
@@ -152,13 +153,13 @@ public class Meeting implements IRemindable, Serializable {
         place = request.getPlace();
     }
 
-    public void reschedule(String modifierId, UpdateMeetingRequest request) {
+    public void reschedule(User modifier, UpdateMeetingRequest request) {
         MeetingHistory history =
                 MeetingHistory.builder()
                         .timeStart(request.getTimeStart())
                         .timeEnd(request.getTimeEnd())
                         .place(place)
-                        .modifier(modifierId)
+                        .modifier(modifier)
                         .build();
         histories.add(history);
 

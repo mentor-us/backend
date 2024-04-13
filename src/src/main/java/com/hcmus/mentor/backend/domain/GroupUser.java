@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @Entity
-@Table(name = "group_user")
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "group_user")
 public class GroupUser {
     @Id
     @Column(name = "id")

@@ -1,10 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.List;
@@ -21,4 +22,6 @@ public interface ChannelService {
     Channel updateChannel(CustomerUserDetails user, String channelId, UpdateChannelRequest request);
 
     List<ShortProfile> getChannelMembers(CustomerUserDetails user, String channelId);
+
+    void updateLastMessage(Channel channel, Message message);
 }

@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group> {
-    Page<Group> findAllOrderByCreatedDate(Pageable pageable);
 
     List<Group> findAllByOrderByCreatedDate();
 
@@ -27,33 +26,9 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     boolean existsByIdAndMenteesIn(String groupId, String userId);
 
-    Group findByName(String name);
-
-    List<Group> findAllByMentorsIn(List<String> mentorIds);
-
-    List<Group> findAllByMenteesIn(List<String> menteeIds);
-
-    Page<Group> findAllByMentorsIn(List<String> mentorIds, Pageable pageable);
-
-    Page<Group> findAllByMentorsInAndStatus(
-            List<String> mentorIds, GroupStatus status, Pageable pageable);
-
-    Page<Group> findAllByMenteesIn(List<String> menteeIds, Pageable pageable);
-
-    Page<Group> findAllByMenteesInAndStatus(
-            List<String> menteeIds, GroupStatus status, Pageable pageable);
-
-    Page<Group> findAllByMenteesIn(String menteeId, Pageable pageable);
-
     List<Group> findAllByMenteesIn(String menteeId);
 
     List<Group> findAllByMentorsIn(String mentorId);
-
-    List<Group> findAllByMenteesInOrMentorsIn(String userId);
-
-    Page<Group> findAllByMentorsIn(String mentorId, Pageable pageable);
-
-    Page<Group> findAllByNameLikeIgnoreCase(String name, Pageable pageable);
 
     Page<Group> findAllByMentorsInOrMenteesIn(
             List<String> mentorIds, List<String> menteeIds, Pageable pageable);
@@ -69,19 +44,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
             List<String> mentorIds, GroupStatus status1, List<String> menteeIds, GroupStatus status2);
 
-    Page<Group> findAllByNameLikeIgnoreCaseAndMentorsIn(
-            String name, String mentorId, Pageable pageable);
-
-    Page<Group> findAllByNameLikeIgnoreCaseAndMenteesIn(
-            String name, String menteeId, Pageable pageable);
-
-    Page<Group> findAllByMentorsInAndMenteesIn(String mentorId, String menteeId, Pageable pageable);
-
-    Page<Group> findAllByNameLikeIgnoreCaseAndMentorsInAndMenteesIn(
-            String name, String mentorId, String menteeId, Pageable pageable);
-
-    boolean existsByMenteesIn(List<String> menteeIds);
-
 
     List<Group> findAllByGroupCategory(String groupCategoryId);
 
@@ -89,7 +51,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     List<Group> findAllByGroupCategoryAndCreatorId(String groupCategoryIds, String creatorId);
 
-    List<Group> findAllById(List<String> ids);
 
     //    @Aggregation(
 //            pipeline = {
@@ -133,17 +94,11 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
 
-    long countByCreatorId(String creatorId);
-
     long countByStatusAndCreatorId(GroupStatus status, String creatorId);
 
     List<Group> findAllByCreatorId(String creatorId);
 
     List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
-
-    List<Group> findByMenteesContainsOrMentorsContains(String menteeId, String mentorId);
-
-    List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
 
     List<Group> findByIdIn(List<String> ids);
 
@@ -164,5 +119,8 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             "WHERE g.status = :status AND gu.user_id = :userId",
             nativeQuery = true)
     List<Group> fetchWithUsersAndChannels(@Param("userId") String userId, @Param("status") GroupStatus status);
+
+    @Query("SELECT g, gu, u from Group g join g.groupUsers gu join gu.user u where u.id = :userId")
+    List<Group> findGroupsByMembersContaining(String userId);
 
 }

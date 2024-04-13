@@ -7,6 +7,8 @@ import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateChannelR
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -21,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class ChannelServiceImpl implements ChannelService {
     private final UserRepository userRepository;
 
     public Channel createChannel(String creatorId, AddChannelRequest request) {
-        Group group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
+        var group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
 
         if (ChannelType.PRIVATE_MESSAGE.equals(request.getType())) {
             return addPrivateChat(creatorId, request, group);
@@ -50,15 +51,15 @@ public class ChannelServiceImpl implements ChannelService {
         }
 
         var usersInChannel = ChannelType.PUBLIC.equals(request.getType())
-                ? Stream.concat(group.getMentors().stream(), group.getMentees().stream()).toList()
+                ? group.getGroupUsers().stream().map(GroupUser::getUser).toList()
                 : userRepository.findByIdIn(request.getUserIds());
         Channel channel = channelRepository.save(Channel.builder()
                 .name(name)
                 .description(request.getDescription())
                 .type(request.getType())
                 .users(usersInChannel)
-                .parentId(group.getId())
-                .creatorId(request.getCreatorId())
+                .group(group)
+                .creator(userRepository.findById(creatorId).orElseThrow(()->new DomainException("Không tìm thấy người dùng với id " + creatorId)))
                 .build());
 
         if (!group.getChannels().contains(channel)){
@@ -87,12 +88,12 @@ public class ChannelServiceImpl implements ChannelService {
                 .description(request.getDescription())
                 .type(ChannelType.PRIVATE_MESSAGE)
                 .users(users)
-                .parentId(group.getId())
-                .creatorId(request.getCreatorId())
+                .group(group)
+                .creator(userRepository.findById(adderId).orElseThrow(()->new DomainException("Không tìm thấy người dùng với id " + adderId)))
                 .build());
 
-        if (!group.getPrivateChannels().contains(channel)){
-            group.getPrivateChannels().add(channel);
+        if (!group.getChannels().contains(channel)){
+            group.getChannels().add(channel);
             groupRepository.save(group);
         }
 
@@ -102,17 +103,16 @@ public class ChannelServiceImpl implements ChannelService {
     @Override
     public void removeChannel(CustomerUserDetails user, String channelId) {
         Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        if (!permissionService.isMentor(user.getEmail(), channel.getParentId())) {
+        if (!permissionService.isMentor(user.getEmail(), channel.getGroup().getId())) {
             throw new ForbiddenException("You are not allowed to remove this channel");
         }
 
-        Group group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Group not found"));
-        if (group.getDefaultChannel().equals(channelId)) {
+        Group group = channel.getGroup();
+        if (group.getDefaultChannel().getId().equals(channelId)) {
             throw new DomainException("You cannot remove the default channel");
         }
 
         group.getChannels().remove(channel);
-        group.getPrivateChannels().remove(channel);
 
         groupRepository.save(group);
 
@@ -141,20 +141,10 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     public Channel updateChannel(CustomerUserDetails user, String channelId, UpdateChannelRequest request) {
-        Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (channelWrapper.isEmpty()) {
-            return null;
-        }
-
-        Channel channel = channelWrapper.get();
-        Optional<Group> groupWrapper = groupRepository.findById(channel.getParentId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-
-        Group group = groupWrapper.get();
+        var channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
+        var group = channel.getGroup();
         if (!group.isMentor(user.getId())) {
-            return null;
+            throw new ForbiddenException("You are not allowed to update this channel");
         }
 
         channel.setName(request.getChannelName());
@@ -169,22 +159,27 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     public List<ShortProfile> getChannelMembers(CustomerUserDetails user, String channelId) {
-        Optional<Channel> channelWrapper = channelRepository.findById(channelId);
-        if (channelWrapper.isEmpty()) {
-            return Collections.emptyList();
+        var channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
+        var group = channel.getGroup();
+        if (!group.isMentor(user.getId())) {
+            throw new ForbiddenException("You are not allowed to update this channel");
         }
-
-        Channel channel = channelWrapper.get();
-        Optional<Group> groupWrapper = groupRepository.findById(channel.getParentId());
-        if (groupWrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Group group = groupWrapper.get();
         if (!group.isMentor(user.getId())) {
             return Collections.emptyList();
         }
 
-        return userRepository.findByIds(channel.getUsers().stream().map(String::valueOf).toList());
+        return channel.getUsers().stream().map(ShortProfile::new).toList();
+    }
+
+    @Override
+    public void updateLastMessage(Channel channel, Message message){
+        channel.setLastMessage(message);
+        channel.ping();
+        channelRepository.save(channel);
+
+        var group = channel.getGroup();
+        group.setLastMessage(message);
+        group.ping();
+        groupRepository.save(group);
     }
 }

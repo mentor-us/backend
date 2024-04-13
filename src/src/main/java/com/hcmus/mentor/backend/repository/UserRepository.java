@@ -56,7 +56,8 @@ public interface UserRepository extends CrudRepository<User, String> {
 
 //    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
     // TODO: Fix this
-    List<ShortProfile> findByIds(List<String> senderIds);
+//    List<ShortProfile> findByIds(List<String> senderIds);
+
 
 
 }

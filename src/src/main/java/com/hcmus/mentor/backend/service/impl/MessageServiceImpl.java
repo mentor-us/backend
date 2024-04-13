@@ -91,9 +91,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageResponse> findGroupMessagesByText(
             String groupId, String query, int page, int size) {
-        List<MessageResponse> responses =
-                messageRepository.findGroupMessages(groupId, query, page * size, size);
-        return responses;
+        return messageRepository.findGroupMessages(groupId, query, page * size, size);
     }
 
     /**
@@ -551,17 +549,13 @@ public class MessageServiceImpl implements MessageService {
         }
         Group group = groupOpt.get();
 
-        List<String> assigneeIds = task.getAssignees().stream()
-                .map(AssigneeDto::getUserId).toList();
 
-        List<ProfileResponse> assignees = userRepository.findAllByIdIn(assigneeIds);
-
-        Map<String, TaskStatus> statuses = task.getAssignees().stream()
-                .collect(Collectors.toMap(AssigneeDto::getUserId, AssigneeDto::getStatus, (s1, s2) -> s2));
+        List<ProfileResponse> assignees = task.getAssignees().stream()
+                .map(assignee -> ProfileResponse.from(assignee.getUser()))
+                .toList();
 
         return assignees.stream()
                 .map(assignee -> {
-                    TaskStatus status = statuses.getOrDefault(assignee.getId(), null);
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, status, isMentor);
                 })

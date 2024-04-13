@@ -159,22 +159,6 @@ public class Group implements Serializable {
     @ToString.Exclude
     private List<GroupUser> groupUsers = new ArrayList<>();
 
-//    @Builder.Default
-//    @Fetch(FetchMode.SUBSELECT)
-//    @ManyToMany(mappedBy = "groupsPinned", fetch = FetchType.LAZY)
-//    @ToString.Exclude
-//    private List<User> usersPinned = new ArrayList<>();
-
-    @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "ref_user_group_marked_mentee",
-            joinColumns = @JoinColumn(name = "group_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id"))
-    @ToString.Exclude
-    private List<User> menteesMarked = new ArrayList<>();
-
     public Group() {
         statusMap = new EnumMap<>(GroupStatus.class);
         initializeStatusMap();

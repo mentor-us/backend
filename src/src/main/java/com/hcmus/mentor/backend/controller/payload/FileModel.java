@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload;
 
+import com.hcmus.mentor.backend.domain.File;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,14 @@ public class FileModel implements Serializable {
 
     @Builder.Default
     private UploadStatus uploadStatus = UploadStatus.Success;
+
+    public FileModel(File file) {
+        this.id = file.getId();
+        this.filename = file.getFilename();
+        this.size = file.getSize();
+        this.url = file.getUrl();
+        this.uploadStatus = UploadStatus.Success;
+    }
 
     public enum UploadStatus {
         Uploading,

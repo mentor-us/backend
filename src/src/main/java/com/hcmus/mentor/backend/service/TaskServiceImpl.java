@@ -13,12 +13,10 @@ import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.ReminderRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
+import jakarta.persistence.EntityManager;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -51,12 +49,15 @@ public class TaskServiceImpl implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
+    private final ChannelRepository channelRepository;
+    private final EntityManager entityManager;
 
     public TaskReturnService addTask(String emailUser, AddTaskRequest request) {
         if (!groupRepository.existsById(request.getGroupId())) {
             return new TaskReturnService(NOT_FOUND_GROUP, "Not found group", null);
         }
-        if (request.getParentTask() != null && !taskRepository.existsById(request.getParentTask())) {
+        var parentTask = taskRepository.findById(request.getParentTask()).orElse(null);
+        if (request.getParentTask() != null && parentTask == null) {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         if (request.getTitle() == null
@@ -76,16 +77,18 @@ public class TaskServiceImpl implements IRemindableService {
         List<String> userIds = request.getUserIds().contains("*")
                 ? groupService.findAllMenteeIdsGroup(request.getGroupId())
                 : request.getUserIds();
-        Optional<User> assigner = userRepository.findByEmail(emailUser);
-        List<AssigneeDto> assigneeIds = userIds.stream().map(Task::newTask).toList();
+        User assigner = userRepository.findByEmail(emailUser).orElse(null);
+        var assignee = userIds.stream()
+                .map(userId -> Assignee.builder().user(userRepository.findById(userId).orElse(null)).build())
+                .toList();
         Task task = Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
-                .group(groupRepository.findById(request.getGroupId()).orElse(null))
-                .assignerId(assigner.map(User::getId).orElse(null))
-                .parentTask(request.getParentTask())
-                .assigneeIds(assigneeIds)
+                .group(channelRepository.findById(request.getGroupId()).orElse(null))
+                .assigner(assigner)
+                .parentTask(parentTask)
+                .assignees(assignee)
                 .build();
         taskRepository.save(task);
 
@@ -100,7 +103,7 @@ public class TaskServiceImpl implements IRemindableService {
 
         MessageDetailResponse response =
                 messageService.fulfillTaskMessage(
-                        MessageResponse.from(message, ProfileResponse.from(assigner.get())));
+                        MessageResponse.from(message, ProfileResponse.from(assigner)));
         socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
         saveToReminder(task);
         notificationService.sendNewTaskNotification(response);
@@ -164,11 +167,7 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
-        TaskDetailResponse.Assigner assigner =
-                userRepository
-                        .findById(task.getAssigner())
-                        .map(TaskDetailResponse.Assigner::from)
-                        .orElse(null);
+        TaskDetailResponse.Assigner assigner = TaskDetailResponse.Assigner.from(task.getAssigner());
 
         TaskDetailResponse.Group groupInfo = TaskDetailResponse.Group.from(task.getGroup().getGroup());
 
@@ -337,12 +336,33 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         for (String assigneeId : request.getUserIds()) {
-            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroup().)) {
+            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroup().getGroup().getId())) {
                 return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
             }
         }
 
-        task.update(request);
+        if (request.getTitle() != null) {
+            task.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            task.setDescription(request.getDescription());
+        }
+        if (request.getDeadline() != null) {
+            task.setDeadline(request.getDeadline());
+        }
+        if (request.getUserIds() != null) {
+            List<Assignee> assignees = task.getAssignees().stream()
+                    .filter(assignee -> request.getUserIds().contains(assignee.getUser().getId()))
+                    .toList();
+
+            request.getUserIds().stream()
+                    .filter(userId -> assignees.stream().map(Assignee::getUser).noneMatch(u -> u.getId().equals(userId)))
+                    .forEach(userId -> assignees.add(Assignee.builder().task(task).user(userRepository.findById(userId).orElse(null)).build()));
+            task.setAssignees(assignees);
+        }
+        if (request.getParentTask() != null) {
+            task.setParentTask(taskRepository.findById(request.getParentTask()).orElse(null));
+        }
         taskRepository.save(task);
 
         Reminder reminder = reminderRepository.findByRemindableId(task.getId());
@@ -351,32 +371,30 @@ public class TaskServiceImpl implements IRemindableService {
             reminderRepository.save(reminder);
         }
 
-        groupService.pingGroup(task.getGroupId());
+        groupService.pingGroup(task.getGroup().getGroup().getId());
 
         return new TaskReturnService(SUCCESS, "", task);
     }
 
     public List<TaskResponse> getMostRecentTasks(String userId) {
-        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
-                .map(Group::getId)
+        var groups = groupService.getAllActiveOwnGroups(userId);
+        List<String> groupIds = groups.stream()
+                .map(Group::getChannels)
+                .flatMap(Collection::stream)
+                .map(Channel::getId)
                 .toList();
-        List<Task> tasks =
-                taskRepository
-                        .findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
-                                groupIds,
-                                Arrays.asList("*", userId),
-                                new Date(),
-                                PageRequest.of(0, 5, Sort.by("deadline").descending()))
-                        .getContent();
+        List<Task> tasks = taskRepository
+                .findTasksByCriteria(userId, groupIds, DateUtils.atStartOfDay(new Date()), PageRequest.of(0, 5, Sort.by(Sort.Order.desc("createdDate"))))
+                .getContent();
+
         return tasks.stream()
                 .map(task -> {
-                    Group group = groupRepository.findById(task.getGroupId()).orElse(null);
-                    User assigner = userRepository.findById(task.getAssigner()).orElse(null);
                     AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUserId().equals(userId))
+                            .filter(a -> a.getUser().getId().equals(userId))
                             .findFirst()
+                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
                             .orElse(null);
-                    return TaskResponse.from(task, assigner, assignee, group);
+                    return TaskResponse.from(task, assignee, task.getGroup().getGroup());
                 })
                 .toList();
     }
@@ -397,21 +415,9 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<Task> getAllOwnTasksBetween(String userId, Date startTime, Date endTime) {
-        List<String> joinedGroupIds =
-                groupService.getAllActiveOwnGroups(userId).stream()
-                        .map(Group::getId)
-                        .toList();
-//        MatchOperation match = Aggregation.match(
-//                Criteria.where("groupId")
-//                        .in(joinedGroupIds)
-//                        .and("assigneeIds.userId")
-//                        .in(Arrays.asList("*", userId))
-//                        .and("deadline")
-//                        .gte(startTime)
-//                        .lte(endTime));
-//        Aggregation aggregation = Aggregation.newAggregation(match);
-//        return mongoTemplate.aggregate(aggregation, "task", Task.class).getMappedResults();
-        // TODO: Make sure this is correct
+        List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
+                .map(Group::getId)
+                .toList();
 
         return taskRepository.findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(
                 joinedGroupIds, userId, startTime, endTime);
@@ -452,22 +458,22 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     private List<TaskResponse> getOwnAssignedTasks(String groupId, String userId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
+        var group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
             return Collections.emptyList();
         }
 
-        List<Task> tasks =
-                taskRepository.findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-                        groupId, Arrays.asList("*", userId));
-        return tasks.stream()
+        return group.getChannels().stream()
+                .map(Channel::getTasks)
+                .flatMap(Collection::stream)
+                .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
                 .map(task -> {
-                    User assigner = userRepository.findById(task.getAssigner()).orElse(null);
                     AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUserId().equals(userId))
+                            .filter(a -> a.getUser().getId().equals(userId))
                             .findFirst()
+                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
                             .orElse(null);
-                    return TaskResponse.from(task, assigner, assignee, groupWrapper.get());
+                    return TaskResponse.from(task, assignee, group);
                 })
                 .toList();
     }
@@ -490,15 +496,22 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     private List<TaskResponse> getAssignedByMeTasks(String groupId, String userId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
+        var group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
             return Collections.emptyList();
         }
-        User assigner = userRepository.findById(userId).orElse(null);
-        List<Task> tasks =
-                taskRepository.findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(groupId, userId);
-        return tasks.stream()
-                .map(task -> TaskResponse.from(task, assigner, null, groupWrapper.get()))
+        return group.getChannels().stream()
+                .map(Channel::getTasks)
+                .flatMap(Collection::stream)
+                .filter(task -> task.getAssigner().getId().equals(userId))
+                .map(task -> {
+                    AssigneeDto assignee = task.getAssignees().stream()
+                            .filter(a -> a.getUser().getId().equals(userId))
+                            .findFirst()
+                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
+                            .orElse(null);
+                    return TaskResponse.from(task, assignee, group);
+                })
                 .toList();
     }
 
@@ -523,12 +536,7 @@ public class TaskServiceImpl implements IRemindableService {
     public void saveToReminder(IRemindable remindable) {
         Reminder reminder = remindable.toReminder();
         Task task = (Task) remindable;
-        List<String> emailUsers = new ArrayList<>();
-        for (AssigneeDto assignee : task.getAssignees()) {
-            Optional<User> userOptional = userRepository.findById(assignee.getUserId());
-            userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
-        }
-        reminder.setRecipients(emailUsers);
+        reminder.setRecipients(task.getAssignees().stream().map(Assignee::getUser).toList());
         reminder.setSubject("Bạn có 1 công việc sắp tới hạn");
         reminderRepository.save(reminder);
     }

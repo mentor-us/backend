@@ -104,16 +104,14 @@ public class SocketController {
     private DataListener<Message> onChatReceived() {
         return (socketIOClient, message, ackRequest) -> {
             Message newMessage = messageService.saveMessage(message);
-            User user = userRepository.findById(message.getSender()).orElse(null);
+            User user = userRepository.findById(message.getSender().getId()).orElse(null);
 
             MessageDetailResponse response = MessageDetailResponse.from(message, user);
             MessageResponse buffer = MessageResponse.from(message, ProfileResponse.from(user));
             if (message.getReply() != null) {
                 response = messageService.fulfillTextMessage(buffer);
             }
-            socketIOService.sendMessage(socketIOClient, response, newMessage.getGroupId());
-            notificationService.sendNewMessageNotification(response);
-            groupService.updateLastMessageId(message.getGroupId(), message.getId());
+            socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getId());
         };
     }
 

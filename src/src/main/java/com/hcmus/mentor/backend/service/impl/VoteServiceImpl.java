@@ -89,7 +89,8 @@ public class VoteServiceImpl implements VoteService {
         if (choice == null) {
             return null;
         }
-        List<ShortProfile> voters = choice.getVoters().stream().map(User::getId).toList());
+
+        List<ShortProfile> voters = choice.getVoters().stream().map(ShortProfile::new).toList();
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 
@@ -137,7 +138,7 @@ public class VoteServiceImpl implements VoteService {
         var isUpdate = false;
 
         if (request.getQuestion() != null) {
-            vote.setQuestion(request.getQuestion();
+            vote.setQuestion(request.getQuestion());
             isUpdate = true;
         }
 
@@ -217,7 +218,6 @@ public class VoteServiceImpl implements VoteService {
 
         if (!newChoices.isEmpty()) {
             choiceRepository.saveAll(newChoices);
-            isUpdate = true;
         }
 
         return voteRepository.save(vote);

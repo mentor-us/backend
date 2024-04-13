@@ -2,9 +2,8 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
@@ -14,7 +13,10 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepage
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
@@ -192,9 +194,9 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody CreateGroupCommand command) {
+            @RequestBody CreateGroupRequest command) {
         String creatorEmail = loggedUser.getEmail();
-        GroupServiceDto groupReturn = groupService.createGroup(creatorEmail, command);
+        GroupServiceDto groupReturn =  pipeline.send(new CreateGroupCommand(creatorEmail, command));
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
@@ -214,9 +216,8 @@ public class GroupController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.importGroups(email, file);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        GroupServiceDto groupReturn = pipeline.send(new ImportGroupCommand(email, file));
+        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
@@ -298,9 +299,9 @@ public class GroupController {
     public ApiResponseDto<Group> addMentees(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMenteesRequest request) {
+            @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentees(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,false );
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -319,9 +320,9 @@ public class GroupController {
     public ApiResponseDto<Group> addMentors(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMentorsRequest request) {
+            @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentors(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,true );
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -821,11 +822,8 @@ public class GroupController {
     public ResponseEntity<GroupDetailResponse> getWorkspace(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
-        GroupDetailResponse workspace = groupService.getGroupWorkspace(customerUserDetails, groupId);
-        if (workspace == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        return ResponseEntity.ok(workspace);
+        var response = pipeline.send(new GetGroupWorkSpaceQuery(customerUserDetails.getId(), groupId));
+        return ResponseEntity.ok(response);
     }
 
     /**

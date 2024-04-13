@@ -69,7 +69,6 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
-//    private final MongoTemplate mongoTemplate;
     @PersistenceContext
     private EntityManager entityManager;
     private final SpringTemplateEngine templateEngine;
@@ -150,8 +149,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public ApiResponseDto<SystemAnalyticResponse> getGeneralInformationByGroupCategory(
-            String emailUser, String groupCategoryId) {
+    public ApiResponseDto<SystemAnalyticResponse> getGeneralInformationByGroupCategory(String emailUser, String groupCategoryId) {
         if (!permissionService.isAdmin(emailUser)) {
             return new ApiResponseDto(null, INVALID_PERMISSION, "Invalid permission");
         }
@@ -160,35 +158,30 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (permissionService.isSuperAdmin(emailUser)) {
             groups = groupRepository.findAllByGroupCategory(groupCategoryId);
-            activeGroups =
-                    groupRepository.countByGroupCategoryAndStatus(groupCategoryId, GroupStatus.ACTIVE);
+            activeGroups = groupRepository.countByGroupCategoryAndStatus(groupCategoryId, GroupStatus.ACTIVE);
         } else {
-            Optional<User> userOptional = userRepository.findByEmail(emailUser);
+            var user = userRepository.findByEmail(emailUser).orElse(null);
             String adminId = null;
-            if (userOptional != null) {
-                adminId = userOptional.get().getId();
+            if (user != null) {
+                adminId = user.getId();
             }
             groups = groupRepository.findAllByGroupCategoryAndCreatorId(groupCategoryId, adminId);
-            activeGroups =
-                    groupRepository.countByGroupCategoryAndStatusAndCreatorId(
-                            groupCategoryId, GroupStatus.ACTIVE, adminId);
+            activeGroups = groupRepository.countByGroupCategoryAndStatusAndCreatorId(groupCategoryId, GroupStatus.ACTIVE, adminId);
         }
 
         long totalGroups = groups.size();
         List<String> groupIds = groups.stream().map(Group::getId).toList();
         List<Task> tasks = taskRepository.findAllByGroupIdIn(groupIds);
-        long totalTasks =
-                tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
+        long totalTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
 
         long totalMeetings = meetingRepository.countByGroupIdIn(groupIds);
         long totalMessages = messageRepository.countByGroupIdIn(groupIds);
 
         Set<String> userIds = new HashSet<>();
-        groups.forEach(
-                group -> {
-                    userIds.addAll(group.getMentors().stream().map(User::getId).toList());
-                    userIds.addAll(group.getMentees().stream().map(User::getId).toList());
-                });
+        groups.forEach(group -> {
+            userIds.addAll(group.getMentors().stream().map(User::getId).toList());
+            userIds.addAll(group.getMentees().stream().map(User::getId).toList());
+        });
         long totalUsers = userIds.size();
         long activeUsers = userRepository.countByIdInAndStatus(new ArrayList<>(userIds), true);
 
@@ -409,9 +402,9 @@ public class AnalyticServiceImpl implements AnalyticService {
         String groupId = group.getId();
 
         String categoryName = groupCategoryRepository
-                        .findById(group.getGroupCategory().getId())
-                        .map(GroupCategory::getName)
-                        .orElse(null);
+                .findById(group.getGroupCategory().getId())
+                .map(GroupCategory::getName)
+                .orElse(null);
 
         Date lastTimeActive = getLastTimeActive(groupId);
 
@@ -651,9 +644,9 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         String groupId = group.getId();
         String categoryName = groupCategoryRepository
-                        .findById(group.getGroupCategory().getId())
-                        .map(GroupCategory::getName)
-                        .orElse(null);
+                .findById(group.getGroupCategory().getId())
+                .map(GroupCategory::getName)
+                .orElse(null);
 
         Date lastTimeActive = getLastTimeActive(groupId);
 
@@ -910,7 +903,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         return new ApiResponseDto(pagingResponse(responsesPage), SUCCESS, "");
     }
 
-//    private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
+    //    private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
 //            String emailUser, String groupId, FindUserAnalyticRequest request) {
 //        Query query = new Query();
 //        String name = request.getName();
@@ -963,66 +956,66 @@ public class AnalyticServiceImpl implements AnalyticService {
 //        return members;
 //    }
     // TODO: Make sure this function works correctly
-private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
-        String emailUser, String groupId, FindUserAnalyticRequest request) {
-    String name = request.getName();
-    String email = request.getEmail();
-    FindUserAnalyticRequest.Role role = request.getRole();
+    private List<GroupAnalyticResponse.Member> getUsersAnalyticBySearchConditions(
+            String emailUser, String groupId, FindUserAnalyticRequest request) {
+        String name = request.getName();
+        String email = request.getEmail();
+        FindUserAnalyticRequest.Role role = request.getRole();
 
-    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-    CriteriaQuery<User> criteriaQuery = cb.createQuery(User.class);
-    Root<User> root = criteriaQuery.from(User.class);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> criteriaQuery = cb.createQuery(User.class);
+        Root<User> root = criteriaQuery.from(User.class);
 
-    List<Predicate> predicates = new ArrayList<>();
+        List<Predicate> predicates = new ArrayList<>();
 
-    if (name != null && !name.isEmpty()) {
-        predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
-    }
-    if (email != null && !email.isEmpty()) {
-        predicates.add(cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase() + "%"));
-    }
-
-    criteriaQuery.where(predicates.toArray(new Predicate[0]));
-    criteriaQuery.orderBy(cb.desc(root.get("createdDate")));
-
-    List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
-
-    List<String> mentorIds = new ArrayList<>();
-    List<String> menteeIds = new ArrayList<>();
-
-    for (User user : users) {
-        if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
-            mentorIds.add(user.getId());
+        if (name != null && !name.isEmpty()) {
+            predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
         }
-        if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
-            menteeIds.add(user.getId());
+        if (email != null && !email.isEmpty()) {
+            predicates.add(cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase() + "%"));
         }
-    }
 
-    List<GroupAnalyticResponse.Member> members = new ArrayList<>();
+        criteriaQuery.where(predicates.toArray(new Predicate[0]));
+        criteriaQuery.orderBy(cb.desc(root.get("createdDate")));
 
-    if (role != null) {
-        if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
-            addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+        List<User> users = entityManager.createQuery(criteriaQuery).getResultList();
+
+        List<String> mentorIds = new ArrayList<>();
+        List<String> menteeIds = new ArrayList<>();
+
+        for (User user : users) {
+            if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
+                mentorIds.add(user.getId());
+            }
+            if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
+                menteeIds.add(user.getId());
+            }
+        }
+
+        List<GroupAnalyticResponse.Member> members = new ArrayList<>();
+
+        if (role != null) {
+            if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
+                addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
+            } else {
+                addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
+            }
         } else {
+            addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
             addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
         }
-    } else {
-        addMembersToAnalytics(members, mentorIds, "MENTOR", groupId);
-        addMembersToAnalytics(members, menteeIds, "MENTEE", groupId);
-    }
 
-    if (request.getTimeStart() != null && request.getTimeEnd() != null) {
-        members = members.stream()
-                .filter(response ->
-                        response.getLastTimeActive() != null &&
-                                response.getLastTimeActive().after(request.getTimeStart()) &&
-                                response.getLastTimeActive().before(request.getTimeEnd()))
-                .toList();
-    }
+        if (request.getTimeStart() != null && request.getTimeEnd() != null) {
+            members = members.stream()
+                    .filter(response ->
+                            response.getLastTimeActive() != null &&
+                                    response.getLastTimeActive().after(request.getTimeStart()) &&
+                                    response.getLastTimeActive().before(request.getTimeEnd()))
+                    .toList();
+        }
 
-    return members;
-}
+        return members;
+    }
 
     @Override
     public ApiResponseDto<List<GroupAnalyticResponse.Member>> findUserAnalytic(

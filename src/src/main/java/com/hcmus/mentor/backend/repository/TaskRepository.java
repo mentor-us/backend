@@ -4,7 +4,9 @@ import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Date;
 import java.util.List;
@@ -61,4 +63,13 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     List<Task> findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(List<String> groupIds, String userId, Date startTime, Date endTime);
 
+    @Query("SELECT t FROM Task t " +
+            "LEFT JOIN t.assignees a " +
+            "LEFT JOIN a.user u " +
+            "LEFT JOIN t.assigner assigner " +
+            "WHERE t.group.id IN :groupIds " +
+            "AND t.deadline > :currentDate " +
+            "AND (u.id = :userId OR assigner.id = :userId) " +
+            "ORDER BY t.deadline DESC")
+    Page<Task> findTasksByCriteria(String userId, List<String> groupIds, Date currentDate, Pageable pageable);
 }

@@ -14,10 +14,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.ReminderRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +38,7 @@ public class MeetingService implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
+    private final ChannelRepository channelRepository;
 
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
         List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
@@ -59,8 +57,8 @@ public class MeetingService implements IRemindableService {
                 .getContent();
         return meetings.stream()
                 .map(meeting -> {
-                    Group group = meeting.getGroup();
-                    User organizer = userRepository.findById(meeting.getOrganizer()).orElse(null);
+                    Group group = meeting.getGroup().getGroup();
+                    User organizer = meeting.getOrganizer();
                     return MeetingResponse.from(meeting, organizer, group);
                 })
                 .toList();
@@ -82,16 +80,25 @@ public class MeetingService implements IRemindableService {
             return null;
         }
 
-        Meeting newMeeting = meetingRepository.save(Meeting.from(request));
-        Message newMessage =
-                Message.builder()
-                        .senderId(request.getOrganizerId())
-                        .content("NEW MEETING")
-                        .createdDate(new Date())
-                        .type(Message.Type.MEETING)
-                        .group(request.getGroupId())
-                        .meetingId(newMeeting.getId())
-                        .build();
+        var meeting = meetingRepository.save(Meeting.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .repeated(request.getRepeated())
+                .place(request.getPlace())
+                .organizer(organizer)
+                .group(channelRepository.findById(request.getGroupId()).orElse(null))
+                .attendees(userRepository.findByIdIn(request.getAttendees()))
+                .build());
+        Message newMessage = Message.builder()
+                .sender(meeting.getOrganizer())
+                .content("NEW MEETING")
+                .createdDate(new Date())
+                .type(Message.Type.MEETING)
+                .channel(meeting.getGroup())
+                .meeting(meeting)
+                .build();
         messageService.saveMessage(newMessage);
         groupService.pingGroup(request.getGroupId());
 
@@ -100,25 +107,32 @@ public class MeetingService implements IRemindableService {
                         MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
         notificationService.sendNewMeetingNotification(response);
-        saveToReminder(newMeeting);
+        saveToReminder(meeting);
 
-        return newMeeting;
+        return meeting;
     }
 
     public Meeting updateMeeting(String modifierId, String meetingId, UpdateMeetingRequest request) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
+       var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
             return null;
         }
 
-        Meeting meeting = wrapper.get();
         if (!isEqualDate(meeting.getTimeStart(), request.getTimeStart())
                 || !isEqualDate(meeting.getTimeEnd(), request.getTimeEnd())) {
-            meeting.reschedule(modifierId, request);
+            var modifier = userRepository.findById(modifierId).orElse(null);
+            meeting.reschedule(modifier, request);
         }
-        meeting.update(request);
 
-        groupService.pingGroup(meeting.getGroupId());
+        meeting.setTitle(request.getTitle());
+        meeting.setDescription(request.getDescription());
+        meeting.setTimeStart(request.getTimeStart());
+        meeting.setTimeEnd(request.getTimeEnd());
+        meeting.setRepeated(request.getRepeated());
+        meeting.setPlace(request.getPlace());
+        meeting.setAttendees(userRepository.findByIdIn(request.getAttendees()));
+
+        groupService.pingGroup(meeting.getGroup().getGroup().getId());
 
         Reminder reminder = reminderRepository.findByRemindableId(meetingId);
         if (reminder != null) {
@@ -145,35 +159,27 @@ public class MeetingService implements IRemindableService {
     }
 
     public MeetingDetailResponse getMeetingById(String userId, String meetingId) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
+        var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
             return null;
         }
-        Meeting meeting = wrapper.get();
 
-        Optional<User> organizerWrapper = userRepository.findById(meeting.getOrganizer());
-        if (organizerWrapper.isEmpty()) {
-            return null;
-        }
-        User organizer = organizerWrapper.get();
-
-        Optional<Group> groupWrapper = groupRepository.findById(meeting.getGroup().getId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-        Group group = groupWrapper.get();
+        var organizer = meeting.getOrganizer();
+        Group group;
+        group = meeting.getGroup().getGroup();
 
         Map<String, ShortProfile> modifiers =
                 meeting.getHistories().stream()
                         .map(MeetingHistory::getModifier)
                         .map(UserMapper.INSTANCE::userToShortProfile)
                         .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
+
         List<MeetingHistoryDetail> historyDetails =
                 meeting.getHistories().stream()
                         .map(history -> {
-                                    ShortProfile user = modifiers.getOrDefault(history.getModifier().getId(), null);
-                                    return MeetingHistoryDetail.from(history, user);
-                                })
+                            ShortProfile user = modifiers.getOrDefault(history.getModifier().getId(), null);
+                            return MeetingHistoryDetail.from(history, user);
+                        })
                         .toList();
 
         boolean appliedAllGroup = meeting.getAttendees().contains("*");
@@ -189,34 +195,26 @@ public class MeetingService implements IRemindableService {
                 .group(group)
                 .isAll(appliedAllGroup)
                 .canEdit(group.isMentor(userId) || organizer.getId().equals(userId))
-                .totalAttendees(appliedAllGroup ? group.getMentees().size() + group.getMentors().size() - 1 : meeting.getAttendees().size())
+                .totalAttendees(appliedAllGroup ? meeting.getGroup().getUsers().size() - 1 : meeting.getAttendees().size())
                 .histories(historyDetails)
                 .build();
     }
 
     public List<MeetingAttendeeResponse> getMeetingAttendees(String meetingId) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Meeting meeting = wrapper.get();
-
-        var group = meeting.getGroup();
-        if (group == null) {
+       var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
             return Collections.emptyList();
         }
 
-        List<String> attendeeIds;
-        boolean appliedAllGroup = meeting.getAttendees().contains("*");
-        if (appliedAllGroup) {
-            attendeeIds = Stream.concat(group.getMentees().stream().map(User::getId), group.getMentors().stream().map(User::getId))
-                    .filter(id -> !id.equals(meeting.getOrganizer()))
-                    .toList();
-        } else {
-            attendeeIds = meeting.getAttendees().stream().map(User::getId).toList();
+        var channel = meeting.getGroup();
+        if (channel == null) {
+            return Collections.emptyList();
         }
 
-        return userRepository.findByIdIn(attendeeIds).stream()
+        var group = channel.getGroup();
+
+        return channel.getUsers().stream()
+                .filter(user -> user.getId()!= meeting.getOrganizer().getId())
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
                 .toList();
     }
@@ -255,16 +253,15 @@ public class MeetingService implements IRemindableService {
         return getAllOwnMeetingsBetween(userId, startTime, endTime);
     }
 
-    public Meeting rescheduleMeeting(
-            String modifierId, String meetingId, RescheduleMeetingRequest request) {
-        Optional<Meeting> meetingWrapper = meetingRepository.findById(meetingId);
-        if (meetingWrapper.isEmpty()) {
+    public Meeting rescheduleMeeting(String modifierId, String meetingId, RescheduleMeetingRequest request) {
+        var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
             return null;
         }
+        var modifier = userRepository.findById(modifierId).orElse(null);
+        meeting.reschedule(modifier, request);
 
-        Meeting meeting = meetingWrapper.get();
-        meeting.reschedule(modifierId, request);
-        groupService.pingGroup(meeting.getGroupId());
+        groupService.pingGroup(meeting.getGroup().getGroup().getId());
         return meetingRepository.save(meeting);
     }
 
@@ -272,14 +269,8 @@ public class MeetingService implements IRemindableService {
     public void saveToReminder(IRemindable rewindable) {
         Reminder reminder = rewindable.toReminder();
         Meeting meeting = (Meeting) rewindable;
-        List<String> emailUsers = new ArrayList<>();
-        List<String> attendees = meeting.getAttendees();
-        attendees.add(meeting.getOrganizer());
-        for (String userId : attendees) {
-            Optional<User> userOptional = userRepository.findById(userId);
-            userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
-        }
-        reminder.setRecipients(emailUsers);
+
+        reminder.setRecipients(meeting.getAttendees());
         reminder.setSubject("Bạn có 1 lịch hẹn sắp diễn ra");
 
         reminderRepository.save(reminder);

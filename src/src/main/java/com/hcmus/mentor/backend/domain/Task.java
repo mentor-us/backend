@@ -117,9 +117,9 @@ public class Task implements IRemindable, Serializable {
                 + createdDate;
     }
 
-    public List<User> getAllAssigneeIds() {
-        return assignees.stream().map(Assignee::getUser).toList();
-    }
+//    public List<User> getAllAssigneeIds() {
+//        return assignees.stream().map(Assignee::getUser).toList();
+//    }
 
 //    public void update(UpdateTaskRequest request, String hihi) {
 //        if (request.getTitle() != null) {
@@ -142,7 +142,6 @@ public class Task implements IRemindable, Serializable {
 //        if (request.getParentTask() != null) {
 //            this.setParentTask(request.getParentTask());
 //        }
-//
 //    }
 
 }

@@ -75,20 +75,20 @@ public class UserServiceImpl implements UserService {
     private final EntityManager entityManager;
 
     @Override
-    public String getOrCreateUserByEmail(String emailAddress, String groupName) {
+    public User getOrCreateUserByEmail(String emailAddress, String groupName) {
         if (!userRepository.existsByEmail(emailAddress)) {
             addNewAccount(emailAddress);
         }
         Optional<User> menteeWrapper = userRepository.findByEmail(emailAddress);
 //        mailService.sendInvitationMail(emailAddress, groupName);
-        return menteeWrapper.map(User::getId).orElse(null);
+        return menteeWrapper.orElse(null);
     }
 
     @Override
-    public void addNewAccount(String emailAddress) {
+    public User addNewAccount(String emailAddress) {
         String initialName = "User " + randomString(6);
         User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).build();
-        userRepository.save(data);
+        return userRepository.save(data);
     }
 
     private String randomString(int len) {
@@ -103,13 +103,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String importUser(String emailAddress, String groupName) {
+    public User importUser(String emailAddress, String groupName) {
         if (!userRepository.existsByEmail(emailAddress)) {
             addNewAccount(emailAddress);
         }
-        Optional<User> menteeWrapper = userRepository.findByEmail(emailAddress);
-        // mailService.sendInvitationMail(emailAddress, group);
-        return menteeWrapper.map(User::getId).orElse(null);
+        var user = userRepository.findByEmail(emailAddress).orElse(null);
+//         mailService.sendInvitationMail(emailAddress, group);
+        return user;
     }
 
     @Override

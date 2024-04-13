@@ -11,6 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
-public class AddMenteesRequest {
+public class AddMembersRequest {
     List<String> emails;
 }

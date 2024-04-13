@@ -78,7 +78,7 @@ public class GroupDetailResponse {
         this.timeEnd = group.getTimeEnd();
         this.duration = group.getDuration();
         this.imageUrl = group.getImageUrl();
-        this.parentId = group.getP;
+        this.parentId = null;
         this.defaultChannelId = group.getDefaultChannel().getId();
     }
 
@@ -165,11 +165,11 @@ public class GroupDetailResponse {
                     .userIds(channel.getUsers().stream().map(User::getId).toList())
                     .status(channel.getStatus())
                     .type(channel.getType())
-                    .creatorId(channel.getCreatorId())
+                    .creatorId(channel.getCreator().getId())
                     .hasNewMessage(channel.getHasNewMessage())
                     .imageUrl(channel.getImageUrl())
-                    .pinnedMessageIds(channel.getPinnedMessages().stream().map(Message::getId).toList())
-                    .parentId(channel.getParentId())
+                    .pinnedMessageIds(channel.getMessagesPinned().stream().map(Message::getId).toList())
+                    .parentId(channel.getGroup().getId())
                     .build();
         }
 

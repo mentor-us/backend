@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
-    String getOrCreateUserByEmail(String emailAddress, String groupName);
+    User getOrCreateUserByEmail(String emailAddress, String groupName);
 
-    void addNewAccount(String emailAddress);
+    User addNewAccount(String emailAddress);
 
-    String importUser(String emailAddress, String groupName);
+    User importUser(String emailAddress, String groupName);
 
     UserServiceDto listByEmail(String emailUser, String email, Pageable pageable);
 
