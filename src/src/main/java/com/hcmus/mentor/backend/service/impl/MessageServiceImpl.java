@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -17,10 +16,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
-import com.hcmus.mentor.backend.domain.Reaction;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
@@ -59,6 +55,7 @@ public class MessageServiceImpl implements MessageService {
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
     private final NotificationRepository notificationRepository;
+    private final GroupUserRepository groupUserRepository;
 
     /**
      * {@inheritDoc}
@@ -304,7 +301,7 @@ public class MessageServiceImpl implements MessageService {
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
                 .createdDate(new Date())
                 .type(Message.Type.FILE)
-                .file(fileModel)
+                .file(new File(fileModel))
                 .build();
         pingGroup(request.getGroupId());
         return messageRepository.save(message);
@@ -338,25 +335,22 @@ public class MessageServiceImpl implements MessageService {
     public MessageDetailResponse fulfillTextMessage(MessageResponse message) {
         MessageDetailResponse response = MessageDetailResponse.from(message);
         if (message.getReply() != null) {
-            Optional<Message> wrapper = messageRepository.findById(message.getReply());
-            if (wrapper.isEmpty()) {
+            var messageReply = messageRepository.findById(message.getReply()).orElse(null);
+            if (messageReply == null) {
                 return response;
             }
-            // TODO: handle all function
-            Message data = wrapper.get();
-            String content = data.getContent();
-            if (data.isDeleted()) {
+            String content = messageReply.getContent();
+            if (messageReply.isDeleted()) {
                 content = "Tin nhắn đã được xoá";
             }
-            ShortProfile sender = userRepository.findShortProfile(data.getSender());
-            var sennder  = UserMapper.INSTANCE.userToShortProfile(data.getSender());
+            ShortProfile sender = new ShortProfile(messageReply.getSender());
             String senderName = "Người dùng không tồn tại";
-            if (sender != null) {
+            if (groupUserRepository.existsByUserIdAndGroupId(sender.getId(), messageReply.getChannel().getGroup().getId())) {
                 senderName = sender.getName();
             }
             MessageDetailResponse.ReplyMessage replyMessage =
                     MessageDetailResponse.ReplyMessage.builder()
-                            .id(data.getId())
+                            .id(messageReply.getId())
                             .senderName(senderName)
                             .content(content)
                             .build();
@@ -466,11 +460,11 @@ public class MessageServiceImpl implements MessageService {
         }
     }
 
-    private pingChannel(Channel channel) {
-        channel.ping();
-        channelRepository.save(channel);
-
-    }
+//    private pingChannel(Channel channel) {
+//        channel.ping();
+//        channelRepository.save(channel);
+//
+//    }
 
 
     /**
@@ -483,37 +477,30 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
         List<String> typeAllow = List.of(Message.Type.TEXT.name(), Message.Type.IMAGE.name(), Message.Type.FILE.name(), Message.Type.VIDEO.name());
-        var message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
-        if (!typeAllow.contains(message.getType().name())) {
-            throw new DomainException("Message type not allow forward");
-        }
         User user = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
+        Message message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
+        if (!typeAllow.contains(message.getType().name()))
+            throw new DomainException("Message type not allow forward");
 
         var channels = channelRepository.findByIdIn(request.getChannelIds());
 
-//        groupRepository.findByIdIn(request.getChannelIds()).forEach(g -> channelIds.add(g.getId()));
-
         try {
-            List<Message> messages = new ArrayList<>();
-            channels.forEach(channel -> {
-                Message m = Message.builder()
-                        .sender(user)
-                        .channel(channel)
-                        .createdDate(new Date())
-                        .content(message.getContent())
-                        .type(message.getType())
-                        .reply(message.getReply())
-                        .images(message.getImages())
-                        .file(message.getFile())
-                        .isForward(true)
-                        .build();
-
-                messages.add(messageRepository.save(m));
-
-            });
+            List<Message> messages = channels.stream()
+                    .map(channel -> Message.builder()
+                            .sender(user)
+                            .channel(channel)
+                            .createdDate(new Date())
+                            .content(message.getContent())
+                            .type(message.getType())
+                            .reply(message.getReply())
+                            .images(message.getImages())
+                            .file(message.getFile())
+                            .isForward(true)
+                            .build())
+                    .toList();
             messages.forEach(m -> {
-                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getGroupId());
-                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, user), m.getGroupId());
+                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getChannel().getGroup().getId());
+                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, user), m.getChannel().getGroup().getId());
             });
             return messages;
         } catch (Exception e) {
@@ -524,11 +511,10 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public boolean updateCreatedDateVoteMessage(String voteId) {
-        var messageOpt = messageRepository.findByVoteId(voteId);
-        if (messageOpt.isEmpty()) {
+        var message = messageRepository.findByVoteId(voteId).orElse(null);
+        if (message == null) {
             return false;
         }
-        var message = messageOpt.get();
 
         message.setCreatedDate(new Date());
         messageRepository.save(message);
@@ -537,27 +523,16 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        Optional<Task> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) {
+        var task = taskRepository.findById(taskId).orElse(null);
+        if (task == null) {
             return Collections.emptyList();
         }
-        Task task = taskOpt.get();
+        var group = task.getGroup().getGroup();
 
-        Optional<Group> groupOpt = groupRepository.findById(task.getGroupId());
-        if (groupOpt.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Group group = groupOpt.get();
-
-
-        List<ProfileResponse> assignees = task.getAssignees().stream()
-                .map(assignee -> ProfileResponse.from(assignee.getUser()))
-                .toList();
-
-        return assignees.stream()
+        return task.getAssignees().stream()
                 .map(assignee -> {
                     boolean isMentor = group.isMentor(assignee.getId());
-                    return TaskAssigneeResponse.from(assignee, status, isMentor);
+                    return TaskAssigneeResponse.from(ProfileResponse.from(assignee.getUser()), assignee.getStatus(), isMentor);
                 })
                 .toList();
     }

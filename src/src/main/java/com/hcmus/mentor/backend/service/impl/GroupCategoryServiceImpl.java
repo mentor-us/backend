@@ -39,7 +39,6 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     private final GroupCategoryRepository groupCategoryRepository;
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
-//    private final MongoTemplate mongoTemplate;
 
     @Override
     public List<GroupCategory> findAll() {
@@ -79,32 +78,27 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
-        GroupCategory groupCategory =
-                GroupCategory.builder()
-                        .name(request.getName())
-                        .description(request.getDescription())
-                        .iconUrl(request.getIconUrl())
-                        .permissions(request.getPermissions())
-                        .build();
+        GroupCategory groupCategory = GroupCategory.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .iconUrl(request.getIconUrl())
+                .permissions(request.getPermissions())
+                .build();
         groupCategoryRepository.save(groupCategory);
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     @Override
-    public GroupCategoryServiceDto update(
-            String emailUser, String id, UpdateGroupCategoryRequest request) {
+    public GroupCategoryServiceDto update(String emailUser, String id, UpdateGroupCategoryRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-        if (!groupCategoryOptional.isPresent()) {
+        var groupCategory = groupCategoryRepository.findById(id).orElse(null);
+        if (groupCategory == null) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
-        GroupCategory groupCategory = groupCategoryOptional.get();
-
-        if (groupCategoryRepository.existsByName(request.getName())
-                && !request.getName().equals(groupCategory.getName())) {
+        if (groupCategoryRepository.existsByName(request.getName()) && !request.getName().equals(groupCategory.getName())) {
             return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
         groupCategory.update(
@@ -265,14 +259,11 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 });
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override

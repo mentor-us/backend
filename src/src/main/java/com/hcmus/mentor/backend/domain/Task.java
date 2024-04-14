@@ -45,6 +45,14 @@ public class Task implements IRemindable, Serializable {
     @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Builder.Default
+    @Column(name = "deleted_date")
+    private Date deletedDate = null;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "assigner_id")
     private User assigner;

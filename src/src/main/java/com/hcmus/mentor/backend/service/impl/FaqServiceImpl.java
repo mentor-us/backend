@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -38,20 +39,14 @@ public class FaqServiceImpl implements FaqService {
             return Collections.emptyList();
         }
 
-        return faqRepository.findByGroupId(groupId).stream()
-                .sorted(Comparator.comparing(Faq::getRating).reversed())
-                .toList();
+        return group.getFaqs().stream().sorted(Comparator.comparing(Faq::getRating).reversed()).toList();
     }
 
     @Override
     public FAQDetail getById(String userId, String faqId) {
         var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
 
-        List<GroupDetailResponse> groupWrapper = groupRepository.getGroupDetail(faq.getGroup().getId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-        GroupDetailResponse group = groupWrapper.getFirst();
+        var group = new GroupDetailResponse(faq.getGroup());
         group.setRole(userId);
         ShortProfile creator = UserMapper.INSTANCE.userToShortProfile(faq.getCreator());
         return FAQDetail.from(faq, creator, group);
@@ -77,11 +72,14 @@ public class FaqServiceImpl implements FaqService {
     public Faq updateFAQ(String userId, String faqId, UpdateFaqRequest request) {
         var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
 
-        if(request.getAnswer() != null &&!request.getAnswer().isEmpty())
+        if (request.getAnswer() != null && !request.getAnswer().isEmpty()) {
             faq.setAnswer(request.getAnswer());
-        if(!request.getQuestion().isEmpty())
+            faq.setUpdatedDate(new Date());
+        }
+        if (!request.getQuestion().isEmpty()) {
             faq.setQuestion(request.getQuestion());
-
+            faq.setUpdatedDate(new Date());
+        }
         return faqRepository.save(faq);
     }
 
@@ -118,7 +116,7 @@ public class FaqServiceImpl implements FaqService {
     @Override
     public void upvote(CustomerUserDetails userDetails, String faqId) {
         var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
-        if(faq.getGroup().isMember(userDetails.getId())) {
+        if (faq.getGroup().isMember(userDetails.getId())) {
             throw new ForbiddenException("Chỉ có thành viên của nhóm mới được vote");
         }
         var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + userDetails.getId()));
@@ -132,7 +130,7 @@ public class FaqServiceImpl implements FaqService {
     @Override
     public boolean downVote(CustomerUserDetails userDetails, String faqId) {
         var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
-        if(faq.getGroup().isMember(userDetails.getId())) {
+        if (faq.getGroup().isMember(userDetails.getId())) {
             throw new ForbiddenException("Chỉ có thành viên của nhóm mới bỏ vote");
         }
         var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + userDetails.getId()));

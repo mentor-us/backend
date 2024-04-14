@@ -9,6 +9,7 @@ import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +38,7 @@ public class ChannelServiceImpl implements ChannelService {
 
     public Channel createChannel(String creatorId, AddChannelRequest request) {
         var group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
-
+        var creator =userRepository.findById(creatorId).orElseThrow(()->new DomainException("Không tìm thấy người dùng với id " + creatorId));
         if (ChannelType.PRIVATE_MESSAGE.equals(request.getType())) {
             return addPrivateChat(creatorId, request, group);
         }
@@ -52,22 +54,16 @@ public class ChannelServiceImpl implements ChannelService {
 
         var usersInChannel = ChannelType.PUBLIC.equals(request.getType())
                 ? group.getGroupUsers().stream().map(GroupUser::getUser).toList()
-                : userRepository.findByIdIn(request.getUserIds());
-        Channel channel = channelRepository.save(Channel.builder()
+                : group.getGroupUsers().stream().map(GroupUser::getUser).filter(user -> request.getUserIds().contains(user.getId())).toList();
+
+        return channelRepository.save(Channel.builder()
                 .name(name)
                 .description(request.getDescription())
                 .type(request.getType())
                 .users(usersInChannel)
                 .group(group)
-                .creator(userRepository.findById(creatorId).orElseThrow(()->new DomainException("Không tìm thấy người dùng với id " + creatorId)))
+                .creator(creator)
                 .build());
-
-        if (!group.getChannels().contains(channel)){
-            group.getChannels().add(channel);
-            groupRepository.save(group);
-        }
-
-        return channel;
     }
 
     @Override
@@ -76,28 +72,22 @@ public class ChannelServiceImpl implements ChannelService {
         List<String> memberIds = request.getUserIds().stream().distinct().sorted().toList();
 
         String channelName = String.join("|", memberIds) + "|" + group.getId();
-        Channel existedChannel = channelRepository.findTopByParentIdAndName(group.getId(), channelName);
-        if (existedChannel != null) {
-            return existedChannel;
+        var channel = channelRepository.findByGroupIdAndName(group.getId(), channelName);
+        if (channel.isPresent()) {
+            return channel.get();
         }
 
         var users = userRepository.findByIdIn(memberIds);
+        var creator = userRepository.findById(adderId).orElseThrow(() -> new DomainException("User not found"));
 
-        Channel channel = channelRepository.save(Channel.builder()
+        return channelRepository.save(Channel.builder()
                 .name(channelName)
                 .description(request.getDescription())
                 .type(ChannelType.PRIVATE_MESSAGE)
                 .users(users)
                 .group(group)
-                .creator(userRepository.findById(adderId).orElseThrow(()->new DomainException("Không tìm thấy người dùng với id " + adderId)))
+                .creator(creator)
                 .build());
-
-        if (!group.getChannels().contains(channel)){
-            group.getChannels().add(channel);
-            groupRepository.save(group);
-        }
-
-        return channel;
     }
 
     @Override
@@ -112,12 +102,10 @@ public class ChannelServiceImpl implements ChannelService {
             throw new DomainException("You cannot remove the default channel");
         }
 
-        group.getChannels().remove(channel);
-
-        groupRepository.save(group);
-
-        channelRepository.delete(channel);
-        messageRepository.deleteByGroupId(channel.getId());
+        channel.setStatus(ChannelStatus.DELETED);
+        channel.setDeletedDate(new Date());
+        channelRepository.save(channel);
+        messageRepository.deleteAllByChannelId(channel.getId(), Message.Status.DELETED);
     }
 
     @Override

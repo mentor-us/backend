@@ -38,8 +38,8 @@ public class ReminderServiceImpl implements ReminderService {
         for (Reminder reminder : reminders) {
             String template = reminder.getType().toString() + "_REMINDER";
             List<String> receiverIds = getStrings(reminder, template);
-            Optional<Group> groupOptional = groupRepository.findById(reminder.getGroupId());
-            String title = groupOptional.isPresent() ? groupOptional.get().getName() : "MentorUS";
+            Group group = reminder.getGroup().getGroup();
+            String title = group != null ? group.getName() : "MentorUS";
             String body = "";
             if (reminder.getType() == ReminderType.MEETING) {
                 body = String.format("Lịch hẹn %s sẽ diễn ra lúc %s", reminder.getName(), reminder.getProperties().get("dueDate"));
@@ -59,7 +59,7 @@ public class ReminderServiceImpl implements ReminderService {
         String subject = reminder.getSubject();
         Map<String, Object> properties = reminder.getProperties();
         properties.put("frontendUrl", frontendUrl);
-        List<String> recipients = reminder.getRecipients();
+        List<String> recipients = reminder.getRecipients().stream().map(User::getEmail).toList();
         List<String> receiverIds = new ArrayList<>();
         recipients.forEach(recipient -> {
             mailService.sendEmailTemplate(template, properties, subject, Collections.singletonList(recipient));

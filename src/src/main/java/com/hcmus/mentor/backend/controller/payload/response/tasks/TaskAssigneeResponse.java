@@ -35,8 +35,7 @@ public class TaskAssigneeResponse {
         this.isMentor = isMentor;
     }
 
-    public static TaskAssigneeResponse from(
-            ProfileResponse profile, TaskStatus status, boolean isMentor) {
+    public static TaskAssigneeResponse from(ProfileResponse profile, TaskStatus status, boolean isMentor) {
         String imageUrl = profile.getImageUrl();
         if (("https://graph.microsoft.com/v1.0/me/photo/$value").equals(imageUrl)) {
             imageUrl = null;

@@ -1,15 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.domain.*;
 import org.springframework.scheduling.annotation.Async;
-
-import java.util.Map;
 
 public interface NotificationService {
 

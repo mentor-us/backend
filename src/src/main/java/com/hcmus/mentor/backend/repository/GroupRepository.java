@@ -91,6 +91,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     long countByGroupCategoryAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
 
     boolean existsByIdAndCreatorId(String groupId, String creatorId);
+    boolean existsByCreatorEmailAndId(String creatorEmail, String groupId);
 
     Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
 
@@ -123,4 +124,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     @Query("SELECT g, gu, u from Group g join g.groupUsers gu join gu.user u where u.id = :userId")
     List<Group> findGroupsByMembersContaining(String userId);
 
+    @Query("SELECT g from Group g join g.groupUsers gu join gu.user u where u.id = :userId and g.id = :groupId")
+    boolean existsByMember(@Param("groupId") String groupId, @Param("userId") String userId);
 }

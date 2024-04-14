@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
 import java.util.List;
@@ -55,6 +56,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     long countByCreatedDateBetween(Date start, Date end);
 
     long countByGroupId(String groupId);
+    long countByChannelIdIn(List<String> channelIds);
 
     Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
     Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
@@ -92,5 +94,10 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 
 //    Page<Message> findByGroupId(String groupId, TextCriteria criteria, Pageable pageable);
 
-    void deleteByGroupId(String groupId);
+
+    @Query("UPDATE Message m " +
+            "SET m.status = :status " +
+            "WHERE m.channel.id = :channelId")
+    void deleteAllByChannelId(@Param(value = "channelId") String channelId, @Param(value = "status") Message.Status status);
+
 }

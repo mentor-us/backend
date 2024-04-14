@@ -52,6 +52,14 @@ public class Meeting implements IRemindable, Serializable {
     @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Builder.Default
+    @Column(name = "deleted_date")
+    private Date deletedDate = null;
+
     @ManyToOne
     @JoinColumn(name = "organizer_id")
     private User organizer;

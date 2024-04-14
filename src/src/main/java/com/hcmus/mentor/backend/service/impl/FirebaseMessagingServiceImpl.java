@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
@@ -44,8 +43,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
     }
 
     @Override
-    public BatchResponse sendGroupNotification(
-            List<String> receiverIds, String title, String content, Map<String, String> data)
+    public BatchResponse sendGroupNotification(List<String> receiverIds, String title, String content, Map<String, String> data)
             throws FirebaseMessagingException {
         List<String> tokens = getDeviceTokensFromUserIds(receiverIds);
         if (tokens == null || tokens.size() == 0) {

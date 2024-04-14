@@ -40,10 +40,7 @@ public class ShareServiceImpl implements ShareService {
         channel.setUpdatedDate(new Date());
         channelRepository.save(channel);
 
-        if (channel.getParentId() == null) {
-            throw new DomainException("Channel not have group");
-        }
-        pingGroup(channel.getParentId());
+        pingGroup(channel.getGroup().getId());
     }
 
     public boolean isValidTemplate(Workbook workbook, int numOfSheetInTemplate, List<String> nameHeaders) {

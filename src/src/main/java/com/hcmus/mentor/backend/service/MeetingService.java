@@ -41,9 +41,7 @@ public class MeetingService implements IRemindableService {
     private final ChannelRepository channelRepository;
 
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
-        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
-                .map(Group::getId)
-                .toList();
+        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream().map(Group::getId).toList();
         Date now = new Date();
         List<Meeting> meetings = meetingRepository
                 .findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(

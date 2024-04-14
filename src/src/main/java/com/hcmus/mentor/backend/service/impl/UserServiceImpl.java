@@ -12,6 +12,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.GroupUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
@@ -73,6 +74,7 @@ public class UserServiceImpl implements UserService {
     private final BlobStorage blobStorage;
     private final ShareService shareService;
     private final EntityManager entityManager;
+    private final GroupUserRepository groupUserRepository;
 
     @Override
     public User getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -184,8 +186,8 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        groupRepository.findAllByMenteesIn(id).forEach(group -> deleteMenteeInGroup(group, id));
-        groupRepository.findAllByMentorsIn(id).forEach(group -> deleteMentorInGroup(group, id));
+        groupUserRepository.deleteByUserId(id);
+
         UserDataResponse userDataResponse = getUserData(user);
 
         userRepository.delete(user);
@@ -193,19 +195,6 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    private void deleteMenteeInGroup(Group group, String menteeId) {
-        if (group.getMentees().remove(menteeId)) {
-            group.setMentees(group.getMentees());
-            groupRepository.save(group);
-        }
-    }
-
-    private void deleteMentorInGroup(Group group, String mentorId) {
-        if (group.getMentors().remove(mentorId)) {
-            group.setMentors(group.getMentors());
-            groupRepository.save(group);
-        }
-    }
 
     @Override
     public UserServiceDto addUser(String emailUser, AddUserRequest request) {
@@ -490,17 +479,7 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", invalidIds);
         }
 
-        userIds.forEach(
-                userId -> {
-                    List<Group> groupMentees = groupRepository.findAllByMenteesIn(userId);
-                    List<Group> groupMentors = groupRepository.findAllByMentorsIn(userId);
-                    for (Group group : groupMentees) {
-                        deleteMenteeInGroup(group, userId);
-                    }
-                    for (Group group : groupMentors) {
-                        deleteMentorInGroup(group, userId);
-                    }
-                });
+        groupUserRepository.deleteByUserIdIn(userIds);
         userRepository.deleteAllById(userIds);
 
         return new UserServiceDto(SUCCESS, "", users);
@@ -749,14 +728,11 @@ public class UserServiceImpl implements UserService {
                 });
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override
@@ -787,7 +763,7 @@ public class UserServiceImpl implements UserService {
         int index = 1;
         for (Group group : groups) {
             Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(group.getGroupCategory().getId() );
+                    groupCategoryRepository.findById(group.getGroupCategory().getId());
             String groupCategoryName =
                     groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
             List<String> row = new ArrayList<>();
@@ -823,14 +799,11 @@ public class UserServiceImpl implements UserService {
 
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     /**

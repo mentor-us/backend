@@ -68,10 +68,10 @@ public class MessageDetailResponse {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getGroupId())
+                .groupId(message.getChannel().getId())
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
+                .file(new FileModel(message.getFile()))
                 .status(message.getStatus())
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
@@ -215,7 +215,7 @@ public class MessageDetailResponse {
 
     public static List<EmojiDto> generateOwnerReacted(List<Reaction> reactions, String viewerId) {
         return reactions.stream()
-                .filter(reaction -> reaction.getUserId().equals(viewerId))
+                .filter(reaction -> reaction.getUser().getId().equals(viewerId))
                 .flatMap(reaction -> reaction.getData().stream())
                 .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
                 .toList();

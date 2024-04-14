@@ -4,13 +4,14 @@ import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwa
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface ChannelRepository extends JpaRepository<Channel, String> {
+public interface ChannelRepository extends CrudRepository<Channel, String> {
 
     List<Channel> findByIdIn(List<String> channelIds);
 
@@ -22,6 +23,8 @@ public interface ChannelRepository extends JpaRepository<Channel, String> {
     List<Channel> findByParentId(String parentId);
 
     Channel findTopByParentIdAndName(String parentId, String name);
+
+    Optional<Channel> findByGroupIdAndName(String groupId, String name);
 
     boolean existsByParentIdAndName(String parentId, String name);
 
@@ -48,5 +51,4 @@ public interface ChannelRepository extends JpaRepository<Channel, String> {
                     "ORDER BY g.name, c.name",
             nativeQuery = true)
     List<ChannelForwardResponse> getListChannelForward(@Param("channelIds") List<String> channelIds, @Param("status") String status);
-
 }

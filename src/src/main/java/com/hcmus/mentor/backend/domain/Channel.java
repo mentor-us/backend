@@ -46,6 +46,10 @@ public class Channel {
     private Date updatedDate = new Date();
 
     @Builder.Default
+    @Column(name = "deleted_date")
+    private Date deletedDate = null;
+
+    @Builder.Default
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private ChannelStatus status = ChannelStatus.ACTIVE;

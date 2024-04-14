@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.controller.payload.FileModel;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,6 +11,7 @@ import java.io.Serializable;
 @Data
 @Builder
 @Entity
+@AllArgsConstructor
 @Table(name = "files")
 public class File implements Serializable {
 
@@ -24,5 +27,11 @@ public class File implements Serializable {
 
     public File() {
 
+    }
+
+    public File(FileModel fileModel) {
+        this.filename = fileModel.getFilename();
+        this.size = fileModel.getSize();
+        this.url = fileModel.getUrl();
     }
 }

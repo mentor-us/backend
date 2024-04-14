@@ -333,36 +333,29 @@ public class AnalyticServiceImpl implements AnalyticService {
     @Override
     public ApiResponseDto<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId) {
         if (!permissionService.isAdmin(emailUser)) {
-            return new ApiResponseDto(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
-        Optional<Group> groupOptional = groupRepository.findById(groupId);
-        if (!groupOptional.isPresent()) {
-            return new ApiResponseDto(null, NOT_FOUND_GROUP, "Not found group");
+        var group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
+            return new ApiResponseDto<>(null, NOT_FOUND_GROUP, "Not found group");
         }
-        Group group = groupOptional.get();
-        return new ApiResponseDto(getGeneralGroupAnalytic(group), SUCCESS, "");
+        return new ApiResponseDto<>(getGeneralGroupAnalytic(group), SUCCESS, "");
     }
 
     private GroupAnalyticResponse getGeneralGroupAnalytic(Group group) {
-        String groupId = group.getId();
+        var channelIds = group.getChannels().stream().map(Channel::getId).toList();
+        List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
 
-        String categoryName = groupCategoryRepository
-                .findById(group.getGroupCategory().getId())
-                .map(GroupCategory::getName)
-                .orElse(null);
-
-        Date lastTimeActive = getLastTimeActive(groupId);
-
-        long totalMessages = messageRepository.countByGroupId(groupId);
-
-        List<Task> tasks = taskRepository.findAllByGroupIdIn(group.getChannels().stream().map(Channel::getId).toList());
+        String categoryName = group.getGroupCategory().getName();
+        Date lastTimeActive = getLastTimeActive(channelIds);
+        long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         long totalTasks = getTotalTasks(tasks);
+        long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
 
-        long totalMeetings = meetingRepository.countByGroupId(groupId);
 
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
-        addMembersToAnalytics(members, group.getMentors(), "MENTOR", group.getId());
-        addMembersToAnalytics(members, group.getMentees(), "MENTEE", group.getId());
+        addMembersToAnalytics(members, group.getMentors(), "MENTOR", channelIds);
+        addMembersToAnalytics(members, group.getMentees(), "MENTEE", channelIds);
 
         return GroupAnalyticResponse.builder()
                 .id(group.getId())
@@ -382,8 +375,9 @@ public class AnalyticServiceImpl implements AnalyticService {
     private List<GroupAnalyticResponse.Member> getMembers(Group group) {
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
         if (group != null) {
-            addMembersToAnalytics(members, group.getMentors(), "MENTOR", group.getId());
-            addMembersToAnalytics(members, group.getMentees(), "MENTEE", group.getId());
+            var channelIds = group.getChannels().stream().map(Channel::getId).toList();
+            addMembersToAnalytics(members, group.getMentors(), "MENTOR", channelIds);
+            addMembersToAnalytics(members, group.getMentees(), "MENTEE", channelIds);
         }
 
         return members;
@@ -453,20 +447,16 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public ResponseEntity<Resource> generateExportGroupTable(
-            String emailUser, String groupId, List<String> remainColumns) throws IOException {
-        Optional<Group> groupOptional = groupRepository.findById(groupId);
-        Group group = groupOptional.orElse(null);
+    public ResponseEntity<Resource> generateExportGroupTable(String emailUser, String groupId, List<String> remainColumns) throws IOException {
+        var group = groupRepository.findById(groupId).orElse(null);
         List<GroupAnalyticResponse.Member> members = getMembers(group);
         return generateExportGroupTable(members, remainColumns);
     }
 
     @Override
-    public ResponseEntity<Resource> generateExportGroupTableBySearchConditions(
-            String emailUser, String groupId, FindUserAnalyticRequest request, List<String> remainColumns)
+    public ResponseEntity<Resource> generateExportGroupTableBySearchConditions(String emailUser, String groupId, FindUserAnalyticRequest request, List<String> remainColumns)
             throws IOException {
-        List<GroupAnalyticResponse.Member> members =
-                getUsersAnalyticBySearchConditions(emailUser, groupId, request);
+        List<GroupAnalyticResponse.Member> members = getUsersAnalyticBySearchConditions(emailUser, groupId, request);
         return generateExportGroupTable(members, remainColumns);
     }
 
@@ -474,37 +464,35 @@ public class AnalyticServiceImpl implements AnalyticService {
             List<GroupAnalyticResponse.Member> members,
             List<User> users,
             String role,
-            String groupId) {
+            List<String> channelIds) {
         for (User user : users) {
-            long totalMessagesMember = messageRepository.countByChannelIdInAndSenderId(groupId, user.getId());
-            long totalMeetingsMember = meetingRepository.countByGroupIdIdInAndIsMember(groupId, user.getId());
+            long totalMessagesMember = messageRepository.countByChannelIdInAndSenderId(channelIds, user.getId());
+            long totalMeetingsMember = meetingRepository.countByGroupIdIdInAndIsMember(channelIds, user.getId());
 
-            long totalTasksMember = taskRepository.countAllOwnTaskOfGroup(groupId, user.getId());
-            long totalDoneTasks = taskRepository.countAllOwnTaskOfGroupWithStatus(groupId, user.getId(), TaskStatus.DONE);
+            long totalTasksMember = taskRepository.countAllOwnTaskOfGroup(channelIds, user.getId());
+            long totalDoneTasks = taskRepository.countAllOwnTaskOfGroupWithStatus(channelIds, user.getId(), TaskStatus.DONE);
 
 //            Date lastTimeTaskMember = Optional.ofNullable(taskRepository.findLatestOwnTaskByGroup(groupId, user.getId())).map(Task::getCreatedDate).orElse(null);
-
-            Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findLatestOwnMessageByChannel(groupId, user.getId())).map(Message::getCreatedDate).orElse(null);
 //            Date lastTimeMeetingMember = Optional.ofNullable(meetingRepository.findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(groupId, user.getId()))
 //                    .map(Meeting::getCreatedDate)
 //                    .orElse(null);
-            Date lastTimeActiveMember = getLatestDate(lastTimeMessageMember, lastTimeTaskMember, lastTimeMeetingMember);
+//            Date lastTimeActiveMember = getLatestDate(lastTimeMessageMember, lastTimeTaskMember, lastTimeMeetingMember);
+            Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findLatestOwnMessageByChannel(channelIds, user.getId())).map(m -> m.get().getCreatedDate()).orElse(null);
 
-            GroupAnalyticResponse.Member member =
-                    GroupAnalyticResponse.Member.builder()
-                            .id(user.getId())
-                            .email(user.getEmail())
-                            .name(user.getName())
-                            .role(role)
-                            .totalMeetings(totalMeetingsMember)
-                            .totalTasks(totalTasksMember)
-                            .totalMessages(totalMessagesMember)
-                            .totalDoneTasks(totalDoneTasks)
-                            .lastTimeActive(lastTimeActiveMember)
-                            .trainingPoint(user.getTrainingPoint())
-                            .hasEnglishCert(user.getHasEnglishCert())
-                            .studyingPoint(user.getStudyingPoint())
-                            .build();
+            GroupAnalyticResponse.Member member = GroupAnalyticResponse.Member.builder()
+                    .id(user.getId())
+                    .email(user.getEmail())
+                    .name(user.getName())
+                    .role(role)
+                    .totalMeetings(totalMeetingsMember)
+                    .totalTasks(totalTasksMember)
+                    .totalMessages(totalMessagesMember)
+                    .totalDoneTasks(totalDoneTasks)
+                    .lastTimeActive(lastTimeMessageMember)
+                    .trainingPoint(user.getTrainingPoint())
+                    .hasEnglishCert(user.getHasEnglishCert())
+                    .studyingPoint(user.getStudyingPoint())
+                    .build();
             members.add(member);
         }
     }
@@ -519,16 +507,16 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private Date getLastTimeActive(List<String> channelIds) {
         Date lastTimeMessage = Optional.ofNullable(messageRepository.findFirstByChannelIdInOrderByCreatedDateDesc(channelIds))
-                        .map(Message::getCreatedDate)
-                        .orElse(null);
+                .map(Message::getCreatedDate)
+                .orElse(null);
 
         Date lastTimeTask = Optional.ofNullable(taskRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
-                        .map(Task::getCreatedDate)
-                        .orElse(null);
+                .map(Task::getCreatedDate)
+                .orElse(null);
 
         Date lastTimeMeeting = Optional.ofNullable(meetingRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
-                        .map(Meeting::getCreatedDate)
-                        .orElse(null);
+                .map(Meeting::getCreatedDate)
+                .orElse(null);
 
         return getLatestDate(lastTimeMessage, lastTimeTask, lastTimeMeeting);
     }
@@ -554,7 +542,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                 .map(GroupCategory::getName)
                 .orElse(null);
 
-        Date lastTimeActive = getLastTimeActive(group.getId());
+        Date lastTimeActive = getLastTimeActive(channelIds);
 
         long totalMessages = messageRepository.countByGroupIdIn(channelIds);
         List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
@@ -881,13 +869,20 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<User> mentors = new ArrayList<>();
         List<User> mentees = new ArrayList<>();
 
-        for (User user : users) {
-            var gu = groupUserRepository.findAllB
-            if (groupRepository.existsByIdAndMentorsIn(groupId, user.getId())) {
-                mentors.add(user);
-            }
-            if (groupRepository.existsByIdAndMenteesIn(groupId, user.getId())) {
-                mentees.add(user);
+        var group = groupRepository.findById(groupId).orElse(null);
+        List<GroupUser> groupUsers = group.getGroupUsers();
+        var channelIds = group.getChannels().stream().map(Channel::getId).toList();
+
+        if (groupUsers != null) {
+            for (User user : users) {
+                var groupUser = groupUsers.stream().filter(groupUser1 -> groupUser1.getUser().getId().equals(user.getId())).findFirst().orElse(null);
+                if (groupUser != null) {
+                    if (groupUser.isMentor()) {
+                        mentors.add(user);
+                    } else {
+                        mentees.add(user);
+                    }
+                }
             }
         }
 
@@ -895,13 +890,13 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (role != null) {
             if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
-                addMembersToAnalytics(members, mentors, "MENTOR", groupId);
+                addMembersToAnalytics(members, mentors, "MENTOR", channelIds);
             } else {
-                addMembersToAnalytics(members, mentees, "MENTEE", groupId);
+                addMembersToAnalytics(members, mentees, "MENTEE", channelIds);
             }
         } else {
-            addMembersToAnalytics(members, mentors, "MENTOR", groupId);
-            addMembersToAnalytics(members, mentees, "MENTEE", groupId);
+            addMembersToAnalytics(members, mentors, "MENTOR", channelIds);
+            addMembersToAnalytics(members, mentees, "MENTEE", channelIds);
         }
 
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {
@@ -1225,7 +1220,6 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (attributes.isEmpty()) {
             return null;
         }
-
         if (!groupRepository.existsById(groupId)) {
             return null;
         }

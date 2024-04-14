@@ -31,7 +31,7 @@ public interface UserRepository extends CrudRepository<User, String> {
 
     Boolean existsByEmail(String email);
 
-    Boolean existsByEmailAndRolesIn(String email, UserRole role);
+    Boolean existsByEmailAndRolesContains(String email, UserRole role);
 
     List<User> findByIdIn(List<String> ids);
 

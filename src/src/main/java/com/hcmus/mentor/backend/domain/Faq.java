@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -14,6 +15,7 @@ import java.util.List;
 @Entity
 @Builder
 @Table(name = "faqs")
+@AllArgsConstructor
 public class Faq {
 
     @Id
@@ -52,8 +54,7 @@ public class Faq {
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> voters = new ArrayList<>();
 
-    public Faq() {
-    }
+    public Faq() {}
 
 
     public int getRating() {

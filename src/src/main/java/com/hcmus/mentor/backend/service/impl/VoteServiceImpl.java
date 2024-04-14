@@ -42,21 +42,13 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public VoteDetailResponse get(String userId, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (voteWrapper.isEmpty()) {
-            return null;
-        }
-        Vote vote = voteWrapper.get();
+        var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
         vote.getGroup().getGroup().isMentor(userId) ;
         if (!permissionService.isUserIdInGroup(userId, vote.getGroup().getId())) {
             return null;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroup().getId());
-        if (groupWrapper.isEmpty()) {
-            return null;
-        }
-        Group group = groupWrapper.get();
+        Group group = vote.getGroup().getGroup();
 
         VoteDetailResponse voteDetail = fulfillChoices(vote);
         voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreator().getId().equals(userId));
