@@ -18,8 +18,8 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findByEmail(String email);
-    List<User> findByEmailIn(List<String> emails);
 
+    List<User> findByEmailIn(List<String> emails);
 
     @Query("SELECT u FROM User u WHERE u.email = ?1 OR ?1 MEMBER OF u.additionalEmails")
     Optional<User> findByAdditionalEmailsContains(String email);
@@ -50,7 +50,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findById(String id);
 
-//    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
+    //    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
     // TODO: Fix this
     @Query("SELECT id, name, imageUrl FROM User WHERE id = ?1")
     ShortProfile findShortProfile(String id);
@@ -58,7 +58,6 @@ public interface UserRepository extends JpaRepository<User, String> {
 //    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
     // TODO: Fix this
 //    List<ShortProfile> findByIds(List<String> senderIds);
-
 
 
 }
