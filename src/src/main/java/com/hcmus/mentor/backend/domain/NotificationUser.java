@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import lombok.Data;
 @Builder
 @Entity
 @Table(name = "notification_user")
+@AllArgsConstructor
 public class NotificationUser {
     @Id
     @Column(name = "id")
@@ -22,9 +24,8 @@ public class NotificationUser {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    @Builder.Default
-    @Column(name = "is_agreed", nullable = false)
-    private Boolean isAgreed = false;
+    @Column(name = "is_agreed")
+    private Boolean isAgreed;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id")

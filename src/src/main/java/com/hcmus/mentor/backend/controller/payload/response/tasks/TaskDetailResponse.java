@@ -25,6 +25,7 @@ public class TaskDetailResponse {
 
     private int totalAssignees;
 
+    @Builder.Default
     private String parentTask = "";
 
     private Group group;

@@ -1,12 +1,16 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.google.firebase.messaging.FirebaseMessagingException;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.*;
@@ -16,14 +20,14 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.domain.constant.ChannelType.PRIVATE_MESSAGE;
@@ -40,6 +44,116 @@ public class NotificationServiceImpl implements NotificationService {
     private final FirebaseMessagingServiceImpl firebaseMessagingManager;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final NotificationUserRepository notificationUserRepository;
+
+    @Override
+    public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
+        PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
+        List<NotificationResponse> notificationsResponse = notifications.stream()
+                .map(notification -> NotificationResponse.from(notification, new ShortProfile(notification.getSender()))).toList();
+        return pagingResponse(notifications, notificationsResponse);
+    }
+
+    /**
+     *
+     * @param senderId
+     * @param request
+     * @return
+     */
+    @Override
+    public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
+        Notification notif = notificationRepository.save(Notification.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .type(NotificationType.NEED_RESPONSE)
+                .sender(userRepository.findById(senderId).orElse(null))
+                .createdDate(request.getCreatedDate())
+                .build());
+        var receivers = NotificationUser.builder().notification(notif).user(userRepository.findById(request.getReceiverId()).orElse(null)).build();
+        notif.setReceivers(Collections.singletonList(receivers));
+        return notif;
+    }
+
+
+    /**
+     *
+     * @param userId
+     * @param notificationId
+     * @param action
+     * @return Notification
+     */
+    @Override
+    public Notification responseNotification(String userId, String notificationId, String action) {
+        Notification notif = notificationRepository.findById(notificationId).orElseThrow(() -> new NoSuchElementException("Notification not found"));
+
+        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
+            throw new DomainException("Notification is not a response type");
+        }
+
+        NotificationUser notificationUser = notif.getReceivers().stream()
+                .filter(nu -> nu.getUser().getId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new DomainException("User is not a receiver of this notification"));
+
+        switch (action) {
+            case "seen":
+                notificationUser.setIsReaded(true);
+                break;
+            case "accept":
+                notificationUser.setIsReaded(true);
+                notificationUser.setIsAgreed(true);
+                break;
+            case "refuse":
+                notificationUser.setIsReaded(true);
+                notificationUser.setIsAgreed(false);
+                break;
+            default:
+                break;
+        }
+        notificationUserRepository.save(notificationUser);
+
+        return notif;
+    }
+
+
+    /**
+     *
+     * @param request
+     */
+    @Override
+    public void subscribeNotification(SubscribeNotificationRequest request) {
+        if (request == null) {
+            return;
+        }
+
+        unsubscribeNotification(request.getUserId());
+
+        if (request.getToken().isEmpty()) {
+            logger.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
+            return;
+        }
+        logger.info("[*] Subscribe user notification: userID({}) | Token({})", request.getUserId(), request.getToken());
+
+        List<NotificationSubscriber> subscribes =
+                notificationSubscriberRepository.findByUserIdOrToken(
+                        request.getUserId(), request.getToken());
+        if (subscribes.isEmpty()) {
+            NotificationSubscriber subscriber =
+                    NotificationSubscriber.builder()
+                            .user(userRepository.findById(request.getUserId()).orElse(null))
+                            .token(request.getToken())
+                            .build();
+            notificationSubscriberRepository.save(subscriber);
+            return;
+        }
+
+        subscribes.forEach(subscriber -> {
+            subscriber.setToken(request.getToken());
+            subscriber.setUser(userRepository.findById(request.getUserId()).orElse(null));
+        });
+        notificationSubscriberRepository.saveAll(subscribes);
+    }
 
     private Map<String, Object> pagingResponse(Slice<Notification> slice, List<NotificationResponse> notifications) {
         Map<String, Object> response = new HashMap<>();
@@ -277,6 +391,19 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    /**
+     *
+     * @param title
+     * @param content
+     * @param senderId
+     * @param group
+     * @return
+     */
+    @Override
+    public Notification createNewMediaNotification(final String title, final String content, final String senderId, final Group group) {
+        return null;
+    }
+
     @Override
     @Async
     public void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId) {
@@ -344,6 +471,16 @@ public class NotificationServiceImpl implements NotificationService {
         notif.setReceivers(receiverIds);
         notificationRepository.save(notif);
         return notif;
+    }
+
+    /**
+     *
+     * @param userId
+     * @return
+     */
+    @Override
+    public long getUnreadNumber(final String userId) {
+        return 0;
     }
 
     @Override
@@ -485,6 +622,19 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (FirebaseMessagingException e) {
             logger.error("[!] Error sending unpin message notification", e);
         }
+    }
+
+    /**
+     *
+     * @param title
+     * @param content
+     * @param senderId
+     * @param group
+     * @return
+     */
+    @Override
+    public Notification createForwardNotification(final String title, final String content, final String senderId, final Group group) {
+        return null;
     }
 
     /**

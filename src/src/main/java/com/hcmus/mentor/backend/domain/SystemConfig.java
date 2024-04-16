@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import lombok.Data;
 @Builder
 @Entity
 @Table(name = "system-config")
+@AllArgsConstructor
 public class SystemConfig {
     @Id
     @Column(name = "id")

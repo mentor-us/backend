@@ -3,7 +3,6 @@ package com.hcmus.mentor.backend.service.impl;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.mapper.GroupMapper;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
@@ -812,7 +811,7 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        var groupDetail = GroupMapper.INSTANCE.groupToGroupDetailResponse(group, userId);
+        var groupDetail = new GroupDetailResponse(group);
         groupDetail.setPinnedMessages(fullFillPinMessages(userId, groupDetail.getPinnedMessageIds()));
 
         return new GroupServiceDto(SUCCESS, null, groupDetail);

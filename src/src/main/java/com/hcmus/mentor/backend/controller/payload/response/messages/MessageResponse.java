@@ -49,6 +49,7 @@ public class MessageResponse implements Serializable {
 
     private String reply;
 
+    @Builder.Default
     private Boolean isForward = false;
 
     public static MessageResponse from(Message message, ProfileResponse sender) {

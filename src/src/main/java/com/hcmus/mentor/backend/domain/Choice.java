@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -13,6 +14,7 @@ import java.util.List;
 @Entity
 @Builder
 @Table(name = "choices")
+@AllArgsConstructor
 public class Choice {
     @Id
     @Column(name = "id")

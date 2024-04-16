@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.domain;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @Builder
 @Entity
 @Table(name = "groups_categories")
+@AllArgsConstructor
 public class GroupCategory {
 
     @Id

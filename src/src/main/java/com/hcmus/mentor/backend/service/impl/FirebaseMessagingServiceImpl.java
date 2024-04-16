@@ -46,7 +46,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
     public BatchResponse sendGroupNotification(List<String> receiverIds, String title, String content, Map<String, String> data)
             throws FirebaseMessagingException {
         List<String> tokens = getDeviceTokensFromUserIds(receiverIds);
-        if (tokens == null || tokens.size() == 0) {
+        if (tokens == null || tokens.isEmpty()) {
             return null;
         }
         Notification notification = Notification.builder().setTitle(title).setBody(content).build();
@@ -56,7 +56,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
                         .addAllTokens(tokens)
                         .putAllData(data)
                         .build();
-        return firebaseMessaging.sendMulticast(message);
+        return firebaseMessaging.sendEachForMulticast(message);
     }
 
     private List<String> getDeviceTokensFromUserIds(List<String> userIds) {

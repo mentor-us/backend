@@ -1,17 +1,16 @@
 package com.hcmus.mentor.backend.controller.payload.response.users;
 
 import com.hcmus.mentor.backend.domain.User;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,10 +20,12 @@ public class UserDetailResponse {
 
     private String id;
 
+    @Builder.Default
     private String name = "";
 
     private String email;
 
+    @Builder.Default
     private String imageUrl = "";
 
     private boolean status;

@@ -62,6 +62,7 @@ public class GroupDetailResponse {
 
     private String parentId;
 
+    @Builder.Default
     private ChannelType type = ChannelType.PUBLIC;
 
     private String defaultChannelId;

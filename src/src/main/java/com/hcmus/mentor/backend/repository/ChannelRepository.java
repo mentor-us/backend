@@ -7,10 +7,12 @@ import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ChannelRepository extends CrudRepository<Channel, String> {
 
     List<Channel> findByIdIn(List<String> channelIds);

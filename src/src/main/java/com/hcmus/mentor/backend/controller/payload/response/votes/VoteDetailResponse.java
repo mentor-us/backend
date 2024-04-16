@@ -37,6 +37,7 @@ public class VoteDetailResponse {
 
     private boolean canEdit;
 
+    @Builder.Default
     private Boolean isMultipleChoice = false;
 
     public static VoteDetailResponse from(

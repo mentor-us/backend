@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -10,10 +11,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Builder
 @Data
+@Builder
 @Entity
 @Table(name = "votes")
+@AllArgsConstructor
 public class Vote {
 
     @Id

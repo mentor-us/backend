@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -15,6 +16,7 @@ import java.util.List;
 @Entity
 @Table(name = "notifications")
 @Builder
+@AllArgsConstructor
 public class Notification {
 
     @Id

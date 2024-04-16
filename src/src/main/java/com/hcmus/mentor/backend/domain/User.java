@@ -10,6 +10,7 @@ import com.hcmus.mentor.backend.security.principal.oauth2.CustomerOidcUser;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -26,6 +27,7 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 @Builder
 @Entity
 @Table(name = "users")
+@AllArgsConstructor
 public class User implements Serializable {
 
     @Id
@@ -141,10 +143,9 @@ public class User implements Serializable {
     private List<Choice> choices = new ArrayList<>();
 
 
-
     // === Meeting ===
     @Builder.Default
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
     private List<MeetingHistory> meetingHistories = new ArrayList<>();
 
@@ -206,21 +207,6 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
     private List<GroupUser> groupUsers = new ArrayList<>();
-//
-//    @Builder.Default
-//    @ManyToMany(mappedBy = "menteesMarked", fetch = FetchType.LAZY)
-//    @Fetch(FetchMode.SUBSELECT)
-//    private List<Group> groupsMenteeMarked = new ArrayList<>();
-
-//    @Builder.Default
-//    @ManyToMany(fetch = FetchType.LAZY)
-//    @JoinTable(
-//            name = "ref_user_group_pinned",
-//            joinColumns = @JoinColumn(name = "user_id"),
-//            inverseJoinColumns = @JoinColumn(name = "group_id"))
-//    @Fetch(FetchMode.SUBSELECT)
-//    private List<Group> groupsPinned = new ArrayList<>();
-
 
     // === Channel ===
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
@@ -249,22 +235,8 @@ public class User implements Serializable {
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
-//        return groupsPinned.stream().anyMatch(group -> group.getId().equals(groupId));
     }
 
-//    public void pinGroup(Group group) {
-//        if (isPinnedGroup(group.getId())) {
-//            return;
-//        }
-//        groupsPinned.add(group);
-//    }
-//
-//    public void unpinGroup(String groupId) {
-//        if (!isPinnedGroup(groupId)) {
-//            return;
-//        }
-//        groupsPinned.add(groupsPinned.stream().filter(group -> group.getId().equals(groupId)).findFirst().get());
-//    }
 
     @Override
     public String toString() {

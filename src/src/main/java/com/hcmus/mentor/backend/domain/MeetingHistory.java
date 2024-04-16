@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,6 +12,7 @@ import java.util.Date;
 @Entity
 @Builder
 @Table(name = "meeting_histories")
+@AllArgsConstructor
 public class MeetingHistory implements Serializable {
 
     @Id

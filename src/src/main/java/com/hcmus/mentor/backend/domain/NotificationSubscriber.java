@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import java.util.Date;
 @Builder
 @Entity
 @Table(name = "notification_subscriber")
+@AllArgsConstructor
 public class NotificationSubscriber {
 
     @Id

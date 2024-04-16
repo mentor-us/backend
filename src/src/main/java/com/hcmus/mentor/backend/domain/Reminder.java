@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.hibernate.annotations.Fetch;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Entity
 @Builder
 @Table(name = "reminders")
+@AllArgsConstructor
 public class Reminder {
     @Id
     @Column(name = "id")

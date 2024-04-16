@@ -49,6 +49,7 @@ public class Group implements Serializable {
     /**
      * Status of the group
      */
+    @Builder.Default
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.domain;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
@@ -18,6 +19,7 @@ import java.util.List;
 @Builder
 @ToString
 @Table(name = "channels")
+@AllArgsConstructor
 public class Channel {
 
     @Id
@@ -94,6 +96,7 @@ public class Channel {
     @JoinColumn(name = "channel_pinned_id")
     private List<Message> messagesPinned = new ArrayList<>();
 
+    @Builder.Default
     @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "rel_user_channel",

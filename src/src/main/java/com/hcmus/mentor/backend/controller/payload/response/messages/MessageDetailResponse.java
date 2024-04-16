@@ -3,16 +3,12 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.domain.Meeting;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
-import com.hcmus.mentor.backend.domain.Reaction;
 import lombok.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
@@ -55,6 +51,7 @@ public class MessageDetailResponse {
 
     private ReplyMessage reply;
 
+    @Builder.Default
     private Boolean isForward = false;
 
     public static MessageDetailResponse from(Message message, User user) {
@@ -203,22 +200,29 @@ public class MessageDetailResponse {
     }
 
     public static List<EmojiDto> generateTotalReactionData(List<Reaction> reactions) {
-        return reactions.stream()
-                .flatMap(reaction -> reaction.getData().stream())
-                .collect(Collectors.groupingBy(EmojiDto::getId, Collectors.summingInt(EmojiDto::getTotal)))
-                .entrySet()
-                .stream()
-                .map(entry -> new EmojiDto(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .toList();
+        return Arrays.stream(EmojiType.values())
+                .map(et -> new EmojiDto(EmojiType.valueOf(
+                        et.name()),
+                        reactions.stream()
+                                .filter(r -> r.getEmojiType().equals(et)).map(Reaction::getTotal)
+                                .reduce(0, Integer::sum)))
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
     }
 
     public static List<EmojiDto> generateOwnerReacted(List<Reaction> reactions, String viewerId) {
-        return reactions.stream()
-                .filter(reaction -> reaction.getUser().getId().equals(viewerId))
-                .flatMap(reaction -> reaction.getData().stream())
-                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .toList();
+//        return reactions.stream()
+//                .filter(reaction -> reaction.getUser().getId().equals(viewerId))
+//                .flatMap(reaction -> reaction.getData().stream())
+//                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
+//                .toList();
+        return Arrays.stream(EmojiType.values())
+                .map(et -> new EmojiDto(EmojiType.valueOf(
+                        et.name()),
+                        reactions.stream()
+                                .filter(r -> r.getEmojiType().equals(et) && r.getUser().getId().equals(viewerId))
+                                .map(Reaction::getTotal)
+                                .reduce(0, Integer::sum)))
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
     }
 
     public static Integer calculateTotalReactionAmount(List<Reaction> reactions) {

@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ import java.io.Serializable;
                 name = "idx_reaction",
                 columnList = "message_id,emoji_type,user_id",
                 unique = true)})
+@AllArgsConstructor
 public class Reaction implements Serializable {
     @Id
     @Column(name = "id")
