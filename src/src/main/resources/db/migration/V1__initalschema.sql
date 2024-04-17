@@ -11,7 +11,7 @@ CREATE TABLE channels
     status          VARCHAR(255) NOT NULL,
     type            VARCHAR(255) NOT NULL,
     is_private      BOOLEAN      NOT NULL,
-    last_message    VARCHAR(255),
+    last_message_id VARCHAR(255),
     creator_id      VARCHAR(255) NOT NULL,
     group_id        VARCHAR(255) NOT NULL,
     CONSTRAINT pk_channels PRIMARY KEY (id)
@@ -166,7 +166,7 @@ CREATE TABLE notification_user
     id              VARCHAR(255) NOT NULL,
     is_readed       BOOLEAN      NOT NULL,
     is_deleted      BOOLEAN      NOT NULL,
-    is_agreed       BOOLEAN      NOT NULL,
+    is_agreed       BOOLEAN,
     notification_id VARCHAR(255),
     user_id         VARCHAR(255),
     CONSTRAINT pk_notification_user PRIMARY KEY (id)
@@ -241,6 +241,7 @@ CREATE TABLE reminders
     subject       VARCHAR(255),
     content       VARCHAR(255),
     reminder_date TIMESTAMP WITHOUT TIME ZONE,
+    remindable_id VARCHAR(255),
     channel_id    VARCHAR(255),
     CONSTRAINT pk_reminders PRIMARY KEY (id)
 );
@@ -332,7 +333,7 @@ CREATE TABLE votes
 );
 
 ALTER TABLE channels
-    ADD CONSTRAINT uc_channels_last_message UNIQUE (last_message);
+    ADD CONSTRAINT uc_channels_last_message UNIQUE (last_message_id);
 
 ALTER TABLE groups
     ADD CONSTRAINT uc_groups_default_channel UNIQUE (default_channel_id);
@@ -364,7 +365,7 @@ ALTER TABLE channels
     ADD CONSTRAINT FK_CHANNELS_ON_GROUP FOREIGN KEY (group_id) REFERENCES groups (id);
 
 ALTER TABLE channels
-    ADD CONSTRAINT FK_CHANNELS_ON_LAST_MESSAGE FOREIGN KEY (last_message) REFERENCES messages (id);
+    ADD CONSTRAINT FK_CHANNELS_ON_LAST_MESSAGE FOREIGN KEY (last_message_id) REFERENCES messages (id);
 
 ALTER TABLE choices
     ADD CONSTRAINT FK_CHOICES_ON_CREATOR FOREIGN KEY (creator_id) REFERENCES users (id);

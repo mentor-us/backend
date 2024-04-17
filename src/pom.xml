@@ -82,10 +82,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.springframework.boot</groupId>-->
-        <!--            <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -141,7 +137,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>10.11.0</version>
+            <version>9.16.3</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -366,7 +362,7 @@
                 <configuration>
                     <url>jdbc:postgresql://localhost:5432/mentorus</url>
                     <user>postgres</user>
-                    <password>123</password>    
+                    <password>123</password>
                 </configuration>
             </plugin>
         </plugins>
