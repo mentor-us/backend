@@ -48,7 +48,7 @@ public class ChannelServiceImpl implements ChannelService {
         }
 
         var name = request.getChannelName();
-        if (channelRepository.existsByParentIdAndName(group.getId(), name)) {
+        if (channelRepository.existsByGroupIdAndName(group.getId(), name)) {
             throw new DomainException("Tên nhóm " + name + " đã tồn tại. Xin vui lòng tạo tên khác");
         }
 
@@ -124,7 +124,7 @@ public class ChannelServiceImpl implements ChannelService {
             return Collections.emptyList();
         }
 
-        return channelRepository.findByParentId(parentId);
+        return channelRepository.findByGroupId(parentId);
     }
 
     @Override

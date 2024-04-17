@@ -10,8 +10,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -67,12 +65,12 @@ public class Task implements IRemindable, Serializable {
     private Channel group;
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
     private List<Task> subTasks = new ArrayList<>();
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Assignee> assignees = new ArrayList<>();
 
@@ -97,6 +95,7 @@ public class Task implements IRemindable, Serializable {
                 .type(ReminderType.TASK)
                 .reminderDate(getReminderDate())
                 .propertiesMap(properties)
+                .remindableId(id)
                 .build();
     }
 

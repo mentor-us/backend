@@ -111,13 +111,13 @@ public class User implements Serializable {
 
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Reaction> reactions = new ArrayList<>();
 
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
     private List<Message> messages = new ArrayList<>();
 
@@ -126,54 +126,54 @@ public class User implements Serializable {
     // === Vote ===
     @Builder.Default
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Vote> votesCreated = new ArrayList<>();
 
 
     // === Choice ===
     @Builder.Default
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Choice> choicesCreated = new ArrayList<>();
 
 
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Choice> choices = new ArrayList<>();
 
 
     // === Meeting ===
     @Builder.Default
     @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<MeetingHistory> meetingHistories = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "organizer", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Meeting> meetingsOrganizer = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Meeting> meetingAttendees = new ArrayList<>();
 
 
     // === Notification ===
     @Builder.Default
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Notification> notificationsSent = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<NotificationUser> notifications = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
 
     // === Reaction ===
@@ -181,52 +181,52 @@ public class User implements Serializable {
     // === Reminder ===
     @Builder.Default
     @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Reminder> reminders = new ArrayList<>();
 
 
     // === Faq ===
     @Builder.Default
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Faq> faqsCreated = new ArrayList<>();
 
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Faq> faqs = new ArrayList<>();
 
 
     // === Group ===
     @Builder.Default
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Group> groupsCreated = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     // === Channel ===
     @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Channel> channelsCreated;
 
     @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Channel> channels;
 
 
     // === Task ===
     @Builder.Default
     @OneToMany(mappedBy = "assigner", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Task> tasksAssigner = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Assignee> tasksAssignee = new ArrayList<>();
 
 

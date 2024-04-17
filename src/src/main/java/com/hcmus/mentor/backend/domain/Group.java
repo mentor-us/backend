@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -102,7 +100,6 @@ public class Group implements Serializable {
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
-    @ToString.Exclude
     private Message lastMessage = null;
 
     /**
@@ -110,7 +107,7 @@ public class Group implements Serializable {
      */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_channel_id")
-    @ToString.Exclude
+    //@ToString.Exclude
     private Channel defaultChannel;
 
     /**
@@ -118,12 +115,12 @@ public class Group implements Serializable {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_category_id")
-    @ToString.Exclude
+    //@ToString.Exclude
     private GroupCategory groupCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
-    @ToString.Exclude
+    //@ToString.Exclude
     private User creator;
 
     /**
@@ -133,7 +130,7 @@ public class Group implements Serializable {
     @BatchSize(size = 5)
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "message_pinned_id")
-    @ToString.Exclude
+    //@ToString.Exclude
     private List<Message> messagesPinned = new ArrayList<>();
 
     /**
@@ -142,7 +139,7 @@ public class Group implements Serializable {
     @Builder.Default
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @ToString.Exclude
+    //@ToString.Exclude
     private List<Channel> channels = new ArrayList<>();
 
     /**
@@ -151,13 +148,13 @@ public class Group implements Serializable {
     @Builder.Default
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @ToString.Exclude
+    //@ToString.Exclude
     private List<Faq> faqs = new ArrayList<>();
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @ToString.Exclude
+    //@ToString.Exclude
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     public Group() {

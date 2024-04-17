@@ -364,9 +364,9 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <configuration>
-                    <url>jdbc:postgresql://172.28.128.103:5432/mentorus</url>
+                    <url>jdbc:postgresql://localhost:5432/mentorus</url>
                     <user>postgres</user>
-                    <password>123</password>
+                    <password>123</password>    
                 </configuration>
             </plugin>
         </plugins>

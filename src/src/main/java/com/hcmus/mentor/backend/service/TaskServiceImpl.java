@@ -156,7 +156,7 @@ public class TaskServiceImpl implements IRemindableService {
         taskRepository.delete(task);
         reminderRepository.deleteByRemindableId(task.getId());
 
-        List<Task> childrenTasks = taskRepository.findAllByParentTask(id);
+        List<Task> childrenTasks = taskRepository.findAllByParentTaskId(id);
         childrenTasks.forEach(
                 childrenTask -> {
                     task.setParentTask(null);

@@ -66,8 +66,8 @@ public class Channel {
     private Boolean isPrivate = false;
 
     @Builder.Default
-    @Column(name = "last_message")
     @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_message_id", referencedColumnName = "id")
     private Message lastMessage = null;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -78,26 +78,26 @@ public class Channel {
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
 
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Task> tasks;
 
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Vote> votes;
 
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Meeting> meetings;
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_pinned_id")
     private List<Message> messagesPinned = new ArrayList<>();
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "rel_user_channel",
             joinColumns = @JoinColumn(name = "channel_id"),

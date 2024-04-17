@@ -49,7 +49,7 @@ public class GroupCategory {
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupCategory", fetch = FetchType.LAZY)
     private List<Group> groups = new ArrayList<>();
 
     public GroupCategory() {

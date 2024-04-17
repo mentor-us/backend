@@ -19,6 +19,7 @@ import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -48,9 +49,6 @@ public class MeetingService implements IRemindableService {
                         groupIds,
                         userId,
                         now,
-                        groupIds,
-                        Arrays.asList("*", userId),
-                        now,
                         PageRequest.of(0, 5, Sort.by("timeStart").descending()))
                 .getContent();
         return meetings.stream()
@@ -63,11 +61,15 @@ public class MeetingService implements IRemindableService {
     }
 
     public List<MeetingResponse> getMeetingGroup(String groupId) {
-        return meetingRepository.findAllByGroupId(groupId);
+        return meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
+            Group group = meeting.getGroup().getGroup();
+            User organizer = meeting.getOrganizer();
+            return MeetingResponse.from(meeting, organizer, group);
+        }).toList();
     }
 
     public List<Meeting> getMeetingGroup(String groupId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
+        Pageable pageRequest = PageRequest.of(page, size);
         Page<Meeting> wrapper = meetingRepository.findByGroupId(groupId, pageRequest);
         return wrapper.getContent();
     }
@@ -221,8 +223,7 @@ public class MeetingService implements IRemindableService {
         List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
                 .map(Group::getId)
                 .toList();
-        return meetingRepository.findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(
-                joinedGroupIds, userId, joinedGroupIds, Arrays.asList("*", userId));
+        return meetingRepository.findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(joinedGroupIds, userId);
     }
 
     public List<Meeting> getAllOwnMeetingsByDate(String userId, Date date) {

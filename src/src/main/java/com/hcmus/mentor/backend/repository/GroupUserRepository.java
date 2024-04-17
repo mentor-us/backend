@@ -15,7 +15,7 @@ public interface GroupUserRepository extends JpaRepository<GroupUser, String> {
 
    boolean existsByUserIdAndGroupId(String userId, String groupId);
 
-   @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.user.email = :email AND gu.group.id = :groupId AND gu.isMentor = true")
+   @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.user.email = :email AND gu.group.id = :groupId AND gu.isMentor = :isMentor")
    boolean existsMentorByEmailAndGroupId(@Param("email") String email, @Param("groupId") String groupId, @Param("isMentor") boolean isMentor);
 
     @Query("SELECT COUNT(gu) > 0 FROM GroupUser gu WHERE gu.user.email = :email AND gu.group.id = :groupId")

@@ -47,7 +47,7 @@ public class Notification {
     private User sender;
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
     private List<NotificationUser> receivers = new ArrayList<>();
 

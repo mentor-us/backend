@@ -63,7 +63,7 @@ public class Vote {
 
     @Builder.Default
     @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     private List<Choice> choices = new ArrayList<>();
 
     public Vote() {

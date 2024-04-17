@@ -131,34 +131,26 @@ public class GroupServiceImpl implements GroupService {
      */
     @Override
     public List<Group> getAllActiveOwnGroups(String userId) {
-        List<String> mentorIds = Collections.singletonList(userId);
-        List<String> menteeIds = Collections.singletonList(userId);
-        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE);
+        return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE);
     }
 
 
     @Override
     public Page<Group> findRecentGroupsOfUser(String userId, int page, int pageSize) {
-        List<String> mentorIds = Collections.singletonList(userId);
-        List<String> menteeIds = Collections.singletonList(userId);
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
-        return groupRepository.findAllByMentorsInOrMenteesIn(mentorIds, menteeIds, pageRequest);
+        return groupRepository.findAllByIsMember(userId, pageRequest);
     }
 
     @Override
     public Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize) {
-        List<String> mentorIds = Collections.singletonList(userId);
-        List<String> menteeIds = Collections.singletonList(userId);
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
-        return groupRepository.findByMentorsInAndStatusOrMenteesInAndStatus(
-                mentorIds, GroupStatus.ACTIVE, menteeIds, GroupStatus.ACTIVE, pageRequest);
+        return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
     }
 
     public GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
         int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt(systemConfigRepository
                 .findByKey("valid_max_year")
-                .getValue()
-                .toString());
+                .getValue());
         LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -972,11 +964,9 @@ public class GroupServiceImpl implements GroupService {
         }
 
         Map<String, ProfileResponse> senders = userRepository.findAllByIdIn(senderIds).stream()
-                .collect(
-                        Collectors.toMap(
-                                ProfileResponse::getId, sender -> sender, (sender1, sender2) -> sender2));
+                .collect(Collectors.toMap(User::getId, ProfileResponse::from));
 
-        List<Message> mediaMessages = messageRepository.findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
+        List<Message> mediaMessages = messageRepository.findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(
                 groupId,
                 Arrays.asList(Message.Type.IMAGE, Message.Type.FILE),
                 Arrays.asList(Message.Status.SENT, Message.Status.EDITED));

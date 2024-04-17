@@ -121,7 +121,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
-        List<Group> groups = groupRepository.findAllByGroupCategory(id);
+        List<Group> groups = groupRepository.findAllByGroupCategoryId(id);
         if (!newGroupCategoryId.isEmpty()) {
             groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
             if (groupCategory == null) {
@@ -196,7 +196,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", notFoundIds);
         }
 
-        List<Group> groups = groupRepository.findAllByGroupCategoryIn(ids);
+        List<Group> groups = groupRepository.findAllByGroupCategoryIdIn(ids);
         List<GroupCategory> groupCategories = groupCategoryRepository.findByIdIn(ids);
 
         if (!newGroupCategoryId.isEmpty()) {

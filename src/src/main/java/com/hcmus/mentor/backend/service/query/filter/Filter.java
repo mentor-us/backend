@@ -85,12 +85,12 @@ public class Filter<FIELD_TYPE> implements Serializable {
     }
 
     public int hashCode() {
-        return Objects.hash(new Object[]{this.equals, this.notEquals, this.specified, this.in, this.notIn});
+        return Objects.hash(this.equals, this.notEquals, this.specified, this.in, this.notIn);
     }
 
     public String toString() {
         String var10000 = this.getFilterName();
-        return var10000 + " [" + (this.getEquals() != null ? "equals=" + String.valueOf(this.getEquals()) + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + String.valueOf(this.getNotEquals()) + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + String.valueOf(this.getIn()) + ", " : "") + (this.getNotIn() != null ? "notIn=" + String.valueOf(this.getNotIn()) : "") + "]";
+        return var10000 + " [" + (this.getEquals() != null ? "equals=" + this.getEquals() + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + this.getNotEquals() + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + this.getIn() + ", " : "") + (this.getNotIn() != null ? "notIn=" + this.getNotIn() : "") + "]";
     }
 
     protected String getFilterName() {

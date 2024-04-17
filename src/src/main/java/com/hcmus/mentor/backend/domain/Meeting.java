@@ -102,6 +102,7 @@ public class Meeting implements IRemindable, Serializable {
                 .name(title)
                 .type(ReminderType.MEETING)
                 .reminderDate(getReminderDate())
+                .remindableId(id)
                 .build();
 
         reminder.setPropertiesMap(properties);

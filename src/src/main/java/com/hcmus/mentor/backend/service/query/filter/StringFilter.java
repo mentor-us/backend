@@ -55,11 +55,11 @@ public class StringFilter extends Filter<String> {
     }
 
     public int hashCode() {
-        return Objects.hash(new Object[]{super.hashCode(), this.contains, this.doesNotContain});
+        return Objects.hash(super.hashCode(), this.contains, this.doesNotContain);
     }
 
     public String toString() {
         String var10000 = this.getFilterName();
-        return var10000 + " [" + (this.getEquals() != null ? "equals=" + (String)this.getEquals() + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + (String)this.getNotEquals() + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + String.valueOf(this.getIn()) + ", " : "") + (this.getNotIn() != null ? "notIn=" + String.valueOf(this.getNotIn()) + ", " : "") + (this.getContains() != null ? "contains=" + this.getContains() + ", " : "") + (this.getDoesNotContain() != null ? "doesNotContain=" + this.getDoesNotContain() : "") + "]";
+        return var10000 + " [" + (this.getEquals() != null ? "equals=" + this.getEquals() + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + this.getNotEquals() + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + this.getIn() + ", " : "") + (this.getNotIn() != null ? "notIn=" + this.getNotIn() + ", " : "") + (this.getContains() != null ? "contains=" + this.getContains() + ", " : "") + (this.getDoesNotContain() != null ? "doesNotContain=" + this.getDoesNotContain() : "") + "]";
     }
 }

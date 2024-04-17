@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import org.jetbrains.annotations.NotNull;
@@ -24,34 +23,45 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     boolean existsByName(String s);
 
-    boolean existsByIdAndMentorsIn(String groupId, String userId);
+//    boolean existsByIdAndMentorsIn(String groupId, String userId);
 
-    boolean existsByIdAndMenteesIn(String groupId, String userId);
+//    boolean existsByIdAndMenteesIn(String groupId, String userId);
 
+    @Query( value="SELECT * " +
+            "FROM groups g " +
+            "JOIN group_users gu ON g.id = gu.group_id " +
+            "WHERE gu.user_id = ?1 AND gu.is_mentor = false", nativeQuery = true)
     List<Group> findAllByMenteesIn(String menteeId);
 
+    @Query( value="SELECT * " +
+            "FROM groups g " +
+            "JOIN group_users gu ON g.id = gu.group_id " +
+            "WHERE gu.user_id = ?1 AND gu.is_mentor = true", nativeQuery = true)
     List<Group> findAllByMentorsIn(String mentorId);
 
-    Page<Group> findAllByMentorsInOrMenteesIn(
-            List<String> mentorIds, List<String> menteeIds, Pageable pageable);
+    @Query( value="SELECT * " +
+            "FROM groups g " +
+            "JOIN group_users gu ON g.id = gu.group_id " +
+            "WHERE gu.user_id IN ?1", nativeQuery = true)
+    Page<Group> findAllByIsMember(String memberId, Pageable pageable);
 
-    Slice<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
-            List<String> mentorIds,
-            GroupStatus status1,
-            List<String> menteeIds,
-            GroupStatus status2,
-            Pageable pageable);
+    @Query( value="SELECT * " +
+            "FROM groups g " +
+            "JOIN group_users gu ON g.id = gu.group_id " +
+            "WHERE gu.user_id = ?1", nativeQuery = true)
+    Slice<Group> findByIsMemberAndStatus(String userId, GroupStatus status, Pageable pageable);
 
+    @Query( value="SELECT * " +
+            "FROM groups g " +
+            "JOIN group_users gu ON g.id = gu.group_id " +
+            "WHERE gu.user_id = ?1", nativeQuery = true)
+    List<Group>findByIsMemberAndStatus(String userId, GroupStatus status);
 
-    List<Group> findByMentorsInAndStatusOrMenteesInAndStatus(
-            List<String> mentorIds, GroupStatus status1, List<String> menteeIds, GroupStatus status2);
+    List<Group> findAllByGroupCategoryId(String groupCategoryId);
 
+    List<Group> findAllByGroupCategoryIdIn(List<String> groupCategoryIds);
 
-    List<Group> findAllByGroupCategory(String groupCategoryId);
-
-    List<Group> findAllByGroupCategoryIn(List<String> groupCategoryIds);
-
-    List<Group> findAllByGroupCategoryAndCreatorId(String groupCategoryIds, String creatorId);
+    List<Group> findAllByGroupCategoryIdAndCreatorId(String groupCategoryIds, String creatorId);
 
 
     //    @Aggregation(
@@ -65,11 +75,11 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 //                    "{$unset: 'groupCategoryObjectId'}"
 //            })
 //    List<GroupDetailResponse> getGroupDetail(String groupId);
-    @Query(value = "SELECT g.*, gc.name AS groupCategory " +
-            "FROM group_detail g " +
-            "JOIN group_category gc ON g.groupCategory = gc._id " +
-            "WHERE g._id = ?1", nativeQuery = true)
-    List<GroupDetailResponse> getGroupDetail(String groupId);
+//    @Query(value = "SELECT g.*, gc.name AS groupCategory " +
+//            "FROM group_detail g " +
+//            "JOIN group_category gc ON g.groupCategory = gc._id " +
+//            "WHERE g._id = ?1", nativeQuery = true)
+//    List<GroupDetailResponse> getGroupDetail(String groupId);
 
     @Query(value = "SELECT g.*, gc.*, gu.* " +
             "FROM group g" +
@@ -81,16 +91,15 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     long countByStatus(GroupStatus status);
 
-    long countByGroupCategoryAndStatus(String groupCategoryId, GroupStatus status);
+    long countByGroupCategoryIdAndStatus(String groupCategoryId, GroupStatus status);
 
-    long countByGroupCategoryAndStatusAndCreatorId(
-            String groupCategoryId, GroupStatus status, String creatorId);
+    long countByGroupCategoryIdAndStatusAndCreatorId(String groupCategoryId, GroupStatus status, String creatorId);
 
     long countByCreatedDateBetween(Date start, Date end);
 
     long countByCreatedDateBetweenAndCreatorId(Date start, Date end, String creatorId);
 
-    long countByGroupCategoryAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
+    long countByGroupCategoryIdAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
 
     boolean existsByIdAndCreatorId(String groupId, String creatorId);
     boolean existsByCreatorEmailAndId(String creatorEmail, String groupId);

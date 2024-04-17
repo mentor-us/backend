@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
@@ -36,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findByIdIn(List<String> ids);
 
-    List<ProfileResponse> findAllByIdIn(List<String> ids);
+    List<User> findAllByIdIn(List<String> ids);
 
     List<User> findAllByRolesIn(List<String> rolesIds);
 

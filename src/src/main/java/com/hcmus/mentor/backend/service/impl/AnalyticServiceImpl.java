@@ -11,6 +11,7 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -110,7 +111,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         long activeGroups = groupRepository.countByStatusAndCreatorId(GroupStatus.ACTIVE, adminId);
         long totalGroups = groups.size();
         long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
-        long totalMessages = messageRepository.countByGroupIdIn(channelIds);
+        long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countByStatus(true);
 
@@ -150,12 +151,12 @@ public class AnalyticServiceImpl implements AnalyticService {
         long activeGroups;
 
         if (permissionService.isSuperAdmin(emailUser)) {
-            groups = groupRepository.findAllByGroupCategory(groupCategoryId);
-            activeGroups = groupRepository.countByGroupCategoryAndStatus(groupCategoryId, GroupStatus.ACTIVE);
+            groups = groupRepository.findAllByGroupCategoryId(groupCategoryId);
+            activeGroups = groupRepository.countByGroupCategoryIdAndStatus(groupCategoryId, GroupStatus.ACTIVE);
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
-            groups = groupRepository.findAllByGroupCategoryAndCreatorId(groupCategoryId, adminId);
-            activeGroups = groupRepository.countByGroupCategoryAndStatusAndCreatorId(groupCategoryId, GroupStatus.ACTIVE, adminId);
+            groups = groupRepository.findAllByGroupCategoryIdAndCreatorId(groupCategoryId, adminId);
+            activeGroups = groupRepository.countByGroupCategoryIdAndStatusAndCreatorId(groupCategoryId, GroupStatus.ACTIVE, adminId);
         }
 
         var channelIds = groups.stream().flatMap(g -> g.getChannels().stream().map(Channel::getId)).toList();
@@ -164,7 +165,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         long totalGroups = groups.size();
         long totalTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
         long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
-        long totalMessages = messageRepository.countByGroupIdIn(channelIds);
+        long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         long totalUsers = groups.stream().map(g -> g.getGroupUsers().size()).reduce(0, Integer::sum);
         long activeUsers = groups.stream()
                 .map(g -> g.getGroupUsers().stream().filter(gu -> gu.getUser().isStatus()).count())
@@ -245,7 +246,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
             long newGroups = groupRepository.countByCreatedDateBetweenAndCreatorId(date, dateAfterOneMonth, adminId);
-            long newMessages = messageRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
+            long newMessages = messageRepository.countByChannelIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
             long newMeetings = meetingRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
@@ -284,7 +285,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         ArrayList<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         List<Group> groups;
         if (permissionService.isSuperAdmin(emailUser)) {
-            groups = groupRepository.findAllByGroupCategory(groupCategoryId);
+            groups = groupRepository.findAllByGroupCategoryId(groupCategoryId);
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
             groups = groupRepository.findAllByCreatorId(adminId);
@@ -301,8 +302,8 @@ public class AnalyticServiceImpl implements AnalyticService {
 
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
-            long newGroups = groupRepository.countByGroupCategoryAndCreatedDateBetween(groupCategoryId, date, dateAfterOneMonth);
-            long newMessages = messageRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
+            long newGroups = groupRepository.countByGroupCategoryIdAndCreatedDateBetween(groupCategoryId, date, dateAfterOneMonth);
+            long newMessages = messageRepository.countByChannelIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
             long newMeetings = meetingRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newUsers = users.stream().filter(user -> user.getCreatedDate().after(date) && user.getCreatedDate().before(dateAfterOneMonth)).count();
@@ -544,7 +545,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         Date lastTimeActive = getLastTimeActive(channelIds);
 
-        long totalMessages = messageRepository.countByGroupIdIn(channelIds);
+        long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
         long totalTasks = getTotalTasks(tasks);
         long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
@@ -1231,7 +1232,11 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (attributes.contains(AnalyticAttribute.MEETINGS)) {
             Sheet meetingsSheet = workbook.createSheet("Lịch hẹn");
-            List<MeetingResponse> meetings = meetingRepository.findAllByGroupId(groupId);
+            List<MeetingResponse> meetings = meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
+                Group group = meeting.getGroup().getGroup();
+                User organizer = meeting.getOrganizer();
+                return MeetingResponse.from(meeting, organizer, group);
+            }).toList();
             addMeetingsData(meetingsSheet, meetings);
         }
         if (attributes.contains(AnalyticAttribute.TASKS)) {
@@ -1241,7 +1246,10 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
             Sheet messagesSheet = workbook.createSheet("Tin nhắn");
-            List<MessageResponse> messages = messageRepository.getAllGroupMessagesByGroupId(groupId);
+            List<MessageResponse> messages = messageRepository.getAllGroupMessagesByChannelId(groupId).stream().map(message -> {
+                var sender = ProfileResponse.from( message.getSender());
+                return MessageResponse.from(message, sender);
+            }).toList();
             addMessagesData(messagesSheet, messages);
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

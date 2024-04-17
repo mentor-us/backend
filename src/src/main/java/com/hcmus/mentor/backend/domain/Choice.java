@@ -33,7 +33,7 @@ public class Choice {
     private User creator;
 
     @Builder.Default
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "ref_choice_user",

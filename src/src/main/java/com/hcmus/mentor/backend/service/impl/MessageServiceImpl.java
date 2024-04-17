@@ -77,7 +77,11 @@ public class MessageServiceImpl implements MessageService {
             String groupId,
             int page,
             int size) {
-        List<MessageResponse> responses = messageRepository.getGroupMessagesByGroupId(groupId, page * size, size);
+        List<MessageResponse> responses = messageRepository.getGroupMessagesByChannelId(groupId).stream()
+                .map(message -> {
+                    var sender = ProfileResponse.from(message.getSender());
+                    return MessageResponse.from(message, sender);
+                }).toList();
 
         return fulfillMessages(responses, viewerId);
     }
@@ -88,7 +92,11 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageResponse> findGroupMessagesByText(
             String groupId, String query, int page, int size) {
-        return messageRepository.findGroupMessages(groupId, query, page * size, size);
+        return messageRepository.findGroupMessages(groupId, query).stream()
+                .map(message -> {
+                    var sender = ProfileResponse.from( message.getSender());
+                    return MessageResponse.from(message, sender);
+                }).toList();
     }
 
     /**
@@ -96,7 +104,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public String getLastGroupMessage(String groupId) {
-        Message lastMessage = messageRepository.findTopByGroupIdOrderByCreatedDateDesc(groupId).orElse(null);
+        Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
         if (lastMessage == null) {
             return null;
         }

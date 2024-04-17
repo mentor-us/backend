@@ -77,11 +77,11 @@ public class RangeFilter<FIELD_TYPE extends Comparable<? super FIELD_TYPE>> exte
     }
 
     public int hashCode() {
-        return Objects.hash(new Object[]{super.hashCode(), this.greaterThan, this.lessThan, this.greaterThanOrEqual, this.lessThanOrEqual});
+        return Objects.hash(super.hashCode(), this.greaterThan, this.lessThan, this.greaterThanOrEqual, this.lessThanOrEqual);
     }
 
     public String toString() {
         String var10000 = this.getFilterName();
-        return var10000 + " [" + (this.getEquals() != null ? "equals=" + String.valueOf(this.getEquals()) + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + String.valueOf(this.getNotEquals()) + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + String.valueOf(this.getIn()) + ", " : "") + (this.getNotIn() != null ? "notIn=" + String.valueOf(this.getNotIn()) + ", " : "") + (this.getGreaterThan() != null ? "greaterThan=" + String.valueOf(this.getGreaterThan()) + ", " : "") + (this.getLessThan() != null ? "lessThan=" + String.valueOf(this.getLessThan()) + ", " : "") + (this.getGreaterThanOrEqual() != null ? "greaterThanOrEqual=" + String.valueOf(this.getGreaterThanOrEqual()) + ", " : "") + (this.getLessThanOrEqual() != null ? "lessThanOrEqual=" + String.valueOf(this.getLessThanOrEqual()) : "") + "]";
+        return var10000 + " [" + (this.getEquals() != null ? "equals=" + this.getEquals() + ", " : "") + (this.getNotEquals() != null ? "notEquals=" + this.getNotEquals() + ", " : "") + (this.getSpecified() != null ? "specified=" + this.getSpecified() + ", " : "") + (this.getIn() != null ? "in=" + this.getIn() + ", " : "") + (this.getNotIn() != null ? "notIn=" + this.getNotIn() + ", " : "") + (this.getGreaterThan() != null ? "greaterThan=" + this.getGreaterThan() + ", " : "") + (this.getLessThan() != null ? "lessThan=" + this.getLessThan() + ", " : "") + (this.getGreaterThanOrEqual() != null ? "greaterThanOrEqual=" + this.getGreaterThanOrEqual() + ", " : "") + (this.getLessThanOrEqual() != null ? "lessThanOrEqual=" + this.getLessThanOrEqual() : "") + "]";
     }
 }

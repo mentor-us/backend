@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.util.Date;
 import java.util.List;
@@ -39,7 +37,10 @@ public class Reminder {
     @Column(name = "reminder_date")
     private Date reminderDate;
 
-    @Fetch(FetchMode.SUBSELECT)
+    @Column(name = "remindable_id")
+    private String remindableId;
+
+   // @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_reminder",
@@ -48,7 +49,7 @@ public class Reminder {
     )
     private List<User> recipients;
 
-    @Fetch(FetchMode.SUBSELECT)
+   // @Fetch(FetchMode.SUBSELECT)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     private Channel group;

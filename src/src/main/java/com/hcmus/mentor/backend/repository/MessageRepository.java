@@ -1,11 +1,9 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.domain.Message;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,7 +21,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     @NotNull
     Optional<Message> findByIdAndStatusNot(String id, Message.Status status);
 
-    Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
+//    Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
 
     Optional<Message> findByVoteId(String voteId);
 
@@ -38,7 +36,12 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 //                    "{$limit: ?2}"
 // TODO: Fix this
 //            })
-    List<MessageResponse> getGroupMessagesByGroupId(String groupId, int offset, int size);
+    @Query("SELECT m " +
+            "FROM Message m " +
+            "WHERE m.channel.id = ?1 " +
+            "AND m.status != 'DELETED' " +
+            "ORDER BY m.createdDate DESC ")
+    List<Message> getGroupMessagesByChannelId(String groupId);
 
 //    @Aggregation(
 //            pipeline = {
@@ -53,20 +56,26 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 //                    "{$limit: ?3}"
 //            })
 // TODO: Fix this
-    List<MessageResponse> findGroupMessages(String groupId, String query, int offset, int size);
+    @Query("SELECT m " +
+            "FROM Message m " +
+            "WHERE m.channel.id = ?1 " +
+            "AND m.status != 'DELETED' " +
+            "AND m.content LIKE %?2% " +
+            "ORDER BY m.createdDate DESC ")
+    List<Message> findGroupMessages(String groupId, String query);
 
     long countByCreatedDateBetween(Date start, Date end);
 
-    long countByGroupId(String groupId);
+//    long countByGroupId(String groupId);
     long countByChannelIdIn(List<String> channelIds);
 
-    Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
+//    Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
     Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
 
-    long countByGroupIdAndSenderId(String groupId, String senderId);
+//    long countByGroupIdAndSenderId(String groupId, String senderId);
     long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
 
-    Message findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(String groupId, String senderId);
+//    Message findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(String groupId, String senderId);
 
     @Query("SELECT m " +
             "FROM Message m " +
@@ -74,14 +83,13 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "ORDER BY m.createdDate DESC ")
     Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);
 
-    long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
 
-    long countByGroupIdIn(List<String> groupIds);
+//    long countByGroupIdIn(List<String> groupIds);
 
-    List<Message> findByGroupIdAndTypeInAndStatusInOrderByCreatedDateDesc(
-            String groupId, List<Message.Type> type, List<Message.Status> statuses);
+    List<Message> findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(String groupId, List<Message.Type> type, List<Message.Status> statuses);
 
-    Optional<Message> findTopByGroupIdOrderByCreatedDateDesc(String groupId);
+    Optional<Message> findTopByChannelIdOrderByCreatedDateDesc(String groupId);
 
 //    @Aggregation(
 //            pipeline = {
@@ -92,11 +100,12 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 //                    "{$sort: {createdDate: -1}}",
 //            })
 // TODO: Fix this
-    List<MessageResponse> getAllGroupMessagesByGroupId(String groupId);
+    List<Message> getAllGroupMessagesByChannelId(String groupId);
 
 //    Page<Message> findByGroupId(String groupId, TextCriteria criteria, Pageable pageable);
 
 
+    @Modifying
     @Query("UPDATE Message m " +
             "SET m.status = :status " +
             "WHERE m.channel.id = :channelId")
