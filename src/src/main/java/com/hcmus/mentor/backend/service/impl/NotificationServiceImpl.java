@@ -622,9 +622,37 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         Map<String, String> data = attachDataNotification(message.getGroupId(), UNPIN_MESSAGE);
-        String shortMessage =
-                Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
-                        .text();
+        String shortMessage = "";
+        if (message.getType() == Message.Type.TEXT) {
+            shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
+                    .text();
+        } else {
+            switch (message.getType()) {
+                case IMAGE:
+                    shortMessage = "ảnh.";
+                    break;
+                case FILE:
+                    shortMessage = "tệp đính kèm.";
+                    break;
+                case VIDEO:
+                    shortMessage = "đa phương tiện.";
+                    break;
+                case MEETING:
+                    shortMessage = "lịch hẹn.";
+                    break;
+                case TASK:
+                    shortMessage = "công việc.";
+                    break;
+                case VOTE:
+                    shortMessage = "cuộc bình chọn.";
+                    break;
+                case SYSTEM:
+                    shortMessage = "thông báo hệ thống.";
+                    break;
+                default:
+                    break;
+            }
+        }
         String content = pinner.getName() + " đã bỏ ghim tin nhắn \"" + shortMessage + "\"";
         try {
             firebaseMessagingManager.sendGroupNotification(members, title, content, data);
