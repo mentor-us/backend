@@ -98,6 +98,9 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
+                        .id(message.getReply())
+                        .build() : null)
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
                 .isForward(message.getIsForward())
@@ -117,6 +120,9 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
+                        .id(message.getReply())
+                        .build() : null)
                 .isForward(message.getIsForward())
                 .build();
     }
@@ -134,6 +140,9 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
+                        .id(message.getReply())
+                        .build() : null)
                 .isForward(message.getIsForward())
                 .build();
     }
@@ -151,6 +160,9 @@ public class MessageDetailResponse {
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
                 .status(message.getStatus())
+                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
+                        .id(message.getReply())
+                        .build() : null)
                 .isForward(message.getIsForward())
                 .build();
     }
