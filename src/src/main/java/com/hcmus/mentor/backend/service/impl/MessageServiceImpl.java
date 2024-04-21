@@ -109,7 +109,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public  String getMessageContentById(String messageId){
+    public String getMessageContentById(String messageId) {
         var message = messageRepository.findById(messageId).orElse(null);
 
         return getMessageContent(message);
@@ -276,7 +276,7 @@ public class MessageServiceImpl implements MessageService {
             imageKeys.add(key);
         }
 
-        Message message = messageRepository.save( Message.builder()
+        Message message = messageRepository.save(Message.builder()
                 .id(request.getId())
                 .senderId(request.getSenderId())
                 .groupId(request.getGroupId())
@@ -337,9 +337,31 @@ public class MessageServiceImpl implements MessageService {
                 .map(this::fulfillMessage)
                 .filter(Objects::nonNull)
                 .filter(message -> !message.isDeletedAttach())
+                .map(this::processSpecialMessage)
                 .map(message -> fulfillReactions(message, reactors))
                 .map(message -> MessageDetailResponse.totalReaction(message, viewerId))
                 .toList();
+    }
+
+    private MessageDetailResponse processSpecialMessage(MessageDetailResponse message) {
+        if (Message.Status.DELETED.equals(message.getStatus())) {
+            message.setContent("Tin nhắn đã được xoá");
+        }
+
+        if (message.getReply() != null) {
+            var messageReply = messageRepository.findById(message.getReply().getId()).orElse(null);
+            if (messageReply == null) {
+                return message;
+            }
+            var sender = userRepository.findShortProfile(messageReply.getSenderId());
+            message.setReply(MessageDetailResponse.ReplyMessage.builder()
+                    .id(messageReply.getId())
+                    .senderName(sender != null ? sender.getName() : "Người dùng không tồn tại")
+                    .content(messageReply.isDeleted() ? "Tin nhắn đã được xoá" : messageReply.getContent())
+                    .build());
+        }
+
+        return message;
     }
 
     /**
@@ -363,12 +385,11 @@ public class MessageServiceImpl implements MessageService {
             if (sender != null) {
                 senderName = sender.getName();
             }
-            MessageDetailResponse.ReplyMessage replyMessage =
-                    MessageDetailResponse.ReplyMessage.builder()
-                            .id(data.getId())
-                            .senderName(senderName)
-                            .content(content)
-                            .build();
+            MessageDetailResponse.ReplyMessage replyMessage = MessageDetailResponse.ReplyMessage.builder()
+                    .id(data.getId())
+                    .senderName(senderName)
+                    .content(content)
+                    .build();
             response.setReply(replyMessage);
         }
 
@@ -541,7 +562,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-       var task = taskRepository.findById(taskId).orElse(null);
+        var task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
             return Collections.emptyList();
         }
