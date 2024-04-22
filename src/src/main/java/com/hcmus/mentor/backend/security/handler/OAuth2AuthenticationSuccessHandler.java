@@ -1,8 +1,6 @@
 package com.hcmus.mentor.backend.security.handler;
 
 import com.hcmus.mentor.backend.controller.exception.BadRequestException;
-import com.hcmus.mentor.backend.controller.exception.OAuth2AuthenticationProcessingException;
-import com.hcmus.mentor.backend.controller.payload.returnCode.AuthenticationErrorCode;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModelGenerator;
@@ -67,11 +65,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
         CustomerUserDetails customerUserDetails = (CustomerUserDetails) authentication.getPrincipal();
-        if (targetUrl.contains("auth/redirect")
-                && !permissionService.isAdmin(
-                customerUserDetails.getEmail())) { // Check if redirect to Admin Page
-            throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.UNAUTHORIZED);
-        }
 
         var claims = new HashMap<String, Object>();
         claims.put("sub", customerUserDetails.getId());
