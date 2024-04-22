@@ -5,18 +5,18 @@ import com.hcmus.mentor.backend.util.CookieUtils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
-    private final Logger logger = Logger.getLogger(OAuth2AuthenticationFailureHandler.class.getName());
-
+    private final Logger myLogger = LoggerFactory.getLogger(OAuth2AuthenticationFailureHandler.class);
     private final OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     public OAuth2AuthenticationFailureHandler(OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository) {
@@ -31,8 +31,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
                 .map(Cookie::getValue)
                 .orElse(("/"));
 
-        logger.info("OAuth2AuthenticationFailureHandler message: " + exception.getMessage());
-        logger.info("OAuth2AuthenticationFailureHandler cause: " + exception.getCause());
+        myLogger.error("OAuth2AuthenticationFailureHandler: ", exception);
 
         targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
                 .queryParam("error", exception.getLocalizedMessage())
