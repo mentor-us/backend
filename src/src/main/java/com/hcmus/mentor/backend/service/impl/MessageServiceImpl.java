@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
@@ -14,8 +15,10 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeRe
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
@@ -35,6 +38,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.hcmus.mentor.backend.domain.Message.Type.*;
 
 /**
  * {@inheritDoc}
@@ -56,6 +61,7 @@ public class MessageServiceImpl implements MessageService {
     private final BlobStorage blobStorage;
     private final NotificationRepository notificationRepository;
     private final GroupUserRepository groupUserRepository;
+    private final Pipeline pipeline;
 
     /**
      * {@inheritDoc}
@@ -105,21 +111,33 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public String getLastGroupMessage(String groupId) {
         Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
-        if (lastMessage == null) {
+
+        return getMessageContent(lastMessage);
+    }
+
+    @Override
+    public  String getMessageContentById(String messageId){
+        var message = messageRepository.findById(messageId).orElse(null);
+
+        return getMessageContent(message);
+    }
+
+    private String getMessageContent(Message message) {
+        if (message == null) {
             return null;
         }
-        if (Message.Status.DELETED.equals(lastMessage.getStatus())) {
+        if (Message.Status.DELETED.equals(message.getStatus())) {
             return "Tin nhắn đã được thu hồi.";
         }
 
-        var sender = lastMessage.getSender();
+        var sender = message.getSender();
 
-        switch (lastMessage.getType()) {
+        switch (message.getType()) {
             case TEXT:
                 if (sender == null) {
                     return null;
                 }
-                String content = lastMessage.getContent();
+                String content = message.getContent();
                 return sender.getName() + ": " + Jsoup.parse(content).text();
             case FILE:
                 if (sender == null) {
@@ -127,7 +145,7 @@ public class MessageServiceImpl implements MessageService {
                 }
                 return sender.getName() + " đã gửi tệp đính kèm mới.";
             case IMAGE:
-                return lastMessage.getImages().size() + " ảnh mới.";
+                return message.getImages().size() + " ảnh mới.";
             case VIDEO:
                 break;
             case MEETING:
@@ -220,8 +238,8 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveMessage(Message data) {
-        pingGroup(data.getChannel().getId());
-
+        pingGroup(data.getChannel().getGroup().getId());
+        pipeline.send(UpdateLastMessageCommand.builder().message(data).channel(data.getChannel()).build());
         return messageRepository.save(data);
     }
 
@@ -230,15 +248,15 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveTaskMessage(Task task) {
-        var message = Message.builder()
+        var message = messageRepository.save(Message.builder()
                 .sender(task.getAssigner())
                 .channel(task.getGroup())
                 .createdDate(task.getCreatedDate())
                 .type(Message.Type.TASK)
                 .task(task)
-                .build();
-
-        return messageRepository.save(message);
+                .build());
+        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(task.getGroup()).build());
+        return message;
     }
 
     /**
@@ -246,14 +264,15 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveVoteMessage(Vote vote) {
-        var message = Message.builder()
+        var message = messageRepository.save(Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
                 .createdDate(new Date())
                 .type(Message.Type.VOTE)
                 .vote(vote)
-                .build();
-        return messageRepository.save(message);
+                .build());
+        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
+        return message;
     }
 
     /**
@@ -273,17 +292,18 @@ public class MessageServiceImpl implements MessageService {
             imageKeys.add(key);
         }
 
-        Message message = Message.builder()
+        Message message = messageRepository.save( Message.builder()
                 .id(request.getId())
                 .sender(user)
                 .channel(channel)
                 .createdDate(new Date())
-                .type(Message.Type.IMAGE)
+                .type(IMAGE)
                 .images(imageKeys)
-                .build();
+                .build());
 
         pingGroup(request.getGroupId());
-        return messageRepository.save(message);
+        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
+        return message;
     }
 
     /**
@@ -303,30 +323,30 @@ public class MessageServiceImpl implements MessageService {
                 .size(request.getFile().getSize())
                 .url(key)
                 .build();
-        Message message = Message.builder()
+        Message message = messageRepository.save(Message.builder()
                 .id(request.getId())
                 .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("User not found")))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
                 .createdDate(new Date())
-                .type(Message.Type.FILE)
+                .type(FILE)
                 .file(new File(fileModel))
-                .build();
+                .build());
         pingGroup(request.getGroupId());
-        return messageRepository.save(message);
+        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
+        return message;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<MessageDetailResponse> fulfillMessages(
-            List<MessageResponse> messages,
-            String viewerId) {
-        var user = messages.stream()
+    public List<MessageDetailResponse> fulfillMessages(List<MessageResponse> messages, String viewerId) {
+        List<User> users = messages.stream()
                 .flatMap(response -> response.getReactions().stream())
                 .map(Reaction::getUser)
                 .toList();
-        Map<String, User> reactors = user.stream().collect(Collectors.toMap(User::getId, userDto -> userDto, (u1, u2) -> u2));
+        Map<String, User> reactors = users.stream().collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
+
         return messages.stream()
                 .map(this::fulfillMessage)
                 .filter(Objects::nonNull)
@@ -364,6 +384,7 @@ public class MessageServiceImpl implements MessageService {
                             .build();
             response.setReply(replyMessage);
         }
+
         return response;
     }
 
@@ -387,7 +408,7 @@ public class MessageServiceImpl implements MessageService {
         }
         TaskMessageResponse taskDetail = TaskMessageResponse.from(taskWrapper.get());
 
-        List<TaskAssigneeResponse> assignees = getTaskAssignees(taskDetail.getId());
+        List<TaskAssigneeResponse> assignees = getTaskAssignees(message.getTaskId());
         taskDetail.setAssignees(assignees);
         return MessageDetailResponse.from(message, taskDetail);
     }
@@ -484,8 +505,8 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
-        List<String> typeAllow = List.of(Message.Type.TEXT.name(), Message.Type.IMAGE.name(), Message.Type.FILE.name(), Message.Type.VIDEO.name());
-        User user = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
+        List<String> typeAllow = List.of(TEXT.name(), IMAGE.name(), FILE.name(), Message.Type.VIDEO.name());
+        User sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
         Message message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
         if (!typeAllow.contains(message.getType().name()))
             throw new DomainException("Message type not allow forward");
@@ -493,22 +514,26 @@ public class MessageServiceImpl implements MessageService {
         var channels = channelRepository.findByIdIn(request.getChannelIds());
 
         try {
-            List<Message> messages = channels.stream()
-                    .map(channel -> Message.builder()
-                            .sender(user)
-                            .channel(channel)
-                            .createdDate(new Date())
-                            .content(message.getContent())
-                            .type(message.getType())
-                            .reply(message.getReply())
-                            .images(message.getImages())
-                            .file(message.getFile())
-                            .isForward(true)
-                            .build())
-                    .toList();
+            var messages = new ArrayList<Message>();
+            channels.forEach(channel -> {
+                Message m = messageRepository.save(Message.builder()
+                        .sender(sender)
+                        .channel(channel)
+                        .createdDate(new Date())
+                        .content(message.getContent())
+                        .type(message.getType())
+                        .reply(message.getReply())
+                        .images(message.getImages())
+                        .file(message.getFile())
+                        .isForward(true)
+                        .build());
+                pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
+                messages.add(m);
+                pingGroup(channel.getGroup().getId());
+            });
             messages.forEach(m -> {
-                notificationService.sendForwardNotification(MessageDetailResponse.from(m, user), m.getChannel().getGroup().getId());
-                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, user), m.getChannel().getGroup().getId());
+                notificationService.sendForwardNotification(MessageDetailResponse.from(m, sender), m.getChannel().getGroup().getId());
+                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, sender), m.getChannel().getGroup().getId());
             });
             return messages;
         } catch (Exception e) {
@@ -531,16 +556,25 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        var task = taskRepository.findById(taskId).orElse(null);
+       var task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
             return Collections.emptyList();
         }
+
         var group = task.getGroup().getGroup();
 
-        return task.getAssignees().stream()
+        List<ProfileResponse> assignees = task.getAssignees().stream()
+                .map(Assignee::getUser)
+                .map(ProfileResponse::from)
+                .toList();
+
+        Map<String, TaskStatus> statuses = task.getAssignees().stream()
+                .collect(Collectors.toMap(a->a.getUser().getId(), Assignee::getStatus, (s1, s2) -> s2));
+
+        return assignees.stream()
                 .map(assignee -> {
                     boolean isMentor = group.isMentor(assignee.getId());
-                    return TaskAssigneeResponse.from(ProfileResponse.from(assignee.getUser()), assignee.getStatus(), isMentor);
+                    return TaskAssigneeResponse.from(assignee, statuses.get(assignee.getId()),isMentor);
                 })
                 .toList();
     }

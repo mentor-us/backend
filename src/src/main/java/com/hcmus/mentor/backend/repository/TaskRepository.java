@@ -13,7 +13,26 @@ import java.util.List;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, String> {
+
+    Task findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
+
+    Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
+
     List<Task> findByGroupId(String groupId);
+
+    List<Task> findAllByParentTaskId(String parentTask);
+
+    List<Task> findByCreatedDateBetween(Date start, Date end);
+
+    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+
+    List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
+
+    List<Task> findAllByDeadlineBetween(Date date1, Date date2);
+
+    List<Task> findAllByGroupIdIn(List<String> groupIds);
+
+    List<Task> findAllByGroupId(String groupId);
 
     @Query("SELECT t FROM Task t " +
             "JOIN t.assignees assignees " +
@@ -28,31 +47,11 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             "AND t.id=?1 ")
     Boolean existsByIdAndAssigneeIdsUserId(String taskId, String userId);
 
-    List<Task> findAllByParentTaskId(String parentTask);
-
-//    Page<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(List<String> groupIds, List<String> id, Date now, PageRequest pageRequest);
-
     @Query("SELECT t FROM Task t " +
             "JOIN t.assignees assignees " +
             "WHERE t.group.id IN ?1 " +
             "AND assignees.id IN ?2 ")
     List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
-
-//    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThanAndDeadlineLessThan(List<String> groupIds, List<String> id, Date start, Date end);
-
-//    long countByCreatedDateBetween(Date start, Date end);
-
-    List<Task> findByCreatedDateBetween(Date start, Date end);
-
-    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
-
-//    Task findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
-
-    Task findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
-
-//    List<Task> findByGroupIdAndAssignerId(String groupId, String assignerId);
-
-//    long countByGroupIdAndAssigneeIdsUserIdIn(String groupId, String assigneeId);
 
     @Query("select count(t) from Task t join t.group channel where channel.id in :groupId and t.assigner.id = :userId")
     long countAllOwnTaskOfGroup(List<String> groupId, String userId);
@@ -62,31 +61,6 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             "JOIN t.assignees assignees " +
             "WHERE t.group.id IN ?1 AND assignees.id = ?2 AND assignees.status = ?3")
     long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
-
-    Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
-
-//    Task findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(String groupId, String assigneeId);
-
-//    @Query("SELECT t " +
-//            "FROM Task t " +
-//            "JOIN t.assignees assignees " +
-//            "WHERE t.group.id IN :groupId AND assignees.id = :assigneeId " +
-//            "ORDER BY t.createdDate DESC ")
-//    Optional<Task> findLatestOwnTaskByGroup(List<String> groupId, String assigneeId);
-
-//    List<Task> findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(String groupId, List<String> userIds);
-
-    List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
-
-    List<Task> findAllByDeadlineBetween(Date date1, Date date2);
-
-    List<Task> findAllByGroupIdIn(List<String> groupIds);
-
-    List<Task> findAllByGroupId(String groupId);
-
-//    long countByGroupIdAndAssigneeIdsStatusIn(String groupId, TaskStatus status);
-
-//    long countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(String groupId, String assigneeId, TaskStatus status);
 
     @Query("SELECT t, assignees " +
             "FROM Task t " +

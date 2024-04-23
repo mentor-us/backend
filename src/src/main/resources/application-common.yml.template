@@ -5,6 +5,7 @@ server-socket:
 server:
   tomcat:
     relaxed-query-chars: [ "{", "}" ]
+    redirect-context-root: false
   forward-headers-strategy: framework
 
 springdoc:

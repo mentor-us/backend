@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  pull_request:
     branches:
       - "main"
 
@@ -17,6 +16,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
     defaults:
       run:
         working-directory: ./src
@@ -46,6 +46,7 @@ jobs:
       - name: Inject secret with 1Password
         run: |
           export OP_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          op read --out-file ./src/main/resources/mentorus-firebase-adminsdk-20240402.json op://mentorus/firebase-credential/mentorus-firebase-adminsdk-20240402.json
           op inject -i ./src/main/resources/application-common.yml.template -o ./src/main/resources/application-common.yml
           op inject -i ./src/main/resources/application-prod.yml.template -o ./src/main/resources/application-prod.yml
 

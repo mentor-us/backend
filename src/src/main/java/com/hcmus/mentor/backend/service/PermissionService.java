@@ -14,4 +14,6 @@ public interface PermissionService {
     boolean isMentor(String email, String groupId);
 
     boolean isUserIdInGroup(String userId, String groupId);
+
+    boolean isUserInChannel(String channelId, String userId);
 }

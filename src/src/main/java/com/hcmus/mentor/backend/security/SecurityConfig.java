@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.security;
 
 import com.hcmus.mentor.backend.security.filter.JwtAuthFilter;
-import com.hcmus.mentor.backend.security.handler.FirebaseClearingLogoutHandler;
-import com.hcmus.mentor.backend.security.handler.Http401UnauthorizedEntryPoint;
-import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationFailureHandler;
-import com.hcmus.mentor.backend.security.handler.OAuth2AuthenticationSuccessHandler;
+import com.hcmus.mentor.backend.security.handler.*;
 import com.hcmus.mentor.backend.security.principal.oauth2.CustomOidcUserService;
 import com.hcmus.mentor.backend.security.principal.oauth2.OAuth2AuthorizationRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final GlobalControllerExceptionHandler exceptionHandler;
     private final CustomOidcUserService customOidcUserService;
     private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
@@ -43,12 +41,13 @@ public class SecurityConfig {
 
     private static final String[] AUTH_WHITELIST = {
             "/api/auth/**",
+            "/api/files/**",
             // -- Swagger UI v3 (OpenAPI)
             "/v3/api-docs/**",
             "/swagger-ui/**",
             // other public endpoints of your API may be appended to this array
             "**/oauth2/**",
-            "/actuator/**"
+            "/actuator/**",
     };
 
     @Bean
@@ -82,10 +81,9 @@ public class SecurityConfig {
                 .cors(c -> {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(requests -> {
-                    requests.requestMatchers(AUTH_WHITELIST).permitAll();
-                    requests.anyRequest().authenticated();
-                })
+                .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(AUTH_WHITELIST).permitAll()
+                        .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(e -> {
                             e.baseUri("/oauth2/authorize");
@@ -100,7 +98,7 @@ public class SecurityConfig {
                     l.addLogoutHandler(firebaseClearingLogoutHandler);
                 })
                 .addFilterBefore(jwtAuthFilter, BasicAuthenticationFilter.class)
-                .exceptionHandling(e -> e.authenticationEntryPoint(new Http401UnauthorizedEntryPoint()))
+                .exceptionHandling(e -> e.authenticationEntryPoint(new CustomHttp403UnauthorizedEntryPoint(exceptionHandler)))
                 .build();
     }
 }

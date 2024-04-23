@@ -51,7 +51,7 @@
         <common-csv.version>1.8</common-csv.version>
         <poi.version>5.2.5</poi.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <minio.version>8.5.8</minio.version>
+        <minio.version>8.5.9</minio.version>
 
         <aws.sdk.version>2.25.0</aws.sdk.version>
     </properties>
@@ -115,6 +115,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>

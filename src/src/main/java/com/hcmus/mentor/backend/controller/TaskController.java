@@ -38,7 +38,7 @@ public class TaskController {
      * Retrieve fully detailed information of a task.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to retrieve.
+     * @param id                  The ID of the task to retrieve.
      * @return APIResponse containing the detailed information of the task or an error response.
      */
     @GetMapping(value = "{id}")
@@ -55,28 +55,27 @@ public class TaskController {
     /**
      * Add a new task to a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param request       The request object containing information about the new task.
+     * @param loggedUser The current user's principal information.
+     * @param request    The request object containing information about the new task.
      * @return APIResponse containing the added task or an error response.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Task> add(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody AddTaskRequest request) {
-        String emailUser = customerUserDetails.getEmail();
-        TaskServiceImpl.TaskReturnService taskReturn = taskService.addTask(emailUser, request);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.addTask(loggedUser.getId(), request);
+
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
      * Update an existing task with new information.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to update.
-     * @param request       The request object containing the updated information for the task.
+     * @param id                  The ID of the task to update.
+     * @param request             The request object containing the updated information for the task.
      * @return APIResponse containing the updated task or an error response.
      */
     @PatchMapping("{id}")
@@ -95,8 +94,8 @@ public class TaskController {
      * Mentee update status of a task.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to update the status.
-     * @param status        The new status for the task.
+     * @param id                  The ID of the task to update the status.
+     * @param status              The new status for the task.
      * @return APIResponse containing the updated task or an error response.
      */
     @PatchMapping("{id}/{status}")
@@ -116,8 +115,8 @@ public class TaskController {
      * Mentor update status of any task in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to update the status.
-     * @param request       The request object containing the updated status for the task.
+     * @param id                  The ID of the task to update the status.
+     * @param request             The request object containing the updated status for the task.
      * @return APIResponse containing the updated task or an error response.
      */
     @PatchMapping("mentor/{id}/status")
@@ -138,7 +137,7 @@ public class TaskController {
      * Delete an existing task (Only mentor).
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to delete.
+     * @param id                  The ID of the task to delete.
      * @return APIResponse containing the result of the delete operation or an error response.
      */
     @DeleteMapping("{id}")
@@ -152,12 +151,13 @@ public class TaskController {
     }
 
     /**
-     * Retrieve all tasks of a group (mentor and mentee in group).
+     * (Use api /api/channels/tasks) Retrieve all tasks of a group (mentor and mentee in group).
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group for which tasks are retrieved.
+     * @param groupId             The ID of the group for which tasks are retrieved.
      * @return APIResponse containing a list of task details or an error response.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("group/{groupId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -191,7 +191,7 @@ public class TaskController {
      * Get the assigner of a task.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to get the assigner.
+     * @param id                  The ID of the task to get the assigner.
      * @return APIResponse containing the profile of the task's assigner or an error response.
      */
     @GetMapping("{id}/assigner")
@@ -209,7 +209,7 @@ public class TaskController {
      * Get the assignees of a task.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the task to get the assignees.
+     * @param id                  The ID of the task to get the assignees.
      * @return APIResponse containing a list of task assignees or an error response.
      */
     @GetMapping("{id}/assignees")
@@ -227,7 +227,7 @@ public class TaskController {
      * Get all tasks assigned and owned by the current user.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to filter tasks.
+     * @param groupId             The ID of the group to filter tasks.
      * @return APIResponse containing a list of task responses or an error response.
      */
     @GetMapping("own")
@@ -246,7 +246,7 @@ public class TaskController {
      * Get all tasks assigned to the current user.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to filter tasks.
+     * @param groupId             The ID of the group to filter tasks.
      * @return APIResponse containing a list of task responses or an error response.
      */
     @GetMapping("assigned")
@@ -265,7 +265,7 @@ public class TaskController {
      * Get all tasks assigned by the current user to others.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to filter tasks.
+     * @param groupId             The ID of the group to filter tasks.
      * @return APIResponse containing a list of task responses or an error response.
      */
     @GetMapping("assigning")

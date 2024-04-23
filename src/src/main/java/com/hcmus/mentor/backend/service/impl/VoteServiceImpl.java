@@ -31,7 +31,6 @@ public class VoteServiceImpl implements VoteService {
 
     private final VoteRepository voteRepository;
     private final GroupService groupService;
-    private final GroupRepository groupRepository;
     private final PermissionService permissionService;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -56,11 +55,11 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public List<VoteDetailResponse> getGroupVotes(String userId, String groupId) {
-        if (!permissionService.isUserIdInGroup(userId, groupId)) {
+    public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
+        if (!permissionService.isUserIdInGroup(userId, channelId)) {
             return null;
         }
-        return voteRepository.findByGroupIdOrderByCreatedDateDesc(groupId).stream()
+        return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
                 .map(this::fulfillChoices)
                 .toList();
     }
@@ -88,8 +87,8 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public Vote createNewVote(String userId, CreateVoteRequest request) {
-        if (!permissionService.isUserIdInGroup(userId, request.getGroupId())) {
-            return null;
+        if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
+            throw new DomainException("Người dùng không có trong channel!");
         }
 
         var choices = request.getChoices().stream()

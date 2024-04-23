@@ -2,6 +2,9 @@ package com.hcmus.mentor.backend.controller.exception;
 
 import lombok.Getter;
 
+/**
+ * Domain forbidden security exception. Can be mapped to the 403 HTTP status code.
+ */
 @Getter
 public class ForbiddenException extends DomainException {
 
@@ -23,28 +26,28 @@ public class ForbiddenException extends DomainException {
     /**
      * @param message The message that describes the error.
      */
-    public ForbiddenException(String message){
+    public ForbiddenException(String message) {
         super(message);
     }
 
     /**
      * @param message The message that describes the error.
-     * @param code Optional description code for this exception.
+     * @param code    Optional description code for this exception.
      */
-    public ForbiddenException(String message, int code){
+    public ForbiddenException(String message, int code) {
         super(message, code);
     }
 
     /**
      * @param message The message that describes the error.
-     * @param code Optional description code for this exception.
+     * @param code    Optional description code for this exception.
      */
-    public ForbiddenException(String message, String code){
+    public ForbiddenException(String message, String code) {
         super(message, code);
     }
 
     /**
-     * @param message The message that describes the error
+     * @param message        The message that describes the error
      * @param innerException The exception that is the cause of the current exception
      */
     public ForbiddenException(String message, Exception innerException) {
@@ -52,20 +55,20 @@ public class ForbiddenException extends DomainException {
     }
 
     /**
-     * @param message The message that describes the error.
+     * @param message        The message that describes the error.
      * @param innerException The exception that is the cause of the current exception.
-     * @param code Optional description code for this exception.
+     * @param code           Optional description code for this exception.
      */
     public ForbiddenException(String message, Exception innerException, int code) {
         super(message, innerException, code);
     }
 
     /**
-     * @param message The message that describes the error.
+     * @param message        The message that describes the error.
      * @param innerException The exception that is the cause of the current exception.
-     * @param code Optional description code for this exception.
+     * @param code           Optional description code for this exception.
      */
-    public ForbiddenException(String message, Exception innerException, String code){
+    public ForbiddenException(String message, Exception innerException, String code) {
         super(message, innerException, code);
     }
 

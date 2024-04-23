@@ -30,6 +30,13 @@ public class DoVotingCommandHandler implements Command.Handler<DoVotingCommand, 
             return null;
         }
 
+        var choices = vote.getChoices();
+        choices.forEach(choice -> {
+            if (command.getChoiceIds().contains(choice.getId())) {
+                choice.getVoters().add(voter);
+            }
+        });
+        voteRepository.save(vote);
         return null;
     }
 }

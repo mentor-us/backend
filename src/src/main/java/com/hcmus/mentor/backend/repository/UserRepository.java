@@ -16,29 +16,6 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
 
-    Optional<User> findByEmail(String email);
-
-    List<User> findByEmailIn(List<String> emails);
-
-    @Query("SELECT u FROM User u WHERE u.email = ?1 OR ?1 MEMBER OF u.additionalEmails")
-    Optional<User> findByAdditionalEmailsContains(String email);
-
-    Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
-
-    List<User> findByEmailLikeIgnoreCase(String email);
-
-    // Page<User> findByEmailOrNameLikeIgnoreCase(String email, Pageable pageable);
-
-    Boolean existsByEmail(String email);
-
-    Boolean existsByEmailAndRolesContains(String email, UserRole role);
-
-    List<User> findByIdIn(List<String> ids);
-
-    List<User> findAllByIdIn(List<String> ids);
-
-    List<User> findAllByRolesIn(List<String> rolesIds);
-
     long countByStatus(Boolean status);
 
     long countByIdInAndStatus(List<String> userIds, Boolean status);
@@ -47,16 +24,29 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
+    Boolean existsByEmail(String email);
+
+    Boolean existsByEmailAndRolesContains(String email, UserRole role);
+
+    Optional<User> findByEmail(String email);
+
+    List<User> findByEmailIn(List<String> emails);
+
+    Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
+
+    List<User> findByEmailLikeIgnoreCase(String email);
+
+    List<User> findByIdIn(List<String> ids);
+
+    List<User> findAllByIdIn(List<String> ids);
+
+    List<User> findAllByRolesIn(List<String> rolesIds);
+
     Optional<User> findById(String id);
 
-    //    @Query(value = "{id:  ?0}", fields = "{id: 1, name: 1, imageUrl: 1}")
-    // TODO: Fix this
+    @Query("SELECT u FROM User u WHERE u.email = ?1 OR ?1 MEMBER OF u.additionalEmails")
+    Optional<User> findByAdditionalEmailsContains(String email);
+
     @Query("SELECT id, name, imageUrl FROM User WHERE id = ?1")
     ShortProfile findShortProfile(String id);
-
-//    @Query(value = "{id:  {$in: ?0}}", fields = "{id: 1, name: 1, imageUrl: 1}")
-    // TODO: Fix this
-//    List<ShortProfile> findByIds(List<String> senderIds);
-
-
 }

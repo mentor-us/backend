@@ -550,7 +550,7 @@ public class GroupController {
     }
 
     /**
-     * Get members of a group for mobile.
+     * Get members of a group.
      *
      * @param customerUserDetails The current user's principal information.
      * @param groupId             The ID of the group for which members are requested.
@@ -604,12 +604,13 @@ public class GroupController {
     }
 
     /**
-     * Get detailed information about a group for mobile users.
+     * (Use /api/channels/{id}) Get detailed information about a channel.
      *
      * @param customerUserDetails The current user's principal information.
      * @param groupId             The ID of the group for which details are requested.
      * @return APIResponse containing detailed information about the group.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("{id}/detail")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -621,12 +622,13 @@ public class GroupController {
     }
 
     /**
-     * Get media (images and files) of a group for mobile users.
+     * (Use /api/channels/{id}/media) Get media (images and files) of a group for mobile users.
      *
      * @param customerUserDetails The current user's principal information.
      * @param groupId             The ID of the group for which media is requested.
      * @return APIResponse containing media information of the group.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("{id}/media")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")

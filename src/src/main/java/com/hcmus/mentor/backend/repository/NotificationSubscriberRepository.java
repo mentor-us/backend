@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface NotificationSubscriberRepository
-        extends JpaRepository<NotificationSubscriber, String> {
+public interface NotificationSubscriberRepository extends JpaRepository<NotificationSubscriber, String> {
 
     Optional<NotificationSubscriber> findByUserId(String userId);
 
     List<NotificationSubscriber> findByUserIdOrToken(String userId, String token);
 
-    void deleteByUserId(String userId);
-
     List<NotificationSubscriber> findAllByUserIdIn(List<String> userIds);
+
+    void deleteByUserId(String userId);
 }

@@ -41,10 +41,10 @@ public class FindOwnGroupsCommandHandler implements Command.Handler<FindOwnGroup
 
         Specification<Group> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<Group, GroupUser> groupUserJoin = root.join("groupUsers", JoinType.LEFT);
-            predicates.add(cb.equal(groupUserJoin.get("userId"), command.getUserId()));
+            Join<Group, GroupUser> groupUserJoin = root.join("groupUsers", JoinType.INNER);
+            predicates.add(cb.equal(groupUserJoin.get("user_id"), command.getUserId()));
             if (command.getIsMentor() != null) {
-                predicates.add(cb.equal(groupUserJoin.get("isMentor"), command.getIsMentor()));
+                predicates.add(cb.equal(groupUserJoin.get("is_mentor"), command.getIsMentor()));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

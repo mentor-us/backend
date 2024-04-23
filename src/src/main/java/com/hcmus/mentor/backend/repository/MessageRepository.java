@@ -15,27 +15,30 @@ import java.util.Optional;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, String> {
 
+    long countByCreatedDateBetween(Date start, Date end);
+
+    long countByChannelIdIn(List<String> channelIds);
+
+    long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
+
+    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+
     @NotNull
     Optional<Message> findById(@NotNull String id);
 
     @NotNull
     Optional<Message> findByIdAndStatusNot(String id, Message.Status status);
 
-//    Slice<Message> findByGroupId(String groupId, PageRequest pageRequest);
-
     Optional<Message> findByVoteId(String voteId);
 
-//    @Aggregation(
-//            pipeline = {
-//                    "{$match: {groupId: ?0}}",
-//                    "{$addFields: {senderObjectId: {$convert: {input: '$senderId', to: 'objectId', onError: '', onNull: ''}}}}",
-//                    "{$lookup: {from: 'user', localField: 'senderObjectId', foreignField: '_id', as: 'sender'}}",
-//                    "{$unwind: '$sender'}",
-//                    "{$sort: {createdDate: -1}}",
-//                    "{$skip: ?1}",
-//                    "{$limit: ?2}"
-// TODO: Fix this
-//            })
+    Optional<Message> findTopByChannelIdOrderByCreatedDateDesc(String groupId);
+
+    Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
+
+    List<Message> findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(String groupId, List<Message.Type> type, List<Message.Status> statuses);
+
+    List<Message> getAllGroupMessagesByChannelId(String groupId);
+
     @Query("SELECT m " +
             "FROM Message m " +
             "WHERE m.channel.id = ?1 " +
@@ -43,19 +46,6 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "ORDER BY m.createdDate DESC ")
     List<Message> getGroupMessagesByChannelId(String groupId);
 
-//    @Aggregation(
-//            pipeline = {
-//                    "{$match: {groupId: ?0}}",
-//                    "{$match: {status: {$not: {$eq: 'DELETED'}}}}",
-//                    "{$match: {content: {$regex: ?1, $options: 'i'}}}",
-//                    "{$addFields: {senderObjectId: {$convert: {input: '$senderId', to: 'objectId', onError: '', onNull: ''}}}}",
-//                    "{$lookup: {from: 'user', localField: 'senderObjectId', foreignField: '_id', as: 'sender'}}",
-//                    "{$unwind: '$sender'}",
-//                    "{$sort: {createdDate: -1}}",
-//                    "{$skip: ?2}",
-//                    "{$limit: ?3}"
-//            })
-// TODO: Fix this
     @Query("SELECT m " +
             "FROM Message m " +
             "WHERE m.channel.id = ?1 " +
@@ -64,46 +54,11 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "ORDER BY m.createdDate DESC ")
     List<Message> findGroupMessages(String groupId, String query);
 
-    long countByCreatedDateBetween(Date start, Date end);
-
-//    long countByGroupId(String groupId);
-    long countByChannelIdIn(List<String> channelIds);
-
-//    Message findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
-    Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
-
-//    long countByGroupIdAndSenderId(String groupId, String senderId);
-    long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
-
-//    Message findFirstByGroupIdAndSenderIdOrderByCreatedDateDesc(String groupId, String senderId);
-
     @Query("SELECT m " +
             "FROM Message m " +
             "WHERE m.channel.id IN :channelIds AND m.sender.id = :senderId " +
             "ORDER BY m.createdDate DESC ")
     Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);
-
-    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
-
-//    long countByGroupIdIn(List<String> groupIds);
-
-    List<Message> findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(String groupId, List<Message.Type> type, List<Message.Status> statuses);
-
-    Optional<Message> findTopByChannelIdOrderByCreatedDateDesc(String groupId);
-
-//    @Aggregation(
-//            pipeline = {
-//                    "{$match: {groupId: ?0}}",
-//                    "{$addFields: {senderObjectId: {$convert: {input: '$senderId', to: 'objectId', onError: '', onNull: ''}}}}",
-//                    "{$lookup: {from: 'user', localField: 'senderObjectId', foreignField: '_id', as: 'sender'}}",
-//                    "{$unwind: '$sender'}",
-//                    "{$sort: {createdDate: -1}}",
-//            })
-// TODO: Fix this
-    List<Message> getAllGroupMessagesByChannelId(String groupId);
-
-//    Page<Message> findByGroupId(String groupId, TextCriteria criteria, Pageable pageable);
-
 
     @Modifying
     @Query("UPDATE Message m " +

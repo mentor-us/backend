@@ -189,12 +189,11 @@ public class MessageDetailResponse {
     public static MessageDetailResponse totalReaction(
             MessageDetailResponse message, String viewerId) {
         MessageDetailResponse response = normalize(message);
-        TotalReaction totalReaction =
-                TotalReaction.builder()
-                        .data(generateTotalReactionData(message.getReactions()))
-                        .ownerReacted(generateOwnerReacted(message.getReactions(), viewerId))
-                        .total(calculateTotalReactionAmount(message.getReactions()))
-                        .build();
+        TotalReaction totalReaction = TotalReaction.builder()
+                .data(generateTotalReactionData(message.getReactions()))
+                .ownerReacted(generateOwnerReacted(message.getReactions(), viewerId))
+                .total(calculateTotalReactionAmount(message.getReactions()))
+                .build();
         response.setTotalReaction(totalReaction);
         return response;
     }

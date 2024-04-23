@@ -170,6 +170,15 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Async
     public void sendNewMessageNotification(MessageDetailResponse message) {
+        var channelTemp = channelRepository.findById(message.getGroupId()).orElse(null);
+        if (channelTemp == null) {
+            return;
+        }
+
+        var membersIds = channelTemp.getUsers().stream()
+                .filter(u -> !u.getId().equals(message.getSender().getId()))
+                .distinct()
+                .toList();
         String title;
         List<String> members;
 

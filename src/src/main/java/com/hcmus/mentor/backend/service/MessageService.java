@@ -54,6 +54,8 @@ public interface MessageService {
      */
     String getLastGroupMessage(String groupId);
 
+    String getMessageContentById(String messageId);
+
     /**
      * React to a message.
      *

@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SystemConfigRepository extends JpaRepository<SystemConfig, String> {
+
     SystemConfig findByKey(String key);
 }

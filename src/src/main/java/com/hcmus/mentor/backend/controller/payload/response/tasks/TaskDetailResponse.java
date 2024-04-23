@@ -21,18 +21,17 @@ public class TaskDetailResponse {
 
     private Date deadline;
 
-    private Assigner assigner;
+    private TaskDetailResponseAssigner assigner;
 
     private int totalAssignees;
 
-    @Builder.Default
-    private String parentTask = "";
+    private String parentTask;
 
-    private Group group;
+    private TaskDetailResponseGroup group;
 
     private Date createdDate;
 
-    private Role role;
+    private TaskDetailResponseRole role;
 
     @Builder.Default
     private TaskStatus status = null;
@@ -50,9 +49,9 @@ public class TaskDetailResponse {
 
     public static TaskDetailResponse from(
             Task task,
-            TaskDetailResponse.Assigner assigner,
-            Group group,
-            TaskDetailResponse.Role role,
+            TaskDetailResponseAssigner assigner,
+            TaskDetailResponseGroup group,
+            TaskDetailResponseRole role,
             TaskStatus status) {
         TaskDetailResponse response = from(task);
         response.setAssigner(assigner);
@@ -60,43 +59,5 @@ public class TaskDetailResponse {
         response.setRole(role);
         response.setStatus(status);
         return response;
-    }
-
-    public enum Role {
-        MENTOR,
-        MENTEE,
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class Assigner {
-        private String id;
-        private String name;
-        private String imageUrl;
-
-        public static Assigner from(User user) {
-            return TaskDetailResponse.Assigner.builder()
-                    .id(user.getId())
-                    .name(user.getName())
-                    .imageUrl(user.getImageUrl())
-                    .build();
-        }
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class Group {
-        private String id;
-        private String name;
-
-        public static Group from(com.hcmus.mentor.backend.domain.Group group) {
-            return TaskDetailResponse.Group.builder().id(group.getId()).name(group.getName()).build();
-        }
     }
 }

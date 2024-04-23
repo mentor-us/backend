@@ -73,7 +73,6 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
-    private final GroupUserRepository groupUserRepository;
     @PersistenceContext
     private EntityManager entityManager;
     private final SpringTemplateEngine templateEngine;
@@ -1247,7 +1246,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
             Sheet messagesSheet = workbook.createSheet("Tin nhắn");
             List<MessageResponse> messages = messageRepository.getAllGroupMessagesByChannelId(groupId).stream().map(message -> {
-                var sender = ProfileResponse.from( message.getSender());
+                var sender = ProfileResponse.from(message.getSender());
                 return MessageResponse.from(message, sender);
             }).toList();
             addMessagesData(messagesSheet, messages);

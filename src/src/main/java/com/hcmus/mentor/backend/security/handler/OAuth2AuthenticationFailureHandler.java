@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
+    private final Logger logger = Logger.getLogger(OAuth2AuthenticationFailureHandler.class.getName());
 
     private final OAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
@@ -25,16 +27,17 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     public void onAuthenticationFailure(
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
-        String targetUrl =
-                CookieUtils.getCookie(request, OAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
-                        .map(Cookie::getValue)
-                        .orElse(("/"));
+        String targetUrl = CookieUtils.getCookie(request, OAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
+                .map(Cookie::getValue)
+                .orElse(("/"));
 
-        targetUrl =
-                UriComponentsBuilder.fromUriString(targetUrl)
-                        .queryParam("error", exception.getLocalizedMessage())
-                        .build()
-                        .toUriString();
+        logger.info("OAuth2AuthenticationFailureHandler message: " + exception.getMessage());
+        logger.info("OAuth2AuthenticationFailureHandler cause: " + exception.getCause());
+
+        targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
+                .queryParam("error", exception.getLocalizedMessage())
+                .build()
+                .toUriString();
 
         httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(
                 request, response);

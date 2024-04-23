@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
@@ -102,9 +103,8 @@ public class MeetingService implements IRemindableService {
         messageService.saveMessage(newMessage);
         groupService.pingGroup(request.getGroupId());
 
-        MessageDetailResponse response =
-                messageService.fulfillMeetingMessage(
-                        MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
+        MessageDetailResponse response = messageService.fulfillMeetingMessage(
+                MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
         notificationService.sendNewMeetingNotification(response);
         saveToReminder(meeting);
@@ -159,14 +159,10 @@ public class MeetingService implements IRemindableService {
     }
 
     public MeetingDetailResponse getMeetingById(String userId, String meetingId) {
-        var meeting = meetingRepository.findById(meetingId).orElse(null);
-        if (meeting == null) {
-            return null;
-        }
-
+        var meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
         var organizer = meeting.getOrganizer();
-        Group group;
-        group = meeting.getGroup().getGroup();
+        var channel = meeting.getGroup();
+        var group = channel.getGroup();
 
         Map<String, ShortProfile> modifiers =
                 meeting.getHistories().stream()
@@ -201,29 +197,34 @@ public class MeetingService implements IRemindableService {
     }
 
     public List<MeetingAttendeeResponse> getMeetingAttendees(String meetingId) {
-       var meeting = meetingRepository.findById(meetingId).orElse(null);
-        if (meeting == null) {
-            return Collections.emptyList();
+        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
+
+        Channel channel = meeting.getGroup();
+        Group group = channel.getGroup();
+
+        List<String> attendeeIds;
+        boolean appliedAllGroup = meeting.getAttendees().contains("*");
+        if (appliedAllGroup) {
+            attendeeIds = group.getGroupUsers().stream()
+                    .map(GroupUser::getUser)
+                    .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
+                    .map(User::getId)
+                    .toList();
+        } else {
+            attendeeIds = meeting.getAttendees().stream()
+                    .map(User::getId)
+                    .toList();
         }
 
-        var channel = meeting.getGroup();
-        if (channel == null) {
-            return Collections.emptyList();
-        }
-
-        var group = channel.getGroup();
-
-        return channel.getUsers().stream()
-                .filter(user -> user.getId()!= meeting.getOrganizer().getId())
+        return userRepository.findByIdIn(attendeeIds).stream()
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
                 .toList();
     }
 
     public List<Meeting> getAllOwnMeetings(String userId) {
-        List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
-                .map(Group::getId)
-                .toList();
-        return meetingRepository.findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(joinedGroupIds, userId);
+       var channelIds =  channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
+
+        return meetingRepository.findAllByOwn(channelIds, userId);
     }
 
     public List<Meeting> getAllOwnMeetingsByDate(String userId, Date date) {

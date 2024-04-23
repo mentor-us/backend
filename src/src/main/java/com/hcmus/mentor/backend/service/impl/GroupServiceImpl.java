@@ -23,9 +23,12 @@ import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
-import com.hcmus.mentor.backend.service.query.GroupSpecification;
 import com.hcmus.mentor.backend.util.DateUtils;
 import com.hcmus.mentor.backend.util.MailUtils;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
@@ -41,6 +44,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -219,25 +223,25 @@ public class GroupServiceImpl implements GroupService {
         return new GroupServiceDto(SUCCESS, "", null);
     }
 
-//    @Override
-//    public GroupServiceDto createGroup(String creatorEmail, CreateGroupRequest request) {
+//    public GroupServiceDto createGroup(String creatorEmail, CreateGroupCommand command) {
 //        if (!permissionService.isAdmin(creatorEmail)) {
 //            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
 //        }
 //
-//        GroupServiceDto isValidTimeRange = validateTimeRange(request.getTimeStart(), request.getTimeEnd());
+//        GroupServiceDto isValidTimeRange = validateTimeRange(command.getRequest().getTimeStart(), command.getRequest().getTimeEnd());
 //        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
 //            return isValidTimeRange;
 //        }
-//        if (groupRepository.existsByName(request.getName())) {
+//        if (groupRepository.existsByName(command.getRequest().getName())) {
 //            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
 //        }
-//        if (!groupCategoryRepository.existsById(request.getGroupCategory())) {
+//        var groupCategory = groupCategoryRepository.findById(command.getRequest().getGroupCategory());
+//        if (groupCategory.isEmpty()) {
 //            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
 //        }
 //
-//        List<String> menteeEmails = request.getMenteeEmails();
-//        List<String> mentorEmails = request.getMentorEmails();
+//        List<String> menteeEmails = command.getRequest().getMenteeEmails();
+//        List<String> mentorEmails = command.getRequest().getMentorEmails();
 //        GroupServiceDto isValidEmails = validateListMentorsMentees(mentorEmails, menteeEmails);
 //        if (!isValidEmails.getReturnCode().equals(SUCCESS)) {
 //            return isValidEmails;
@@ -245,17 +249,18 @@ public class GroupServiceImpl implements GroupService {
 //
 //        List<String> menteeIds = menteeEmails.stream()
 //                .filter(email -> !email.isEmpty())
-//                .map(email -> userService.importUser(email, request.getName()))
+//                .map(email -> userService.importUser(email, command.getRequest().getName()))
 //                .filter(Objects::nonNull)
 //                .toList();
 //
 //        List<String> mentorIds = mentorEmails.stream()
 //                .filter(email -> !email.isEmpty())
-//                .map(email -> userService.importUser(email, request.getName()))
+//                .map(email -> userService.importUser(email, command.getName()))
 //                .filter(Objects::nonNull)
 //                .toList();
-//        Date timeStart = changeGroupTime(request.getTimeStart(), "START");
-//        Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
+//
+//        Date timeStart = changeGroupTime(command.getTimeStart(), "START");
+//        Date timeEnd = changeGroupTime(command.getTimeEnd(), "END");
 //        Duration duration = calculateDuration(timeStart, timeEnd);
 //        GroupStatus status = getStatusFromTimeStartAndTimeEnd(timeStart, timeEnd);
 //        Optional<User> userOptional = userRepository.findByEmail(creatorEmail);
@@ -265,16 +270,18 @@ public class GroupServiceImpl implements GroupService {
 //        }
 //
 //        Group group = Group.builder()
-//                .name(request.getName())
-//                .description(request.getDescription())
-//                .mentees((List<User>) userRepository.findAllById(menteeIds))
-//                .mentors((List<User>) userRepository.findAllById(mentorIds))
-//                .groupCategory(groupCategoryRepository.findById(request.getGroupCategory()).orElse(null))
+//                .name(command.getName())
+//                .description(command.getDescription())
+//                .mentees(menteeIds)
+//                .mentors(mentorIds)
+//                .groupCategory(command.getGroupCategory())
 //                .status(status)
 //                .timeStart(timeStart)
 //                .timeEnd(timeEnd)
 //                .duration(duration)
 //                .creatorId(creatorId)
+//                .channelIds(new ArrayList<>())
+//                .imageUrl(groupCategory.get().getIconUrl())
 //                .build();
 //        groupRepository.save(group);
 //
@@ -295,8 +302,8 @@ public class GroupServiceImpl implements GroupService {
 //        addUsersToChannel(channel.getId(), userIds);
 //
 //
-//        group.setChannels(List.of(channel));
-//        group.setDefaultChannel(channel);
+//        group.setChannelIds(new ArrayList<>());
+//        group.setDefaultChannelId(channel.getId());
 //        groupRepository.save(group);
 //
 //        menteeEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
@@ -384,18 +391,47 @@ public class GroupServiceImpl implements GroupService {
             String status,
             int page,
             int pageSize) {
-        Specification<Group> spec = GroupSpecification.withConditions(
-                emailUser,
-                name,
-                mentorEmail,
-                menteeEmail,
-                groupCategory,
-                status,
-                timeStart1,
-                timeEnd1,
-                timeStart2,
-                timeEnd2
-        );
+        Specification<Group> spec =  (Root<Group> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (name != null && !name.isEmpty()) {
+                predicates.add(builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+            }
+
+            if (mentorEmail != null && !mentorEmail.isEmpty()) {
+                predicates.add(builder.equal(root.join("mentors").get("email"), mentorEmail));
+            }
+
+            if (menteeEmail != null && !menteeEmail.isEmpty()) {
+                predicates.add(builder.equal(root.join("mentees").get("email"), menteeEmail));
+            }
+
+            if (groupCategory != null && !groupCategory.isEmpty()) {
+                predicates.add(builder.equal(root.get("groupCategory"), groupCategory));
+            }
+
+            if (status != null) {
+                predicates.add(builder.equal(root.get("status"), status));
+            }
+
+            if (timeStart1 != null && timeEnd1 != null) {
+                predicates.add(builder.between(root.get("timeStart"), timeStart1, timeEnd1));
+            }
+
+            if (timeStart2 != null && timeEnd2 != null) {
+                predicates.add(builder.between(root.get("timeEnd"), timeStart2, timeEnd2));
+            }
+
+            if (emailUser != null && !emailUser.isEmpty() && !permissionService.isSuperAdmin(emailUser)) {
+                String userId = getUserIdByEmail(emailUser);
+                if (!StringUtils.isEmpty(userId)) {
+                    predicates.add(builder.equal(root.get("creatorId"), userId));
+                }
+            }
+
+
+            return builder.and(predicates.toArray(new Predicate[0]));
+        };
 
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<Group> groupPage = groupRepository.findAll(spec, pageable);
@@ -404,6 +440,10 @@ public class GroupServiceImpl implements GroupService {
         long count = groupPage.getTotalElements();
         data = validateTimeGroups(data);
         return new Pair<>(count, data);
+    }
+    private String getUserIdByEmail(String emailUser) {
+        Optional<User> userOptional = userRepository.findByEmail(emailUser);
+        return userOptional.map(User::getId).orElse(null);
     }
 
 
@@ -1223,5 +1263,115 @@ public class GroupServiceImpl implements GroupService {
         groupRepository.save(group);
     }
 
+//    @Override
+//    public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {
+//        if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
+//            return null;
+//        }
+//
+//        List<GroupDetailResponse> groupDetailResponses = groupRepository.getGroupDetail(groupId);
+//        if (groupDetailResponses.isEmpty()) {
+//            return null;
+//        }
+//
+//        Group group = groupRepository.findById(groupId).orElse(null);
+//        if (group == null) {
+//            return null;
+//        }
+//
+//        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupDetailResponses.getFirst());
+//
+//        List<Channel> channelIds = group.getChannels();
+//        List<GroupDetailResponse.GroupChannel> channels = channelIds.stream()
+//                .filter(channel -> channel.isMember(user.getId()) && channel.getType() ==ChannelType.PUBLIC)
+//                .map(GroupDetailResponse.GroupChannel::from)
+//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+//                .toList();
+//        channels.forEach(ch -> {
+//            if (ch.getNewMessageId() != null) {
+//                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
+//            } else {
+//                ch.setNewMessage(null);
+//            }
+//        });
+//        detail.setChannels(channels);
+//
+//        List<GroupDetailResponse.GroupChannel> privates = channelIds.stream()
+//                .filter(channel -> channel.isMember(user.getId()) && channel.getType() ==ChannelType.PUBLIC)
+//                .map(channel -> {
+//                    var userTemp = channel.getUsers().stream()
+//                            .filter(u -> !u.getId().equals(user.getId()))
+//                            .findFirst()
+//                            .orElse(null);
+//                    if (userTemp == null) {
+//                        return null;
+//                    }
+//                    ShortProfile penpal = new ShortProfile(userTemp);
+//                    channel.setName(penpal.getName());
+//                    channel.setImageUrl(penpal.getImageUrl());
+//
+//                    List<String> markedMentees = group.getGroupUsers().stream()
+//                            .filter(GroupUser::isMarked)
+//                            .map(gu -> gu.getUser().getId())
+//                            .toList();
+//                    return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
+//                })
+//                .filter(Objects::nonNull)
+//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
+//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
+//                .toList();
+//        privates.forEach(ch -> {
+//            if (ch.getNewMessageId() != null) {
+//                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
+//            } else {
+//                ch.setNewMessage(null);
+//            }
+//        });
+//
+//        detail.setPrivates(privates);
+//
+//        return detail;
+//    }
 
+//    @Override
+//    public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
+//        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
+//        if (!group.isMentor(user.getId())) {
+//            throw new ForbiddenException("You are not mentor");
+//        }
+//
+//        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(menteeId)).findFirst().orElse(null);
+//        if (groupUser == null) {
+//            throw new DomainException("Mentee not found");
+//        }
+//        groupUser.setMarked(true);
+//        groupUserRepository.save(groupUser);
+//    }
+//
+//    @Override
+//    public void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
+//        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
+//        if (!group.isMentor(user.getId())) {
+//            throw new ForbiddenException("You are not mentor");
+//        }
+//
+//        group.unmarkMentee(menteeId);
+//        groupRepository.save(group);
+//    }
+
+    /**
+     * @param user UserPrincipal
+     * @param name Optional name of groups.
+     * @return List<GroupForwardResponse>
+     */
+//    @Override
+//    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
+//        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
+//
+//        var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
+//        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
+//
+//
+//        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
+//    }
 }

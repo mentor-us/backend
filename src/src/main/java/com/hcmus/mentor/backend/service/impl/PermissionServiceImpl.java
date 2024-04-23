@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.GroupUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -17,6 +18,7 @@ public class PermissionServiceImpl implements PermissionService {
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
     private final UserRepository userRepository;
+    private final ChannelRepository channelRepository;
 
     @Override
     public boolean isAdmin(String email) {
@@ -51,5 +53,15 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public boolean isUserIdInGroup(String userId, String groupId) {
         return groupUserRepository.existsByUserIdAndGroupId(userId, groupId);
+    }
+
+    /**
+     * @param channelId
+     * @param userId
+     * @return
+     */
+    @Override
+    public boolean isUserInChannel(String channelId, String userId) {
+        return channelRepository.existsByIdAndUserId(userId, channelId);
     }
 }

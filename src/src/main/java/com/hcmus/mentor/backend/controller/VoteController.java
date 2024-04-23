@@ -35,12 +35,13 @@ public class VoteController {
     private final MessageService messageService;
 
     /**
-     * Get all votes on group.
+     * (Use api /api/channels/votes) Get all votes on group.
      *
      * @param user    Current authenticated user's principal.
      * @param groupId Group ID to get votes from.
      * @return ResponseEntity<List < VoteDetailResponse>> - Response containing a list of votes in the group.
      */
+    @Deprecated(forRemoval = true)
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
@@ -75,20 +76,18 @@ public class VoteController {
     /**
      * Create new vote.
      *
-     * @param user    Current authenticated user's principal.
-     * @param request CreateVoteRequest containing details to create a new vote.
+     * @param loggedUser Current authenticated user's principal.
+     * @param request    CreateVoteRequest containing details to create a new vote.
      * @return ResponseEntity<Vote> - Response containing the created vote.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Vote> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody CreateVoteRequest request) {
-        Vote vote = voteService.createNewVote(user.getId(), request);
-        if (vote == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        Vote vote = voteService.createNewVote(loggedUser.getId(), request);
+
         return ResponseEntity.ok(vote);
     }
 

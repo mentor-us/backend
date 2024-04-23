@@ -9,11 +9,10 @@ import java.util.List;
 
 @Repository
 public interface ReminderRepository extends JpaRepository<Reminder, String> {
-    List<Reminder> findByReminderDateBefore(Date date);
-
-    Boolean existsByRemindableId(String id);
-
-    void deleteByRemindableId(String id);
 
     Reminder findByRemindableId(String id);
+
+    List<Reminder> findByReminderDateBefore(Date date);
+
+    void deleteByRemindableId(String id);
 }

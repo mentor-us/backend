@@ -19,76 +19,6 @@ import java.util.Optional;
 @Repository
 public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group> {
 
-    List<Group> findAllByOrderByCreatedDate();
-
-    boolean existsByName(String s);
-
-//    boolean existsByIdAndMentorsIn(String groupId, String userId);
-
-//    boolean existsByIdAndMenteesIn(String groupId, String userId);
-
-    @Query( value="SELECT * " +
-            "FROM groups g " +
-            "JOIN group_users gu ON g.id = gu.group_id " +
-            "WHERE gu.user_id = ?1 AND gu.is_mentor = false", nativeQuery = true)
-    List<Group> findAllByMenteesIn(String menteeId);
-
-    @Query( value="SELECT * " +
-            "FROM groups g " +
-            "JOIN group_users gu ON g.id = gu.group_id " +
-            "WHERE gu.user_id = ?1 AND gu.is_mentor = true", nativeQuery = true)
-    List<Group> findAllByMentorsIn(String mentorId);
-
-    @Query( value="SELECT * " +
-            "FROM groups g " +
-            "JOIN group_users gu ON g.id = gu.group_id " +
-            "WHERE gu.user_id IN ?1", nativeQuery = true)
-    Page<Group> findAllByIsMember(String memberId, Pageable pageable);
-
-    @Query( value="SELECT * " +
-            "FROM groups g " +
-            "JOIN group_users gu ON g.id = gu.group_id " +
-            "WHERE gu.user_id = ?1", nativeQuery = true)
-    Slice<Group> findByIsMemberAndStatus(String userId, GroupStatus status, Pageable pageable);
-
-    @Query( value="SELECT * " +
-            "FROM groups g " +
-            "JOIN group_users gu ON g.id = gu.group_id " +
-            "WHERE gu.user_id = ?1", nativeQuery = true)
-    List<Group>findByIsMemberAndStatus(String userId, GroupStatus status);
-
-    List<Group> findAllByGroupCategoryId(String groupCategoryId);
-
-    List<Group> findAllByGroupCategoryIdIn(List<String> groupCategoryIds);
-
-    List<Group> findAllByGroupCategoryIdAndCreatorId(String groupCategoryIds, String creatorId);
-
-
-    //    @Aggregation(
-//            pipeline = {
-//                    "{$match: {$expr : {$eq: ['$_id' , {$toObjectId: ?0}]}}}",
-//                    "{$addFields: {groupCategoryObjectId: {$toObjectId: '$groupCategory'}}}",
-//                    "{$lookup: {from: 'group_category', localField: 'groupCategoryObjectId', foreignField: '_id', as: 'category'}}",
-//                    "{$unwind: '$category'}",
-//                    "{$set: {groupCategory: '$category.name'}}",
-//                    "{$unset: 'category'}",
-//                    "{$unset: 'groupCategoryObjectId'}"
-//            })
-//    List<GroupDetailResponse> getGroupDetail(String groupId);
-//    @Query(value = "SELECT g.*, gc.name AS groupCategory " +
-//            "FROM group_detail g " +
-//            "JOIN group_category gc ON g.groupCategory = gc._id " +
-//            "WHERE g._id = ?1", nativeQuery = true)
-//    List<GroupDetailResponse> getGroupDetail(String groupId);
-
-    @Query(value = "SELECT g.*, gc.*, gu.* " +
-            "FROM group g" +
-            "JOIN FETCH g.groupCategory gc " +
-            "JOIN FETCH g.groupUsers gu " +
-            "WHERE g.id = :id", nativeQuery = true)
-    Optional<Group> findByIdAndFetchGroupCategoryAndFetch(@Param("id") String id);
-
-
     long countByStatus(GroupStatus status);
 
     long countByGroupCategoryIdAndStatus(String groupCategoryId, GroupStatus status);
@@ -101,12 +31,26 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     long countByGroupCategoryIdAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
 
+    long countByStatusAndCreatorId(GroupStatus status, String creatorId);
+
     boolean existsByIdAndCreatorId(String groupId, String creatorId);
+
+    boolean existsByName(String s);
+
     boolean existsByCreatorEmailAndId(String creatorEmail, String groupId);
 
-    Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
+    @NotNull
+    Optional<Group> findById(@NotNull String id);
 
-    long countByStatusAndCreatorId(GroupStatus status, String creatorId);
+    List<Group> findAllByOrderByCreatedDate();
+
+    List<Group> findAllByGroupCategoryId(String groupCategoryId);
+
+    List<Group> findAllByGroupCategoryIdIn(List<String> groupCategoryIds);
+
+    List<Group> findAllByGroupCategoryIdAndCreatorId(String groupCategoryIds, String creatorId);
+
+    Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
 
     List<Group> findAllByCreatorId(String creatorId);
 
@@ -114,22 +58,29 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     List<Group> findByIdIn(List<String> ids);
 
-    @NotNull
-    Optional<Group> findById(@NotNull String id);
+    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND gu.isMentor = false")
+    List<Group> findAllByMenteesIn(String menteeId);
 
-    @Query(value = "SELECT * " +
-            "FROM group g" +
-            "JOIN group_user gu on g.id == gu.id " +
-            "WHERE status =  " +
-            "ORDER BY created_date DESC", nativeQuery = true)
+    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND gu.isMentor = true")
+    List<Group> findAllByMentorsIn(String mentorId);
+
+    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1")
+    Page<Group> findAllByIsMember(String memberId, Pageable pageable);
+
+    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND g.status = ?2")
+    Slice<Group> findByIsMemberAndStatus(String userId, GroupStatus status, Pageable pageable);
+
+    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND g.status = ?2")
+    List<Group>findByIsMemberAndStatus(String userId, GroupStatus status);
+
+    @Query("SELECT g , gu, gc FROM Group g JOIN FETCH g.groupCategory gc JOIN FETCH g.groupUsers gu WHERE g.id = :id")
+    Optional<Group> findByIdAndFetchGroupCategoryAndFetch(@Param("id") String id);
+
+
+    @Query( "SELECT g FROM Group g JOIN g.groupUsers WHERE g.status = :status ORDER BY g.createdDate DESC")
     List<Group> findAllByStatusAnd(@Param("status") GroupStatus status);
 
-    @Query(value = "SELECT g.*, gu.*, c.* " +
-            "FROM groups g " +
-            "LEFT JOIN group_users gu ON g.id = gu.group_id " +
-            "LEFT JOIN channels c ON g.id = c.group_id " +
-            "WHERE g.status = :status AND gu.user_id = :userId",
-            nativeQuery = true)
+    @Query( "SELECT g, gu, c FROM Group g  JOIN g.groupUsers gu  JOIN g.channels c  WHERE g.status = :status AND gu.user.id = :userId")
     List<Group> fetchWithUsersAndChannels(@Param("userId") String userId, @Param("status") GroupStatus status);
 
     @Query("SELECT g, gu, u from Group g join g.groupUsers gu join gu.user u where u.id = :userId")
