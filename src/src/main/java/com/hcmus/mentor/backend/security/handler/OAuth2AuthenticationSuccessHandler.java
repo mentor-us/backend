@@ -67,11 +67,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
         CustomerUserDetails customerUserDetails = (CustomerUserDetails) authentication.getPrincipal();
-        if (targetUrl.contains("auth/redirect")
-                && !permissionService.isAdmin(
-                customerUserDetails.getEmail())) { // Check if redirect to Admin Page
-            throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.UNAUTHORIZED);
-        }
 
         var claims = new HashMap<String, Object>();
         claims.put("sub", customerUserDetails.getId());

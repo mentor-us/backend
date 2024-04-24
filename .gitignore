@@ -200,4 +200,4 @@ README.html
 .exercism
 
 **/application-*.yml
-**/mentorus-firebase*.json
+**/mentorus-firebase-**.json

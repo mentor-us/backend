@@ -16,6 +16,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,6 +41,7 @@ public class MeetingService implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
+    private final ChannelRepository channelRepository;
     private final ChannelRepository channelRepository;
 
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
@@ -103,6 +105,8 @@ public class MeetingService implements IRemindableService {
         messageService.saveMessage(newMessage);
         groupService.pingGroup(request.getGroupId());
 
+        MessageDetailResponse response = messageService.fulfillMeetingMessage(
+                MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         MessageDetailResponse response = messageService.fulfillMeetingMessage(
                 MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         socketIOService.sendBroadcastMessage(response, request.getGroupId());

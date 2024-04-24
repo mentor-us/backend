@@ -76,9 +76,9 @@ public class UserController {
      * Retrieve all users with pagination.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param email         Email filter.
-     * @param page          Page number.
-     * @param size          Number of items per page.
+     * @param email               Email filter.
+     * @param page                Page number.
+     * @param size                Number of items per page.
      * @return ApiResponseDto<Page < User>> - Response containing a paginated list of users.
      */
     @GetMapping(value = "all-paging")
@@ -107,9 +107,9 @@ public class UserController {
      * Retrieve users by email with pagination.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param email         Email filter.
-     * @param page          Page number.
-     * @param size          Number of items per page.
+     * @param email               Email filter.
+     * @param page                Page number.
+     * @param size                Number of items per page.
      * @return ApiResponseDto<Page < User>> - Response containing a paginated list of users.
      */
     @GetMapping("")
@@ -134,7 +134,7 @@ public class UserController {
      * Retrieve all users by email without pagination.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param email         Email filter.
+     * @param email               Email filter.
      * @return ApiResponseDto<List < User>> - Response containing a list of users.
      */
     @GetMapping("allByEmail")
@@ -169,7 +169,7 @@ public class UserController {
     /**
      * Retrieve own profile.
      *
-     * @param customerUserDetails Current authenticated user's principal.
+     * @param loggedUser Current authenticated user's principal.
      * @return ApiResponseDto<ProfileResponse> - Response containing own user profile information.
      */
     @SneakyThrows
@@ -177,10 +177,10 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ProfileResponse> getCurrentUser(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
-        var user = userService.findById(customerUserDetails.getId());
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser) {
+        var user = userService.findById(loggedUser.getId());
         if (user.isEmpty()) {
-            throw new DomainException(String.format("User with id %s not found", customerUserDetails.getId()));
+            throw new DomainException(String.format("User with id %s not found", loggedUser.getId()));
         }
         var profileResponse = ProfileResponse.from(user.get());
         return ApiResponseDto.success(profileResponse);
@@ -211,8 +211,8 @@ public class UserController {
      * Update an existing user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param id            User ID to update.
-     * @param request       UpdateUserForAdminRequest containing updated information.
+     * @param id                  User ID to update.
+     * @param request             UpdateUserForAdminRequest containing updated information.
      * @return ApiResponseDto<User> - Response containing the updated user.
      */
     @ApiResponse(responseCode = "200")
@@ -233,7 +233,7 @@ public class UserController {
      * Delete an existing user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param id            User ID to delete.
+     * @param id                  User ID to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
     @DeleteMapping("{id}")
@@ -251,7 +251,7 @@ public class UserController {
      * Add a new user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param request       AddUserRequest containing user information.
+     * @param request             AddUserRequest containing user information.
      * @return ApiResponseDto - Response containing the added user.
      */
     @PostMapping("")
@@ -270,8 +270,8 @@ public class UserController {
      * Update user profile.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId        User ID to update.
-     * @param request       UpdateUserRequest containing updated information.
+     * @param userId              User ID to update.
+     * @param request             UpdateUserRequest containing updated information.
      * @return ResponseEntity<UserServiceImpl.UserReturnService> - Response entity containing the updated user information.
      */
     @PatchMapping("{userId}/profile")
@@ -289,12 +289,12 @@ public class UserController {
      * Find users with multiple filters.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param name          User name filter.
-     * @param emailSearch   Email search filter.
-     * @param status        User status filter.
-     * @param role          User role filter.
-     * @param page          Page number.
-     * @param size          Number of items per page.
+     * @param name                User name filter.
+     * @param emailSearch         Email search filter.
+     * @param status              User status filter.
+     * @param role                User role filter.
+     * @param page                Page number.
+     * @param size                Number of items per page.
      * @return ApiResponseDto<Page < Group>> - Response containing a paginated list of users.
      * @throws InvocationTargetException If there is an issue with invocation target.
      * @throws NoSuchMethodException     If the specified method is not found.
@@ -326,7 +326,7 @@ public class UserController {
      * Delete multiple users.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param ids           List of User IDs to delete.
+     * @param ids                 List of User IDs to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
     @ApiResponse(responseCode = "200")
@@ -345,7 +345,7 @@ public class UserController {
      * Disable multiple users.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param ids           List of User IDs to disable.
+     * @param ids                 List of User IDs to disable.
      * @return ApiResponseDto - Response containing the result of the disable operation.
      */
     @ApiResponse(responseCode = "200")
@@ -364,7 +364,7 @@ public class UserController {
      * Enable multiple users.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param ids           List of User IDs to enable.
+     * @param ids                 List of User IDs to enable.
      * @return ApiResponseDto - Response containing the result of the enable operation.
      */
     @ApiResponse(responseCode = "200")
@@ -383,7 +383,7 @@ public class UserController {
      * Get user detail by ID (for admin).
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param id            User ID to get details.
+     * @param id                  User ID to get details.
      * @return ApiResponseDto<UserDetailResponse> - Response containing user details.
      */
     @GetMapping("{id}/detail")
@@ -401,7 +401,7 @@ public class UserController {
      * Update avatar.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param file          MultipartFile containing the avatar image.
+     * @param file                MultipartFile containing the avatar image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated avatar.
      * @throws GeneralSecurityException  If there is a general security exception.
      * @throws IOException               If there is an I/O exception.
@@ -429,7 +429,7 @@ public class UserController {
      * Update wallpaper.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param file          MultipartFile containing the wallpaper image.
+     * @param file                MultipartFile containing the wallpaper image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated wallpaper.
      * @throws GeneralSecurityException  If there is a general security exception.
      * @throws IOException               If there is an I/O exception.
@@ -457,7 +457,7 @@ public class UserController {
      * Export users table.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param remainColumns List of columns to remain in the exported table.
+     * @param remainColumns       List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
      * @throws IOException If there is an I/O exception during the export process.
      */
@@ -475,7 +475,7 @@ public class UserController {
      * Import multiple users.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param file          MultipartFile containing the template file for user import.
+     * @param file                MultipartFile containing the template file for user import.
      * @return ApiResponseDto<List < Group>> - Response containing the imported users.
      * @throws IOException If there is an I/O exception during the import process.
      */
@@ -496,8 +496,8 @@ public class UserController {
      * Export mentor groups user table.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId        User ID for whom to export mentor groups.
-     * @param remainColumns List of columns to remain in the exported table.
+     * @param userId              User ID for whom to export mentor groups.
+     * @param remainColumns       List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
      * @throws IOException If there is an I/O exception during the export process.
      */
@@ -517,8 +517,8 @@ public class UserController {
      * Export mentee groups user table.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId        User ID for whom to export mentee groups.
-     * @param remainColumns List of columns to remain in the exported table.
+     * @param userId              User ID for whom to export mentee groups.
+     * @param remainColumns       List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
      * @throws IOException If there is an I/O exception during the export process.
      */
@@ -537,11 +537,11 @@ public class UserController {
      * Export users table by search conditions.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param name          User name filter.
-     * @param emailSearch   Email search filter.
-     * @param status        User status filter.
-     * @param role          User role filter.
-     * @param remainColumns List of columns to remain in the exported table.
+     * @param name                User name filter.
+     * @param emailSearch         Email search filter.
+     * @param status              User status filter.
+     * @param role                User role filter.
+     * @param remainColumns       List of columns to remain in the exported table.
      * @return ResponseEntity<Resource> - Response entity containing the exported table as a resource.
      * @throws IOException If there is an I/O exception during the export process.
      */
@@ -565,8 +565,8 @@ public class UserController {
      * Add additional email to user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId        User ID to add an additional email.
-     * @param request       AddAdditionEmailRequest containing the additional email.
+     * @param userId              User ID to add an additional email.
+     * @param request             AddAdditionEmailRequest containing the additional email.
      * @return ApiResponseDto<User> - Response containing the user with additional email added.
      */
     @PostMapping("{userId}/email/add")
@@ -585,8 +585,8 @@ public class UserController {
      * Delete additional email of user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId        User ID to delete an additional email.
-     * @param request       RemoveAdditionalEmailRequest containing the additional email to remove.
+     * @param userId              User ID to delete an additional email.
+     * @param request             RemoveAdditionalEmailRequest containing the additional email to remove.
      * @return ApiResponseDto<User> - Response containing the user with additional email removed.
      */
     @DeleteMapping("{userId}/email/remove")

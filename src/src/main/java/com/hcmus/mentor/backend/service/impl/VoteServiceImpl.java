@@ -57,8 +57,11 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
         if (!permissionService.isUserIdInGroup(userId, channelId)) {
+    public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
+        if (!permissionService.isUserIdInGroup(userId, channelId)) {
             return null;
         }
+        return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
                 .map(this::fulfillChoices)
                 .toList();

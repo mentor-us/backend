@@ -17,9 +17,10 @@ public class CustomerOidcUserFactory {
             return new GoogleCustomerOidcUser(attributes);
         } else if (registrationId.equalsIgnoreCase(AuthProvider.azure.toString())) {
             return new AzureCustomerOidcUser(attributes);
+        } else if (registrationId.equalsIgnoreCase(AuthProvider.apple.toString())) {
+            return new AppleCustomerOidcUser(attributes);
         } else {
-            throw new OAuth2AuthenticationProcessingException(
-                    "Sorry! Login with " + registrationId + " is not supported yet.");
+            throw new OAuth2AuthenticationProcessingException("Sorry! Login with " + registrationId + " is not supported yet.");
         }
     }
 }

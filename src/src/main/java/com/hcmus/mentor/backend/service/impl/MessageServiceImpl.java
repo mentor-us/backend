@@ -300,6 +300,7 @@ public class MessageServiceImpl implements MessageService {
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
+                .build());
 
         pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
@@ -351,9 +352,31 @@ public class MessageServiceImpl implements MessageService {
                 .map(this::fulfillMessage)
                 .filter(Objects::nonNull)
                 .filter(message -> !message.isDeletedAttach())
+                .map(this::processSpecialMessage)
                 .map(message -> fulfillReactions(message, reactors))
                 .map(message -> MessageDetailResponse.totalReaction(message, viewerId))
                 .toList();
+    }
+
+    private MessageDetailResponse processSpecialMessage(MessageDetailResponse message) {
+        if (Message.Status.DELETED.equals(message.getStatus())) {
+            message.setContent("Tin nhắn đã được xoá");
+        }
+
+        if (message.getReply() != null) {
+            var messageReply = messageRepository.findById(message.getReply().getId()).orElse(null);
+            if (messageReply == null) {
+                return message;
+            }
+            var sender = userRepository.findShortProfile(messageReply.getSenderId());
+            message.setReply(MessageDetailResponse.ReplyMessage.builder()
+                    .id(messageReply.getId())
+                    .senderName(sender != null ? sender.getName() : "Người dùng không tồn tại")
+                    .content(messageReply.isDeleted() ? "Tin nhắn đã được xoá" : messageReply.getContent())
+                    .build());
+        }
+
+        return message;
     }
 
     /**

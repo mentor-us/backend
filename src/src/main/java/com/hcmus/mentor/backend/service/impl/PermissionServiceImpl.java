@@ -19,6 +19,7 @@ public class PermissionServiceImpl implements PermissionService {
     private final GroupUserRepository groupUserRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final ChannelRepository channelRepository;
 
     @Override
     public boolean isAdmin(String email) {
