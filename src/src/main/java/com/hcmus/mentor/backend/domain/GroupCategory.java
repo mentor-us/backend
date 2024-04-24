@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import jakarta.persistence.*;
@@ -49,6 +50,7 @@ public class GroupCategory {
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
 
     @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "groupCategory", fetch = FetchType.LAZY)
     private List<Group> groups = new ArrayList<>();
 

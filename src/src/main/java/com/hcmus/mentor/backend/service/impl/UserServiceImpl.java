@@ -27,6 +27,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +64,7 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
@@ -204,6 +206,38 @@ public class UserServiceImpl implements UserService {
         if (!permissionService.isSuperAdmin(emailUser) && request.getRole() == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
+        if (request.getName() == null
+                || request.getName().isEmpty()
+                || request.getEmailAddress() == null
+                || request.getEmailAddress().isEmpty()
+                || request.getRole() == null) {
+            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+        }
+
+        String email = request.getEmailAddress();
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+        }
+
+        UserRole role = request.getRole();
+        User user = User.builder().name(request.getName()).email(email).build();
+        user.assignRole(role);
+        userRepository.save(user);
+        mailService.sendWelcomeMail(email);
+
+        UserDataResponse userDataResponse = UserDataResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.isStatus())
+                .role(role)
+                .build();
+        return new UserServiceDto(SUCCESS, "", userDataResponse);
+    }
+
+    @Override
+    public UserServiceDto addUser( AddUserRequest request) {
         if (request.getName() == null
                 || request.getName().isEmpty()
                 || request.getEmailAddress() == null

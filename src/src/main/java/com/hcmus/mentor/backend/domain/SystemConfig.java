@@ -28,9 +28,8 @@ public class SystemConfig {
     @Column(name = "key")
     private String key;
 
-    @Lob
-    @Column(name = "value", columnDefinition = "clob")
-    private String value;
+    @Column(name = "value", columnDefinition = "VARCHAR(255)")
+    private Object value;
 
     public SystemConfig() {
 

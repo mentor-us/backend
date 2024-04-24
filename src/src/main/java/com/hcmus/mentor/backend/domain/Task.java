@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
@@ -64,13 +65,13 @@ public class Task implements IRemindable, Serializable {
     @JoinColumn(name = "channel_id")
     private Channel group;
 
+   @JsonIgnore
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
     private List<Task> subTasks = new ArrayList<>();
 
+   @JsonIgnore
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Assignee> assignees = new ArrayList<>();
 

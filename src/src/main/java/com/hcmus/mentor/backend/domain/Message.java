@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
@@ -47,8 +48,6 @@ public class Message {
     @Enumerated(EnumType.STRING)
     private Status status = Status.SENT;
 
-//    private SystemLog systemLog;
-
     @Column(name = "reply")
     private String reply;
 
@@ -88,6 +87,7 @@ public class Message {
     @JoinColumn(name = "task_id")
     private Task task = null;
 
+    @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Reaction> reactions = new ArrayList<>();

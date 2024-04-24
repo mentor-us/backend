@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,7 +41,7 @@ public class Reminder {
     @Column(name = "remindable_id")
     private String remindableId;
 
-   // @Fetch(FetchMode.SUBSELECT)
+   @JsonIgnore
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_reminder",
@@ -49,7 +50,7 @@ public class Reminder {
     )
     private List<User> recipients;
 
-   // @Fetch(FetchMode.SUBSELECT)
+   @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     private Channel group;

@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
@@ -69,10 +70,12 @@ public class Meeting implements IRemindable, Serializable {
     private Channel group;
 
     @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY)
     private List<MeetingHistory> histories = new ArrayList<>();
 
     @Builder.Default
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_meeting_attendees",
@@ -80,11 +83,6 @@ public class Meeting implements IRemindable, Serializable {
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> attendees = new ArrayList<>();
 
-//    public static Meeting from(CreateMeetingRequest request) {
-//        Meeting meeting = new Meeting();
-//        meeting.create(request);
-//        return meeting;
-//    }
 
     @Override
     public Reminder toReminder() {

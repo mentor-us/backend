@@ -5,8 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -46,8 +45,8 @@ public class Notification {
     @JoinColumn(name = "sender_id")
     private User sender;
 
+    @JsonIgnore
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
     private List<NotificationUser> receivers = new ArrayList<>();
 

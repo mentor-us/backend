@@ -41,6 +41,7 @@ public interface UserService {
     UserServiceDto deleteUser(String emailUser, String id);
 
     UserServiceDto addUser(String emailUser, AddUserRequest request);
+    UserServiceDto addUser( AddUserRequest request);
 
     UserServiceDto importUsers(String emailUser, MultipartFile file) throws IOException;
 

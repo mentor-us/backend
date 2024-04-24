@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.4</version>
+        <version>3.2.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -141,7 +141,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>9.16.3</version>
+            <version>10.11.0</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -367,6 +367,9 @@
                     <url>jdbc:postgresql://localhost:5432/mentorus</url>
                     <user>postgres</user>
                     <password>123</password>
+                    <schemas>
+                        <schema>public</schema>
+                    </schemas>
                 </configuration>
             </plugin>
         </plugins>

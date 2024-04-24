@@ -28,8 +28,8 @@ CREATE TABLE choices
 
 CREATE TABLE faqs
 (
-    id           VARCHAR(255) NOT NULL,
-    question     VARCHAR(255) NOT NULL,
+    id           VARCHAR(255)                NOT NULL,
+    question     VARCHAR(255)                NOT NULL,
     answer       VARCHAR(255),
     created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
@@ -66,10 +66,10 @@ CREATE TABLE group_user
 
 CREATE TABLE groups
 (
-    id                 VARCHAR(255) NOT NULL,
-    name               VARCHAR(255) NOT NULL,
+    id                 VARCHAR(255)                NOT NULL,
+    name               VARCHAR(255)                NOT NULL,
     description        VARCHAR(255),
-    status             VARCHAR(255) NOT NULL,
+    status             VARCHAR(255)                NOT NULL,
     image_url          VARCHAR(255),
     has_new_message    BOOLEAN,
     time_start         TIMESTAMP WITHOUT TIME ZONE,
@@ -86,18 +86,18 @@ CREATE TABLE groups
 
 CREATE TABLE groups_categories
 (
-    id           VARCHAR(255) NOT NULL,
-    name         VARCHAR(255) NOT NULL,
+    id           VARCHAR(255)                NOT NULL,
+    name         VARCHAR(255)                NOT NULL,
     description  VARCHAR(255),
     icon_url     VARCHAR(255),
     created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    status       VARCHAR(255) NOT NULL,
+    status       VARCHAR(255)                NOT NULL,
     CONSTRAINT pk_groups_categories PRIMARY KEY (id)
 );
 
 CREATE TABLE meeting_histories
 (
-    id          VARCHAR(255) NOT NULL,
+    id          VARCHAR(255)                NOT NULL,
     time_start  TIMESTAMP WITHOUT TIME ZONE,
     time_end    TIMESTAMP WITHOUT TIME ZONE,
     place       VARCHAR(255),
@@ -109,15 +109,15 @@ CREATE TABLE meeting_histories
 
 CREATE TABLE meetings
 (
-    id           VARCHAR(255) NOT NULL,
-    title        VARCHAR(255) NOT NULL,
+    id           VARCHAR(255)                NOT NULL,
+    title        VARCHAR(255)                NOT NULL,
     description  VARCHAR(255),
     time_start   TIMESTAMP WITHOUT TIME ZONE,
     time_end     TIMESTAMP WITHOUT TIME ZONE,
     repeated     VARCHAR(255),
     place        VARCHAR(255),
     created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    is_deleted   BOOLEAN      NOT NULL,
+    is_deleted   BOOLEAN                     NOT NULL,
     deleted_date TIMESTAMP WITHOUT TIME ZONE,
     organizer_id VARCHAR(255),
     channel_id   VARCHAR(255),
@@ -132,15 +132,15 @@ CREATE TABLE message_images
 
 CREATE TABLE messages
 (
-    id                VARCHAR(255) NOT NULL,
+    id                VARCHAR(255)                NOT NULL,
     content           VARCHAR(255),
     created_date      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    is_edited         BOOLEAN      NOT NULL,
+    is_edited         BOOLEAN                     NOT NULL,
     edited_at         TIMESTAMP WITHOUT TIME ZONE,
-    type              VARCHAR(255) NOT NULL,
-    status            VARCHAR(255) NOT NULL,
+    type              VARCHAR(255)                NOT NULL,
+    status            VARCHAR(255)                NOT NULL,
     reply             VARCHAR(255),
-    is_forward        BOOLEAN      NOT NULL,
+    is_forward        BOOLEAN                     NOT NULL,
     sender_id         VARCHAR(255),
     channel_id        VARCHAR(255),
     vote_id           VARCHAR(255),
@@ -154,8 +154,8 @@ CREATE TABLE messages
 
 CREATE TABLE notification_subscriber
 (
-    id           VARCHAR(255) NOT NULL,
-    token        VARCHAR(255) NOT NULL,
+    id           VARCHAR(255)                NOT NULL,
+    token        VARCHAR(255)                NOT NULL,
     created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     user_id      VARCHAR(255),
     CONSTRAINT pk_notification_subscriber PRIMARY KEY (id)
@@ -174,10 +174,10 @@ CREATE TABLE notification_user
 
 CREATE TABLE notifications
 (
-    id           VARCHAR(255) NOT NULL,
+    id           VARCHAR(255)                NOT NULL,
     title        VARCHAR(255),
     content      VARCHAR(255),
-    type         VARCHAR(255) NOT NULL,
+    type         VARCHAR(255)                NOT NULL,
     created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ref_id       VARCHAR(255),
     sender_id    VARCHAR(255),
@@ -253,7 +253,7 @@ CREATE TABLE "system-config"
     description VARCHAR(255),
     type        VARCHAR(255),
     key         VARCHAR(255),
-    value       TEXT,
+    value       VARCHAR(255),
     CONSTRAINT "pk_system-config" PRIMARY KEY (id)
 );
 
@@ -268,16 +268,16 @@ CREATE TABLE task_assignee
 
 CREATE TABLE tasks
 (
-    id             VARCHAR(255) NOT NULL,
-    title          VARCHAR(255) NOT NULL,
+    id             VARCHAR(255)                NOT NULL,
+    title          VARCHAR(255)                NOT NULL,
     description    VARCHAR(255),
     deadline       TIMESTAMP WITHOUT TIME ZONE,
     created_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    is_deleted     BOOLEAN      NOT NULL,
+    is_deleted     BOOLEAN                     NOT NULL,
     deleted_date   TIMESTAMP WITHOUT TIME ZONE,
-    assigner_id    VARCHAR(255) NOT NULL,
+    assigner_id    VARCHAR(255)                NOT NULL,
     parent_task_id VARCHAR(255),
-    channel_id     VARCHAR(255) NOT NULL,
+    channel_id     VARCHAR(255)                NOT NULL,
     CONSTRAINT pk_tasks PRIMARY KEY (id)
 );
 
@@ -295,14 +295,14 @@ CREATE TABLE user_roles
 
 CREATE TABLE users
 (
-    id               VARCHAR(255) NOT NULL,
-    name             VARCHAR(255) NOT NULL,
-    email            VARCHAR(255) NOT NULL,
+    id               VARCHAR(255)                NOT NULL,
+    name             VARCHAR(255)                NOT NULL,
+    email            VARCHAR(255)                NOT NULL,
     image_url        VARCHAR(255),
     wallpaper        VARCHAR(255),
     email_verified   BOOLEAN,
     password         VARCHAR(255),
-    provider         VARCHAR(255) NOT NULL,
+    provider         VARCHAR(255)                NOT NULL,
     provider_id      VARCHAR(255),
     status           BOOLEAN,
     phone            VARCHAR(255),
@@ -312,21 +312,21 @@ CREATE TABLE users
     has_english_cert BOOLEAN,
     studying_point   DOUBLE PRECISION,
     initial_name     VARCHAR(255),
-    gender           VARCHAR(255) NOT NULL,
+    gender           VARCHAR(255)                NOT NULL,
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
 
 CREATE TABLE votes
 (
-    id                 VARCHAR(255) NOT NULL,
+    id                 VARCHAR(255)                NOT NULL,
     question           VARCHAR(255),
     time_end           TIMESTAMP WITHOUT TIME ZONE,
     closed_date        TIMESTAMP WITHOUT TIME ZONE,
     created_date       TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    is_deleted         BOOLEAN      NOT NULL,
+    is_deleted         BOOLEAN                     NOT NULL,
     deleted_date       TIMESTAMP WITHOUT TIME ZONE,
-    is_multiple_choice BOOLEAN      NOT NULL,
-    status             VARCHAR(255) NOT NULL,
+    is_multiple_choice BOOLEAN                     NOT NULL,
+    status             VARCHAR(255)                NOT NULL,
     creator_id         VARCHAR(255),
     channel_id         VARCHAR(255),
     CONSTRAINT pk_votes PRIMARY KEY (id)
@@ -515,7 +515,10 @@ ALTER TABLE reminder_properties
     ADD CONSTRAINT fk_reminder_properties_on_reminder FOREIGN KEY (reminder_id) REFERENCES reminders (id);
 
 ALTER TABLE user_additional_emails
-    ADD CONSTRAINT fk_user_additionalemails_on_user FOREIGN KEY (user_id) REFERENCES users (id);
+    ADD CONSTRAINT fk_user_additional_emails_on_user FOREIGN KEY (user_id) REFERENCES users (id);
 
 ALTER TABLE user_roles
     ADD CONSTRAINT fk_user_roles_on_user FOREIGN KEY (user_id) REFERENCES users (id);
+
+insert into "system-config" (id, name, description, type, key, value) values ('1', 'Domain hợp lệ', 'Các domain cho phép đăng nhập trên hệ thống', 'java.util.ArrayList', 'valid_domain', '["fit.hcmus.edu.vn","student.hcmus.edu.vn","fit.gmail.com.vn"]');
+insert into "system-config" (id, name, description, type, key, value) values ('2', 'Thời gian học tối đa', 'Thời gian học tối đa của sinh viên', 'java.lang.Integer', 'valid_max_year', '7');

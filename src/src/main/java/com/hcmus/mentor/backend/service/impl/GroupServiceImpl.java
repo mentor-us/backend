@@ -44,6 +44,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -64,6 +65,7 @@ import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
 import static com.hcmus.mentor.backend.service.impl.AnalyticServiceImpl.getResourceResponseEntity;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
@@ -152,9 +154,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     public GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
-        int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt(systemConfigRepository
-                .findByKey("valid_max_year")
-                .getValue());
+        int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt((String) systemConfigRepository.findByKey("valid_max_year").getValue());
         LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

@@ -39,8 +39,9 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findAllByIdIn(List<String> ids);
 
-    List<User> findAllByRolesIn(List<String> rolesIds);
+//    List<User> findAllByRolesIn(List<String> rolesIds);
 
+    @org.jetbrains.annotations.NotNull
     Optional<User> findById(String id);
 
     @Query("SELECT u FROM User u WHERE u.email = ?1 OR ?1 MEMBER OF u.additionalEmails")

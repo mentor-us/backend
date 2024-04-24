@@ -1,19 +1,22 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
-@Data
+@Setter
+@Getter
+@Entity
 @Builder
 @ToString
-@Entity
 @Table(name = "groups")
 @AllArgsConstructor
 public class Group implements Serializable {
@@ -107,8 +110,8 @@ public class Group implements Serializable {
      */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_channel_id")
-    //@ToString.Exclude
     private Channel defaultChannel;
+
 
     /**
      * Group category identifier
@@ -128,9 +131,9 @@ public class Group implements Serializable {
      */
     @Builder.Default
     @BatchSize(size = 5)
-    @OneToMany(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @OneToMany(cascade=CascadeType.ALL,fetch = FetchType.LAZY)
     @JoinColumn(name = "message_pinned_id")
-    //@ToString.Exclude
     private List<Message> messagesPinned = new ArrayList<>();
 
     /**
@@ -138,23 +141,22 @@ public class Group implements Serializable {
      */
     @Builder.Default
     @BatchSize(size = 10)
+    @JsonIgnore
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    //@ToString.Exclude
     private List<Channel> channels = new ArrayList<>();
 
     /**
      * List of FAQ identifiers
      */
+    @JsonIgnore
     @Builder.Default
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    //@ToString.Exclude
     private List<Faq> faqs = new ArrayList<>();
 
+    @JsonIgnore
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    //@ToString.Exclude
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     public Group() {

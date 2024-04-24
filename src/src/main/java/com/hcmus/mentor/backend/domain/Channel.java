@@ -1,20 +1,18 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
+import lombok.*;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Data
+@Setter
+@Getter
 @Entity
 @Builder
 @ToString
@@ -76,28 +74,29 @@ public class Channel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = false)
+    @JsonIgnoreProperties("defaultChannel")
     private Group group;
 
-   // @Fetch(FetchMode.SUBSELECT)
+    @JsonIgnore
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Task> tasks;
 
-   // @Fetch(FetchMode.SUBSELECT)
+    @JsonIgnore
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Vote> votes;
 
-   // @Fetch(FetchMode.SUBSELECT)
+    @JsonIgnore
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Meeting> meetings;
 
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
+    @JsonIgnore
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_pinned_id")
     private List<Message> messagesPinned = new ArrayList<>();
 
     @Builder.Default
-   // @Fetch(FetchMode.SUBSELECT)
+   @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "rel_user_channel",
             joinColumns = @JoinColumn(name = "channel_id"),

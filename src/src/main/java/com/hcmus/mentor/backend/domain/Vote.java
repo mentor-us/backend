@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,9 +60,9 @@ public class Vote {
     @JoinColumn(name = "channel_id")
     private Channel group;
 
+    @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-   // @Fetch(FetchMode.SUBSELECT)
     private List<Choice> choices = new ArrayList<>();
 
     public Vote() {
