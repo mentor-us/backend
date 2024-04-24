@@ -57,19 +57,17 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
         if (!permissionService.isUserIdInGroup(userId, channelId)) {
-    public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
-        if (!permissionService.isUserIdInGroup(userId, channelId)) {
             return null;
         }
-        return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
                 .map(this::fulfillChoices)
                 .toList();
     }
 
+
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
-        ShortProfile creator = userRepository.findShortProfile(vote.getCreator().getId());
+        ShortProfile creator = new ShortProfile(vote.getCreator());
         List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
                 .map(this::fulfillChoice)
                 .filter(Objects::nonNull)

@@ -53,7 +53,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
                         .anyMatch(ch -> ch.getUsers().stream()
                                 .anyMatch(u -> Objects.equals(u.getId(), command.getCurrentUserId()))))
                 .map(channel -> {
-                    ShortProfile penpal = userRepository.findShortProfile(command.getCurrentUserId());
+                    ShortProfile penpal = userRepository.findShortProfile(command.getCurrentUserId()).map(ShortProfile::new).orElse(null);
                     if (penpal == null) {
                         return null;
                     }

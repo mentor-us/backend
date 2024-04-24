@@ -175,21 +175,21 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        var membersIds = channelTemp.getUsers().stream()
-                .filter(u -> !u.getId().equals(message.getSender().getId()))
-                .distinct()
-                .toList();
-        var channel = channelRepository.findById(message.getGroupId()).orElse(null);
-        if (channel == null) {
-            return;
-        }
+//        var membersIds = channelTemp.getUsers().stream()
+//                .filter(u -> !u.getId().equals(message.getSender().getId()))
+//                .distinct()
+//                .toList();
+//        var channel = channelRepository.findById(message.getGroupId()).orElse(null);
+//        if (channel == null) {
+//            return;
+//        }
 
-        var members = channel.getUserIds().stream()
-                .filter(id -> !id.equals(message.getSender().getId()))
-                .distinct()
-                .toList();
+//        var members = channel.getUsers().stream()
+//                .filter(user -> !id.equals(message.getSender().getId()))
+//                .distinct()
+//                .toList();
         String title;
-        List<String> members;
+        List<String> members = new ArrayList<>();
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
         if (groupWrapper.isEmpty()) {
@@ -198,9 +198,9 @@ public class NotificationServiceImpl implements NotificationService {
                 return;
             }
 
-            title = String.format("%s%n%s", group.getName(), message.getSender().getName());
+            title = String.format("%s%n%s", channel.getName(), message.getSender().getName());
         } else {
-            title = channel.getName();
+//            title = channel.getName();
             Group group = groupWrapper.get();
             title = group.getName();
             members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())

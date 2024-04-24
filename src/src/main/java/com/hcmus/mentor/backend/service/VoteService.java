@@ -35,4 +35,5 @@ public interface VoteService {
     boolean closeVote(CustomerUserDetails user, String voteId);
 
     boolean reopenVote(CustomerUserDetails user, String voteId);
+
 }

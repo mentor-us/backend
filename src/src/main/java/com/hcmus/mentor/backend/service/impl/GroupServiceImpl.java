@@ -865,7 +865,7 @@ public class GroupServiceImpl implements GroupService {
             if (userId == null) {
                 return null;
             }
-            ShortProfile penpal = userRepository.findShortProfile(penpalId);
+            ShortProfile penpal = userRepository.findShortProfile(penpalId).map(ShortProfile::new).orElse(null);
             if (penpal == null) {
                 return null;
             }

@@ -6,13 +6,11 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
@@ -47,7 +45,6 @@ public class TaskServiceImpl implements IRemindableService {
     private final SocketIOService socketIOService;
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
-    private final ChannelRepository channelRepository;
     private final ChannelRepository channelRepository;
 
     public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
@@ -127,10 +124,6 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<Task> tasks = taskRepository.findByGroupId(groupId);
-        List<TaskDetailResponse> taskDetailResponses = tasks.stream()
-                .map(task -> generateTaskDetailFromTask(emailUser, task))
-                .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
-                .toList();
         List<TaskDetailResponse> taskDetailResponses = tasks.stream()
                 .map(task -> generateTaskDetailFromTask(emailUser, task))
                 .sorted(Comparator.comparing(TaskDetailResponse::getCreatedDate).reversed())
@@ -262,15 +255,12 @@ public class TaskServiceImpl implements IRemindableService {
                 .collect(Collectors.toMap(Assignee::getUser, Assignee::getStatus, (s1, s2) -> s2));
 
         var data = assignees.stream()
-        var data = assignees.stream()
                 .map(assignee -> {
                     TaskStatus status = statuses.getOrDefault(assignee, null);
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, status, isMentor);
                 })
                 .toList();
-
-        return new TaskReturnService(SUCCESS, "", data);
 
         return new TaskReturnService(SUCCESS, "", data);
     }

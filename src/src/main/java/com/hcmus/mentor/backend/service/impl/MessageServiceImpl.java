@@ -300,7 +300,6 @@ public class MessageServiceImpl implements MessageService {
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
-                .build());
 
         pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
@@ -368,10 +367,12 @@ public class MessageServiceImpl implements MessageService {
             if (messageReply == null) {
                 return message;
             }
-            var sender = userRepository.findShortProfile(messageReply.getSenderId());
+            // Todo: vrify user is member of group
+            var sender =messageReply.getSender();
+            var senderProfile = sender.isStatus() ? new ShortProfile(sender) : null;
             message.setReply(MessageDetailResponse.ReplyMessage.builder()
                     .id(messageReply.getId())
-                    .senderName(sender != null ? sender.getName() : "Người dùng không tồn tại")
+                    .senderName(senderProfile != null ? sender.getName() : "Người dùng không tồn tại")
                     .content(messageReply.isDeleted() ? "Tin nhắn đã được xoá" : messageReply.getContent())
                     .build());
         }

@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import org.springframework.data.domain.Page;
@@ -48,5 +47,5 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByAdditionalEmailsContains(String email);
 
     @Query("SELECT id, name, imageUrl FROM User WHERE id = ?1")
-    ShortProfile findShortProfile(String id);
+    Optional<User> findShortProfile(String id);
 }
