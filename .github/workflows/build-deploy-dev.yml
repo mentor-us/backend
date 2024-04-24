@@ -6,13 +6,13 @@ on:
       - develop
     paths:
       - src/**
-      - .github/workflows/build-and-deploy-dev.yml
+      - .github/workflows/build-deploy-dev.yml
 
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  CONTAINER_NAME: ${{ github.event.repository.name }}-dev
+  GHCR_SLUG: ghcr.io/mentor-us/backend
+  CONTAINER_NAME: backend-dev
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
       run:
         working-directory: ./src
     outputs:
-      image_path: ${{ steps.meta.outputs.tags }}
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 21
@@ -56,12 +56,6 @@ jobs:
       - name: Rename jar file to app.jar
         run: mv "target/${{ github.event.repository.name }}-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
 
-      # - name: Upload app.jar to github
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: app.jar
-      #     path: src/target/app.jar
-
       - name: Login to github package
         uses: docker/login-action@v3
         with:
@@ -77,9 +71,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/dev
+            ${{ env.GHCR_SLUG }}
           tags: |
-            latest
             type=sha,enable=true,prefix=dev-,suffix=,format=short
 
       - name: Build and push to github package
@@ -118,14 +111,13 @@ jobs:
           host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
           username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
           key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
-          envs: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}, ${{ github.actor }}, ${{ env.CONTAINER_NAME }}, ${{ env.REGISTRY }}, ${{ github.repository }}
           script: |
             # Login to Github Packages
             echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Pull the new image
+            docker pull ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
             # Stop and remove the container if running
             docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
-            # Remove image
-            docker image rmi ${{ env.REGISTRY }}/${{ github.repository }}/dev:latest || true
             # Run container
             docker run -d \
               --restart always \
@@ -134,4 +126,6 @@ jobs:
               -e SPRING_PROFILES_ACTIVE=dev \
               -p 7000:8080 \
               -p 7001:8085 \
-              ${{ env.REGISTRY }}/${{ github.repository }}/dev:latest
+              ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
+            # Remove the old image
+            docker image prune -f
