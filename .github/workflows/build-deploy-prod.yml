@@ -108,7 +108,7 @@ jobs:
           PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
 
       - name: Connect to PPTP VPN
-        uses: mizumotok/pptp-action@v1
+        uses: mizumotok/pptp-action@master
         with:
           server: ${{ steps.op-load-secret.outputs.VPN_HOST }}
           username: ${{ steps.op-load-secret.outputs.VPN_SERVER_USERNAME }}
