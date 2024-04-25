@@ -108,13 +108,13 @@ jobs:
           PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
 
       - name: Connect to PPTP VPN
-        uses: mizumotok/pptp-action@master
+        uses: mentor-us/pptp-action@master
         with:
           server: ${{ steps.op-load-secret.outputs.VPN_HOST }}
           username: ${{ steps.op-load-secret.outputs.VPN_SERVER_USERNAME }}
           password: ${{ steps.op-load-secret.outputs.VPN_SERVER_PASSWORD }}
 
-      - name: Deploy to digital ocean droplet via ssh action
+      - name: Deploy to school server via ssh action
         uses: appleboy/ssh-action@v1.0.0
         with:
           script_stop: true
