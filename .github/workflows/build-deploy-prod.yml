@@ -1,0 +1,141 @@
+name: deploy-dev
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - src/**
+      - .github/workflows/build-deploy-prod.yml
+
+  workflow_dispatch:
+
+env:
+  GHCR_SLUG: ghcr.io/mentor-us/backend
+  CONTAINER_NAME: backend-prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@v1
+
+      - name: Load secret
+        id: op-load-secret
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+
+      - name: Inject secret with 1Password
+        run: |
+          export OP_SERVICE_ACCOUNT_TOKEN=${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          op read --out-file ./src/main/resources/mentorus-firebase-adminsdk-20240402.json op://mentorus/firebase-credential/mentorus-firebase-adminsdk-20240402.json
+          op inject -i ./src/main/resources/application-common.yml.template -o ./src/main/resources/application-common.yml
+          op inject -i ./src/main/resources/application-prod.yml.template -o ./src/main/resources/application-prod.yml
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Rename jar file to app.jar
+        run: mv "target/${{ github.event.repository.name }}-$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout).jar" "target/app.jar"
+
+      - name: Login to github package
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GHCR_SLUG }}
+          tags: |
+            type=sha,enable=true,prefix=prod-,suffix=,format=short
+
+      - name: Build and push to github package
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: build
+    steps:
+      - name: Load secret
+        id: op-load-secret
+        uses: 1password/load-secrets-action@v1
+        with:
+          export-env: false
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          VPN_HOST: op://mentorus/backend-general/vpn/prod-server-host
+          VPN_SERVER_USERNAME: op://mentorus/backend-general/vpn/prod-server-user
+          VPN_SERVER_PASSWORD: op://mentorus/backend-general/vpn/prod-server-password
+          SERVER_HOST: op://mentorus/backend-general/server/prod-server-host
+          SERVER_USERNAME: op://mentorus/backend-general/server/prod-server-username
+          SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
+          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+
+      - name: Connect to PPTP VPN
+        uses: mizumotok/pptp-action@v1
+        with:
+          server: ${{ steps.op-load-secret.outputs.VPN_HOST }}
+          username: ${{ steps.op-load-secret.outputs.VPN_SERVER_USERNAME }}
+          password: ${{ steps.op-load-secret.outputs.VPN_SERVER_PASSWORD }}
+
+      - name: Deploy to digital ocean droplet via ssh action
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          script_stop: true
+          host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
+          username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
+          key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
+          script: |
+            # Login to Github Packages
+            echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Pull the new image
+            docker pull ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
+            # Stop and remove the container if running
+            docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
+            # Run container
+            docker run -d \
+              --restart always \
+              --name ${{ env.CONTAINER_NAME }} \
+              --add-host host.docker.internal:host-gateway \
+              -e SPRING_PROFILES_ACTIVE=dev \
+              -p 7000:8080 \
+              -p 7001:8085 \
+              ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
+            # Remove the old image
+            docker image prune -f
