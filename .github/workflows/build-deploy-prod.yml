@@ -88,7 +88,7 @@ jobs:
           provenance: false
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     environment: production
     needs: build
     steps:
@@ -132,8 +132,8 @@ jobs:
             docker run -d \
               --restart always \
               --name ${{ env.CONTAINER_NAME }} \
-              --add-host host.docker.internal:host-gateway \
-              -e SPRING_PROFILES_ACTIVE=dev \
+              --network mentorus-network \
+              -e SPRING_PROFILES_ACTIVE=prod \
               -p 7000:8080 \
               -p 7001:8085 \
               ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
