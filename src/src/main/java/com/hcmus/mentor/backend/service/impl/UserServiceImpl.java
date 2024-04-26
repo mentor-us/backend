@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void addNewAccount(String emailAddress) {
         String initialName = "User " + randomString(6);
-        User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).build();
+        User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).roles(Collections.singletonList(USER)).build();
         userRepository.save(data);
     }
 
@@ -224,8 +224,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).build();
-        user.assignRole(role);
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
         userRepository.save(user);
         mailService.sendWelcomeMail(email);
 
@@ -302,16 +301,15 @@ public class UserServiceImpl implements UserService {
                 duplicateEmails.add(emailAddress);
             }
 
-            User user = User.builder().name(name).email(emailAddress).build();
+            User user = User.builder().name(name).email(emailAddress).roles(Collections.singletonList(USER)).build();
 
-            UserDataResponse userDataResponse =
-                    UserDataResponse.builder()
-                            .id(user.getId())
-                            .name(user.getName())
-                            .email(user.getEmail())
-                            .status(user.isStatus())
-                            .role(USER)
-                            .build();
+            UserDataResponse userDataResponse = UserDataResponse.builder()
+                    .id(user.getId())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .status(user.isStatus())
+                    .role(USER)
+                    .build();
 
             if (role != null) {
                 List<UserRole> roles = user.getRoles();
@@ -609,7 +607,7 @@ public class UserServiceImpl implements UserService {
         User user = userOptional.get();
         user.update(request);
 
-        UserRole role =request.getRole();
+        UserRole role = request.getRole();
         if (!permissionService.isSuperAdmin(emailUser) && role == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
