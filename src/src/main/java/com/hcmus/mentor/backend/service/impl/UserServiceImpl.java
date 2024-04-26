@@ -230,12 +230,12 @@ public class UserServiceImpl implements UserService {
         mailService.sendWelcomeMail(email);
 
         UserDataResponse userDataResponse = UserDataResponse.builder()
-                        .id(user.getId())
-                        .name(user.getName())
-                        .email(user.getEmail())
-                        .status(user.isStatus())
-                        .role(role)
-                        .build();
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.isStatus())
+                .role(role)
+                .build();
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
@@ -597,8 +597,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserServiceDto updateUserForAdmin(
-            String emailUser, String userId, UpdateUserForAdminRequest request) {
+    public UserServiceDto updateUserForAdmin(String emailUser, String userId, UpdateUserForAdminRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -609,20 +608,15 @@ public class UserServiceImpl implements UserService {
 
         User user = userOptional.get();
         user.update(request);
-        UserRole role = request.getRole() == USER ? ROLE_USER : request.getRole();
+
+        UserRole role =request.getRole();
         if (!permissionService.isSuperAdmin(emailUser) && role == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (!permissionService.isSuperAdmin(emailUser)
-                && permissionService.isSuperAdmin(user.getEmail())) {
+        if (!permissionService.isSuperAdmin(emailUser) && permissionService.isSuperAdmin(user.getEmail())) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<UserRole> roles = new ArrayList<>();
-        roles.add(role);
-        if (role != ROLE_USER) {
-            roles.add(ROLE_USER);
-        }
-        user.setRoles(roles);
+        user.setRoles(new ArrayList<>(List.of(role)));
 
         userRepository.save(user);
         UserDataResponse userDataResponse = getUserData(user);

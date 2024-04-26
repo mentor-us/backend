@@ -34,15 +34,13 @@ public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
     }
 
     public static CustomerUserDetails create(User user) {
-        List<GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
 
         return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
     }
 
     public static CustomerUserDetails create(User user, String role) {
-        List<GrantedAuthority> authorities =
-                Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority(role));
+        List<GrantedAuthority> authorities = Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority(role));
 
         return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
     }

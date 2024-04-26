@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
-
 @Data
 @Builder
 @AllArgsConstructor
@@ -81,7 +79,7 @@ public class User implements Serializable {
     private List<String> pinnedGroupsId = new ArrayList<>();
 
     @Builder.Default
-    private List<UserRole> roles = new ArrayList<>(List.of(USER));
+    private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
     private Date createdDate = new Date();
