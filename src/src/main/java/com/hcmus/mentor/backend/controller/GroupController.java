@@ -879,8 +879,6 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) {
-//        List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
-//        var channels = pipeline.send(new GetChannelsForwardCommand(customerUserDetails.getId(), name.orElse("")));
 
         return ResponseEntity.ok(pipeline.send(new GetChannelsForwardCommand(customerUserDetails.getId(), name.orElse(""))));
     }
