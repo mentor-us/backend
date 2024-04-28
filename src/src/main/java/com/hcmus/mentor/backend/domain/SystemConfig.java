@@ -1,15 +1,16 @@
 package com.hcmus.mentor.backend.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @Entity
-@Table(name = "system-config")
+@NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "system-config")
 public class SystemConfig {
     @Id
     @Column(name = "id")
@@ -31,7 +32,4 @@ public class SystemConfig {
     @Column(name = "value", columnDefinition = "VARCHAR(255)")
     private Object value;
 
-    public SystemConfig() {
-
-    }
 }

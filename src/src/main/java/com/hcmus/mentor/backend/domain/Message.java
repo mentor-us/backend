@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
@@ -13,7 +14,6 @@ import java.util.List;
 @Data
 @Entity
 @Builder
-@ToString
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "messages")
@@ -59,17 +59,20 @@ public class Message {
     @ElementCollection
     private List<String> images = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "sender_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User sender;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel channel;
 
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id")
+    @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private Vote vote = null;
 
     @Builder.Default
@@ -80,16 +83,19 @@ public class Message {
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id")
+    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private Meeting meeting = null;
 
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id")
+    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task = null;
 
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
     private List<Reaction> reactions = new ArrayList<>();
 
 
@@ -179,5 +185,20 @@ public class Message {
         private String refId;
 
         private SystemLogType type;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "images = " + images + ", " +
+                "isForward = " + isForward + ", " +
+                "reply = " + reply + ", " +
+                "status = " + status + ", " +
+                "type = " + type + ", " +
+                "editedAt = " + editedAt + ", " +
+                "isEdited = " + isEdited + ", " +
+                "createdDate = " + createdDate + ", " +
+                "content = " + content + ")";
     }
 }

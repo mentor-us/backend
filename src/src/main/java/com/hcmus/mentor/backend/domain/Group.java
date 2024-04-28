@@ -1,10 +1,13 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.BatchSize;
 
@@ -16,7 +19,6 @@ import java.util.*;
 @Getter
 @Entity
 @Builder
-@ToString
 @Table(name = "groups")
 @AllArgsConstructor
 public class Group implements Serializable {
@@ -103,27 +105,28 @@ public class Group implements Serializable {
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private Message lastMessage = null;
 
     /**
      * Default channel identifier
      */
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "default_channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel defaultChannel;
-
 
     /**
      * Group category identifier
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "group_category_id")
-    //@ToString.Exclude
+    @JsonIgnoreProperties(value = {"groups"}, allowSetters = true)
     private GroupCategory groupCategory;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "creator_id")
-    //@ToString.Exclude
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
     /**
@@ -132,31 +135,36 @@ public class Group implements Serializable {
     @Builder.Default
     @BatchSize(size = 5)
     @JsonIgnore
-    @OneToMany(cascade=CascadeType.ALL,fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "message_pinned_id")
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
     /**
      * List of channel identifiers
      */
     @Builder.Default
-    @BatchSize(size = 10)
     @JsonIgnore
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private List<Channel> channels = new ArrayList<>();
 
     /**
      * List of FAQ identifiers
      */
-    @JsonIgnore
     @Builder.Default
+    @JsonIgnore
     @BatchSize(size = 10)
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
     private List<Faq> faqs = new ArrayList<>();
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     public Group() {
@@ -230,5 +238,21 @@ public class Group implements Serializable {
 
     public void ping() {
         setUpdatedDate(new Date());
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "name = " + name + ", " +
+                "description = " + description + ", " +
+                "status = " + status + ", " +
+                "imageUrl = " + imageUrl + ", " +
+                "hasNewMessage = " + hasNewMessage + ", " +
+                "timeStart = " + timeStart + ", " +
+                "timeEnd = " + timeEnd + ", " +
+                "duration = " + duration + ", " +
+                "createdDate = " + createdDate + ", " +
+                "updatedDate = " + updatedDate + ")";
     }
 }

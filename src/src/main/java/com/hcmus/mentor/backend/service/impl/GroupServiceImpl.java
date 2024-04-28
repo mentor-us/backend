@@ -424,7 +424,7 @@ public class GroupServiceImpl implements GroupService {
 
             if (emailUser != null && !emailUser.isEmpty() && !permissionService.isSuperAdmin(emailUser)) {
                 String userId = getUserIdByEmail(emailUser);
-                if (!StringUtils.isEm¬pty(userId)) {
+                if (!StringUtils.isEmpty(userId)) {
                     predicates.add(builder.equal(root.get("creatorId"), userId));
                 }
             }

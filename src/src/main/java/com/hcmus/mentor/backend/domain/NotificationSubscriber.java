@@ -1,17 +1,19 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Date;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @Entity
-@Table(name = "notification_subscriber")
+@NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "notification_subscriber")
 public class NotificationSubscriber {
 
     @Id
@@ -26,10 +28,8 @@ public class NotificationSubscriber {
     @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
-    public NotificationSubscriber() {
-
-    }
 }

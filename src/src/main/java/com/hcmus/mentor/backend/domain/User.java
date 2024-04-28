@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
@@ -24,9 +25,9 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 @Getter
 @Entity
 @Builder
-@ToString
-@Table(name = "users")
+@NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "users")
 public class User implements Serializable {
 
     @Id
@@ -42,7 +43,7 @@ public class User implements Serializable {
     private String email;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
@@ -106,114 +107,115 @@ public class User implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<UserRole> roles = new ArrayList<>(List.of(USER));
 
-
-    @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private List<Reaction> reactions = new ArrayList<>();
+//
+//    @Builder.Default
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+//    private List<Reaction> reactions = new ArrayList<>();
 
 
     @Builder.Default
     @JsonIgnore
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messages = new ArrayList<>();
 
-
     // === Vote ===
-    @JsonIgnore
-    @Builder.Default
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<Vote> votesCreated = new ArrayList<>();
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+//    private List<Vote> votesCreated = new ArrayList<>();
 
 
     // === Choice ===
-    @JsonIgnore
-    @Builder.Default
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<Choice> choicesCreated = new ArrayList<>();
-
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+//    private List<Choice> choicesCreated = new ArrayList<>();
 
     @JsonIgnore
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
 
 
     // === Meeting ===
-    @JsonIgnore
-    @Builder.Default
-    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
-    private List<MeetingHistory> meetingHistories = new ArrayList<>();
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
+//    private List<MeetingHistory> meetingHistories = new ArrayList<>();
 
-    @JsonIgnore
-    @Builder.Default
-    @OneToMany(mappedBy = "organizer", fetch = FetchType.LAZY)
-    private List<Meeting> meetingsOrganizer = new ArrayList<>();
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "organizer", fetch = FetchType.LAZY)
+//    private List<Meeting> meetingsOrganizer = new ArrayList<>();
 
     @Builder.Default
+    @JsonIgnore
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
-    @JsonIgnore
+    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private List<Meeting> meetingAttendees = new ArrayList<>();
 
-
     // === Notification ===
-    @JsonIgnore
     @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
     private List<Notification> notificationsSent = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
     private List<NotificationUser> notifications = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
+    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"user"}, allowSetters = true)
     private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
 
-    // === Reaction ===
-
-    // === Reminder ===
     @Builder.Default
-    @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
     @JsonIgnore
+    @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"recipients", "group"}, allowSetters = true)
     private List<Reminder> reminders = new ArrayList<>();
 
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+//    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
+//    private List<Faq> faqsCreated = new ArrayList<>();
 
-    // === Faq ===
+    @Builder.Default
     @JsonIgnore
-    @Builder.Default
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<Faq> faqsCreated = new ArrayList<>();
-
-    @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @JsonIgnore
+    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
     private List<Faq> faqs = new ArrayList<>();
 
+//    @JsonIgnore
+//    @Builder.Default
+//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+//    private List<Group> groupsCreated = new ArrayList<>();
 
-    // === Group ===
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<Group> groupsCreated = new ArrayList<>();
-
     @JsonIgnore
-    @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     // === Channel ===
-    @JsonIgnore
-    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-    private List<Channel> channelsCreated;
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+//    private List<Channel> channelsCreated;
 
     @JsonIgnore
     @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private List<Channel> channels;
 
 
@@ -221,34 +223,17 @@ public class User implements Serializable {
     @Builder.Default
     @JsonIgnore
     @OneToMany(mappedBy = "assigner", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private List<Task> tasksAssigner = new ArrayList<>();
 
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
     private List<Assignee> tasksAssignee = new ArrayList<>();
-
-
-    public User() {
-    }
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
-    }
-
-
-    @Override
-    public String toString() {
-        return "Người dùng: "
-                + "id='"
-                + id
-                + '\''
-                + ", Tên='"
-                + name
-                + '\''
-                + ", email='"
-                + email
-                + '\'';
     }
 
     public void update(CustomerOidcUser customerOidcUser) {
@@ -314,4 +299,28 @@ public class User implements Serializable {
         setRoles(roles);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "name = " + name + ", " +
+                "email = " + email + ", " +
+                "additionalEmails = " + additionalEmails + ", " +
+                "imageUrl = " + imageUrl + ", " +
+                "wallpaper = " + wallpaper + ", " +
+                "emailVerified = " + emailVerified + ", " +
+                "password = " + password + ", " +
+                "provider = " + provider + ", " +
+                "providerId = " + providerId + ", " +
+                "status = " + status + ", " +
+                "phone = " + phone + ", " +
+                "birthDate = " + birthDate + ", " +
+                "createdDate = " + createdDate + ", " +
+                "trainingPoint = " + trainingPoint + ", " +
+                "hasEnglishCert = " + hasEnglishCert + ", " +
+                "studyingPoint = " + studyingPoint + ", " +
+                "initialName = " + initialName + ", " +
+                "gender = " + gender + ", " +
+                "roles = " + roles + ")";
+    }
 }

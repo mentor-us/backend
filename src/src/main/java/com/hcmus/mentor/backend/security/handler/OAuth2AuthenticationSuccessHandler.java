@@ -1,8 +1,6 @@
 package com.hcmus.mentor.backend.security.handler;
 
 import com.hcmus.mentor.backend.controller.exception.BadRequestException;
-import com.hcmus.mentor.backend.controller.exception.OAuth2AuthenticationProcessingException;
-import com.hcmus.mentor.backend.controller.payload.returnCode.AuthenticationErrorCode;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModelGenerator;

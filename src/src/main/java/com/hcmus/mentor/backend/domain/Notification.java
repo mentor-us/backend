@@ -1,20 +1,21 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "notifications")
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class Notification {
 
@@ -43,14 +44,23 @@ public class Notification {
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User sender;
 
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
     private List<NotificationUser> receivers = new ArrayList<>();
 
-    public Notification() {
-
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "title = " + title + ", " +
+                "content = " + content + ", " +
+                "type = " + type + ", " +
+                "createdDate = " + createdDate + ", " +
+                "refId = " + refId + ")";
     }
 }

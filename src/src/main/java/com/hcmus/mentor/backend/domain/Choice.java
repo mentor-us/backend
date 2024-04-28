@@ -1,19 +1,20 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Builder
-@Table(name = "choices")
+@NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "choices")
 public class Choice {
     @Id
     @Column(name = "id")
@@ -23,25 +24,29 @@ public class Choice {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "vote_id")
+    @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private Vote vote;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "creator_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
     @Builder.Default
-   @JsonIgnore
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "ref_choice_user",
-        joinColumns = @JoinColumn(name = "choice_id"),
-        inverseJoinColumns = @JoinColumn(name = "voter_id")
-    )
+    @JoinTable(name = "ref_choice_user", joinColumns = @JoinColumn(name = "choice_id"), inverseJoinColumns = @JoinColumn(name = "voter_id"))
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private List<User> voters = new ArrayList<>();
 
-    public Choice() {
-
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "name = " + name + ", " +
+                "vote = " + vote + ", " +
+                "creator = " + creator + ")";
     }
 }

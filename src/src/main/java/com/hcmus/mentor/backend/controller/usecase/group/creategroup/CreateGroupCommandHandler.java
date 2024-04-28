@@ -111,7 +111,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         var channel = channelRepository.save(Channel.builder()
                 .creator(creator)
-                .group(finalGroup)
+                .group(group)
                 .name("Kênh chung")
                 .description("Kênh chung của nhóm")
                 .type(ChannelType.PUBLIC)

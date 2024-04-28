@@ -1,14 +1,15 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.io.Serializable;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @Entity
 @Table(
@@ -17,6 +18,7 @@ import java.io.Serializable;
                 name = "idx_reaction",
                 columnList = "message_id,emoji_type,user_id",
                 unique = true)})
+@NoArgsConstructor
 @AllArgsConstructor
 public class Reaction implements Serializable {
     @Id
@@ -38,17 +40,15 @@ public class Reaction implements Serializable {
     @Column(name = "emoji_type", nullable = false)
     private EmojiType emojiType = EmojiType.LIKE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "message_id", referencedColumnName = "id")
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private Message message;
-
-    public Reaction() {
-
-    }
 
     public void react() {
         this.total++;

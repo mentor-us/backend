@@ -3,21 +3,23 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 
-@Data
+@Getter
+@Setter
+@ToString
 @Entity
 @Builder
 @Table(name = "reminders")
+@NoArgsConstructor
 @AllArgsConstructor
 public class Reminder {
     @Id
@@ -41,18 +43,21 @@ public class Reminder {
     @Column(name = "remindable_id")
     private String remindableId;
 
-   @JsonIgnore
+    @JsonIgnore
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_reminder",
             joinColumns = @JoinColumn(name = "reminder_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    @ToString.Exclude
     private List<User> recipients;
 
-   @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
     @ElementCollection
@@ -60,10 +65,6 @@ public class Reminder {
     @MapKeyColumn(name = "key")
     @Column(name = "value")
     private Map<String, Object> propertiesMap;
-
-    public Reminder() {
-
-    }
 
     @JsonAnyGetter
     public Map<String, Object> getProperties() {
@@ -74,5 +75,4 @@ public class Reminder {
     public void setProperties(String key, Object value) {
         propertiesMap.put(key, value);
     }
-
 }

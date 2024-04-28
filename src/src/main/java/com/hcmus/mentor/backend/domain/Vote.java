@@ -1,19 +1,20 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
 @Table(name = "votes")
+@NoArgsConstructor
 @AllArgsConstructor
 public class Vote {
 
@@ -52,56 +53,25 @@ public class Vote {
     @Column(name = "status", nullable = false)
     private Status status = Status.OPEN;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "creator_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
-
-    public Vote() {
-
-    }
 
     public Choice getChoice(String id) {
         return choices.stream().filter(choice -> choice.getId().equals(id)).findFirst().orElse(null);
     }
-
-//    public void update(UpdateVoteRequest request) {
-//        this.question = request.getQuestion();
-//        this.timeEnd = request.getTimeEnd();
-//
-//        for (var newChoice : request.getChoices()) {
-//            Choice oldChoice = getChoice(newChoice.getId());
-//            if (oldChoice == null) {
-//                choices.add(newChoice);
-//            } else {
-//                oldChoice.update(newChoice);
-//            }
-//        }
-//    }
-
-//    public void doVoting(DoVotingRequest request) {
-//        String voterId = request.getVoterId();
-//        choices.forEach(choice -> choice.removeVoting(voterId));
-//        request.getChoices().forEach(choice -> {
-//            Choice oldChoice = getChoice(choice.getId());
-//            if (oldChoice == null) {
-//                choices.add(choice);
-//                return;
-//            }
-//            if (choice.getVoters().contains(voterId)) {
-//                oldChoice.doVoting(voterId);
-//            }
-//        });
-//        sortChoicesDesc();
-//    }
 
     public void close() {
         setStatus(Status.CLOSED);
@@ -125,4 +95,17 @@ public class Vote {
         CLOSED
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "question = " + question + ", " +
+                "timeEnd = " + timeEnd + ", " +
+                "closedDate = " + closedDate + ", " +
+                "createdDate = " + createdDate + ", " +
+                "isDeleted = " + isDeleted + ", " +
+                "deletedDate = " + deletedDate + ", " +
+                "isMultipleChoice = " + isMultipleChoice + ", " +
+                "status = " + status + ")";
+    }
 }

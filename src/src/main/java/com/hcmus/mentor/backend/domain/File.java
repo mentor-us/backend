@@ -2,15 +2,16 @@ package com.hcmus.mentor.backend.domain;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 import java.io.Serializable;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @Entity
+@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "files")
 public class File implements Serializable {
@@ -24,10 +25,6 @@ public class File implements Serializable {
     private long size;
 
     private String url;
-
-    public File() {
-
-    }
 
     public File(FileModel fileModel) {
         this.filename = fileModel.getFilename();

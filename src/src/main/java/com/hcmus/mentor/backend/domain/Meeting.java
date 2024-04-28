@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
@@ -8,7 +9,10 @@ import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.time.DateUtils;
 
 import java.io.Serializable;
@@ -63,24 +67,25 @@ public class Meeting implements IRemindable, Serializable {
 
     @ManyToOne
     @JoinColumn(name = "organizer_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User organizer;
 
     @ManyToOne
     @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
     @Builder.Default
     @JsonIgnore
     @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"meeting", "modifier"}, allowSetters = true)
     private List<MeetingHistory> histories = new ArrayList<>();
 
     @Builder.Default
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "rel_user_meeting_attendees",
-            joinColumns = @JoinColumn(name = "meeting_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JoinTable(name = "rel_user_meeting_attendees", joinColumns = @JoinColumn(name = "meeting_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private List<User> attendees = new ArrayList<>();
 
 
@@ -127,11 +132,11 @@ public class Meeting implements IRemindable, Serializable {
 //        group = request.getGroupId();
 
         MeetingHistory creatingEvent = MeetingHistory.builder()
-                        .timeStart(request.getTimeStart())
-                        .timeEnd(request.getTimeEnd())
-                        .place(request.getPlace())
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .place(request.getPlace())
 //                        .modifier(request.getOrganizerId())
-                        .build();
+                .build();
         histories = Collections.singletonList(creatingEvent);
     }
 
