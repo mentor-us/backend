@@ -91,8 +91,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public User addNewAccount(String emailAddress) {
         String initialName = "User " + randomString(6);
-        User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).build();
-        return userRepository.save(data);
+        User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).roles(Collections.singletonList(USER)).build();
+        userRepository.save(data);
     }
 
     private String randomString(int len) {
@@ -221,8 +221,38 @@ public class UserServiceImpl implements UserService {
         }
 
         UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).build();
-        user.assignRole(role);
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
+        userRepository.save(user);
+        mailService.sendWelcomeMail(email);
+
+        UserDataResponse userDataResponse = UserDataResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.isStatus())
+                .role(role)
+                .build();
+        return new UserServiceDto(SUCCESS, "", userDataResponse);
+    }
+
+    @Override
+    public UserServiceDto addUser( AddUserRequest request) {
+        if (request.getName() == null
+                || request.getName().isEmpty()
+                || request.getEmailAddress() == null
+                || request.getEmailAddress().isEmpty()
+                || request.getRole() == null) {
+            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+        }
+
+        String email = request.getEmailAddress();
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+        }
+
+        UserRole role = request.getRole();
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
         userRepository.save(user);
         mailService.sendWelcomeMail(email);
 
@@ -331,16 +361,15 @@ public class UserServiceImpl implements UserService {
                 duplicateEmails.add(emailAddress);
             }
 
-            User user = User.builder().name(name).email(emailAddress).build();
+            User user = User.builder().name(name).email(emailAddress).roles(Collections.singletonList(USER)).build();
 
-            UserDataResponse userDataResponse =
-                    UserDataResponse.builder()
-                            .id(user.getId())
-                            .name(user.getName())
-                            .email(user.getEmail())
-                            .status(user.isStatus())
-                            .role(USER)
-                            .build();
+            UserDataResponse userDataResponse = UserDataResponse.builder()
+                    .id(user.getId())
+                    .name(user.getName())
+                    .email(user.getEmail())
+                    .status(user.isStatus())
+                    .role(USER)
+                    .build();
 
             if (role != null) {
                 List<UserRole> roles = user.getRoles();
@@ -645,8 +674,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserServiceDto updateUserForAdmin(
-            String emailUser, String userId, UpdateUserForAdminRequest request) {
+    public UserServiceDto updateUserForAdmin(String emailUser, String userId, UpdateUserForAdminRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -657,20 +685,15 @@ public class UserServiceImpl implements UserService {
 
         User user = userOptional.get();
         user.update(request);
-        UserRole role = request.getRole() == USER ? ROLE_USER : request.getRole();
+
+        UserRole role = request.getRole();
         if (!permissionService.isSuperAdmin(emailUser) && role == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (!permissionService.isSuperAdmin(emailUser)
-                && permissionService.isSuperAdmin(user.getEmail())) {
+        if (!permissionService.isSuperAdmin(emailUser) && permissionService.isSuperAdmin(user.getEmail())) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<UserRole> roles = new ArrayList<>();
-        roles.add(role);
-        if (role != ROLE_USER) {
-            roles.add(ROLE_USER);
-        }
-        user.setRoles(roles);
+        user.setRoles(new ArrayList<>(List.of(role)));
 
         userRepository.save(user);
         UserDataResponse userDataResponse = getUserData(user);

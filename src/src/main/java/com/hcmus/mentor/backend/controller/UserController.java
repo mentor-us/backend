@@ -223,8 +223,7 @@ public class UserController {
             @PathVariable String id,
             @RequestBody UpdateUserForAdminRequest request) {
         String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn =
-                userService.updateUserForAdmin(emailUser, id, request);
+        UserServiceDto userReturn = userService.updateUserForAdmin(emailUser, id, request);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }

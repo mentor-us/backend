@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
-
 @Setter
 @Getter
 @Entity
@@ -192,15 +190,7 @@ public class User implements Serializable {
 //    private List<Faq> faqsCreated = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
-    @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
-    private List<Faq> faqs = new ArrayList<>();
-
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-//    private List<Group> groupsCreated = new ArrayList<>();
+    private List<UserRole> roles = new ArrayList<>());
 
     @Builder.Default
     @JsonIgnore
@@ -234,15 +224,6 @@ public class User implements Serializable {
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
-    }
-
-    public void update(CustomerOidcUser customerOidcUser) {
-        if (name == null || name.equals("") || name.equals(initialName)) {
-            name = customerOidcUser.getName();
-        }
-        if (!("https://graph.microsoft.com/v1.0/me/photo/$value").equals(customerOidcUser.getImageUrl())) {
-            imageUrl = (imageUrl == null || imageUrl.equals("")) ? customerOidcUser.getImageUrl() : imageUrl;
-        }
     }
 
     public void update(UpdateUserRequest request) {
