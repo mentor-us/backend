@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.DUPLICATE_GROUP;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.GROUP_CATEGORY_NOT_FOUND;
@@ -97,6 +96,10 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .creator(creator)
                 .build());
 
+
+
+        groupRepository.save(group);
+
         List<GroupUser> groupUsers = new ArrayList<>();
         var mentors = command.getRequest().getMentorEmails().stream()
                 .filter(email -> !email.isEmpty())
@@ -108,6 +111,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
         groupUsers.addAll(mentors.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(true).build()).toList());
         groupUsers.addAll(mentees.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(false).build()).toList());
         group.setGroupUsers(groupUsers);
+        group = groupRepository.save(group);
 
         var channel = channelRepository.save(Channel.builder()
                 .creator(creator)
@@ -116,11 +120,9 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .description("Kênh chung của nhóm")
                 .type(ChannelType.PUBLIC)
                 .status(ChannelStatus.ACTIVE)
-                .users(Stream.concat(mentors.stream(), mentees.stream()).toList())
+                .users(groupUsers.stream().map(GroupUser::getUser).toList())
                 .build());
         group.setDefaultChannel(channel);
-
-        group = groupRepository.save(group);
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
