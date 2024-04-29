@@ -8,7 +8,6 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
-import com.hcmus.mentor.backend.security.principal.oauth2.CustomerOidcUser;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -104,9 +103,9 @@ public class User implements Serializable {
     @Column(name = "gender", nullable = false)
     private UserGender gender = UserGender.MALE;
 
-    @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
-    private List<UserRole> roles = new ArrayList<>(List.of(USER));
+//    @Builder.Default
+//    @ElementCollection(fetch = FetchType.EAGER)
+//    private List<UserRole> roles = new ArrayList<>(List.of(USER));
 
 //
 //    @Builder.Default
@@ -190,7 +189,9 @@ public class User implements Serializable {
 //    private List<Faq> faqsCreated = new ArrayList<>();
 
     @Builder.Default
-    private List<UserRole> roles = new ArrayList<>());
+//    @Enumerated(EnumType.STRING)
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
     @JsonIgnore

@@ -20,7 +20,7 @@ import java.util.Optional;
 public interface UserService {
     User getOrCreateUserByEmail(String emailAddress, String groupName);
 
-    User addNewAccount(String emailAddress);
+    void addNewAccount(String emailAddress);
 
     User importUser(String emailAddress, String groupName);
 

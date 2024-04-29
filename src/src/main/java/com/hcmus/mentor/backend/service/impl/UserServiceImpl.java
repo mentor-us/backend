@@ -89,7 +89,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User addNewAccount(String emailAddress) {
+    public void addNewAccount(String emailAddress) {
         String initialName = "User " + randomString(6);
         User data = User.builder().name(initialName).initialName(initialName).email(emailAddress).roles(Collections.singletonList(USER)).build();
         userRepository.save(data);
@@ -266,37 +266,37 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    @Override
-    public UserServiceDto addUser( AddUserRequest request) {
-        if (request.getName() == null
-                || request.getName().isEmpty()
-                || request.getEmailAddress() == null
-                || request.getEmailAddress().isEmpty()
-                || request.getRole() == null) {
-            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
-        }
-
-        String email = request.getEmailAddress();
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isPresent()) {
-            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
-        }
-
-        UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).build();
-        user.assignRole(role);
-        userRepository.save(user);
-        mailService.sendWelcomeMail(email);
-
-        UserDataResponse userDataResponse = UserDataResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .status(user.isStatus())
-                .role(role)
-                .build();
-        return new UserServiceDto(SUCCESS, "", userDataResponse);
-    }
+//    @Override
+//    public UserServiceDto addUser( AddUserRequest request) {
+//        if (request.getName() == null
+//                || request.getName().isEmpty()
+//                || request.getEmailAddress() == null
+//                || request.getEmailAddress().isEmpty()
+//                || request.getRole() == null) {
+//            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+//        }
+//
+//        String email = request.getEmailAddress();
+//        Optional<User> userOptional = userRepository.findByEmail(email);
+//        if (userOptional.isPresent()) {
+//            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+//        }
+//
+//        UserRole role = request.getRole();
+//        User user = User.builder().name(request.getName()).email(email).build();
+//        user.assignRole(role);
+//        userRepository.save(user);
+//        mailService.sendWelcomeMail(email);
+//
+//        UserDataResponse userDataResponse = UserDataResponse.builder()
+//                .id(user.getId())
+//                .name(user.getName())
+//                .email(user.getEmail())
+//                .status(user.isStatus())
+//                .role(role)
+//                .build();
+//        return new UserServiceDto(SUCCESS, "", userDataResponse);
+//    }
 
     private List<AddUserRequest> getImportData(Workbook workbook) throws IOException {
         Sheet sheet = workbook.getSheet("Data");
@@ -445,9 +445,9 @@ public class UserServiceImpl implements UserService {
         if (request.getStatus() != null) {
             predicates.add(cb.equal(root.get("status"), request.getStatus()));
         }
-        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-            predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
-        }
+//        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
+//            predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
+//        }
         if (request.getRole() != null) {
             predicates.add(root.get("roles").in(request.getRole()));
         }
