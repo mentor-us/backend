@@ -114,10 +114,6 @@ public class GroupServiceImpl implements GroupService {
      * @return List of GroupHomepageResponse to show in home page.
      */
     private List<GroupHomepageResponse> mappingGroupHomepageResponse(List<Group> groups, String userId) {
-
-        Map<String, GroupCategory> categories = groupCategoryRepository.findAll().stream()
-                .collect(Collectors.toMap(GroupCategory::getId, category -> category, (cat1, cat2) -> cat2));
-
         return groups.stream()
                 .map(group -> {
                     Optional<GroupUser> groupUser = group.getGroupUsers().stream()
@@ -707,11 +703,9 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public Slice<GroupHomepageResponse> getHomePageRecentGroupsOfUser(
-            String userId, int page, int pageSize) {
+    public Slice<GroupHomepageResponse> getHomePageRecentGroupsOfUser(String userId, int page, int pageSize) {
         Slice<Group> groups = findMostRecentGroupsOfUser(userId, page, pageSize);
-        List<GroupHomepageResponse> responses =
-                mappingGroupHomepageResponse(groups.getContent(), userId);
+        List<GroupHomepageResponse> responses = mappingGroupHomepageResponse(groups.getContent(), userId);
         return new SliceImpl<>(responses, PageRequest.of(page, pageSize), groups.hasNext());
     }
 

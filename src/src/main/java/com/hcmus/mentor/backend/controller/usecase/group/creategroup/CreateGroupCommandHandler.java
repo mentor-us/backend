@@ -123,6 +123,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .users(groupUsers.stream().map(GroupUser::getUser).toList())
                 .build());
         group.setDefaultChannel(channel);
+         groupRepository.save(group);
 
         return new GroupServiceDto(SUCCESS, null, group);
     }

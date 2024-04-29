@@ -176,10 +176,13 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> get(
+    public ApiResponseDto<GroupDetailResponse> get(
             @PathVariable("id") String id) {
         Optional<Group> groupWrapper = groupRepository.findById(id);
-        return groupWrapper.map(ApiResponseDto::success).orElseGet(() -> ApiResponseDto.notFound(NOT_FOUND));
+        if(groupWrapper.isPresent()){
+            return ApiResponseDto.success(new GroupDetailResponse(groupWrapper.get()));
+        }
+        return ApiResponseDto.notFound(NOT_FOUND);
     }
 
     /**

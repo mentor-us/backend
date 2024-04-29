@@ -23,10 +23,7 @@ import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.IteratorUtils;
@@ -43,6 +40,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -131,8 +129,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto listAllPaging(String emailUser, Pageable pageable) {
-        return findUsers(
-                emailUser, new FindUserRequest(), pageable.getPageNumber(), pageable.getPageSize());
+        return findUsers(emailUser, new FindUserRequest(), pageable.getPageNumber(), pageable.getPageSize());
     }
 
     @Override
@@ -236,7 +233,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserServiceDto addUser( AddUserRequest request) {
+    public UserServiceDto addUser(AddUserRequest request) {
         if (request.getName() == null
                 || request.getName().isEmpty()
                 || request.getEmailAddress() == null
@@ -405,65 +402,37 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    //    List<User> getUsersByConditions(
-//            String emailUser, FindUserRequest request, int page, int pageSize) {
-//        Query query = new Query();
-//
-//        if (request.getName() != null && !request.getName().isEmpty()) {
-//            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
-//        }
-//        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-//            query.addCriteria(Criteria.where("email").regex(request.getEmail(), "i"));
-//        }
-//        if (request.getStatus() != null) {
-//            query.addCriteria(Criteria.where("status").is(request.getStatus()));
-//        }
-//        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-//            query.addCriteria(Criteria.where("roles").nin(SUPER_ADMIN));
-//        }
-//        if (request.getRole() != null) {
-//            query.addCriteria(Criteria.where("roles").in(request.getRole()));
-//        }
-//        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
-//
-//        List<User> users = mongoTemplate.find(query, User.class);
-//        return users;
-//    }
     // TODO: Implement this method
     List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<User> criteriaQuery = cb.createQuery(User.class);
-        Root<User> root = criteriaQuery.from(User.class);
-        List<Predicate> predicates = new ArrayList<>();
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (request.getName() != null && !request.getName().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
+            }
+            if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
+            }
+            if (request.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), request.getStatus()));
+            }
+//            if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
+//                predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
+//            }
+            if (request.getRole() != null) {
+                predicates.add(root.get("roles").in(request.getRole()));
+            }
 
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
-        }
-        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
-        }
-        if (request.getStatus() != null) {
-            predicates.add(cb.equal(root.get("status"), request.getStatus()));
-        }
-//        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-//            predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
-//        }
-        if (request.getRole() != null) {
-            predicates.add(root.get("roles").in(request.getRole()));
-        }
+            // Apply sorting by createdDate (assuming it's a field in the User entity)
+            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        criteriaQuery.where(predicates.toArray(new Predicate[0]));
-        criteriaQuery.orderBy(cb.desc(root.get("createdDate")));
-
-        return entityManager.createQuery(criteriaQuery)
-                .setFirstResult(page * pageSize)
-                .setMaxResults(pageSize)
-                .getResultList();
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return userRepository.findAll(spec, pageable).getContent();
     }
 
     @Override
-    public UserServiceDto findUsers(
-            String emailUser, FindUserRequest request, int page, int pageSize) {
+    public UserServiceDto findUsers(String emailUser, FindUserRequest request, int page, int pageSize) {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -471,14 +440,12 @@ public class UserServiceImpl implements UserService {
         List<UserDataResponse> findUserResponses = getUsersData(users);
         long count = users.size();
 
-        List<UserDataResponse> pagedUserResponses =
-                findUserResponses.stream()
-                        .skip((long) page * pageSize)
-                        .limit(pageSize)
-                        .toList();
+        List<UserDataResponse> pagedUserResponses = findUserResponses.stream()
+                .skip((long) page * pageSize)
+                .limit(pageSize)
+                .toList();
 
-        return new UserServiceDto(
-                SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));
+        return new UserServiceDto(SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));
     }
 
     private UserDataResponse getUserData(User user) {

@@ -71,9 +71,9 @@ public class GroupHomepageResponse {
         this.imageUrl = group.getImageUrl();
         this.pinned = isPinned;
         this.hasNewMessage = group.getHasNewMessage();
-        this.newMessage = group.getLastMessage().getContent();
-        this.newMessageId = group.getLastMessage().getId();
-        this.defaultChannelId = group.getDefaultChannel().getId();
+        this.newMessage = group.getLastMessage() != null ? group.getLastMessage().getContent() : null;
+        this.newMessageId =group.getLastMessage() != null ? group.getLastMessage().getId() : null;
+        this.defaultChannelId = group.getDefaultChannel() != null ? group.getDefaultChannel().getId() : null;
 
     }
 
