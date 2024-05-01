@@ -45,7 +45,7 @@
         <quartz.version>2.3.2</quartz.version>
 
         <jsoup.version>1.17.2</jsoup.version>
-        <html2pdf.version>5.0.1</html2pdf.version>
+        <html2pdf.version>5.0.4</html2pdf.version>
 
         <commonio.version>2.15.1</commonio.version>
         <common-csv.version>1.8</common-csv.version>
