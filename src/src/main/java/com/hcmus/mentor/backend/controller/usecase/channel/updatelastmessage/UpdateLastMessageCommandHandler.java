@@ -34,7 +34,10 @@ public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLa
         channel.setLastMessage(message);
         channelRepository.save(channel);
 
-        var group = channel.getGroup();
+        var group = groupRepository.findById(channel.getGroup().getId()).orElse(null);
+        if (group == null) {
+            return channel;
+        }
 
         group.setLastMessage(message);
         groupRepository.save(group);

@@ -48,7 +48,7 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     Boolean existsByIdAndAssigneeIdsUserId(String taskId, String userId);
 
     @Query("SELECT t FROM Task t " +
-            "JOIN t.assignees assignees " +
+            "INNER JOIN t.assignees assignees " +
             "WHERE t.group.id IN ?1 " +
             "AND assignees.id IN ?2 ")
     List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
@@ -58,22 +58,22 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     @Query("SELECT count(t) " +
             "FROM Task t " +
-            "JOIN t.assignees assignees " +
+            "INNER JOIN t.assignees assignees " +
             "WHERE t.group.id IN ?1 AND assignees.id = ?2 AND assignees.status = ?3")
     long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
 
     @Query("SELECT t, assignees " +
             "FROM Task t " +
-            "JOIN t.assignees assignees " +
+            "INNER JOIN t.assignees assignees " +
             "WHERE t.group.id = ?1 " +
             "AND assignees.id = ?2 " +
             "AND (t.deadline BETWEEN ?3 AND ?4) " )
     List<Task> findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(List<String> groupIds, String userId, Date startTime, Date endTime);
 
     @Query("SELECT t FROM Task t " +
-            "LEFT JOIN t.assignees a " +
-            "LEFT JOIN a.user u " +
-            "LEFT JOIN t.assigner assigner " +
+            "INNER JOIN t.assignees a " +
+            "INNER JOIN a.user u " +
+            "INNER JOIN t.assigner assigner " +
             "WHERE t.group.id IN :groupIds " +
             "AND t.deadline > :currentDate " +
             "AND (u.id = :userId OR assigner.id = :userId) " +

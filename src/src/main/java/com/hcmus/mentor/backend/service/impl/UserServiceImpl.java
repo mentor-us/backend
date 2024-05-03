@@ -22,7 +22,6 @@ import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +72,6 @@ public class UserServiceImpl implements UserService {
     private final GroupCategoryRepository groupCategoryRepository;
     private final BlobStorage blobStorage;
     private final ShareService shareService;
-    private final EntityManager entityManager;
     private final GroupUserRepository groupUserRepository;
 
     @Override

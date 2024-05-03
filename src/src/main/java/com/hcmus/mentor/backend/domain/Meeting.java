@@ -9,11 +9,11 @@ import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -21,7 +21,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
 @NoArgsConstructor
@@ -65,18 +66,21 @@ public class Meeting implements IRemindable, Serializable {
     @Column(name = "deleted_date")
     private Date deletedDate = null;
 
-    @ManyToOne
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User organizer;
 
-    @ManyToOne
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
-    @Builder.Default
     @JsonIgnore
+    @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"meeting", "modifier"}, allowSetters = true)
     private List<MeetingHistory> histories = new ArrayList<>();
@@ -84,6 +88,7 @@ public class Meeting implements IRemindable, Serializable {
     @Builder.Default
     @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
     @JoinTable(name = "rel_user_meeting_attendees", joinColumns = @JoinColumn(name = "meeting_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private List<User> attendees = new ArrayList<>();
@@ -94,12 +99,6 @@ public class Meeting implements IRemindable, Serializable {
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
         String formattedTime = sdf.format(DateUtils.addHours(timeStart, 7));
 
-        Map<String, Object> properties = new HashMap<>();
-
-        properties.put("name", title);
-        properties.put("dueDate", formattedTime);
-        properties.put("id", id);
-
         var reminder = Reminder.builder()
                 .group(group)
                 .name(title)
@@ -108,7 +107,9 @@ public class Meeting implements IRemindable, Serializable {
                 .remindableId(id)
                 .build();
 
-        reminder.setPropertiesMap(properties);
+        reminder.setProperties("name", title);
+        reminder.setProperties("dueDate", formattedTime);
+        reminder.setProperties("id", id);
 
         return reminder;
     }

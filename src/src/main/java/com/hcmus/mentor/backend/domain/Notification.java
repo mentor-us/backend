@@ -49,7 +49,7 @@ public class Notification {
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "notification",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
     private List<NotificationUser> receivers = new ArrayList<>();
 

@@ -103,6 +103,7 @@ public class Group implements Serializable {
     private Date updatedDate = new Date();
 
     @Builder.Default
+    @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
     @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
@@ -111,7 +112,8 @@ public class Group implements Serializable {
     /**
      * Default channel identifier
      */
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @BatchSize(size = 10)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "default_channel_id")
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel defaultChannel;
@@ -119,12 +121,14 @@ public class Group implements Serializable {
     /**
      * Group category identifier
      */
-    @ManyToOne
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_category_id")
     @JsonIgnoreProperties(value = {"groups"}, allowSetters = true)
     private GroupCategory groupCategory;
 
-    @ManyToOne
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
@@ -133,7 +137,7 @@ public class Group implements Serializable {
      * List of pinned message identifiers
      */
     @Builder.Default
-    @BatchSize(size = 5)
+    @BatchSize(size = 10)
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "message_pinned_id")

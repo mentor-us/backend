@@ -8,8 +8,6 @@ import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotification
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
@@ -26,6 +24,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -34,6 +33,7 @@ import static com.hcmus.mentor.backend.domain.constant.ChannelType.PRIVATE_MESSA
 import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
@@ -169,6 +169,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Async
+    @Transactional(readOnly = true)
     public void sendNewMessageNotification(MessageDetailResponse message) {
         var channelTemp = channelRepository.findById(message.getGroupId()).orElse(null);
         if (channelTemp == null) {
@@ -245,14 +246,13 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Async
-    public void sendNewTaskNotification(MessageDetailResponse message) {
-        if (message.getTask() == null) {
+    public void sendNewTaskNotification(MessageDetailResponse message, Task task) {
+        if (message.getTask() == null || task == null) {
             logger.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
             return;
         }
-        TaskMessageResponse task = message.getTask();
 
-        Group group = groupRepository.findById(message.getGroupId()).orElse(null);
+        Group group =task.getGroup().getGroup();
         if (group == null) {
             return;
         }
@@ -272,11 +272,10 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification createNewTaskNotification(String title, String content, String senderId, TaskMessageResponse task) {
-        User assigner = userRepository.findById(task.getAssignerId()).orElse(null);
-        var assignees = userRepository.findByIdIn(task.getAssignees().stream().map(TaskAssigneeResponse::getId).toList());
-
-        var sender = userRepository.findById(senderId).orElse(null);
+    public Notification createNewTaskNotification(String title, String content, String senderId, Task task) {
+        var assignees = task.getAssignees();
+        var sender = task.getAssigner();
+        var assigner = task.getAssigner();
 
         Notification inAppNotification = notificationRepository.save(Notification.builder()
                 .title(title)
@@ -288,7 +287,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         List<NotificationUser> receivers = Stream.concat(assignees.stream(), Stream.of(assigner))
                 .distinct()
-                .map(nu -> NotificationUser.builder().notification(inAppNotification).user(nu).build())
+                .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
                 .toList();
         inAppNotification.setReceivers(receivers);
         notificationRepository.save(inAppNotification);
@@ -297,23 +296,22 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Async
-    public void sendNewMeetingNotification(MessageDetailResponse message) {
-        if (message.getMeeting() == null) {
-            logger.warn("[!] Meeting message #{}, NULL cannot send notifications", message.getId());
+//    @Async
+    public void sendNewMeetingNotification(Meeting meeting) {
+        if (meeting == null) {
+            logger.warn("[!] Meeting message #{}, NULL cannot send notifications", meeting.getId());
             return;
         }
-        Meeting meeting = message.getMeeting();
         Group group = meeting.getGroup().getGroup();
-        String title = group.getName();
+        String title = group == null ? "" : group.getName();
         String content = "Nhóm có lịch hẹn mới \"" + meeting.getTitle() + "\"";
-        Notification notif = createNewMeetingNotification(title, content, message.getSender().getId(), meeting);
+        Notification notif = createNewMeetingNotification(title, content, meeting.getOrganizer().getId(), meeting);
         try {
             firebaseMessagingManager.sendGroupNotification(
                     notif.getReceivers().stream().map(n -> n.getUser().getId()).toList(),
                     title,
                     content,
-                    attachDataNotification(message.getGroupId(), NEW_MEETING));
+                    attachDataNotification(meeting.getGroup().getId(), NEW_MEETING));
         } catch (FirebaseMessagingException e) {
             logger.error("[!]Error sending new task notification", e);
         }
@@ -329,13 +327,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .refId(meeting.getId())
                 .build());
 
-        List<NotificationUser> receivers = Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizer()))
-                .distinct()
-                .map(nu -> NotificationUser.builder().notification(notification).user(nu).build())
-                .toList();
-
-        notification.setReceivers(receivers);
-        notificationRepository.save(notification);
+//        List<NotificationUser> receivers = Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizer()))
+//                .distinct()
+//                .map(nu -> NotificationUser.builder().notification(notification).user(nu).build())
+//                .toList();
+//
+//        notification.setReceivers(receivers);
+//        notificationRepository.save(notification);
         return notification;
     }
 

@@ -30,14 +30,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     @Query("SELECT count(m) " +
             "from Meeting m " +
             "inner join m.group ch " +
-            "join m.attendees attendees " +
+            "inner join m.attendees attendees " +
             "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2)")
     long countByGroupIdIdInAndIsMember(List<String> channelIds, String userId);
 
     @Query("SELECT m " +
             "from Meeting m " +
             "inner join m.group ch " +
-            "join m.attendees attendees " +
+            "inner join m.attendees attendees " +
             "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 " )
     Page<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
             List<String> groupId,
@@ -48,7 +48,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     @Query("SELECT m " +
             "from Meeting m " +
             "inner join m.group ch " +
-            "join m.attendees attendees " +
+            "inner join m.attendees attendees " +
             "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2)" +
             "order by m.timeStart desc ")
     List<Meeting> findAllByOwn(List<String> activeGroupIds, String id);
@@ -56,7 +56,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     @Query("SELECT m " +
             "from Meeting m " +
             "inner join m.group ch " +
-            "join m.attendees attendees " +
+            "inner join m.attendees attendees " +
             "WHERE m.group.id in ?1 and (attendees.id = ?2 ) and m.timeStart >= ?3 and m.timeEnd <= ?4")
     List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
             List<String> groupIds, List<String> ids, Date startDate, Date endDate);

@@ -45,6 +45,7 @@ import static com.hcmus.mentor.backend.domain.Message.Type.*;
  * {@inheritDoc}
  */
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
@@ -66,8 +67,9 @@ public class MessageServiceImpl implements MessageService {
     /**
      * {@inheritDoc}
      */
-    @SneakyThrows
     @Override
+    @SneakyThrows
+    @Transactional(readOnly = true)
     public Message find(String id) {
         var message = messageRepository.findById(id);
 
@@ -78,6 +80,7 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional(readOnly = true)
     public List<MessageDetailResponse> getGroupMessages(
             String viewerId,
             String groupId,
@@ -96,8 +99,8 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
-    public List<MessageResponse> findGroupMessagesByText(
-            String groupId, String query, int page, int size) {
+    @Transactional(readOnly = true)
+    public List<MessageResponse> findGroupMessagesByText(String groupId, String query, int page, int size) {
         return messageRepository.findGroupMessages(groupId, query).stream()
                 .map(message -> {
                     var sender = ProfileResponse.from( message.getSender());
@@ -109,6 +112,7 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional(readOnly = true)
     public String getLastGroupMessage(String groupId) {
         Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
 
@@ -116,6 +120,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public  String getMessageContentById(String messageId){
         var message = messageRepository.findById(messageId).orElse(null);
 
@@ -238,8 +243,6 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveMessage(Message data) {
-        pingGroup(data.getChannel().getGroup().getId());
-        pipeline.send(UpdateLastMessageCommand.builder().message(data).channel(data.getChannel()).build());
         return messageRepository.save(data);
     }
 

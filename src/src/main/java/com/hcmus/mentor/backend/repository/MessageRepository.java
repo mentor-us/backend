@@ -39,23 +39,29 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 
     List<Message> getAllGroupMessagesByChannelId(String groupId);
 
-    @Query("SELECT m " +
+    @Query("SELECT m, s, c " +
             "FROM Message m " +
+            "join m.sender s " +
+            "join m.channel c " +
             "WHERE m.channel.id = ?1 " +
             "AND m.status != 'DELETED' " +
             "ORDER BY m.createdDate DESC ")
     List<Message> getGroupMessagesByChannelId(String groupId);
 
-    @Query("SELECT m " +
+    @Query("SELECT m, s, c " +
             "FROM Message m " +
+            "join m.sender s " +
+            "join m.channel c " +
             "WHERE m.channel.id = ?1 " +
             "AND m.status != 'DELETED' " +
             "AND m.content LIKE %?2% " +
             "ORDER BY m.createdDate DESC ")
     List<Message> findGroupMessages(String groupId, String query);
 
-    @Query("SELECT m " +
+    @Query("SELECT m, s, c " +
             "FROM Message m " +
+            "join m.sender s " +
+            "join m.channel c " +
             "WHERE m.channel.id IN :channelIds AND m.sender.id = :senderId " +
             "ORDER BY m.createdDate DESC ")
     Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);

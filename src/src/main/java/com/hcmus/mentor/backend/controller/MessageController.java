@@ -77,7 +77,8 @@ public class MessageController {
         if (!groupService.isGroupMember(groupId, userId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(messageService.getGroupMessages(userId, groupId, page, size));
+        var response = messageService.getGroupMessages(userId, groupId, page, size);
+        return ResponseEntity.ok(response);
     }
 
     /**

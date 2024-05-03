@@ -6,7 +6,6 @@ import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.service.GroupService;
-import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +40,9 @@ public class FindOwnGroupsCommandHandler implements Command.Handler<FindOwnGroup
 
         Specification<Group> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<Group, GroupUser> groupUserJoin = root.join("groupUsers", JoinType.INNER);
-            predicates.add(cb.equal(groupUserJoin.get("user_id"), command.getUserId()));
+            predicates.add(cb.equal(root.join("groupUsers", JoinType.INNER).get("user").get("id"), command.getUserId()));
             if (command.getIsMentor() != null) {
-                predicates.add(cb.equal(groupUserJoin.get("is_mentor"), command.getIsMentor()));
+                predicates.add(cb.equal(root.join("groupUsers", JoinType.INNER).get("isMentor"), command.getIsMentor()));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

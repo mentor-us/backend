@@ -58,32 +58,69 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     List<Group> findByIdIn(List<String> ids);
 
-    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND gu.isMentor = false")
+    @Query("SELECT g, gu " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers gu " +
+            "WHERE gu.user.id = ?1 " +
+            "AND gu.isMentor = false")
     List<Group> findAllByMenteesIn(String menteeId);
 
-    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND gu.isMentor = true")
+    @Query("SELECT g, gu " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers gu  " +
+            "WHERE gu.user.id = ?1 " +
+            "AND gu.isMentor = true")
     List<Group> findAllByMentorsIn(String mentorId);
 
-    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1")
+    @Query("SELECT g, gu " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers gu  " +
+            "WHERE gu.user.id = ?1")
     Page<Group> findAllByIsMember(String memberId, Pageable pageable);
 
-    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND g.status = ?2")
+    @Query("SELECT g " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers gu " +
+            "INNER JOIN FETCH gu.user u " +
+            "WHERE gu.user.id = ?1 " +
+            "AND g.status = ?2")
     Slice<Group> findByIsMemberAndStatus(String userId, GroupStatus status, Pageable pageable);
 
-    @Query( "SELECT g, gu FROM Group g JOIN g.groupUsers gu  WHERE gu.user.id = ?1 AND g.status = ?2")
-    List<Group>findByIsMemberAndStatus(String userId, GroupStatus status);
+    @Query("SELECT g, gu " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers gu " +
+            "WHERE gu.user.id = ?1 " +
+            "AND g.status = ?2")
+    List<Group> findByIsMemberAndStatus(String userId, GroupStatus status);
 
-    @Query("SELECT g , gu, gc FROM Group g JOIN FETCH g.groupCategory gc JOIN FETCH g.groupUsers gu WHERE g.id = :id")
-    Optional<Group> findByIdAndFetchGroupCategoryAndFetch(@Param("id") String id);
+    @Query("SELECT g , gu, gc " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupCategory gc " +
+            "INNER JOIN FETCH g.groupUsers gu " +
+            "WHERE g.id = ?1")
+    Optional<Group> findByIdAndFetchGroupCategoryAndFetch(String id);
 
 
-    @Query( "SELECT g FROM Group g JOIN g.groupUsers WHERE g.status = :status ORDER BY g.createdDate DESC")
+    @Query("SELECT g " +
+            "FROM Group g " +
+            "INNER JOIN FETCH g.groupUsers " +
+            "WHERE g.status = :status " +
+            "ORDER BY g.createdDate DESC")
     List<Group> findAllByStatusAnd(@Param("status") GroupStatus status);
 
-    @Query( "SELECT g, gu, c FROM Group g  JOIN g.groupUsers gu  JOIN g.channels c  WHERE g.status = :status AND gu.user.id = :userId")
+    @Query("SELECT g, gu, c " +
+            "FROM Group g  " +
+            "INNER JOIN FETCH g.groupUsers gu  " +
+            "INNER JOIN FETCH g.channels c  " +
+            "WHERE g.status = :status " +
+            "AND gu.user.id = :userId")
     List<Group> fetchWithUsersAndChannels(@Param("userId") String userId, @Param("status") GroupStatus status);
 
-    @Query("SELECT g, gu, u from Group g join g.groupUsers gu join gu.user u where u.id = :userId")
+    @Query("SELECT g, gu, u " +
+            "from Group g " +
+            "INNER JOIN FETCH g.groupUsers gu " +
+            "INNER JOIN FETCH gu.user u " +
+            "where u.id = :userId")
     List<Group> findGroupsByMembersContaining(String userId);
 
     @Query("SELECT g from Group g join g.groupUsers gu join gu.user u where u.id = :userId and g.id = :groupId")

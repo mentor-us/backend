@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
@@ -7,6 +8,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
@@ -14,6 +16,7 @@ import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +49,9 @@ public class TaskServiceImpl implements IRemindableService {
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
+    private final Pipeline pipeline;
 
+    @Transactional
     public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
         if (!channelRepository.existsById(request.getGroupId())) {
             logger.error("Add task : Not found channel with id {}", request.getGroupId());
@@ -58,42 +63,48 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
 
-        var parentTask = taskRepository.findById(request.getParentTask()).orElse(null);
-        if (request.getParentTask() != null && parentTask == null && !request.getParentTask().isEmpty()) {
-            logger.error("Add task : Not found parent task with id {}", request.getParentTask());
-            return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
+        Task parentTask = null;
+        if (request.getParentTask() != null) {
+            parentTask = taskRepository.findById(request.getParentTask()).orElse(null);
+            if (request.getParentTask() != null && parentTask == null && !request.getParentTask().isEmpty()) {
+                logger.error("Add task : Not found parent task with id {}", request.getParentTask());
+                return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
+            }
         }
 
+        var channel = channelRepository.findById(request.getGroupId()).orElse(null);
+        if (channel == null) {
+            logger.error("Add task : Not found channel with id {}", request.getGroupId());
+            return new TaskReturnService(NOT_FOUND_GROUP, "Not found channel", null);
+        }
+
+        var membersOfChannel = channel.getUsers();
+        var memberIdsOfChannel = membersOfChannel.stream().map(User::getId).toList();
         if (!request.getUserIds().contains("*")) {
             for (String userId : request.getUserIds()) {
-                if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
+                if (!memberIdsOfChannel.contains(userId)) {
                     logger.error("Add task : Not found user with id {} in group {}", userId, request.getGroupId());
                     return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
                 }
             }
         }
 
-        List<String> userIds = request.getUserIds().contains("*")
-                ? groupService.findAllMenteeIdsGroup(request.getGroupId())
-                : request.getUserIds();
+        List<User> userAssignees = request.getUserIds().contains("*") ? membersOfChannel : userRepository.findAllById(request.getUserIds());
         User assigner = userRepository.findById(loggedUserId).orElse(null);
         if (assigner == null) {
             logger.error("Add task : Not found user with id {}", loggedUserId);
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
-        var assignee = userIds.stream()
-                .map(userId -> Assignee.builder().user(userRepository.findById(userId).orElse(null)).build())
-                .toList();
-        Task task = Task.builder()
+        var assignee = userAssignees.stream().map(user -> Assignee.builder().user(user).build()).toList();
+        Task task = taskRepository.save(Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
-                .group(channelRepository.findById(request.getGroupId()).orElse(null))
+                .group(channel)
                 .assigner(assigner)
                 .parentTask(parentTask)
                 .assignees(assignee)
-                .build();
-        taskRepository.save(task);
+                .build());
 
         Message message = Message.builder()
                 .sender(task.getAssigner())
@@ -103,13 +114,13 @@ public class TaskServiceImpl implements IRemindableService {
                 .task(task)
                 .build();
         messageService.saveMessage(message);
+        groupService.pingGroup(request.getGroupId());
+        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
 
-        MessageDetailResponse response =
-                messageService.fulfillTaskMessage(
-                        MessageResponse.from(message, ProfileResponse.from(assigner)));
+        MessageDetailResponse response = messageService.fulfillTaskMessage(MessageResponse.from(message, ProfileResponse.from(assigner)));
         socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
         saveToReminder(task);
-        notificationService.sendNewTaskNotification(response);
+        notificationService.sendNewTaskNotification(response, task);
 
         return new TaskReturnService(SUCCESS, "", task);
     }

@@ -4,12 +4,14 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -22,16 +24,17 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWorkSpaceQuery, GroupDetailResponse> {
 
-    private GroupRepository groupRepository;
-    private UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
 
     /**
      * @param command command to get group detail.
      * @return result of getting group detail.
      */
     @Override
+    @Transactional(readOnly = true)
     public GroupDetailResponse handle(GetGroupWorkSpaceQuery command) {
-        var group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tim thấy nhóm"));
+        Group group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tim thấy nhóm"));
 
         if (group.getGroupUsers().stream().noneMatch(groupUser -> groupUser.getUser().getId().equals(command.getCurrentUserId()))) {
             throw new DomainException("Bạn không thể xem nhóm này");
@@ -53,7 +56,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
                         .anyMatch(ch -> ch.getUsers().stream()
                                 .anyMatch(u -> Objects.equals(u.getId(), command.getCurrentUserId()))))
                 .map(channel -> {
-                    ShortProfile penpal = userRepository.findShortProfile(command.getCurrentUserId()).map(ShortProfile::new).orElse(null);
+                    ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), command.getCurrentUserId())).map(ShortProfile::new).findFirst().orElse(null);
                     if (penpal == null) {
                         return null;
                     }

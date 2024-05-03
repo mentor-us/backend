@@ -7,9 +7,11 @@ import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -17,11 +19,18 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "messages")
-public class Message {
+public class Message implements Serializable {
 
     @Id
     @Column(name = "id")
     private String id;
+
+    @PrePersist
+    public void ensureId() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+    }
 
     @Column(name = "content")
     private String content;
@@ -59,7 +68,7 @@ public class Message {
     @ElementCollection
     private List<String> images = new ArrayList<>();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User sender;
@@ -70,24 +79,24 @@ public class Message {
     private Channel channel;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "vote_id")
     @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private Vote vote = null;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "file_id")
     private File file = null;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "meeting_id")
     @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private Meeting meeting = null;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "task_id")
     @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task = null;

@@ -6,8 +6,10 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 @Getter
@@ -15,7 +17,7 @@ import java.util.*;
 @NoArgsConstructor
 @Setter
 @Builder
-public class MessageDetailResponse {
+public class MessageDetailResponse implements Serializable {
 
     private String id;
 
@@ -35,7 +37,7 @@ public class MessageDetailResponse {
 
     private Vote vote;
 
-    private Meeting meeting;
+    private MeetingDto meeting;
 
     private TaskMessageResponse task;
 
@@ -65,7 +67,7 @@ public class MessageDetailResponse {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getChannel().getId())
+                .groupId(message.getChannel() != null ? message.getChannel().getId() : null)
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
                 .file(new FileModel(message.getFile()))
@@ -132,7 +134,7 @@ public class MessageDetailResponse {
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
                 .groupId(message.getGroupId())
-                .meeting(meeting)
+                .meeting(MeetingDto.from(meeting))
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())

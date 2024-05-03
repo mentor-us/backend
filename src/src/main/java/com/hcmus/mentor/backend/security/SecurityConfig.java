@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +50,16 @@ public class SecurityConfig {
             "**/oauth2/**",
             "/actuator/**",
     };
+
+    @Bean
+    public CommonsRequestLoggingFilter requestLoggingFilter() {
+        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
+        loggingFilter.setIncludeClientInfo(true);
+        loggingFilter.setIncludeQueryString(true);
+        loggingFilter.setIncludePayload(true);
+        loggingFilter.setMaxPayloadLength(64000);
+        return loggingFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

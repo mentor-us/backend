@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service;
 
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
@@ -13,9 +14,13 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.service.dto.GroupDto;
+import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,12 +28,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MeetingService implements IRemindableService {
 
@@ -41,7 +48,9 @@ public class MeetingService implements IRemindableService {
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
+    private final Pipeline pipeline;
 
+    @Transactional(readOnly = true)
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
         List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream().map(Group::getId).toList();
         Date now = new Date();
@@ -61,6 +70,7 @@ public class MeetingService implements IRemindableService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {
         return meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
             Group group = meeting.getGroup().getGroup();
@@ -75,9 +85,15 @@ public class MeetingService implements IRemindableService {
         return wrapper.getContent();
     }
 
+    @jakarta.transaction.Transactional
     public Meeting createNewMeeting(CreateMeetingRequest request) {
         User organizer = userRepository.findById(request.getOrganizerId()).orElse(null);
         if (organizer == null) {
+            return null;
+        }
+
+        var channel = channelRepository.findById(request.getGroupId()).orElse(null);
+        if (channel == null) {
             return null;
         }
 
@@ -89,8 +105,8 @@ public class MeetingService implements IRemindableService {
                 .repeated(request.getRepeated())
                 .place(request.getPlace())
                 .organizer(organizer)
-                .group(channelRepository.findById(request.getGroupId()).orElse(null))
-                .attendees(userRepository.findByIdIn(request.getAttendees()))
+                .group(channel)
+                .attendees(request.getAttendees().contains("*") ? channel.getUsers() : userRepository.findByIdIn(request.getAttendees()))
                 .build());
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
@@ -102,11 +118,11 @@ public class MeetingService implements IRemindableService {
                 .build();
         messageService.saveMessage(newMessage);
         groupService.pingGroup(request.getGroupId());
+        pipeline.send(UpdateLastMessageCommand.builder().message(newMessage).channel(newMessage.getChannel()).build());
 
-        MessageDetailResponse response = messageService.fulfillMeetingMessage(
-                MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
+        MessageDetailResponse response = messageService.fulfillMeetingMessage(MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
-        notificationService.sendNewMeetingNotification(response);
+        notificationService.sendNewMeetingNotification(meeting);
         saveToReminder(meeting);
 
         return meeting;
@@ -158,6 +174,7 @@ public class MeetingService implements IRemindableService {
         reminderRepository.deleteByRemindableId(meetingId);
     }
 
+    @Transactional(readOnly = true)
     public MeetingDetailResponse getMeetingById(String userId, String meetingId) {
         var meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
         var organizer = meeting.getOrganizer();
@@ -178,7 +195,8 @@ public class MeetingService implements IRemindableService {
                         })
                         .toList();
 
-        boolean appliedAllGroup = meeting.getAttendees().contains("*");
+        boolean appliedAllGroup = meeting.getAttendees().size() == channel.getUsers().size();
+
         return MeetingDetailResponse.builder()
                 .id(meetingId)
                 .title(meeting.getTitle())
@@ -187,15 +205,16 @@ public class MeetingService implements IRemindableService {
                 .timeEnd(meeting.getTimeEnd())
                 .repeated(meeting.getRepeated())
                 .place(meeting.getPlace())
-                .organizer(organizer)
-                .group(group)
+                .organizer(UserDto.from(organizer))
+                .group(GroupDto.from(group))
                 .isAll(appliedAllGroup)
                 .canEdit(group.isMentor(userId) || organizer.getId().equals(userId))
-                .totalAttendees(appliedAllGroup ? meeting.getGroup().getUsers().size() - 1 : meeting.getAttendees().size())
+                .totalAttendees(appliedAllGroup ? channel.getUsers().size() - 1 : meeting.getAttendees().size())
                 .histories(historyDetails)
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<MeetingAttendeeResponse> getMeetingAttendees(String meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
 
@@ -203,24 +222,18 @@ public class MeetingService implements IRemindableService {
         Group group = channel.getGroup();
 
         List<String> attendeeIds;
-        boolean appliedAllGroup = meeting.getAttendees().contains("*");
-        if (appliedAllGroup) {
-            attendeeIds = group.getGroupUsers().stream()
-                    .map(GroupUser::getUser)
-                    .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
-                    .map(User::getId)
-                    .toList();
-        } else {
-            attendeeIds = meeting.getAttendees().stream()
-                    .map(User::getId)
-                    .toList();
-        }
+        attendeeIds = group.getGroupUsers().stream()
+                .map(GroupUser::getUser)
+                .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
+                .map(User::getId)
+                .toList();
 
         return userRepository.findByIdIn(attendeeIds).stream()
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<Meeting> getAllOwnMeetings(String userId) {
        var channelIds =  channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
 
@@ -270,9 +283,29 @@ public class MeetingService implements IRemindableService {
         Reminder reminder = rewindable.toReminder();
         Meeting meeting = (Meeting) rewindable;
 
-        reminder.setRecipients(meeting.getAttendees());
+        reminder.setRecipients(new ArrayList<>(meeting.getAttendees()));
         reminder.setSubject("Bạn có 1 lịch hẹn sắp diễn ra");
 
         reminderRepository.save(reminder);
+    }
+
+    public List<ReactionDto> mappingReaction(List<Reaction> reactions) {
+        return reactions.stream()
+                .collect(Collectors.groupingBy(reaction -> reaction.getUser().getId()))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    User user = entry.getValue().getFirst().getUser();
+                    ReactionDto reactionDto = ReactionDto.builder()
+                            .userId(user.getId())
+                            .name(user.getName())
+                            .imageUrl(user.getImageUrl())
+                            .build();
+                    entry.getValue().forEach(reaction -> {
+                        reactionDto.react(reaction.getEmojiType(), reaction.getTotal());
+                    });
+                    return reactionDto;
+                })
+                .toList();
     }
 }

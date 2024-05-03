@@ -26,6 +26,10 @@ public class FileModel implements Serializable {
     private UploadStatus uploadStatus = UploadStatus.Success;
 
     public FileModel(File file) {
+        if(file == null) {
+            return;
+        }
+
         this.id = file.getId();
         this.filename = file.getFilename();
         this.size = file.getSize();

@@ -138,12 +138,14 @@ public class GroupServiceImpl implements GroupService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Group> findRecentGroupsOfUser(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
         return groupRepository.findAllByIsMember(userId, pageRequest);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
         return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
@@ -339,6 +341,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GroupServiceDto findGroups(
             String emailUser,
             String name,
@@ -387,7 +390,7 @@ public class GroupServiceImpl implements GroupService {
             String status,
             int page,
             int pageSize) {
-        Specification<Group> spec =  (Root<Group> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
+        Specification<Group> spec = (Root<Group> root, CriteriaQuery<?> query, CriteriaBuilder builder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (name != null && !name.isEmpty()) {
@@ -437,6 +440,7 @@ public class GroupServiceImpl implements GroupService {
         data = validateTimeGroups(data);
         return new Pair<>(count, data);
     }
+
     private String getUserIdByEmail(String emailUser) {
         Optional<User> userOptional = userRepository.findByEmail(emailUser);
         return userOptional.map(User::getId).orElse(null);
@@ -703,6 +707,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Slice<GroupHomepageResponse> getHomePageRecentGroupsOfUser(String userId, int page, int pageSize) {
         Slice<Group> groups = findMostRecentGroupsOfUser(userId, page, pageSize);
         List<GroupHomepageResponse> responses = mappingGroupHomepageResponse(groups.getContent(), userId);
@@ -784,13 +789,17 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GroupServiceDto getGroupMembers(String groupId, String userId) {
-        var group = groupRepository.findById(groupId).orElse(Objects.requireNonNull(channelRepository.findById(groupId).orElse(null)).getGroup());
+        var group = channelRepository.findById(groupId).map(Channel::getGroup).orElse(null);
         if (group == null) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+            group = groupRepository.findById(groupId).orElse(null);
+            if (group == null) {
+                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+            }
         }
 
-        if (!permissionService.isUserIdInGroup(userId, groupId)) {
+        if (group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(userId))) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -828,19 +837,25 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto getGroupDetail(String userId, String groupId) {
-        var group = groupRepository.findByIdAndFetchGroupCategoryAndFetch(groupId).orElse(null);
-        if (group == null) {
+        var channel = channelRepository.findById(groupId).orElse(null);
+        if (channel == null) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
-        if (!group.isMentor(userId)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        var group = channel.getGroup();
+//        if (!group.isMentor(userId)) {
+//            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+//        }
+
+        GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, channel.getGroup());
+        if (channelDetail == null) {
+            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
-        var groupDetail = new GroupDetailResponse(group);
-        groupDetail.setPinnedMessages(fullFillPinMessages(userId, groupDetail.getPinnedMessageIds()));
+//        var groupDetail = new GroupDetailResponse(group);
+        channelDetail.setPinnedMessages(fullFillPinMessages(userId, channelDetail.getPinnedMessageIds()));
 
-        return new GroupServiceDto(SUCCESS, null, groupDetail);
+        return new GroupServiceDto(SUCCESS, null, channelDetail);
     }
 
     private GroupDetailResponse fulfillChannelDetail(
@@ -851,15 +866,7 @@ public class GroupServiceImpl implements GroupService {
         String imageUrl = null;
 
         if (ChannelType.PRIVATE_MESSAGE.equals(channel.getType())) {
-            String penpalId = channel.getUsers().stream()
-                    .map(User::getId)
-                    .filter(id -> !id.equals(userId))
-                    .findFirst()
-                    .orElse(null);
-            if (userId == null) {
-                return null;
-            }
-            ShortProfile penpal = userRepository.findShortProfile(penpalId).map(ShortProfile::new).orElse(null);
+            ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), userId)).map(ShortProfile::new).findFirst().orElse(null);
             if (penpal == null) {
                 return null;
             }
@@ -940,6 +947,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> findAllMenteeIdsGroup(String groupId) {
         Optional<Group> wrapper = groupRepository.findById(groupId);
         if (wrapper.isEmpty()) {
@@ -971,6 +979,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GroupServiceDto getGroupMedia(String userId, String groupId) {
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         List<String> senderIds = new ArrayList<>();
@@ -1365,7 +1374,7 @@ public class GroupServiceImpl implements GroupService {
 //        var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
 //        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
 //
-//
+//\
 //        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
 //    }
 }

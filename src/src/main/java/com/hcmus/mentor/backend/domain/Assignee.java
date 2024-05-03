@@ -34,4 +34,5 @@ public class Assignee implements Serializable {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
+
 }

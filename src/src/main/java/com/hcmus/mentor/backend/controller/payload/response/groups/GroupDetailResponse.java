@@ -89,6 +89,12 @@ public class GroupDetailResponse {
         this.defaultChannelId = group.getDefaultChannel().getId();
     }
 
+    public GroupDetailResponse(Group group, List<GroupChannel> channels, List<GroupChannel> privates) {
+        this(group);
+        this.channels = channels;
+        this.privates = privates;
+    }
+
     public Integer getTotalMember() {
         if (mentees == null || mentors == null) {
             return totalMember;
@@ -181,7 +187,7 @@ public class GroupDetailResponse {
                     .imageUrl(channel.getImageUrl())
                     .pinnedMessageIds(channel.getMessagesPinned().stream().map(m->m.getId()).toList())
                     .parentId(channel.getGroup().getId())
-                    .newMessageId(channel.getLastMessage().getId())
+                    .newMessageId(channel.getLastMessage() == null ? null : channel.getLastMessage().getId())
                     .build();
         }
 

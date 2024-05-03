@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
@@ -44,7 +43,7 @@ public class Reminder {
     private String remindableId;
 
     @JsonIgnore
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_reminder",
             joinColumns = @JoinColumn(name = "reminder_id"),
@@ -60,19 +59,23 @@ public class Reminder {
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
+
+    @Builder.Default
     @ElementCollection
     @CollectionTable(name = "reminder_properties", joinColumns = @JoinColumn(name = "reminder_id"))
     @MapKeyColumn(name = "key")
-    @Column(name = "value")
-    private Map<String, Object> propertiesMap;
+    @Column(name = "value", columnDefinition = "varchar(255)")
+    private Map<String, String> propertiesMapJson = new java.util.HashMap<>();
 
     @JsonAnyGetter
+    @SneakyThrows
     public Map<String, Object> getProperties() {
-        return propertiesMap;
+        return new java.util.HashMap<>(propertiesMapJson);
     }
 
-    @JsonAnySetter
+    @SneakyThrows
     public void setProperties(String key, Object value) {
-        propertiesMap.put(key, value);
+//        ObjectMapper objectMapper = new ObjectMapper();
+        this.propertiesMapJson.put(key, value.toString());
     }
 }

@@ -7,11 +7,13 @@ import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
 import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
 

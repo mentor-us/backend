@@ -9,6 +9,7 @@ import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
+import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -51,7 +52,8 @@ public class Task implements IRemindable, Serializable {
     @Column(name = "deleted_date")
     private Date deletedDate = null;
 
-    @ManyToOne(optional = false)
+    @BatchSize(size = 10)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "assigner_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User assigner;
@@ -90,20 +92,18 @@ public class Task implements IRemindable, Serializable {
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
         String formattedTime = sdf.format(DateUtils.addHours(deadline, 7));
 
-        Map<String, Object> properties = new HashMap<>();
-
-        properties.put("name", title);
-        properties.put("dueDate", formattedTime);
-        properties.put("id", id);
-
-        return Reminder.builder()
+        var reminder = Reminder.builder()
                 .group(group)
                 .name(title)
                 .type(ReminderType.TASK)
                 .reminderDate(getReminderDate())
-                .propertiesMap(properties)
                 .remindableId(id)
                 .build();
+        reminder.setProperties("name", title);
+        reminder.setProperties("dueDate", formattedTime);
+        reminder.setProperties("id", id);
+
+        return reminder;
     }
 
     public Date getReminderDate() {
