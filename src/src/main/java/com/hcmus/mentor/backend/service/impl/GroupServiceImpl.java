@@ -1709,6 +1709,6 @@ public class GroupServiceImpl implements GroupService {
         List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
 
 
-        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
+        return channelRepository.getListChannelForward(lstChannelIds, user.getId(), ChannelStatus.ACTIVE);
     }
 }
