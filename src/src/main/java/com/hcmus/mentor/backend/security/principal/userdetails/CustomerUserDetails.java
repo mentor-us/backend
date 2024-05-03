@@ -1,6 +1,9 @@
 package com.hcmus.mentor.backend.security.principal.userdetails;
 
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.UserRole;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -14,11 +17,25 @@ import java.util.*;
 
 @ToString
 public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
+    @Getter
     private final String id;
+
+    @Getter
     private final String email;
+
+    @Getter
     private final String password;
+
+    @Getter
+    List<UserRole> roles;
+
+    @Getter
     private final Collection<? extends GrantedAuthority> authorities;
-    private Map<String, Object> attributes;
+
+    @Getter
+    @Setter
+    public Map<String, Object> attributes;
+
     private OidcUserInfo oidcUserInfo;
     private OidcIdToken oidcIdToken;
 
@@ -26,35 +43,27 @@ public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
             String id,
             String email,
             String password,
+            List<UserRole> roles,
             Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.email = email;
         this.password = password;
+        this.roles = roles;
         this.authorities = authorities;
     }
 
-    public static CustomerUserDetails create(User user) {
-        List<GrantedAuthority> authorities =
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
-
-        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
-    }
-
-    public static CustomerUserDetails create(User user, String role) {
-        List<GrantedAuthority> authorities =
-                Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority(role));
-
-        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
-    }
-
     public static CustomerUserDetails create(User user, Map<String, Object> attributes) {
-        CustomerUserDetails customerUserDetails = CustomerUserDetails.create(user);
-        customerUserDetails.setAttributes(attributes);
-        return customerUserDetails;
-    }
+        List<GrantedAuthority> authorities = new ArrayList<>();
 
-    public String getId() {
-        return id;
+        var roles = user.getRoles();
+        for (var role : roles) {
+            authorities.add(new SimpleGrantedAuthority(String.format("ROLE_%s", role).toUpperCase()));
+        }
+
+        var userDetails = new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), roles, authorities);
+        userDetails.setAttributes(attributes);
+
+        return userDetails;
     }
 
     @Override

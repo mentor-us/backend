@@ -66,7 +66,22 @@ public class CustomOidcUserService extends OidcUserService {
     }
 
     private User updateExistingUser(User user, CustomerOidcUser customerOidcUser) {
-        user.update(customerOidcUser);
+        var name = user.getName();
+        if (name == null || name.isEmpty() || name.equals(user.getInitialName())) {
+            user.setName(customerOidcUser.getName());
+        }
+
+        var imageUrl = user.getImageUrl();
+        if (imageUrl == null || imageUrl.isEmpty() || imageUrl.startsWith("http")) {
+            user.setImageUrl(customerOidcUser.getImageUrl());
+        }
+//
+//        if (!("https://graph.microsoft.com/v1.0/me/photo/$value")
+//                .equals(customerOidcUser.getImageUrl())) {
+//            imageUrl =
+//                    (imageUrl == null || imageUrl.equals("")) ? customerOidcUser.getImageUrl() : imageUrl;
+//        }
+//        user.update(customerOidcUser);
         return userRepository.save(user);
     }
 }

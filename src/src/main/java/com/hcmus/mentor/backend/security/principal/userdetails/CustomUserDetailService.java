@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,8 +26,12 @@ public class CustomUserDetailService implements UserDetailsService {
                 .or(() -> userRepository.findByAdditionalEmailsContains(username))
                 .orElseThrow(() -> new UsernameNotFoundException(String.format("User not found with email: %s", username)));
 
-        List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        var roles = user.getRoles();
+        for (var role : roles) {
+            authorities.add(new SimpleGrantedAuthority(String.format("ROLE_%s", role).toUpperCase()));
+        }
 
-        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        return new CustomerUserDetails(user.getId(), user.getEmail(), user.getPassword(), roles, authorities);
     }
 }

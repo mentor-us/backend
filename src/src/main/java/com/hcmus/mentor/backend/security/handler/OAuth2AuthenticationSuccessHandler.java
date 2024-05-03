@@ -71,6 +71,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         claims.put("nameidentifier", customerUserDetails.getEmail());
         claims.put("name", customerUserDetails.getEmail());
         claims.put("emailaddress", customerUserDetails.getEmail());
+        claims.put("roles", customerUserDetails.getRoles());
 
         var token = TokenModelGenerator.generate(tokenService, claims);
 
@@ -78,6 +79,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .queryParam("token", token.getAccessToken())
                 .queryParam("emailVerified", false)
                 .queryParam("expiresIn", token.getExpiresIn())
+                .queryParam("roles", customerUserDetails.getRoles())
                 .build()
                 .toUriString();
     }

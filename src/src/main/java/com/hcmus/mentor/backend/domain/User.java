@@ -6,7 +6,6 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
-import com.hcmus.mentor.backend.security.principal.oauth2.CustomerOidcUser;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -20,8 +19,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 
 @Data
 @Builder
@@ -81,7 +78,7 @@ public class User implements Serializable {
     private List<String> pinnedGroupsId = new ArrayList<>();
 
     @Builder.Default
-    private List<UserRole> roles = new ArrayList<>(List.of(USER));
+    private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
     private Date createdDate = new Date();
@@ -124,17 +121,6 @@ public class User implements Serializable {
                 + ", email='"
                 + email
                 + '\'';
-    }
-
-    public void update(CustomerOidcUser customerOidcUser) {
-        if (name == null || name.equals("") || name.equals(initialName)) {
-            name = customerOidcUser.getName();
-        }
-        if (!("https://graph.microsoft.com/v1.0/me/photo/$value")
-                .equals(customerOidcUser.getImageUrl())) {
-            imageUrl =
-                    (imageUrl == null || imageUrl.equals("")) ? customerOidcUser.getImageUrl() : imageUrl;
-        }
     }
 
     public void update(UpdateUserRequest request) {
