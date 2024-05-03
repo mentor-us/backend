@@ -5,8 +5,6 @@ import com.hcmus.mentor.backend.service.fileupload.KeyGenerationStrategy;
 import com.hcmus.mentor.backend.service.fileupload.S3Settings;
 import io.minio.*;
 import io.minio.http.Method;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import lombok.SneakyThrows;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +12,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 /**
  * {@inheritDoc}
@@ -90,6 +91,20 @@ public class S3FileStorage implements BlobStorage {
                         .stream(file.getInputStream(), file.getSize(), -1)
                         .build());
        logger.log(Level.INFO, "[*] File {} is uploaded successfully", key);
+    }
+
+    @SneakyThrows
+    @Override
+    public void post(byte[] file, String key) {
+        var tika =new Tika();
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucket)
+                        .object(key)
+                        .contentType(tika.detect(file))
+                        .stream(new ByteArrayInputStream(file), file.length, -1)
+                        .build());
+        logger.log(Level.INFO, "[*] File {} is uploaded successfully", key);
     }
 
     /**

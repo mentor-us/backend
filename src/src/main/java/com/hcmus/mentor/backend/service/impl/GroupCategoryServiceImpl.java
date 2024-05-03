@@ -1,30 +1,23 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.DUPLICATE_GROUP_CATEGORY;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.NOT_ENOUGH_FIELDS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.NOT_FOUND;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-
-import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupCategory;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import com.hcmus.mentor.backend.service.PermissionService;
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
+import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
-
-import java.io.IOException;
-import java.util.*;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.math3.util.Pair;
+import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
@@ -38,6 +31,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.util.*;
+
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+
 @Service
 @RequiredArgsConstructor
 public class GroupCategoryServiceImpl implements GroupCategoryService {
@@ -46,6 +46,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
     private final MongoTemplate mongoTemplate;
+    private final BlobStorage blobStorage;
 
     @Override
     public List<GroupCategory> findAll() {
@@ -74,19 +75,43 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
         if (groupCategoryRepository.existsByName(request.getName())) {
             GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
+
             if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
+                if (request.getIconUrl().startsWith("data:")) {
+                    try {
+                        var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes("UTF-8");
+                        String key = blobStorage.generateBlobKey(new Tika().detect(rawBytes));
+                        blobStorage.post(rawBytes, key);
+                        request.setIconUrl(key);
+                    } catch (Exception e) {
+                        throw new DomainException("Upload image failed");
+                    }
+                }
+
                 groupCategory.setStatus(GroupCategoryStatus.ACTIVE);
                 groupCategory.setDescription(request.getDescription());
                 groupCategory.setIconUrl(request.getIconUrl());
                 groupCategory.setPermissions(request.getPermissions());
+
                 groupCategoryRepository.save(groupCategory);
+
                 return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
             }
             return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
-        GroupCategory groupCategory =
-                GroupCategory.builder()
+        if (request.getIconUrl().startsWith("data:")) {
+            try {
+                var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes("UTF-8");
+                String key = blobStorage.generateBlobKey(new Tika().detect(rawBytes));
+                blobStorage.post(rawBytes, key);
+                request.setIconUrl(key);
+            } catch (Exception e) {
+                throw new DomainException("Upload image failed");
+            }
+        }
+
+        GroupCategory groupCategory = GroupCategory.builder()
                         .name(request.getName())
                         .description(request.getDescription())
                         .iconUrl(request.getIconUrl())
