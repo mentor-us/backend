@@ -1,7 +1,8 @@
 package com.hcmus.mentor.backend.service.fileupload;
 
-import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
 
 /**
  * Blob storage service.
@@ -30,6 +31,8 @@ public interface BlobStorage {
      * @param key  The key (identifier) that will be assigned to the uploaded file.
      */
     void post(MultipartFile file, String key);
+
+    void post(byte[] file, String key);
 
     /**
      * Generates a unique blob key for a file based on its MIME type.
