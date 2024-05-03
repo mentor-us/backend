@@ -17,7 +17,6 @@ import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.math3.util.Pair;
-import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
@@ -32,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.*;
@@ -79,8 +79,9 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
                 if (request.getIconUrl().startsWith("data:")) {
                     try {
-                        var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes("UTF-8");
-                        String key = blobStorage.generateBlobKey(new Tika().detect(rawBytes));
+                        var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8);
+                        var mimeType = request.getIconUrl().substring(request.getIconUrl().indexOf(":") + 1, request.getIconUrl().indexOf(";"));
+                        String key = blobStorage.generateBlobKey(mimeType);
                         blobStorage.post(rawBytes, key);
                         request.setIconUrl(key);
                     } catch (Exception e) {
@@ -102,8 +103,9 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
         if (request.getIconUrl().startsWith("data:")) {
             try {
-                var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes("UTF-8");
-                String key = blobStorage.generateBlobKey(new Tika().detect(rawBytes));
+                var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8);
+                var mimeType = request.getIconUrl().substring(request.getIconUrl().indexOf(":") + 1, request.getIconUrl().indexOf(";"));
+                String key = blobStorage.generateBlobKey(mimeType);
                 blobStorage.post(rawBytes, key);
                 request.setIconUrl(key);
             } catch (Exception e) {
@@ -112,11 +114,11 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
 
         GroupCategory groupCategory = GroupCategory.builder()
-                        .name(request.getName())
-                        .description(request.getDescription())
-                        .iconUrl(request.getIconUrl())
-                        .permissions(request.getPermissions())
-                        .build();
+                .name(request.getName())
+                .description(request.getDescription())
+                .iconUrl(request.getIconUrl())
+                .permissions(request.getPermissions())
+                .build();
         groupCategoryRepository.save(groupCategory);
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
