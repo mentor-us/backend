@@ -27,7 +27,7 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
     boolean existsByIdAndUserIdsContains(String id, String userId);
 
     @Aggregation(pipeline = {
-            "{ $match: { 'id': { $in: ?0 }, 'status': ?1 } }",
+            "{ $match: { 'id': { $in: ?0 }, 'status': ?2, 'userIds':?1 } }",
             "{ $addFields: { groupObjectId: { $toObjectId: '$parentId' } } }",
             "{ $lookup: { from: 'group', localField: 'groupObjectId', foreignField: '_id' ,as: 'groups' } }",
             "{ $unwind: '$groups' }",
@@ -38,7 +38,7 @@ public interface ChannelRepository extends MongoRepository<Channel, String> {
             "{ $sort: { 'group.name': 1, 'name': 1 } }"
 
     })
-    List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, ChannelStatus status);
+    List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, String userId, ChannelStatus status);
 
     List<Channel> findAllByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
 }

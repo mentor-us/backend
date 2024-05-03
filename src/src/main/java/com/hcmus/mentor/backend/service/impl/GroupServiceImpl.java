@@ -1706,9 +1706,9 @@ public class GroupServiceImpl implements GroupService {
         List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
 
         var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
-        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
+        List<String> lstChannelIds = Stream.concat(listChannelIds.stream().flatMap(Collection::stream), groups.stream().map(Group::getDefaultChannelId)).toList();
 
 
-        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
+        return channelRepository.getListChannelForward(lstChannelIds, user.getId(), ChannelStatus.ACTIVE);
     }
 }
