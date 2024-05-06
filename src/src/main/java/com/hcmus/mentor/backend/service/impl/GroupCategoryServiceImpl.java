@@ -79,7 +79,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
                 if (request.getIconUrl().startsWith("data:")) {
                     try {
-                        var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8);
+                        var rawBytes = Base64.getDecoder().decode(request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8));
                         var mimeType = request.getIconUrl().substring(request.getIconUrl().indexOf(":") + 1, request.getIconUrl().indexOf(";"));
                         String key = blobStorage.generateBlobKey(mimeType);
                         blobStorage.post(rawBytes, key);
@@ -103,7 +103,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
         if (request.getIconUrl().startsWith("data:")) {
             try {
-                var rawBytes = request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8);
+                var rawBytes = Base64.getDecoder().decode(request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8));
                 var mimeType = request.getIconUrl().substring(request.getIconUrl().indexOf(":") + 1, request.getIconUrl().indexOf(";"));
                 String key = blobStorage.generateBlobKey(mimeType);
                 blobStorage.post(rawBytes, key);
@@ -130,7 +130,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-        if (!groupCategoryOptional.isPresent()) {
+        if (groupCategoryOptional.isEmpty()) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
@@ -140,6 +140,21 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 && !request.getName().equals(groupCategory.getName())) {
             return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
+
+        if (!Objects.equals(request.getIconUrl(), groupCategory.getIconUrl())) {
+            if (request.getIconUrl().startsWith("data:")) {
+                try {
+                    var rawBytes = Base64.getDecoder().decode(request.getIconUrl().substring(request.getIconUrl().indexOf(",") + 1).getBytes(StandardCharsets.UTF_8));
+                    var mimeType = request.getIconUrl().substring(request.getIconUrl().indexOf(":") + 1, request.getIconUrl().indexOf(";"));
+                    String key = blobStorage.generateBlobKey(mimeType);
+                    blobStorage.post(rawBytes, key);
+                    request.setIconUrl(key);
+                } catch (Exception e) {
+                    throw new DomainException("Upload image failed");
+                }
+            }
+        }
+
         groupCategory.update(
                 request.getName(),
                 request.getDescription(),

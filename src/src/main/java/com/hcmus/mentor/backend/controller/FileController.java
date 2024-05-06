@@ -17,6 +17,7 @@ import org.apache.tika.Tika;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -42,7 +43,7 @@ public class FileController {
     @Cacheable("controller_getFile")
     @GetMapping("")
     @ApiResponse(responseCode = "200")
-    public ResponseEntity<InputStreamResource> getFile(@ParameterObject DownloadFileReq request) {
+    public ResponseEntity<Resource> getFile(@ParameterObject DownloadFileReq request) {
         var stream = blobStorage.get(request.getKey());
         var contentType = new Tika().detect(request.getKey());
 
