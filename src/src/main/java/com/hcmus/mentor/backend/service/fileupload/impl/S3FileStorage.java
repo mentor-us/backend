@@ -22,7 +22,7 @@ import java.io.InputStream;
 @Service
 public class S3FileStorage implements BlobStorage {
 
-    private final Logger logger = LogManager.getLogger(this.getClass());
+    private final Logger logger = LogManager.getLogger(S3FileStorage.class);
     private final MinioClient minioClient;
     private final KeyGenerationStrategy keyGenerationStrategy;
     private final String bucket;
@@ -72,7 +72,7 @@ public class S3FileStorage implements BlobStorage {
     public void remove(String key) {
         minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
 
-        logger.log(Level.INFO, "File '{}' is removed successfully.", key);
+        logger.info("File '{}' is removed successfully.", key);
     }
 
 
@@ -83,28 +83,29 @@ public class S3FileStorage implements BlobStorage {
     @Override
     public void post(MultipartFile file, String key) {
         var tika = new Tika();
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(key)
-                        .contentType(tika.detect(file.getInputStream()))
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .build());
-       logger.log(Level.INFO, "[*] File {} is uploaded successfully", key);
+        minioClient.putObject(PutObjectArgs.builder()
+                .bucket(bucket)
+                .object(key)
+                .contentType(tika.detect(file.getInputStream()))
+                .stream(file.getInputStream(), file.getSize(), -1)
+                .build());
+
+        logger.info("File '{}' is uploaded successfully", key);
     }
 
     @SneakyThrows
     @Override
-    public void post(byte[] file, String key) {
-        var tika =new Tika();
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(key)
-                        .contentType(tika.detect(file))
-                        .stream(new ByteArrayInputStream(file), file.length, -1)
-                        .build());
-        logger.log(Level.INFO, "[*] File {} is uploaded successfully", key);
+    public void post(byte[] bytes, String key) {
+        var stream = new ByteArrayInputStream(bytes);
+
+        minioClient.putObject(PutObjectArgs.builder()
+                .bucket(bucket)
+                .object(key)
+                .contentType(new Tika().detect(bytes))
+                .stream(stream, stream.available(), -1)
+                .build());
+
+        logger.info("File '{}' is uploaded successfully", key);
     }
 
     /**
