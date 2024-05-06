@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -437,7 +438,10 @@ public class GroupServiceImpl implements GroupService {
             if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
             }
-            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n")).toList();
+            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n"))
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(String::isEmpty))
+                    .toList();
 
             // Group name
             if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
@@ -451,19 +455,22 @@ public class GroupServiceImpl implements GroupService {
             if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
             }
-            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n")).toList();
+            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(String::isEmpty))
+                    .toList();
 
             // Start date
-            if (row.getCell(6) == null || row.getCell(6).getStringCellValue().isEmpty()) {
+            if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
             }
-            timeStart = formatter.parse(row.getCell(6).getStringCellValue());
+            timeStart = row.getCell(6).getDateCellValue();
 
             // End date
-            if (row.getCell(7).getStringCellValue().isEmpty()) {
+            if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
             }
-            timeEnd = formatter.parse(row.getCell(7).getStringCellValue());
+            timeEnd = row.getCell(7).getDateCellValue();
 
             GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
             if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
@@ -482,6 +489,7 @@ public class GroupServiceImpl implements GroupService {
                     .build();
             groups.put(groupName, group);
         }
+
         return new GroupServiceDto(SUCCESS, "", groups);
     }
 
@@ -516,24 +524,25 @@ public class GroupServiceImpl implements GroupService {
             throw new DomainException(String.valueOf(e));
         }
         for (Group group : groups.values()) {
-            GroupServiceDto isValidMails = validateListMentorsMentees(group.getMentors(), group.getMentees());
+            var mentors = group.getMentors();
+            var mentees = group.getMentees();
+            GroupServiceDto isValidMails = validateListMentorsMentees(mentors, mentees);
             if (!Objects.equals(isValidMails.getReturnCode(), SUCCESS)) {
                 return isValidMails;
             }
         }
 
-        List<CreateGroupCommand> createGroupRequests =
-                groups.values().stream()
-                        .map(group -> CreateGroupCommand.builder()
-                                .name(group.getName())
-                                .createdDate(new Date())
-                                .menteeEmails(group.getMentees())
-                                .mentorEmails(group.getMentors())
-                                .groupCategory(group.getGroupCategory())
-                                .timeStart(group.getTimeStart())
-                                .timeEnd(group.getTimeEnd())
-                                .build())
-                        .toList();
+        List<CreateGroupCommand> createGroupRequests = groups.values().stream()
+                .map(group -> CreateGroupCommand.builder()
+                        .name(group.getName())
+                        .createdDate(new Date())
+                        .menteeEmails(group.getMentees())
+                        .mentorEmails(group.getMentors())
+                        .groupCategory(group.getGroupCategory())
+                        .timeStart(group.getTimeStart())
+                        .timeEnd(group.getTimeEnd())
+                        .build())
+                .toList();
         for (CreateGroupCommand createGroupRequest : createGroupRequests) {
             GroupServiceDto returnData = createGroup(emailUser, createGroupRequest);
             if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
