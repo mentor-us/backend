@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller.payload.response.votes;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 
@@ -37,6 +37,7 @@ public class VoteDetailResponse {
 
     private boolean canEdit;
 
+    @Builder.Default
     private Boolean isMultipleChoice = false;
 
     public static VoteDetailResponse from(
@@ -44,7 +45,7 @@ public class VoteDetailResponse {
         return VoteDetailResponse.builder()
                 .id(vote.getId())
                 .question(vote.getQuestion())
-                .groupId(vote.getGroupId())
+                .groupId(vote.getGroup().getId())
                 .creator(creator)
                 .choices(choices)
                 .timeEnd(vote.getTimeEnd())
@@ -68,7 +69,7 @@ public class VoteDetailResponse {
 
         private List<ShortProfile> voters;
 
-        public static ChoiceDetail from(ChoiceDto choice, List<ShortProfile> voters) {
+        public static ChoiceDetail from(Choice choice, List<ShortProfile> voters) {
             return ChoiceDetail.builder()
                     .id(choice.getId())
                     .name(choice.getName())

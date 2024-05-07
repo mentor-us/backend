@@ -1,70 +1,60 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-@Setter
+@Data
+@Entity
 @Builder
-@Document("faq")
+@Table(name = "faqs")
+@AllArgsConstructor
 public class Faq {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "question", nullable = false)
     private String question;
 
+    @Column(name = "answer")
     private String answer;
 
     @Builder.Default
-    private List<String> voters = new ArrayList<>();
-
-    @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
     @Builder.Default
+    @Column(name = "updated_date", nullable = false)
     private Date updatedDate = new Date();
 
-    private String creatorId;
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private User creator;
 
-    private String groupId;
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "messagesPinned", "channels", "faqs", "groupUsers"}, allowSetters = true)
+    private Group group;
 
     @Builder.Default
-    private List<String> topicIds = new ArrayList<>();
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "rel_faq_user_voter", joinColumns = @JoinColumn(name = "faq_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private List<User> voters = new ArrayList<>();
 
-    public void upvote(String userId) {
-        if (voters.contains(userId)) {
-            return;
-        }
-        voters.add(userId);
+    public Faq() {
     }
 
-    public void downVote(String userId) {
-        if (!voters.contains(userId)) {
-            return;
-        }
-        voters.remove(userId);
-    }
-
-    public void update(UpdateFaqRequest request) {
-        if (request.getQuestion() != null) {
-            setQuestion(request.getQuestion());
-            setUpdatedDate(new Date());
-        }
-
-        if (request.getAnswer() != null) {
-            setAnswer(request.getAnswer());
-            setUpdatedDate(new Date());
-        }
-    }
 
     public int getRating() {
         return voters.size();

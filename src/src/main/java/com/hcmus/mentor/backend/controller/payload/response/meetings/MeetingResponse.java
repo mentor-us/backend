@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Meeting;
+import com.hcmus.mentor.backend.domain.MeetingHistory;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
@@ -38,7 +39,7 @@ public class MeetingResponse implements Serializable {
     @Builder.Default
     private String type = "MEETING";
 
-    private List<Meeting.MeetingHistory> histories;
+    private List<MeetingHistory> histories;
 
     public static MeetingResponse from(Meeting meeting, User organizer, Group group) {
         return MeetingResponse.builder()

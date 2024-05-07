@@ -45,9 +45,8 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
         var userId = loggedUserAccessor.getCurrentUserId();
 
         var channel = channelRepository.findById(query.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-        var group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
 
-        GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, group);
+        GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, channel.getGroup());
         if (channelDetail == null) {
             throw new DomainException("Không tìm thấy kênh");
         }
@@ -63,14 +62,15 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
         String imageUrl = null;
 
         if (ChannelType.PRIVATE_MESSAGE.equals(channel.getType())) {
-            String penpalId = channel.getUserIds().stream()
+            String penpalId = channel.getUsers().stream()
+                    .map(User::getId)
                     .filter(id -> !id.equals(userId))
                     .findFirst()
                     .orElse(null);
             if (userId == null) {
                 return null;
             }
-            ShortProfile penpal = userRepository.findShortProfile(penpalId);
+            ShortProfile penpal = userRepository.findShortProfile(penpalId).map(ShortProfile::new).orElse(null);
             if (penpal == null) {
                 return null;
             }
@@ -82,17 +82,15 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
                 .id(channel.getId())
                 .name(channelName)
                 .description(channel.getDescription())
-                .pinnedMessageIds(channel.getPinnedMessageIds())
+                .pinnedMessageIds(channel.getMessagesPinned().stream().map(message -> message.getId()).toList())
                 .imageUrl(imageUrl)
                 .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
                 .parentId(parentGroup.getId())
-                .totalMember(channel.getUserIds().size())
+                .totalMember(channel.getUsers().size())
                 .type(channel.getType())
                 .build();
 
-        GroupCategory groupCategory = groupCategoryRepository
-                .findById(parentGroup.getGroupCategory())
-                .orElse(null);
+        GroupCategory groupCategory =channel.getGroup().getGroupCategory();
 
         if (groupCategory != null) {
             response.setPermissions(groupCategory.getPermissions());
@@ -107,14 +105,11 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .filter(message -> !message.isDeleted())
-                    .map(message -> {
-                        User user = userRepository.findById(message.getSenderId()).orElse(null);
-                        return MessageResponse.from(message, ProfileResponse.from(user));
-                    })
+                    .map(message -> MessageResponse.from(message, ProfileResponse.from(message.getSender())))
                     .toList();
         }
         response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
-        response.setTotalMember(channel.getUserIds().size());
+        response.setTotalMember(channel.getUsers().size());
         return response;
     }
 
@@ -143,10 +138,7 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .filter(message -> !message.isDeleted())
-                    .map(message -> {
-                        User user = userRepository.findById(message.getSenderId()).orElse(null);
-                        return MessageResponse.from(message, ProfileResponse.from(user));
-                    })
+                    .map(message -> MessageResponse.from(message, ProfileResponse.from(message.getSender())))
                     .toList();
         }
         return messageService.fulfillMessages(messageResponses, userId);

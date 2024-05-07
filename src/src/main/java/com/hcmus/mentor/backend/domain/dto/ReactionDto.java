@@ -27,17 +27,17 @@ public class ReactionDto implements Serializable {
 
     private Integer total;
 
-    public void react(EmojiType type) {
+    public void react(EmojiType type, Integer totalEmoji) {
         Optional<EmojiDto> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
-        if (!emojiWrapper.isPresent()) {
-            EmojiDto newEmoji = EmojiDto.builder().id(type).total(1).build();
+        if (emojiWrapper.isEmpty()) {
+            EmojiDto newEmoji = EmojiDto.builder().id(type).total(totalEmoji).build();
             data.add(newEmoji);
-            total = total + 1;
+            total = total + totalEmoji;
             return;
         }
         EmojiDto emoji = emojiWrapper.get();
         emoji.react();
-        total = total + 1;
+        total = total + totalEmoji;
     }
 
     public void update(User reactor) {

@@ -2,6 +2,9 @@ package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -62,9 +65,35 @@ public class GroupDetailResponse {
 
     private String parentId;
 
+    @Builder.Default
     private ChannelType type = ChannelType.PUBLIC;
 
     private String defaultChannelId;
+
+    public GroupDetailResponse(Group group)
+    {
+        this.id = group.getId();
+        this.name = group.getName();
+        this.description = group.getDescription();
+        this.createdDate = group.getCreatedDate();
+        this.updatedDate = group.getUpdatedDate();
+        this.mentors = group.getMentors().stream().map(User::getId).toList();
+        this.mentees = group.getMentees().stream().map(User::getId).toList();
+        this.groupCategory = group.getGroupCategory().getId();
+        this.timeStart = group.getTimeStart();
+        this.timeEnd = group.getTimeEnd();
+        this.duration = group.getDuration();
+        this.imageUrl = group.getImageUrl();
+        this.permissions = group.getGroupCategory().getPermissions();
+        this.pinnedMessageIds = group.getMessagesPinned().stream().map(Message::getId).toList();
+        this.defaultChannelId = group.getDefaultChannel().getId();
+    }
+
+    public GroupDetailResponse(Group group, List<GroupChannel> channels, List<GroupChannel> privates) {
+        this(group);
+        this.channels = channels;
+        this.privates = privates;
+    }
 
     public Integer getTotalMember() {
         if (mentees == null || mentors == null) {
@@ -150,15 +179,15 @@ public class GroupDetailResponse {
                     .description(channel.getDescription())
                     .createdDate(channel.getCreatedDate())
                     .updatedDate(channel.getUpdatedDate())
-                    .userIds(channel.getUserIds())
+                    .userIds(channel.getUsers().stream().map(User::getId).toList())
                     .status(channel.getStatus())
                     .type(channel.getType())
-                    .creatorId(channel.getCreatorId())
+                    .creatorId(channel.getCreator().getId())
                     .hasNewMessage(channel.getHasNewMessage())
                     .imageUrl(channel.getImageUrl())
-                    .pinnedMessageIds(channel.getPinnedMessageIds())
-                    .parentId(channel.getParentId())
-                    .newMessageId(channel.getLastMessageId())
+                    .pinnedMessageIds(channel.getMessagesPinned().stream().map(m->m.getId()).toList())
+                    .parentId(channel.getGroup().getId())
+                    .newMessageId(channel.getLastMessage() == null ? null : channel.getLastMessage().getId())
                     .build();
         }
 

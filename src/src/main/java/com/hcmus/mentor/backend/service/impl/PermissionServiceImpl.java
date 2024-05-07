@@ -1,44 +1,40 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.GroupUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.hcmus.mentor.backend.domain.constant.UserRole.ADMIN;
 import static com.hcmus.mentor.backend.domain.constant.UserRole.SUPER_ADMIN;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
 
     private final GroupRepository groupRepository;
+    private final GroupUserRepository groupUserRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
 
     @Override
     public boolean isAdmin(String email) {
-        return isSuperAdmin(email) || userRepository.existsByEmailAndRolesIn(email, ADMIN);
+        return isSuperAdmin(email) || userRepository.existsByEmailAndRolesContains(email, ADMIN);
     }
 
     @Override
     public boolean isSuperAdmin(String email) {
-        return userRepository.existsByEmailAndRolesIn(email, SUPER_ADMIN);
+        return userRepository.existsByEmailAndRolesContains(email, SUPER_ADMIN);
     }
 
     @Override
     public boolean isGroupCreator(String email, String groupId) {
-        Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (!userWrapper.isPresent()) {
-            return false;
-        }
-        String userId = userWrapper.get().getId();
-        return groupRepository.existsByIdAndCreatorId(groupId, userId);
+        return groupRepository.existsByCreatorEmailAndId(email, groupId);
     }
 
     @Override
@@ -48,31 +44,26 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public boolean isInGroup(String email, String groupId) {
-        Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (userWrapper.isEmpty()) {
-            return false;
-        }
-        String userId = userWrapper.get().getId();
-        return isUserIdInGroup(userId, groupId);
+        return groupUserRepository.existsMemberByEmailAndGroupId(email, groupId);
     }
 
     @Override
     public boolean isMentor(String email, String groupId) {
-        Optional<User> userWrapper = userRepository.findByEmail(email);
-        if (userWrapper.isEmpty()) {
-            return false;
-        }
-        String userId = userWrapper.get().getId();
-        return groupRepository.existsByIdAndMentorsIn(groupId, userId);
+        return groupUserRepository.existsMentorByEmailAndGroupId(email, groupId, true);
     }
 
     @Override
     public boolean isUserIdInGroup(String userId, String groupId) {
-        return true;
-//        return groupRepository.existsByIdAndMentorsIn(groupId, userId) || groupRepository.existsByIdAndMenteesIn(groupId, userId);
+        return groupUserRepository.existsByUserIdAndGroupId(userId, groupId);
     }
 
+    /**
+     * @param channelId
+     * @param userId
+     * @return
+     */
+    @Override
     public boolean isUserInChannel(String channelId, String userId) {
-        return channelRepository.existsByIdAndUserIdsContains(channelId, userId);
+        return channelRepository.existsByIdAndUserId(userId, channelId);
     }
 }

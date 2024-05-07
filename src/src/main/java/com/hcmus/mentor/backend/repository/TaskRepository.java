@@ -3,55 +3,28 @@ package com.hcmus.mentor.backend.repository;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
 
-public interface TaskRepository extends MongoRepository<Task, String> {
+@Repository
+public interface TaskRepository extends JpaRepository<Task, String> {
+
+    Task findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
+
+    Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
+
     List<Task> findByGroupId(String groupId);
 
-    List<Task> findByAssigneeIdsUserId(String userId);
-
-    Boolean existsByIdAndAssigneeIdsUserId(String taskId, String userId);
-
-    List<Task> findAllByParentTask(String parentTask);
-
-    Page<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThan(
-            List<String> groupIds, List<String> id, Date now, PageRequest pageRequest);
-
-    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
-
-    @Aggregation(pipeline = {
-            "{$match: {$and: [{groupId: {$in: ?0}}, {$or: [{assignerId: ?1}, {assigneeIds: {$elemMatch: {userId: ?1}}} ]}]}}",
-            "{$sort: {createdDate: -1}}"
-    })
-    List<Task> findAllOwnTasks(List<String> groupId, String userId);
-
-    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdInAndDeadlineGreaterThanAndDeadlineLessThan(
-            List<String> groupIds, List<String> id, Date start, Date end);
-
-    long countByCreatedDateBetween(Date start, Date end);
+    List<Task> findAllByParentTaskId(String parentTask);
 
     List<Task> findByCreatedDateBetween(Date start, Date end);
 
     List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
-
-    Task findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
-
-    List<Task> findByGroupIdAndAssignerId(String groupId, String assignerId);
-
-    long countByGroupIdAndAssigneeIdsUserIdIn(String groupId, String assigneeId);
-
-    Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
-
-    Task findFirstByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, String assigneeId);
-
-    List<Task> findAllByGroupIdAndAssigneeIdsUserIdInOrderByCreatedDateDesc(
-            String groupId, List<String> userIds);
 
     List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 
@@ -61,8 +34,49 @@ public interface TaskRepository extends MongoRepository<Task, String> {
 
     List<Task> findAllByGroupId(String groupId);
 
-    long countByGroupIdAndAssigneeIdsStatusIn(String groupId, TaskStatus status);
+    @Query("SELECT t FROM Task t " +
+            "JOIN t.assignees assignees " +
+            "WHERE assignees.id = :userId " +
+            "AND t.deadline > :currentDate " +
+            "ORDER BY t.deadline DESC")
+    List<Task> findByAssigneeIdsUserId(String userId);
 
-    long countByGroupIdAndAssigneeIdsUserIdInAndAssigneeIdsStatusIn(
-            String groupId, String assigneeId, TaskStatus status);
+    @Query("SELECT t FROM Task t " +
+            "JOIN t.assignees assignees " +
+            "WHERE assignees.id = ?2 " +
+            "AND t.id=?1 ")
+    Boolean existsByIdAndAssigneeIdsUserId(String taskId, String userId);
+
+    @Query("SELECT t FROM Task t " +
+            "INNER JOIN t.assignees assignees " +
+            "WHERE t.group.id IN ?1 " +
+            "AND assignees.id IN ?2 ")
+    List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
+
+    @Query("select count(t) from Task t join t.group channel where channel.id in :groupId and t.assigner.id = :userId")
+    long countAllOwnTaskOfGroup(List<String> groupId, String userId);
+
+    @Query("SELECT count(t) " +
+            "FROM Task t " +
+            "INNER JOIN t.assignees assignees " +
+            "WHERE t.group.id IN ?1 AND assignees.id = ?2 AND assignees.status = ?3")
+    long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
+
+    @Query("SELECT t, assignees " +
+            "FROM Task t " +
+            "INNER JOIN t.assignees assignees " +
+            "WHERE t.group.id = ?1 " +
+            "AND assignees.id = ?2 " +
+            "AND (t.deadline BETWEEN ?3 AND ?4) " )
+    List<Task> findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(List<String> groupIds, String userId, Date startTime, Date endTime);
+
+    @Query("SELECT t FROM Task t " +
+            "INNER JOIN t.assignees a " +
+            "INNER JOIN a.user u " +
+            "INNER JOIN t.assigner assigner " +
+            "WHERE t.group.id IN :groupIds " +
+            "AND t.deadline > :currentDate " +
+            "AND (u.id = :userId OR assigner.id = :userId) " +
+            "ORDER BY t.deadline DESC")
+    Page<Task> findTasksByCriteria(String userId, List<String> groupIds, Date currentDate, Pageable pageable);
 }

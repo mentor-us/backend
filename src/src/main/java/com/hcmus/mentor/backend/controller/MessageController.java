@@ -77,7 +77,8 @@ public class MessageController {
         if (!groupService.isGroupMember(groupId, userId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(messageService.getGroupMessages(userId, groupId, page, size));
+        var response = messageService.getGroupMessages(userId, groupId, page, size);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -99,26 +100,23 @@ public class MessageController {
         }
         Message message = messageWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(message.getChannel().getGroup().getId());
         if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
+            Optional<Channel> channelWrapper = channelRepository.findById(message.getChannel().getId());
             if (channelWrapper.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
 
             Channel channel = channelWrapper.get();
-            channel.unpinMessage(messageId);
-            channelRepository.save(channel);
-        } else {
-            Group group = groupWrapper.get();
-            if (!group.isMember(customerUserDetails.getId())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            if (channel.getMessagesPinned().contains(message)) {
+                channel.getMessagesPinned().remove(message);
+                channel.ping();
+
+                channelRepository.save(channel);
             }
-            group.unpinMessage(message.getId());
-            groupRepository.save(group);
         }
 
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (message.isDeleted()) {
@@ -132,7 +130,7 @@ public class MessageController {
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -150,14 +148,14 @@ public class MessageController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody EditMessageRequest request) {
         Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
-        if (!messageWrapper.isPresent()) {
+        if (messageWrapper.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), customerUserDetails.getId())) {
+        if (!groupService.isGroupMember(message.getChannel().getGroup().getId(), customerUserDetails.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
+        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -170,7 +168,7 @@ public class MessageController {
                         .newContent(message.getContent())
                         .action(UpdateMessageResponse.Action.update)
                         .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -200,7 +198,7 @@ public class MessageController {
                 .file(file)
                 .build();
         Message message = messageService.saveFileMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
+        User sender = message.getSender();
 
         MessageDetailResponse response = MessageDetailResponse.from(message, sender);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
@@ -259,8 +257,7 @@ public class MessageController {
                 .files(files)
                 .build();
         Message message = messageService.saveImageMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-
+        User sender = message.getSender();
         MessageDetailResponse response = MessageDetailResponse.from(message, sender);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
         notificationService.sendNewMediaMessageNotification(response);

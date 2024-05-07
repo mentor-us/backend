@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.meeting.common;
 
 import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Meeting;
+import com.hcmus.mentor.backend.domain.MeetingHistory;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
@@ -37,5 +37,5 @@ public class MeetingResult {
     @Builder.Default
     private String type = "MEETING";
 
-    private List<Meeting.MeetingHistory> histories;
+    private List<MeetingHistory> histories;
 }

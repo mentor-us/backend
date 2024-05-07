@@ -1,24 +1,24 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SystemConfigReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.NOT_FOUND;
-
 import com.hcmus.mentor.backend.domain.SystemConfig;
 import com.hcmus.mentor.backend.repository.SystemConfigRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import com.hcmus.mentor.backend.service.SystemConfigService;
+import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SystemConfigReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     public SystemConfigServiceDto updateValue(String emailUser, String id, Object value) {
         Optional<SystemConfig> configOptional = systemConfigRepository.findById(id);
-        if (!configOptional.isPresent()) {
+        if (configOptional.isEmpty()) {
             return new SystemConfigServiceDto(NOT_FOUND, "Not found system config", null);
         }
         SystemConfig config = configOptional.get();
@@ -50,10 +50,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             return new SystemConfigServiceDto(INVALID_TYPE, "Invalid type", value);
         }
         SystemConfigServiceDto isValidValue = isValidValue(config.getKey(), value);
-        if (isValidValue.getReturnCode() != SUCCESS) {
+        if (!Objects.equals(isValidValue.getReturnCode(), SUCCESS)) {
             return isValidValue;
         }
-        config.setValue(value);
+        config.setValue((String) value);
         systemConfigRepository.save(config);
 
         return new SystemConfigServiceDto(SUCCESS, "", config);
@@ -93,18 +93,17 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public void add() {
-        ArrayList domains = new ArrayList<String>();
+        ArrayList<String> domains = new ArrayList<String>();
         domains.add("fit.hcmus.edu.vn");
         domains.add("student.hcmus.edu.vn");
         domains.add("fit.gmail.com.vn");
 
-        SystemConfig validDomains =
-                SystemConfig.builder()
+        SystemConfig validDomains = SystemConfig.builder()
                         .name("Domain hợp lệ")
                         .description("Các domain cho phép đăng nhập trên hệ thống")
                         .type(String.valueOf(domains.getClass()).split(" ")[1])
                         .key("valid_domain")
-                        .value(domains)
+                        .value(String.valueOf(domains))
                         .build();
         systemConfigRepository.save(validDomains);
 
@@ -115,7 +114,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                         .description("Thời gian học tối đa của sinh viên")
                         .type(String.valueOf(maxYear.getClass()).split(" ")[1])
                         .key("valid_max_year")
-                        .value(maxYear)
+                        .value(String.valueOf(maxYear))
                         .build();
         systemConfigRepository.save(validMaxYear);
     }

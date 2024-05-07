@@ -3,42 +3,50 @@ package com.hcmus.mentor.backend.repository;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
-import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface ChannelRepository extends MongoRepository<Channel, String> {
+@Repository
+public interface ChannelRepository extends CrudRepository<Channel, String> {
+
+    boolean existsByGroupIdAndName(String parentId, String name);
+
+    Optional<Channel> findByGroupIdAndName(String groupId, String name);
 
     List<Channel> findByIdIn(List<String> channelIds);
 
+    List<Channel> findByGroupId(String parentId);
+
     List<Channel> findByIdInAndStatusEquals(List<String> channelIds, ChannelStatus status);
 
-    List<Channel> findByParentIdAndTypeAndUserIdsIn(
-            String parentId, ChannelType type, List<String> userIds);
+    @Query("SELECT c " +
+            "from Channel c " +
+            "inner join fetch c.users u " +
+            "where c.group.id =?1 " +
+            "and u.id = ?2")
+    Boolean existsByIdAndUserId(String channelId, String userId);
 
-    List<Channel> findByParentId(String parentId);
-
-    Channel findTopByParentIdAndName(String parentId, String name);
-
-    boolean existsByParentIdAndName(String parentId, String name);
-
-    boolean existsByIdAndUserIdsContains(String id, String userId);
-
-    @Aggregation(pipeline = {
-            "{ $match: { 'id': { $in: ?0 }, 'status': ?2, 'userIds':?1 } }",
-            "{ $addFields: { groupObjectId: { $toObjectId: '$parentId' } } }",
-            "{ $lookup: { from: 'group', localField: 'groupObjectId', foreignField: '_id' ,as: 'groups' } }",
-            "{ $unwind: '$groups' }",
-            "{ $set: { parentId: { _id: '$groups._id', name: '$groups.name', imageUrl: '$groups.imageUrl' } } }",
-            "{ $project: { id: 1, name: 1, group: '$parentId' } }",
-            "{ $unset: 'groups' }",
-            "{ $unset: 'groupObjectId' }",
-            "{ $sort: { 'group.name': 1, 'name': 1 } }"
-
-    })
+    @Query("SELECT c " +
+            "from Channel c " +
+            "inner join fetch c.users u " +
+            "where c.group.id in ?1 " +
+            "and u.id = ?2 " +
+            "and c.status = ?3" +
+            "order by c.group.name, c.name")
     List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, String userId, ChannelStatus status);
 
-    List<Channel> findAllByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
+//    List<Channel> findAllByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
+
+    @Query("select c,u,t " +
+            "from Channel c " +
+            "inner join fetch c.users u " +
+            "inner join fetch c.tasks t " +
+            "inner join fetch t.assignees " +
+            "inner join fetch t.assigner " +
+            "where u.id = ?1 and c.group.status = 'ACTIVE' and c.status = 'ACTIVE'")
+    List<Channel> findOwnChannelsByUserId(String userId);
 }

@@ -14,15 +14,15 @@ public interface FaqService {
 
     FAQDetail getById(String userId, String faqId);
 
-    Faq addNewFaq(String userId, CreateFaqRequest request);
+    Faq createFaq(String userId, CreateFaqRequest request);
 
     Faq updateFAQ(String userId, String faqId, UpdateFaqRequest request);
 
-    boolean deleteFaq(String userId, String faqId);
+    void deleteFaq(String userId, String faqId);
 
-    void importFAQs(CustomerUserDetails user, String toGroupId, ImportFAQsRequest request);
+    void importFaqs(String creatorId, String destGroupId, ImportFAQsRequest request);
 
-    boolean upvote(CustomerUserDetails user, String faqId);
+    void upvote(CustomerUserDetails user, String faqId);
 
     boolean downVote(CustomerUserDetails user, String faqId);
 }

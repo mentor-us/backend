@@ -4,11 +4,12 @@ import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResp
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.MeetingService;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;
+import com.hcmus.mentor.backend.service.dto.EventDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
+
+/**
+ * EventServiceImpl
+ */
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 
     private final MeetingService meetingService;
     private final TaskServiceImpl taskService;
-    private final MeetingRepository meetingRepository;
-    private final TaskRepository taskRepository;
 
     @Override
     public List<EventDto> getMostRecentEvents(String userId) {

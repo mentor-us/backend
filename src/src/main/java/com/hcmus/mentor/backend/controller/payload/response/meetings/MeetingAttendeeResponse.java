@@ -43,7 +43,6 @@ public class MeetingAttendeeResponse {
                 .email(user.getEmail())
                 .gender(user.getGender())
                 .birthDate(user.getBirthDate())
-                .personalEmail(user.getPersonalEmail())
                 .phone(user.getPhone())
                 .imageUrl(
                         user.getImageUrl().equals("https://graph.microsoft.com/v1.0/me/photo/$value")

@@ -44,7 +44,7 @@ public class TaskDetailResult {
                 .description(task.getDescription())
                 .deadline(task.getDeadline())
                 .createdDate(task.getCreatedDate())
-                .totalAssignees(task.getAssigneeIds().size())
+                .totalAssignees(task.getAssignees().size())
                 .build();
     }
 

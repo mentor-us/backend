@@ -1,172 +1,179 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
-import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import net.minidev.json.annotate.JsonIgnore;
+import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Stream;
 
-@Getter
 @Setter
+@Getter
+@Entity
 @Builder
+@Table(name = "groups")
 @AllArgsConstructor
-@ToString
-@Document("group")
 public class Group implements Serializable {
-
-    /**
-     * Maximum number of pinned messages in a group
-     */
-    public static final int MAX_PINNED_MESSAGES = 5;
 
     /**
      * Map of group status
      */
+    @Getter
     private static Map<GroupStatus, String> statusMap;
 
     /**
      * Group identifier
      */
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     /**
      * Group name
      */
+    @Column(name = "name", nullable = false)
     private String name;
 
     /**
      * Group description
      */
+    @Column(name = "description")
     private String description;
-
-    /**
-     * List of mentors
-     */
-    @Builder.Default
-    private List<String> mentors = new ArrayList<>();
-
-    /**
-     * List of mentees
-     */
-    @Builder.Default
-    private List<String> mentees = new ArrayList<>();
-
-    /**
-     * Group category identifier
-     */
-    private String groupCategory;
-
-    /**
-     * Creator identifier
-     */
-    private String creatorId;
 
     /**
      * Status of the group
      */
+    @Builder.Default
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private GroupStatus status = GroupStatus.ACTIVE;
 
     /**
      * Avatar image URL
      */
+    @Column(name = "image_url")
     private String imageUrl;
-
-    /**
-     * Parent group identifier
-     */
-    @Builder.Default
-    private String parentId = null;
 
     /**
      * Flag to indicate if the group has new message
      */
+    @Column(name = "has_new_message")
     private Boolean hasNewMessage;
-
-    /**
-     * Last message
-     */
-    @Builder.Default
-    private String lastMessage = null;
-
-    /**
-     * Last message identifier
-     */
-    @Builder.Default
-    private String lastMessageId = null;
-
-    /**
-     * List of pinned message identifiers
-     */
-    @Builder.Default
-    private List<String> pinnedMessageIds = new ArrayList<>();
-
-    /**
-     * Default channel identifier
-     */
-    private String defaultChannelId;
-
-    /**
-     * List of channel identifiers
-     */
-    @Builder.Default
-    private List<String> channelIds = new ArrayList<>();
-
-    /**
-     * List of private channel identifiers
-     */
-    @Builder.Default
-    private List<String> privateIds = new ArrayList<>();
-
-    /**
-     * List of FAQ identifiers
-     */
-    @Builder.Default
-    private List<String> faqIds = new ArrayList<>();
-
-    /**
-     * List of marked mentee identifiers
-     */
-    @Builder.Default
-    private List<String> markedMenteeIds = new ArrayList<>();
 
     /**
      * Time start of the group
      */
+    @Column(name = "time_start")
     private Date timeStart;
 
     /**
      * Time end of the group
      */
+    @Column(name = "time_end")
     private Date timeEnd;
 
     /**
      * Duration of the group
      */
+    @Column(name = "duration")
     private Duration duration;
 
     /**
      * Created date
      */
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
+
     /**
      * Updated date
      */
     @Builder.Default
+    @Column(name = "updated_date", nullable = false)
     private Date updatedDate = new Date();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_message_id", referencedColumnName = "id")
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    private Message lastMessage = null;
+
+    /**
+     * Default channel identifier
+     */
+    @BatchSize(size = 10)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "default_channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    private Channel defaultChannel;
+
+    /**
+     * Group category identifier
+     */
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_category_id")
+    @JsonIgnoreProperties(value = {"groups"}, allowSetters = true)
+    private GroupCategory groupCategory;
+
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private User creator;
+
+    /**
+     * List of pinned message identifiers
+     */
+    @Builder.Default
+    @BatchSize(size = 10)
+    @JsonIgnore
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_pinned_id")
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    private List<Message> messagesPinned = new ArrayList<>();
+
+    /**
+     * List of channel identifiers
+     */
+    @Builder.Default
+    @JsonIgnore
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    private List<Channel> channels = new ArrayList<>();
+
+    /**
+     * List of FAQ identifiers
+     */
+    @Builder.Default
+    @JsonIgnore
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
+    private List<Faq> faqs = new ArrayList<>();
+
+    @JsonIgnore
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
+    private List<GroupUser> groupUsers = new ArrayList<>();
 
     public Group() {
         statusMap = new EnumMap<>(GroupStatus.class);
         initializeStatusMap();
-    }
-
-    public static Map<GroupStatus, String> getStatusMap() {
-        return statusMap;
     }
 
     private void initializeStatusMap() {
@@ -178,24 +185,29 @@ public class Group implements Serializable {
     }
 
     public boolean isMentor(String userId) {
-        return mentors.contains(userId);
+        return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId) && member.isMentor());
     }
 
-    public boolean isMentee(String userId) {
-        return mentees.contains(userId);
-    }
-
-    public void addMentee(String menteeId) {
-        mentees.add(menteeId);
-    }
-
-    public void addMentor(String mentorId) {
-        mentors.add(mentorId);
+    public boolean isMentor(User user) {
+        return groupUsers.stream().anyMatch(mentor -> mentor.getId().equals(user.getId()));
     }
 
     public boolean isMember(String userId) {
-        return isMentee(userId) || isMentor(userId);
+        return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId));
     }
+
+    public List<User> getMentors() {
+        return groupUsers.stream().filter(GroupUser::isMentor).map(GroupUser::getUser).toList();
+    }
+
+    public List<User> getMentees() {
+        return groupUsers.stream().filter(member -> !member.isMentor()).map(GroupUser::getUser).toList();
+    }
+
+    public List<User> getMembers() {
+        return groupUsers.stream().map(GroupUser::getUser).toList();
+    }
+
 
     public void update(
             String name,
@@ -203,7 +215,7 @@ public class Group implements Serializable {
             GroupStatus status,
             Date timeStart,
             Date timeEnd,
-            String groupCategory) {
+            GroupCategory groupCategory) {
         if (name != null) {
             this.setName(name);
         }
@@ -228,158 +240,23 @@ public class Group implements Serializable {
         }
     }
 
-    public Integer getTotalMember() {
-        return getMentees().size() + getMentors().size();
-    }
-
     public void ping() {
         setUpdatedDate(new Date());
     }
 
-    public void normalize() {
-        if (pinnedMessageIds == null) {
-            setPinnedMessageIds(new ArrayList<>());
-        }
-
-        if (faqIds == null) {
-            setFaqIds(new ArrayList<>());
-        }
-
-        if (channelIds == null) {
-            setChannelIds(new ArrayList<>());
-        }
-
-        if (privateIds == null) {
-            setPrivateIds(new ArrayList<>());
-        }
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "name = " + name + ", " +
+                "description = " + description + ", " +
+                "status = " + status + ", " +
+                "imageUrl = " + imageUrl + ", " +
+                "hasNewMessage = " + hasNewMessage + ", " +
+                "timeStart = " + timeStart + ", " +
+                "timeEnd = " + timeEnd + ", " +
+                "duration = " + duration + ", " +
+                "createdDate = " + createdDate + ", " +
+                "updatedDate = " + updatedDate + ")";
     }
-
-    public void pinMessage(String messageId) {
-        normalize();
-
-        if (isMaximumPinnedMessages()) {
-            return;
-        }
-        if (pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.add(messageId);
-    }
-
-    public void unpinMessage(String messageId) {
-        normalize();
-
-        if (!pinnedMessageIds.contains(messageId)) {
-            return;
-        }
-        pinnedMessageIds.remove(messageId);
-    }
-
-    public boolean isMaximumPinnedMessages() {
-        normalize();
-
-        return pinnedMessageIds.size() >= MAX_PINNED_MESSAGES;
-    }
-
-    public void addChannel(String channelId) {
-        normalize();
-
-        if (channelIds.contains(channelId)) {
-            return;
-        }
-        channelIds.add(channelId);
-        setChannelIds(channelIds);
-    }
-
-    public void addPrivate(String channelId) {
-        normalize();
-
-        if (privateIds.contains(channelId)) {
-            return;
-        }
-        privateIds.add(channelId);
-        setPrivateIds(privateIds);
-    }
-
-    public void removeChannel(String channelId) {
-        normalize();
-
-        channelIds.remove(channelId);
-        privateIds.remove(channelId);
-    }
-
-    public void addFaq(String faqId) {
-        normalize();
-
-        if (faqIds.contains(faqId)) {
-            return;
-        }
-        faqIds.add(faqId);
-    }
-
-    public void importFaq(List<String> faqIds) {
-        normalize();
-
-        faqIds.forEach(this::addFaq);
-    }
-
-    public void deleteFaq(String faqId) {
-        normalize();
-
-        if (!faqIds.contains(faqId)) {
-            return;
-        }
-        faqIds.remove(faqId);
-    }
-
-    public boolean isStopWorking() {
-        return Arrays.asList(GroupStatus.DISABLED, GroupStatus.INACTIVE, GroupStatus.DELETED).contains(status);
-    }
-
-    public List<String> getMembers() {
-        return Stream.concat(mentees.stream(), mentors.stream())
-                .distinct()
-                .toList();
-    }
-
-    public void markMentee(String menteeId) {
-        normalize();
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
-
-        if (!mentees.contains(menteeId)) {
-            return;
-        }
-
-        if (markedMenteeIds.contains(menteeId)) {
-            return;
-        }
-
-        markedMenteeIds.add(menteeId);
-    }
-
-    public void unmarkMentee(String menteeId) {
-        normalize();
-
-        if (markedMenteeIds == null) {
-            markedMenteeIds = new ArrayList<>();
-        }
-
-        if (!mentees.contains(menteeId)) {
-            return;
-        }
-
-        if (!markedMenteeIds.contains(menteeId)) {
-            return;
-        }
-
-        markedMenteeIds.remove(menteeId);
-    }
-
 }

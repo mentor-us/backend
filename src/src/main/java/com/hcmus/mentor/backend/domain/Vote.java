@@ -1,12 +1,9 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
-import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,79 +12,65 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-@AllArgsConstructor
+@Entity
+@Table(name = "votes")
 @NoArgsConstructor
-@Document("voting")
+@AllArgsConstructor
 public class Vote {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
+    @Column(name = "question")
     private String question;
 
-    @Builder.Default
-    private List<ChoiceDto> choices = new ArrayList<>();
-
-    private String groupId;
-
-    private String creatorId;
-
+    @Column(name = "time_end")
     private Date timeEnd;
 
-    @Builder.Default
-    private Date createdDate = new Date();
-
+    @Column(name = "closed_date")
     private Date closedDate;
 
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
+    private Date createdDate = new Date();
+
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Builder.Default
+    @Column(name = "deleted_date")
+    private Date deletedDate = null;
+
+    @Builder.Default
+    @Column(name = "is_multiple_choice", nullable = false)
     private Boolean isMultipleChoice = false;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private Status status = Status.OPEN;
 
-    public static Vote from(CreateVoteRequest request) {
-        return Vote.builder()
-                .question(request.getQuestion())
-                .groupId(request.getGroupId())
-                .creatorId(request.getCreatorId())
-                .timeEnd(request.getTimeEnd())
-                .choices(request.getChoices())
-                .isMultipleChoice(request.getIsMultipleChoice())
-                .build();
-    }
+    @ManyToOne
+    @JoinColumn(name = "creator_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private User creator;
 
-    public ChoiceDto getChoice(String id) {
+    @ManyToOne
+    @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    private Channel group;
+
+    @JsonIgnore
+    @Builder.Default
+    @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
+    private List<Choice> choices = new ArrayList<>();
+
+    public Choice getChoice(String id) {
         return choices.stream().filter(choice -> choice.getId().equals(id)).findFirst().orElse(null);
-    }
-
-    public void update(UpdateVoteRequest request) {
-        this.question = request.getQuestion();
-        this.timeEnd = request.getTimeEnd();
-
-        for (ChoiceDto newChoice : request.getChoices()) {
-            ChoiceDto oldChoice = getChoice(newChoice.getId());
-            if (oldChoice == null) {
-                choices.add(newChoice);
-            } else {
-                oldChoice.update(newChoice);
-            }
-        }
-    }
-
-    public void doVoting(DoVotingRequest request) {
-        String voterId = request.getVoterId();
-        choices.forEach(choice -> choice.removeVoting(voterId));
-        request.getChoices().forEach(choice -> {
-            ChoiceDto oldChoice = getChoice(choice.getId());
-            if (oldChoice == null) {
-                choices.add(choice);
-                return;
-            }
-            if (choice.getVoters().contains(voterId)) {
-                oldChoice.doVoting(voterId);
-            }
-        });
-        sortChoicesDesc();
     }
 
     public void close() {
@@ -101,7 +84,7 @@ public class Vote {
     }
 
     public void sortChoicesDesc() {
-        List<ChoiceDto> newChoices = choices.stream()
+        List<Choice> newChoices = choices.stream()
                 .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
                 .toList();
         setChoices(newChoices);
@@ -112,4 +95,17 @@ public class Vote {
         CLOSED
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" +
+                "id = " + id + ", " +
+                "question = " + question + ", " +
+                "timeEnd = " + timeEnd + ", " +
+                "closedDate = " + closedDate + ", " +
+                "createdDate = " + createdDate + ", " +
+                "isDeleted = " + isDeleted + ", " +
+                "deletedDate = " + deletedDate + ", " +
+                "isMultipleChoice = " + isMultipleChoice + ", " +
+                "status = " + status + ")";
+    }
 }

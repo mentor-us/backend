@@ -56,7 +56,6 @@ public class ProfileResponse implements Serializable {
                 .additionalEmails(user.getAdditionalEmails())
                 .gender(user.getGender())
                 .birthDate(user.getBirthDate())
-                .personalEmail(user.getPersonalEmail())
                 .phone(user.getPhone())
                 .imageUrl(user.getImageUrl().equals("https://graph.microsoft.com/v1.0/me/photo/$value")
                         ? null

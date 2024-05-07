@@ -1,14 +1,13 @@
 package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
-import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-
-import java.util.Date;
-
+import com.hcmus.mentor.backend.domain.MeetingHistory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.Date;
 
 @Getter
 @AllArgsConstructor
@@ -28,7 +27,7 @@ public class MeetingHistoryDetail {
 
     private Date modifyDate;
 
-    public static MeetingHistoryDetail from(Meeting.MeetingHistory history, ShortProfile modifier) {
+    public static MeetingHistoryDetail from(MeetingHistory history, ShortProfile modifier) {
         return MeetingHistoryDetail.builder()
                 .id(history.getId())
                 .timeStart(history.getTimeStart())

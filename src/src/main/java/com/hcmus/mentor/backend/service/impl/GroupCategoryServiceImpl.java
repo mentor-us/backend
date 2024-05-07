@@ -22,9 +22,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +42,6 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     private final GroupCategoryRepository groupCategoryRepository;
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
-    private final MongoTemplate mongoTemplate;
     private final BlobStorage blobStorage;
 
     @Override
@@ -55,11 +51,11 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     @Override
     public GroupCategoryServiceDto findById(String id) {
-        Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-        if (!groupCategoryOptional.isPresent()) {
+        var groupCategory = groupCategoryRepository.findById(id);
+        if (groupCategory.isEmpty()) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
-        return new GroupCategoryServiceDto(SUCCESS, "", groupCategoryOptional.get());
+        return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     @Override
@@ -124,20 +120,16 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     }
 
     @Override
-    public GroupCategoryServiceDto update(
-            String emailUser, String id, UpdateGroupCategoryRequest request) {
+    public GroupCategoryServiceDto update(String emailUser, String id, UpdateGroupCategoryRequest request) {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-        if (groupCategoryOptional.isEmpty()) {
+        var groupCategory = groupCategoryRepository.findById(id).orElse(null);
+        if (groupCategory == null) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
-        GroupCategory groupCategory = groupCategoryOptional.get();
-
-        if (groupCategoryRepository.existsByName(request.getName())
-                && !request.getName().equals(groupCategory.getName())) {
+        if (groupCategoryRepository.existsByName(request.getName()) && !request.getName().equals(groupCategory.getName())) {
             return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
@@ -170,21 +162,19 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-        if (!groupCategoryOptional.isPresent()) {
+        var groupCategory = groupCategoryRepository.findById(id).orElse(null);
+        if (groupCategory == null) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
         }
 
-        GroupCategory groupCategory = groupCategoryOptional.get();
-        List<Group> groups = groupRepository.findAllByGroupCategory(id);
+        List<Group> groups = groupRepository.findAllByGroupCategoryId(id);
         if (!newGroupCategoryId.isEmpty()) {
-            groupCategoryOptional = groupCategoryRepository.findById(newGroupCategoryId);
-            if (!groupCategoryOptional.isPresent()) {
-                return new GroupCategoryServiceDto(
-                        NOT_FOUND, "Not found new group category", newGroupCategoryId);
+            groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
+            if (groupCategory == null) {
+                return new GroupCategoryServiceDto(NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
-                group.setGroupCategory(newGroupCategoryId);
+                group.setGroupCategory(groupCategory);
                 groupRepository.save(group);
             }
         } else {
@@ -201,23 +191,19 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     private Pair<Long, List<GroupCategory>> getGroupCategoriesBySearchConditions(
             FindGroupCategoryRequest request, int page, int pageSize) {
-        Query query = new Query();
 
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
-        }
-        if (request.getDescription() != null && !request.getDescription().isEmpty()) {
-            query.addCriteria(Criteria.where("description").regex(request.getDescription(), "i"));
-        }
+        int offset = page * pageSize;
+        String name = request.getName();
+        String description = request.getDescription();
+
+        GroupCategoryStatus status = null;
         if (request.getStatus() != null) {
-            query.addCriteria(Criteria.where("status").is(request.getStatus()));
+            status = GroupCategoryStatus.valueOf(request.getStatus().toUpperCase());
         }
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+        List<GroupCategory> groupCategories = groupCategoryRepository.findGroupCategoriesBySearchConditions(
+                name, description, status, pageSize, offset);
+        long count = groupCategoryRepository.countGroupCategoriesBySearchConditions(name, description, status);
 
-        long count = mongoTemplate.count(query, GroupCategory.class);
-        query.with(PageRequest.of(page, pageSize));
-
-        List<GroupCategory> groupCategories = mongoTemplate.find(query, GroupCategory.class);
         return new Pair<>(count, groupCategories);
     }
 
@@ -237,45 +223,42 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     }
 
     @Override
-    public GroupCategoryServiceDto deleteMultiple(
-            String emailUser, List<String> ids, String newGroupCategoryId) {
+    public GroupCategoryServiceDto deleteMultiple(String emailUser, List<String> ids, String newGroupCategoryId) {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
+
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
-            Optional<GroupCategory> groupCategoryOptional = groupCategoryRepository.findById(id);
-            if (!groupCategoryOptional.isPresent()) {
-                notFoundIds.add(id);
-            }
+            groupCategoryRepository.findById(id).ifPresentOrElse(
+                    groupCategory -> {
+                        if (groupCategory.getStatus().equals(GroupCategoryStatus.DELETED)) {
+                            notFoundIds.add(id);
+                        }
+                    },
+                    () -> notFoundIds.add(id));
         }
         if (!notFoundIds.isEmpty()) {
             return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", notFoundIds);
         }
-        List<Group> groups = groupRepository.findAllByGroupCategoryIn(ids);
+
+        List<Group> groups = groupRepository.findAllByGroupCategoryIdIn(ids);
         List<GroupCategory> groupCategories = groupCategoryRepository.findByIdIn(ids);
+
         if (!newGroupCategoryId.isEmpty()) {
-            Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(newGroupCategoryId);
-            if (!groupCategoryOptional.isPresent()) {
-                return new GroupCategoryServiceDto(
-                        NOT_FOUND, "Not found new group category", newGroupCategoryId);
+            var groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
+            if (groupCategory == null) {
+                return new GroupCategoryServiceDto(NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
-                group.setGroupCategory(newGroupCategoryId);
+                group.setGroupCategory(groupCategory);
                 groupRepository.save(group);
             }
         } else {
-            groups.forEach(
-                    group -> {
-                        group.setStatus(GroupStatus.DELETED);
-                    });
+            groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
             groupRepository.saveAll(groups);
         }
-        groupCategories.forEach(
-                groupCategory -> {
-                    groupCategory.setStatus(GroupCategoryStatus.DELETED);
-                });
+        groupCategories.forEach(groupCategory -> groupCategory.setStatus(GroupCategoryStatus.DELETED));
 
         groupCategoryRepository.saveAll(groupCategories);
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategories);
@@ -322,14 +305,11 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 });
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override

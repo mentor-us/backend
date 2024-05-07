@@ -101,7 +101,7 @@ public class GlobalControllerExceptionHandler {
                         "debug_exception",
                         Map.ofEntries(
                                 entry("Type", exception.getClass().getSimpleName()),
-                                entry("Message", exception.getMessage()),
+                                entry("Message", exception.getMessage() == null ? "" : exception.getMessage()),
                                 entry("StackTrace", ExceptionUtils.getStackTrace(exception))));
             }
 

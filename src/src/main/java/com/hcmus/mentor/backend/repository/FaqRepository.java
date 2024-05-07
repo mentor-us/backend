@@ -1,12 +1,13 @@
 package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Faq;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
-
-public interface FaqRepository extends MongoRepository<Faq, String> {
+@Repository
+public interface FaqRepository extends JpaRepository<Faq, String> {
 
     List<Faq> findByIdIn(List<String> faqIds);
 

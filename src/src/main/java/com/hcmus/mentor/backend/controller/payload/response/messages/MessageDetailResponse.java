@@ -3,23 +3,21 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.domain.Meeting;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
 @Builder
-public class MessageDetailResponse {
+public class MessageDetailResponse implements Serializable {
 
     private String id;
 
@@ -39,11 +37,11 @@ public class MessageDetailResponse {
 
     private Vote vote;
 
-    private Meeting meeting;
+    private MeetingDto meeting;
 
     private TaskMessageResponse task;
 
-    private List<ReactionDto> reactions;
+    private List<Reaction> reactions;
 
     private TotalReaction totalReaction;
 
@@ -55,6 +53,7 @@ public class MessageDetailResponse {
 
     private ReplyMessage reply;
 
+    @Builder.Default
     private Boolean isForward = false;
 
     public static MessageDetailResponse from(Message message, User user) {
@@ -68,10 +67,10 @@ public class MessageDetailResponse {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getGroupId())
+                .groupId(message.getChannel() != null ? message.getChannel().getId() : null)
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
+                .file(new FileModel(message.getFile()))
                 .status(message.getStatus())
                 .editedAt(message.getEditedAt())
                 .isEdited(message.getIsEdited())
@@ -135,7 +134,7 @@ public class MessageDetailResponse {
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
                 .groupId(message.getGroupId())
-                .meeting(meeting)
+                .meeting(MeetingDto.from(meeting))
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())
@@ -174,7 +173,7 @@ public class MessageDetailResponse {
                 && ("https://graph.microsoft.com/v1.0/me/photo/$value").equals(profile.getImageUrl())) {
             profile.setImageUrl(null);
         }
-        List<ReactionDto> reactions = message.getReactions();
+        List<Reaction> reactions = message.getReactions();
         if (reactions == null) {
             reactions = new ArrayList<>();
         }
@@ -213,27 +212,34 @@ public class MessageDetailResponse {
         return response;
     }
 
-    public static List<EmojiDto> generateTotalReactionData(List<ReactionDto> reactions) {
-        return reactions.stream()
-                .flatMap(reaction -> reaction.getData().stream())
-                .collect(Collectors.groupingBy(EmojiDto::getId, Collectors.summingInt(EmojiDto::getTotal)))
-                .entrySet()
-                .stream()
-                .map(entry -> new EmojiDto(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .toList();
+    public static List<EmojiDto> generateTotalReactionData(List<Reaction> reactions) {
+        return Arrays.stream(EmojiType.values())
+                .map(et -> new EmojiDto(EmojiType.valueOf(
+                        et.name()),
+                        reactions.stream()
+                                .filter(r -> r.getEmojiType().equals(et)).map(Reaction::getTotal)
+                                .reduce(0, Integer::sum)))
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
     }
 
-    public static List<EmojiDto> generateOwnerReacted(List<ReactionDto> reactions, String viewerId) {
-        return reactions.stream()
-                .filter(reaction -> reaction.getUserId().equals(viewerId))
-                .flatMap(reaction -> reaction.getData().stream())
-                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-                .toList();
+    public static List<EmojiDto> generateOwnerReacted(List<Reaction> reactions, String viewerId) {
+//        return reactions.stream()
+//                .filter(reaction -> reaction.getUser().getId().equals(viewerId))
+//                .flatMap(reaction -> reaction.getData().stream())
+//                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
+//                .toList();
+        return Arrays.stream(EmojiType.values())
+                .map(et -> new EmojiDto(EmojiType.valueOf(
+                        et.name()),
+                        reactions.stream()
+                                .filter(r -> r.getEmojiType().equals(et) && r.getUser().getId().equals(viewerId))
+                                .map(Reaction::getTotal)
+                                .reduce(0, Integer::sum)))
+                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
     }
 
-    public static Integer calculateTotalReactionAmount(List<ReactionDto> reactions) {
-        return reactions.stream().map(ReactionDto::getTotal).reduce(0, Integer::sum);
+    public static Integer calculateTotalReactionAmount(List<Reaction> reactions) {
+        return reactions.stream().map(Reaction::getTotal).reduce(0, Integer::sum);
     }
 
     public boolean isDeletedAttach() {

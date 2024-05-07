@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
@@ -10,23 +11,27 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.Choice;
+import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
+import com.hcmus.mentor.backend.repository.ChoiceRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class VoteServiceImpl implements VoteService {
 
@@ -36,25 +41,22 @@ public class VoteServiceImpl implements VoteService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final MessageService messageService;
-    private final SocketIOServer socketServer;
     private final ChannelRepository channelRepository;
+    private final SocketIOServer socketServer;
+    private final ChoiceRepository choiceRepository;
 
     @Override
     public VoteDetailResponse get(String userId, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (voteWrapper.isEmpty()) {
-            return null;
-        }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isUserInChannel(vote.getGroupId(), userId)) {
+        var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
+        vote.getGroup().getGroup().isMentor(userId) ;
+        if (!permissionService.isUserIdInGroup(userId, vote.getGroup().getId())) {
             return null;
         }
 
-        var channel = channelRepository.findById(vote.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-        var isMentor = permissionService.isMentor(userId, channel.getParentId());
+        Group group = vote.getGroup().getGroup();
 
         VoteDetailResponse voteDetail = fulfillChoices(vote);
-        voteDetail.setCanEdit(isMentor || vote.getCreatorId().equals(userId));
+        voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreator().getId().equals(userId));
         return voteDetail;
     }
 
@@ -68,9 +70,10 @@ public class VoteServiceImpl implements VoteService {
                 .toList();
     }
 
+
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
-        ShortProfile creator = userRepository.findShortProfile(vote.getCreatorId());
+        ShortProfile creator = new ShortProfile(vote.getCreator());
         List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
                 .map(this::fulfillChoice)
                 .filter(Objects::nonNull)
@@ -80,11 +83,12 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(Choice choice) {
         if (choice == null) {
             return null;
         }
-        List<ShortProfile> voters = userRepository.findByIds(choice.getVoters());
+
+        List<ShortProfile> voters = choice.getVoters().stream().map(ShortProfile::new).toList();
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 
@@ -94,46 +98,89 @@ public class VoteServiceImpl implements VoteService {
             throw new DomainException("Người dùng không có trong channel!");
         }
 
+        var choices = request.getChoices().stream()
+                .map(choice -> Choice.builder().name(choice.getName()).build())
+                .toList();
+
+        var sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found."));
+        var group = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found."));
+
         request.setCreatorId(userId);
-        Vote newVote = voteRepository.save(Vote.from(request));
+        Vote newVote = voteRepository.save(Vote.builder()
+                .question(request.getQuestion())
+                .group(group)
+                .creator(sender)
+                .timeEnd(request.getTimeEnd())
+                .choices(choices)
+                .isMultipleChoice(request.getIsMultipleChoice())
+                .build());
 
         Message message = messageService.saveVoteMessage(newVote);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
         MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(newVote.getCreatorId(), newVote);
-        groupService.pingGroup(newVote.getGroupId());
-
+        notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
+        groupService.pingGroup(newVote.getGroup().getId());
         return newVote;
     }
 
     @Override
-    public boolean updateVote(CustomerUserDetails user, String voteId, UpdateVoteRequest request) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
-            return false;
-        }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
-            return false;
+    public boolean updateVote(CustomerUserDetails userDetails, String voteId, UpdateVoteRequest request) {
+        var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
+
+        if (vote.getGroup().getGroup().isMentor(userDetails.getId())
+                || vote.getCreator().getId().equals(userDetails.getId())) {
+            throw new ForbiddenException("Không có quyền cập nhật bình chọn.");
         }
 
-        vote.update(request);
-        voteRepository.save(vote);
-        return true;
+        var isUpdate = false;
+
+        if (request.getQuestion() != null) {
+            vote.setQuestion(request.getQuestion());
+            isUpdate = true;
+        }
+
+        if (request.getTimeEnd() != null) {
+            vote.setTimeEnd(request.getTimeEnd());
+            isUpdate = true;
+        }
+
+        var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."));
+
+        if (request.getChoices() != null) {
+            List<Choice> newChoices = new ArrayList<>();
+            for (var choiceDto : request.getChoices()) {
+                var choice = vote.getChoice(choiceDto.getId());
+                if (choice == null) {
+                    var voters = choiceDto.getVoters().stream().map(voterId -> userRepository.findById(voterId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."))).toList();
+                    var newChoice = Choice.builder().name(choiceDto.getName()).creator(user).voters(voters).vote(vote).build();
+                    newChoices.add(newChoice);
+                } else {
+                    newChoices.add(choice);
+                }
+            }
+
+            if (!newChoices.isEmpty()) {
+                choiceRepository.saveAll(newChoices);
+                isUpdate = true;
+            }
+        }
+
+        if (isUpdate) {
+            voteRepository.save(vote);
+        }
+        return isUpdate;
     }
+
 
     @Override
     public boolean deleteVote(CustomerUserDetails user, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
             return false;
         }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), vote.getCreator().getId())
+                && !vote.getGroup().getId().equals(user.getId())) {
             return false;
         }
         voteRepository.delete(vote);
@@ -142,17 +189,34 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public Vote doVoting(DoVotingRequest request) {
-        Optional<Vote> voteOpt = voteRepository.findById(request.getVoteId());
-        if (voteOpt.isEmpty()) {
+        var vote = voteRepository.findById(request.getVoterId()).orElse(null);
+        if(vote==null){
             return null;
         }
 
-        Vote vote = voteOpt.get();
         if (Vote.Status.CLOSED.equals(vote.getStatus())) {
             return null;
         }
 
-        vote.doVoting(request);
+        var voter = userRepository.findById(request.getVoterId()).orElse(null);
+        if(voter==null){
+            return null;
+        }
+
+        var choices = vote.getChoices();
+
+        List<Choice> newChoices = request.getChoices().stream().map(choiceDto -> {
+            var choice = vote.getChoice(choiceDto.getId());
+            if (choice == null) {
+                var voters = choiceDto.getVoters().stream().map(voterId -> userRepository.findById(voterId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."))).toList();
+                return Choice.builder().name(choiceDto.getName()).creator(voter).voters(voters).vote(vote).build();
+            }
+            return choice;
+        }).toList();
+
+        if (!newChoices.isEmpty()) {
+            choiceRepository.saveAll(newChoices);
+        }
 
         return voteRepository.save(vote);
     }
@@ -165,7 +229,7 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroupId())) {
+        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
             return null;
         }
 
@@ -179,7 +243,7 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroupId())) {
+        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
             return null;
         }
 
@@ -193,13 +257,13 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public boolean closeVote(CustomerUserDetails user, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
             return false;
         }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+
+        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
+                && !vote.getGroup().getId().equals(user.getId())) {
             return false;
         }
         if (Vote.Status.CLOSED.equals(vote.getStatus())) {
@@ -213,12 +277,12 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public boolean reopenVote(CustomerUserDetails user, String voteId) {
         Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
+        if (voteWrapper.isEmpty()) {
             return false;
         }
         Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroupId())
-                && !vote.getCreatorId().equals(user.getId())) {
+        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
+                && !vote.getCreator().getId().equals(user.getId())) {
             return false;
         }
         if (Vote.Status.OPEN.equals(vote.getStatus())) {

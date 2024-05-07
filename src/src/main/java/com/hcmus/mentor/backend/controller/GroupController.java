@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
@@ -12,6 +12,12 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailRe
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -64,6 +70,7 @@ public class GroupController {
     private final GroupService groupService;
     private final EventService eventService;
     private final PermissionService permissionService;
+    private final Pipeline pipeline;
     private static final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
     private static final String TEMP_TEMPLATE_PATH = "src/main/resources/templates/temp-import-groups.xlsx";
 
@@ -125,25 +132,19 @@ public class GroupController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize,
             @RequestParam(defaultValue = "") String type) {
-        Page<GroupHomepageResponse> groups;
+        var command = new FindOwnGroupsCommand(customerUserDetails.getId(), null, page, pageSize);
         switch (type) {
             case "mentor":
-                groups = groupService.findMentorGroups(customerUserDetails.getId(), page, pageSize);
+                command.setIsMentor(true);
                 break;
             case "mentee":
-                groups = groupService.findMenteeGroups(customerUserDetails.getId(), page, pageSize);
+                command.setIsMentor(false);
                 break;
             default:
-                groups = groupService.findOwnGroups(customerUserDetails.getId(), page, pageSize);
+                command.setIsMentor(null);
                 break;
         }
-        var userOpt = userRepository.findById(customerUserDetails.getId());
-        var user = userOpt.orElse(null);
-        for (GroupHomepageResponse group : groups) {
-            boolean isPinned = user.isPinnedGroup(group.getId());
-            group.setPinned(isPinned);
-        }
-        return ApiResponseDto.success(pagingHomepageResponse(groups));
+        return ApiResponseDto.success(pagingHomepageResponse(pipeline.send(command)));
     }
 
 
@@ -175,10 +176,13 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> get(
+    public ApiResponseDto<GroupDetailResponse> get(
             @PathVariable("id") String id) {
         Optional<Group> groupWrapper = groupRepository.findById(id);
-        return groupWrapper.map(ApiResponseDto::success).orElseGet(() -> ApiResponseDto.notFound(NOT_FOUND));
+        if(groupWrapper.isPresent()){
+            return ApiResponseDto.success(new GroupDetailResponse(groupWrapper.get()));
+        }
+        return ApiResponseDto.notFound(NOT_FOUND);
     }
 
     /**
@@ -193,9 +197,9 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody CreateGroupCommand command) {
+            @RequestBody CreateGroupRequest command) {
         String creatorEmail = loggedUser.getEmail();
-        GroupServiceDto groupReturn = groupService.createGroup(creatorEmail, command);
+        GroupServiceDto groupReturn =  pipeline.send(new CreateGroupCommand(creatorEmail, command));
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
@@ -215,9 +219,8 @@ public class GroupController {
             @RequestParam("file") MultipartFile file)
             throws IOException {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.importGroups(email, file);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        GroupServiceDto groupReturn = pipeline.send(new ImportGroupCommand(email, file));
+        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
@@ -299,9 +302,9 @@ public class GroupController {
     public ApiResponseDto<Group> addMentees(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMenteesRequest request) {
+            @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentees(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,false );
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -320,9 +323,9 @@ public class GroupController {
     public ApiResponseDto<Group> addMentors(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMentorsRequest request) {
+            @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentors(email, groupId, request);
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,true );
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -824,13 +827,8 @@ public class GroupController {
     public ResponseEntity<GroupDetailResponse> getWorkspace(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId) {
-        GroupDetailResponse workspace = groupService.getGroupWorkspace(customerUserDetails, groupId);
-
-        if (workspace == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok(workspace);
+        var response = pipeline.send(new GetGroupWorkSpaceQuery(customerUserDetails.getId(), groupId));
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -848,7 +846,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        groupService.markMentee(customerUserDetails, groupId, menteeId);
+        pipeline.send(new ToggleMarkMenteeCommand(customerUserDetails.getId(), groupId, menteeId, true));
         return ResponseEntity.ok().build();
     }
 
@@ -867,7 +865,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
+        pipeline.send(new ToggleMarkMenteeCommand(customerUserDetails.getId(), groupId, menteeId, false));
         return ResponseEntity.ok().build();
     }
 
@@ -884,9 +882,8 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) {
-        List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
 
-        return ResponseEntity.ok(listChannelForward);
+        return ResponseEntity.ok(pipeline.send(new GetChannelsForwardCommand(customerUserDetails.getId(), name.orElse(""))));
     }
 
     private Map<String, Object> pagingResponse(Page<Group> groups) {

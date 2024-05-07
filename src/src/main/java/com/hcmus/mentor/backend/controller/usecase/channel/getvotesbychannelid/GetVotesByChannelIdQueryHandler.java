@@ -4,8 +4,8 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Vote;
-import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.repository.VoteRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -40,7 +40,7 @@ public class GetVotesByChannelIdQueryHandler implements Command.Handler<GetVotes
     }
 
     public VoteDetailResponse fulfillChoices(Vote vote) {
-        ShortProfile creator = userRepository.findShortProfile(vote.getCreatorId());
+        ShortProfile creator = new ShortProfile(vote.getCreator());
         List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
                 .map(this::fulfillChoice)
                 .filter(Objects::nonNull)
@@ -49,11 +49,11 @@ public class GetVotesByChannelIdQueryHandler implements Command.Handler<GetVotes
         return VoteDetailResponse.from(vote, creator, choices);
     }
 
-    public VoteDetailResponse.ChoiceDetail fulfillChoice(ChoiceDto choice) {
+    public VoteDetailResponse.ChoiceDetail fulfillChoice(Choice choice) {
         if (choice == null) {
             return null;
         }
-        List<ShortProfile> voters = userRepository.findByIds(choice.getVoters());
+        List<ShortProfile> voters = choice.getVoters().stream().map(ShortProfile::new).toList();
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 }

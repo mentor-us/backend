@@ -3,7 +3,7 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
+import com.hcmus.mentor.backend.domain.Reaction;
 import lombok.*;
 
 import java.io.Serializable;
@@ -39,7 +39,7 @@ public class MessageResponse implements Serializable {
 
     private String taskId;
 
-    private List<ReactionDto> reactions;
+    private List<Reaction> reactions;
 
     private List<String> images;
 
@@ -49,6 +49,7 @@ public class MessageResponse implements Serializable {
 
     private String reply;
 
+    @Builder.Default
     private Boolean isForward = false;
 
     public static MessageResponse from(Message message, ProfileResponse sender) {
@@ -58,13 +59,13 @@ public class MessageResponse implements Serializable {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getGroupId())
-                .voteId(message.getVoteId())
-                .meetingId(message.getMeetingId())
-                .taskId(message.getTaskId())
+                .groupId(message.getChannel().getGroup().getId())
+                .voteId(message.getVote() == null ? null : message.getVote().getId())
+                .meetingId(message.getMeeting() == null ? null : message.getMeeting().getId())
+                .taskId(message.getTask() == null ? null : message.getTask().getId())
                 .reactions(message.getReactions())
                 .images(message.getImages())
-                .file(message.getFile())
+                .file(new FileModel(message.getFile()))
                 .status(message.getStatus())
                 .reply(message.getReply())
                 .isEdited(message.getIsEdited())

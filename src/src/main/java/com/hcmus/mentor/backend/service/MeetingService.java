@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.service;
 
+import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
@@ -12,21 +14,28 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.service.dto.GroupDto;
+import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class MeetingService implements IRemindableService {
 
@@ -39,82 +48,108 @@ public class MeetingService implements IRemindableService {
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
+    private final Pipeline pipeline;
 
+    @Transactional(readOnly = true)
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
-        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream()
-                .map(Group::getId)
-                .toList();
+        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream().map(Group::getId).toList();
         Date now = new Date();
         List<Meeting> meetings = meetingRepository
                 .findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
                         groupIds,
                         userId,
                         now,
-                        groupIds,
-                        Arrays.asList("*", userId),
-                        now,
                         PageRequest.of(0, 5, Sort.by("timeStart").descending()))
                 .getContent();
         return meetings.stream()
                 .map(meeting -> {
-                    Group group = groupRepository.findById(meeting.getGroupId()).orElse(null);
-                    User organizer = userRepository.findById(meeting.getOrganizerId()).orElse(null);
+                    Group group = meeting.getGroup().getGroup();
+                    User organizer = meeting.getOrganizer();
                     return MeetingResponse.from(meeting, organizer, group);
                 })
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {
-        return meetingRepository.findAllByGroupId(groupId);
+        return meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
+            Group group = meeting.getGroup().getGroup();
+            User organizer = meeting.getOrganizer();
+            return MeetingResponse.from(meeting, organizer, group);
+        }).toList();
     }
 
     public List<Meeting> getMeetingGroup(String groupId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size);
+        Pageable pageRequest = PageRequest.of(page, size);
         Page<Meeting> wrapper = meetingRepository.findByGroupId(groupId, pageRequest);
         return wrapper.getContent();
     }
 
+    @jakarta.transaction.Transactional
     public Meeting createNewMeeting(CreateMeetingRequest request) {
         User organizer = userRepository.findById(request.getOrganizerId()).orElse(null);
         if (organizer == null) {
             return null;
         }
 
-        Meeting newMeeting = meetingRepository.save(Meeting.from(request));
-        Message newMessage = Message.builder()
-                .senderId(request.getOrganizerId())
-                .content("NEW MEETING")
-                .createdDate(new Date())
-                .type(Message.Type.MEETING)
-                .groupId(request.getGroupId())
-                .meetingId(newMeeting.getId())
-                .build();
-        messageService.saveMessage(newMessage);
-        groupService.pingGroup(request.getGroupId());
-
-        MessageDetailResponse response = messageService.fulfillMeetingMessage(
-                MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
-        socketIOService.sendBroadcastMessage(response, request.getGroupId());
-        notificationService.sendNewMeetingNotification(response);
-        saveToReminder(newMeeting);
-
-        return newMeeting;
-    }
-
-    public Meeting updateMeeting(String modifierId, String meetingId, UpdateMeetingRequest request) {
-        Optional<Meeting> wrapper = meetingRepository.findById(meetingId);
-        if (wrapper.isEmpty()) {
+        var channel = channelRepository.findById(request.getGroupId()).orElse(null);
+        if (channel == null) {
             return null;
         }
 
-        Meeting meeting = wrapper.get();
+        var meeting = meetingRepository.save(Meeting.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .repeated(request.getRepeated())
+                .place(request.getPlace())
+                .organizer(organizer)
+                .group(channel)
+                .attendees(request.getAttendees().contains("*") ? channel.getUsers() : userRepository.findByIdIn(request.getAttendees()))
+                .build());
+
+        Message newMessage = Message.builder()
+                .sender(meeting.getOrganizer())
+                .content("NEW MEETING")
+                .createdDate(new Date())
+                .type(Message.Type.MEETING)
+                .channel(meeting.getGroup())
+                .meeting(meeting)
+                .build();
+        messageService.saveMessage(newMessage);
+        groupService.pingGroup(request.getGroupId());
+        pipeline.send(UpdateLastMessageCommand.builder().message(newMessage).channel(newMessage.getChannel()).build());
+
+        MessageDetailResponse response = messageService.fulfillMeetingMessage(MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
+        socketIOService.sendBroadcastMessage(response, request.getGroupId());
+        notificationService.sendNewMeetingNotification(meeting);
+        saveToReminder(meeting);
+
+        return meeting;
+    }
+
+    public Meeting updateMeeting(String modifierId, String meetingId, UpdateMeetingRequest request) {
+       var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
+            return null;
+        }
+
         if (!isEqualDate(meeting.getTimeStart(), request.getTimeStart())
                 || !isEqualDate(meeting.getTimeEnd(), request.getTimeEnd())) {
-            meeting.reschedule(modifierId, request);
+            var modifier = userRepository.findById(modifierId).orElse(null);
+            meeting.reschedule(modifier, request);
         }
-        meeting.update(request);
 
-        groupService.pingGroup(meeting.getGroupId());
+        meeting.setTitle(request.getTitle());
+        meeting.setDescription(request.getDescription());
+        meeting.setTimeStart(request.getTimeStart());
+        meeting.setTimeEnd(request.getTimeEnd());
+        meeting.setRepeated(request.getRepeated());
+        meeting.setPlace(request.getPlace());
+        meeting.setAttendees(userRepository.findByIdIn(request.getAttendees()));
+
+        groupService.pingGroup(meeting.getGroup().getGroup().getId());
 
         Reminder reminder = reminderRepository.findByRemindableId(meetingId);
         if (reminder != null) {
@@ -140,25 +175,29 @@ public class MeetingService implements IRemindableService {
         reminderRepository.deleteByRemindableId(meetingId);
     }
 
+    @Transactional(readOnly = true)
     public MeetingDetailResponse getMeetingById(String userId, String meetingId) {
         var meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
-        var organizer = userRepository.findById(meeting.getOrganizerId()).orElseThrow(() -> new DomainException("Không tìm thấy người tổ chức"));
-        var channel = channelRepository.findById(meeting.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-        var group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
+        var organizer = meeting.getOrganizer();
+        var channel = meeting.getGroup();
+        var group = channel.getGroup();
 
-        Map<String, ShortProfile> modifiers = meeting.getHistories().stream()
-                .map(Meeting.MeetingHistory::getModifierId)
-                .map(userRepository::findShortProfile)
-                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
+        Map<String, ShortProfile> modifiers =
+                meeting.getHistories().stream()
+                        .map(MeetingHistory::getModifier)
+                        .map(UserMapper.INSTANCE::userToShortProfile)
+                        .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
 
-        List<MeetingHistoryDetail> historyDetails = meeting.getHistories().stream()
-                .map(history -> {
-                    ShortProfile user = modifiers.getOrDefault(history.getModifierId(), null);
-                    return MeetingHistoryDetail.from(history, user);
-                })
-                .toList();
+        List<MeetingHistoryDetail> historyDetails =
+                meeting.getHistories().stream()
+                        .map(history -> {
+                            ShortProfile user = modifiers.getOrDefault(history.getModifier().getId(), null);
+                            return MeetingHistoryDetail.from(history, user);
+                        })
+                        .toList();
 
-        boolean appliedAllGroup = meeting.getAttendees().contains("*");
+        boolean appliedAllGroup = meeting.getAttendees().size() == channel.getUsers().size();
+
         return MeetingDetailResponse.builder()
                 .id(meetingId)
                 .title(meeting.getTitle())
@@ -167,48 +206,39 @@ public class MeetingService implements IRemindableService {
                 .timeEnd(meeting.getTimeEnd())
                 .repeated(meeting.getRepeated())
                 .place(meeting.getPlace())
-                .organizer(organizer)
-                .group(group)
+                .organizer(UserDto.from(organizer))
+                .group(GroupDto.from(group))
                 .isAll(appliedAllGroup)
                 .canEdit(group.isMentor(userId) || organizer.getId().equals(userId))
-                .totalAttendees(appliedAllGroup ? group.getTotalMember() - 1 : meeting.getAttendees().size())
+                .totalAttendees(appliedAllGroup ? channel.getUsers().size() - 1 : meeting.getAttendees().size())
                 .histories(historyDetails)
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<MeetingAttendeeResponse> getMeetingAttendees(String meetingId) {
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
 
-        Channel channel = channelRepository.findById(meeting.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-
-        Group group = groupRepository.findById(channel.getParentId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
+        Channel channel = meeting.getGroup();
+        Group group = channel.getGroup();
 
         List<String> attendeeIds;
-        boolean appliedAllGroup = meeting.getAttendees().contains("*");
-        if (appliedAllGroup) {
-            attendeeIds = Stream.concat(group.getMentees().stream(), group.getMentors().stream())
-                    .filter(id -> !id.equals(meeting.getOrganizerId()))
-                    .toList();
-        } else {
-            attendeeIds = meeting.getAttendees();
-        }
+        attendeeIds = group.getGroupUsers().stream()
+                .map(GroupUser::getUser)
+                .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
+                .map(User::getId)
+                .toList();
 
         return userRepository.findByIdIn(attendeeIds).stream()
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<Meeting> getAllOwnMeetings(String userId) {
-        List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
-                .map(Group::getId)
-                .toList();
+       var channelIds =  channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
 
-        List<String> joinedChannelIds = channelRepository.findAllByParentIdInAndUserIdsContaining(joinedGroupIds, userId).stream()
-                .map(Channel::getId)
-                .toList();
-
-        return meetingRepository.findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(
-                joinedChannelIds, userId, joinedChannelIds, Arrays.asList("*", userId));
+        return meetingRepository.findAllByOwn(channelIds, userId);
     }
 
     public List<Meeting> getAllOwnMeetingsByDate(String userId, Date date) {
@@ -237,16 +267,15 @@ public class MeetingService implements IRemindableService {
         return getAllOwnMeetingsBetween(userId, startTime, endTime);
     }
 
-    public Meeting rescheduleMeeting(
-            String modifierId, String meetingId, RescheduleMeetingRequest request) {
-        Optional<Meeting> meetingWrapper = meetingRepository.findById(meetingId);
-        if (meetingWrapper.isEmpty()) {
+    public Meeting rescheduleMeeting(String modifierId, String meetingId, RescheduleMeetingRequest request) {
+        var meeting = meetingRepository.findById(meetingId).orElse(null);
+        if (meeting == null) {
             return null;
         }
+        var modifier = userRepository.findById(modifierId).orElse(null);
+        meeting.reschedule(modifier, request);
 
-        Meeting meeting = meetingWrapper.get();
-        meeting.reschedule(modifierId, request);
-        groupService.pingGroup(meeting.getGroupId());
+        groupService.pingGroup(meeting.getGroup().getGroup().getId());
         return meetingRepository.save(meeting);
     }
 
@@ -254,16 +283,30 @@ public class MeetingService implements IRemindableService {
     public void saveToReminder(IRemindable rewindable) {
         Reminder reminder = rewindable.toReminder();
         Meeting meeting = (Meeting) rewindable;
-        List<String> emailUsers = new ArrayList<>();
-        List<String> attendees = meeting.getAttendees();
-        attendees.add(meeting.getOrganizerId());
-        for (String userId : attendees) {
-            Optional<User> userOptional = userRepository.findById(userId);
-            userOptional.ifPresent(user -> emailUsers.add(user.getEmail()));
-        }
-        reminder.setRecipients(emailUsers);
+
+        reminder.setRecipients(new ArrayList<>(meeting.getAttendees()));
         reminder.setSubject("Bạn có 1 lịch hẹn sắp diễn ra");
 
         reminderRepository.save(reminder);
+    }
+
+    public List<ReactionDto> mappingReaction(List<Reaction> reactions) {
+        return reactions.stream()
+                .collect(Collectors.groupingBy(reaction -> reaction.getUser().getId()))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    User user = entry.getValue().getFirst().getUser();
+                    ReactionDto reactionDto = ReactionDto.builder()
+                            .userId(user.getId())
+                            .name(user.getName())
+                            .imageUrl(user.getImageUrl())
+                            .build();
+                    entry.getValue().forEach(reaction -> {
+                        reactionDto.react(reaction.getEmojiType(), reaction.getTotal());
+                    });
+                    return reactionDto;
+                })
+                .toList();
     }
 }

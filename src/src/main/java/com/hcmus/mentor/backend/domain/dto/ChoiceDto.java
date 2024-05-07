@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -12,9 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class ChoiceDto {
-
-    @Builder.Default
-    private String id = UUID.randomUUID().toString();
+    private String id;
 
     private String name;
 
