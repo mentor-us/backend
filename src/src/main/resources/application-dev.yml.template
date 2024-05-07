@@ -1,8 +1,3 @@
-management:
-  endpoint:
-    health:
-      show-details: always
-
 s3-settings:
   bucket-name: "op://mentorus/backend-dev/s3-settings/bucket-name"
   access-key: "op://mentorus/backend-dev/s3-settings/access-key"
@@ -26,20 +21,6 @@ app:
     authorizedRedirectUris: "op://mentorus/backend-dev/jwt/authorized-redirect-uris"
 
 spring:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      jakarta:
-        persistence:
-          query:
-            timeout: 20000
-      hibernate:
-        show_sql: true
-        enable_lazy_load_no_trans: true
-        jdbc:
-          batch_size: 10
-    open-in-view: false
   datasource:
     url: "op://mentorus/backend-dev/jpa/datasource.url"
     username: "op://mentorus/backend-dev/jpa/datasource.username"
