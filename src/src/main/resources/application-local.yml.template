@@ -26,20 +26,6 @@ app:
     authorizedRedirectUris: "op://mentorus/backend-local/jwt/authorized-redirect-uris"
 
 spring:
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      jakarta:
-        persistence:
-          query:
-            timeout: 20000
-      hibernate:
-        show_sql: true
-        enable_lazy_load_no_trans: true
-        jdbc:
-          batch_size: 10
-    open-in-view: false
   datasource:
     url: "op://mentorus/backend-local/jpa/datasource.url"
     username: "op://mentorus/backend-local/jpa/datasource.username"

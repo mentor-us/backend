@@ -106,7 +106,7 @@ public class Group implements Serializable {
     @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private Message lastMessage = null;
 
     /**
@@ -115,7 +115,7 @@ public class Group implements Serializable {
     @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "default_channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private Channel defaultChannel;
 
     /**
@@ -124,13 +124,13 @@ public class Group implements Serializable {
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_category_id")
-    @JsonIgnoreProperties(value = {"groups"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"groups", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private GroupCategory groupCategory;
 
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private User creator;
 
     /**
@@ -141,7 +141,7 @@ public class Group implements Serializable {
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "message_pinned_id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
     /**
@@ -151,7 +151,7 @@ public class Group implements Serializable {
     @JsonIgnore
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private List<Channel> channels = new ArrayList<>();
 
     /**
