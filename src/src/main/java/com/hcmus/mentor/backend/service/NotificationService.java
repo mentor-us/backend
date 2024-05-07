@@ -24,7 +24,7 @@ public interface NotificationService {
     @Async
     void sendNewMessageNotification(MessageDetailResponse message);
 
-    @Async
+//    @Async
     void sendNewTaskNotification(MessageDetailResponse message, Task task);
 
     Notification createNewTaskNotification(

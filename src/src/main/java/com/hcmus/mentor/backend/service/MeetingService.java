@@ -108,6 +108,7 @@ public class MeetingService implements IRemindableService {
                 .group(channel)
                 .attendees(request.getAttendees().contains("*") ? channel.getUsers() : userRepository.findByIdIn(request.getAttendees()))
                 .build());
+
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
                 .content("NEW MEETING")

@@ -242,7 +242,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Async
+//    @Async
     public void sendNewTaskNotification(MessageDetailResponse message, Task task) {
         if (message.getTask() == null || task == null) {
             logger.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
@@ -270,29 +270,23 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNewTaskNotification(String title, String content, String senderId, Task task) {
-        var assignees = task.getAssignees().stream().map(Assignee::getId).toList();
-        var sender = task.getAssigner();
-        var assigner = task.getAssigner().getId();
+        var assignees = task.getAssignees();
+        var assigner = task.getAssigner();
 
-        Notification inAppNotification = notificationRepository.save(Notification.builder()
+        Notification inAppNotification =Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_TASK)
-                .sender(sender)
+                .sender(assigner)
                 .refId(task.getId())
-                .build());
+                .build();
 
-        var receiversList = Stream.concat(task.getAssignees().stream().map(Assignee::getId), Stream.of(task.getAssigner().getId()))
+        List<NotificationUser> receivers = Stream.concat(assignees.stream().map(Assignee::getUser), Stream.of(assigner))
                 .distinct()
-                .map(id -> userRepository.findById(id).get())
                 .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
                 .toList();
 
-//        List<NotificationUser> receivers = Stream.concat(assignees.stream(), Stream.of(assigner))
-//                .distinct()
-//                .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
-//                .toList();
-        inAppNotification.setReceivers(receiversList);
+        inAppNotification.setReceivers(receivers);
         notificationRepository.save(inAppNotification);
 
         return inAppNotification;

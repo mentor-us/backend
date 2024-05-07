@@ -95,16 +95,18 @@ public class TaskServiceImpl implements IRemindableService {
             logger.error("Add task : Not found user with id {}", loggedUserId);
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
-        var assignee = userAssignees.stream().map(user -> Assignee.builder().user(user).build()).toList();
-        Task task = taskRepository.save(Task.builder()
+
+        var task = Task.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .deadline(request.getDeadline())
                 .group(channel)
                 .assigner(assigner)
                 .parentTask(parentTask)
-                .assignees(assignee)
-                .build());
+                .build();
+        var assignee = userAssignees.stream().map(user -> Assignee.builder().task(task).user(user).build()).toList();
+        task.setAssignees(assignee);
+        taskRepository.save(task);
 
         Message message = Message.builder()
                 .sender(task.getAssigner())

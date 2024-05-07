@@ -3,19 +3,21 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -74,6 +76,7 @@ public class Task implements IRemindable, Serializable {
     @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
     @ToString.Exclude
+    @Fetch(FetchMode.SUBSELECT)
     private List<Task> subTasks = new ArrayList<>();
 
     @JsonIgnore
@@ -81,11 +84,12 @@ public class Task implements IRemindable, Serializable {
     @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
     @ToString.Exclude
+    @Fetch(FetchMode.SUBSELECT)
     private List<Assignee> assignees = new ArrayList<>();
 
-    public static AssigneeDto newTask(String userId) {
-        return new AssigneeDto(userId, TaskStatus.TO_DO);
-    }
+//    public static AssigneeDto newTask(String userId) {
+//        return new AssigneeDto(userId, TaskStatus.TO_DO);
+//    }
 
     @Override
     public Reminder toReminder() {

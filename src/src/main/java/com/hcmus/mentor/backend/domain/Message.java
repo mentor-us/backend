@@ -6,6 +6,8 @@ import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -74,11 +76,13 @@ public class Message implements Serializable {
     private User sender;
 
     @ManyToOne
+    @BatchSize(size = 10)
     @JoinColumn(name = "channel_id")
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel channel;
 
     @Builder.Default
+    @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "vote_id")
     @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
@@ -90,7 +94,8 @@ public class Message implements Serializable {
     private File file = null;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @BatchSize(size = 10)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "meeting_id")
     @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private Meeting meeting = null;
@@ -98,12 +103,14 @@ public class Message implements Serializable {
     @Builder.Default
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "task_id")
+    @BatchSize(size = 10)
     @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task = null;
 
     @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
     @JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
     private List<Reaction> reactions = new ArrayList<>();
 

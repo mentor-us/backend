@@ -30,12 +30,12 @@ public class NotificationUser {
     @Column(name = "is_agreed")
     private Boolean isAgreed;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "notification_id")
     @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
     private Notification notification;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;

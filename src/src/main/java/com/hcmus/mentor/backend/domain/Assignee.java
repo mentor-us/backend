@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 
@@ -26,11 +27,13 @@ public class Assignee implements Serializable {
     private TaskStatus status = TaskStatus.TO_DO;
 
     @ManyToOne
+    @BatchSize(size = 10)
     @JoinColumn(name = "task_id", referencedColumnName = "id")
     @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
+    @BatchSize(size = 10)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
