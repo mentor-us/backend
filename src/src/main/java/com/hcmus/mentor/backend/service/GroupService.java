@@ -121,19 +121,24 @@ public interface GroupService {
     void pinChannelMessage(String userId, String channelId, String messageId);
 
     void unpinChannelMessage(String userId, String channelId, String messageId);
+
     void updateLastMessageId(String groupId, String messageId);
 
-//    GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
+    //    GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
     GroupServiceDto validateListMentorsMentees(List<String> mentors, List<String> mentees);
+
     GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd);
-     Date changeGroupTime(Date time, String type);
-     Duration calculateDuration(Date from, Date to);
+
+    Date changeGroupTime(Date time, String type);
+
+    Duration calculateDuration(Date from, Date to);
+
     GroupStatus getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd);
 
 //    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
 //
 //    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
 //
-//    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
+//    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name);
 
 }

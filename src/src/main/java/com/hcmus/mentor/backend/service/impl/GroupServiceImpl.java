@@ -325,6 +325,175 @@ public class GroupServiceImpl implements GroupService {
         return GroupStatus.INACTIVE;
     }
 
+    private void removeBlankRows(Sheet sheet) {
+        int lastRowNum = sheet.getLastRowNum();
+        for (int i = lastRowNum; i >= 0; i--) {
+            Row row = sheet.getRow(i);
+            if (row == null
+                    || row.getCell(0) == null
+                    || row.getCell(0).getCellType() == org.apache.poi.ss.usermodel.CellType.BLANK) {
+                sheet.removeRow(row);
+            }
+        }
+    }
+
+//    @Override
+//    public GroupServiceDto readGroups(Workbook workbook) throws ParseException {
+//        Map<String, Group> groups = new HashMap<>();
+//        Sheet sheet = workbook.getSheet("Data");
+//        removeBlankRows(sheet);
+//        String groupCategoryName;
+//        List<String> menteeEmails;
+//        List<String> mentorEmails;
+//        String groupName;
+//        String description = "";
+//        Date timeStart;
+//        Date timeEnd;
+//
+//        DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+//        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+//
+//        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+//            var errorOnRow = String.format("tại dòng %d không có dữ liệu.", i);
+//            Row row = sheet.getRow(i);
+//            if (i == 0) {
+//                continue;
+//            }
+//            // Validate required fields
+//            // Group category
+//            if (row.getCell(1) == null || row.getCell(2).getStringCellValue().isEmpty()) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Loại nhóm %s", errorOnRow), null);
+//            }
+//            groupCategoryName = row.getCell(1).getStringCellValue();
+//            if (!groupCategoryRepository.existsByName(groupCategoryName)) {
+//                return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
+//            }
+//            String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
+//
+//            // Mentee email
+//            if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
+//            }
+//            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n"))
+//                    .filter(Objects::nonNull)
+//                    .filter(Predicate.not(String::isEmpty))
+//                    .toList();
+//
+//            // Group name
+//            if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Tên nhóm  %s", errorOnRow), null);
+//            }
+//            groupName = row.getCell(3).getStringCellValue();
+//            if (groups.containsKey(groupName) || groupCategoryRepository.existsByName(groupName))
+//                return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
+//
+//            // Mentor email
+//            if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
+//            }
+//            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
+//                    .filter(Objects::nonNull)
+//                    .filter(Predicate.not(String::isEmpty))
+//                    .toList();
+//
+//            // Start date
+//            if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
+//            }
+//            timeStart = row.getCell(6).getDateCellValue();
+//
+//            // End date
+//            if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
+//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
+//            }
+//            timeEnd = row.getCell(7).getDateCellValue();
+//
+//            GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
+//            if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
+//                return isValidTimeRange;
+//            }
+//
+//            Group group = Group.builder()
+//                    .name(groupName)
+//                    .description(description)
+//                    .createdDate(new Date())
+//                    .mentees(menteeEmails)
+//                    .mentors(mentorEmails)
+//                    .groupCategory(groupCategoryId)
+//                    .timeStart(timeStart)
+//                    .timeEnd(timeEnd)
+//                    .build();
+//            groups.put(groupName, group);
+//        }
+//
+//        return new GroupServiceDto(SUCCESS, "", groups);
+//    }
+
+//    @Override
+//    public GroupServiceDto importGroups(String emailUser, MultipartFile file) throws IOException {
+//        if (!permissionService.isAdmin(emailUser)) {
+//            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+//        }
+//        Map<String, Group> groups;
+//        try (InputStream data = file.getInputStream();
+//             Workbook workbook = new XSSFWorkbook(data)) {
+//            List<String> nameHeaders = new ArrayList<>();
+//            nameHeaders.add("STT");
+//            nameHeaders.add("Loại nhóm *");
+//            nameHeaders.add("Emails người được quản lí *");
+//            nameHeaders.add("Tên nhóm *");
+//            nameHeaders.add("Mô tả");
+//            nameHeaders.add("Emails người quản lí *");
+//            nameHeaders.add("Ngày bắt đầu *\n" + "(dd/MM/YYYY)");
+//            nameHeaders.add("Ngày kết thúc *\n" + "(dd/MM/YYYY)");
+//
+//            if (!shareService.isValidTemplate(workbook, 2, nameHeaders)) {
+//                return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
+//            }
+//
+//            GroupServiceDto validReadGroups = readGroups(workbook);
+//            if (!Objects.equals(validReadGroups.getReturnCode(), SUCCESS)) {
+//                return validReadGroups;
+//            }
+//            groups = (Map<String, Group>) validReadGroups.getData();
+//        } catch (ParseException e) {
+//            throw new DomainException(String.valueOf(e));
+//        }
+//        for (Group group : groups.values()) {
+//            var mentors = group.getMentors();
+//            var mentees = group.getMentees();
+//            GroupServiceDto isValidMails = validateListMentorsMentees(mentors, mentees);
+//            if (!Objects.equals(isValidMails.getReturnCode(), SUCCESS)) {
+//                return isValidMails;
+//            }
+//        }
+//
+//        List<CreateGroupCommand> createGroupRequests = groups.values().stream()
+//                .map(group -> CreateGroupCommand.builder()
+//                        .name(group.getName())
+//                        .createdDate(new Date())
+//                        .menteeEmails(group.getMentees())
+//                        .mentorEmails(group.getMentors())
+//                        .groupCategory(group.getGroupCategory())
+//                        .timeStart(group.getTimeStart())
+//                        .timeEnd(group.getTimeEnd())
+//                        .build())
+//                .toList();
+//        for (CreateGroupCommand createGroupRequest : createGroupRequests) {
+//            GroupServiceDto returnData = createGroup(emailUser, createGroupRequest);
+//            if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
+//                return returnData;
+//            }
+//        }
+//        for (Group group : groups.values()) {
+//            group.setId(groupRepository.findByName(group.getName()).getId());
+//            group.setDuration(groupRepository.findByName(group.getName()).getDuration());
+//            group.setMentors(groupRepository.findByName(group.getName()).getMentors());
+//            group.setMentees(groupRepository.findByName(group.getName()).getMentees());
+//        }
+//
+//        return new GroupServiceDto(SUCCESS, null, groups.values());
+//    }
 
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
@@ -1362,19 +1531,19 @@ public class GroupServiceImpl implements GroupService {
 //        groupRepository.save(group);
 //    }
 
-    /**
-     * @param user UserPrincipal
-     * @param name Optional name of groups.
-     * @return List<GroupForwardResponse>
-     */
+//    /**
+//     * @param user UserPrincipal
+//     * @param name Optional name of groups.
+//     * @return List<GroupForwardResponse>
+//     */
 //    @Override
 //    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
 //        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
 //
-//        var listChannelIds = groups.stream().map(Group::getChannelIds).toList();
-//        List<String> lstChannelIds = listChannelIds.stream().flatMap(Collection::stream).toList();
+//        var listChannelIds = groups.stream().map(g -> g.getChannels().stream().map(Channel::getId).toList()).toList();
+//        List<String> lstChannelIds = Stream.concat(listChannelIds.stream().flatMap(Collection::stream), groups.stream().map(g -> g.getDefaultChannel().getId())).toList();
 //
-//\
-//        return channelRepository.getListChannelForward(lstChannelIds, ChannelStatus.ACTIVE);
+//
+//        return channelRepository.getListChannelForward(lstChannelIds, user.getId(), ChannelStatus.ACTIVE);
 //    }
 }

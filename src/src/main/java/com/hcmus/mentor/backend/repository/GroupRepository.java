@@ -125,4 +125,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     @Query("SELECT g from Group g join g.groupUsers gu join gu.user u where u.id = :userId and g.id = :groupId")
     boolean existsByMember(@Param("groupId") String groupId, @Param("userId") String userId);
+
+//    List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
 }

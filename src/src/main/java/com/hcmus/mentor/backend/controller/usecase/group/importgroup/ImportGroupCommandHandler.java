@@ -29,6 +29,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Predicate;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
@@ -50,7 +51,6 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
     private final UserService userService;
 
     /**
-     *
      * @param command command to import group
      * @return group service DTO
      */
@@ -133,7 +133,10 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
             }
-            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n")).toList();
+            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n"))
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(String::isEmpty))
+                    .toList();
 
             // Group name
             if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
@@ -147,19 +150,22 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
             }
-            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n")).toList();
+            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(String::isEmpty))
+                    .toList();
 
             // Start date
-            if (row.getCell(6) == null || row.getCell(6).getStringCellValue().isEmpty()) {
+            if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
             }
-            timeStart = formatter.parse(row.getCell(6).getStringCellValue());
+            timeStart = row.getCell(6).getDateCellValue();
 
             // End date
-            if (row.getCell(7).getStringCellValue().isEmpty()) {
+            if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
             }
-            timeEnd = formatter.parse(row.getCell(7).getStringCellValue());
+            timeEnd = row.getCell(7).getDateCellValue();
 
             GroupServiceDto isValidTimeRange = groupService.validateTimeRange(timeStart, timeEnd);
             if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
