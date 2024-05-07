@@ -142,7 +142,14 @@ public class UserServiceImpl implements UserService {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<User> users = userRepository.findByEmailLikeIgnoreCase(email);
+        List<User> users;
+
+        if (email.isEmpty()) {
+            users = userRepository.findAll();
+        } else {
+            users = userRepository.findByEmailLikeIgnoreCase(email);
+        }
+
         return new UserServiceDto(SUCCESS, null, users);
     }
 

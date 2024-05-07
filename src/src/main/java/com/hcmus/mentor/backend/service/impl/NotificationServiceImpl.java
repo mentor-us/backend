@@ -56,7 +56,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     *
      * @param senderId
      * @param request
      * @return
@@ -77,7 +76,6 @@ public class NotificationServiceImpl implements NotificationService {
 
 
     /**
-     *
      * @param userId
      * @param notificationId
      * @param action
@@ -118,7 +116,6 @@ public class NotificationServiceImpl implements NotificationService {
 
 
     /**
-     *
      * @param request
      */
     @Override
@@ -252,7 +249,7 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Group group =task.getGroup().getGroup();
+        Group group = task.getGroup().getGroup();
         if (group == null) {
             return;
         }
@@ -273,9 +270,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNewTaskNotification(String title, String content, String senderId, Task task) {
-        var assignees = task.getAssignees();
+        var assignees = task.getAssignees().stream().map(Assignee::getId).toList();
         var sender = task.getAssigner();
-        var assigner = task.getAssigner();
+        var assigner = task.getAssigner().getId();
 
         Notification inAppNotification = notificationRepository.save(Notification.builder()
                 .title(title)
@@ -285,11 +282,17 @@ public class NotificationServiceImpl implements NotificationService {
                 .refId(task.getId())
                 .build());
 
-        List<NotificationUser> receivers = Stream.concat(assignees.stream(), Stream.of(assigner))
+        var receiversList = Stream.concat(task.getAssignees().stream().map(Assignee::getId), Stream.of(task.getAssigner().getId()))
                 .distinct()
+                .map(id -> userRepository.findById(id).get())
                 .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
                 .toList();
-        inAppNotification.setReceivers(receivers);
+
+//        List<NotificationUser> receivers = Stream.concat(assignees.stream(), Stream.of(assigner))
+//                .distinct()
+//                .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
+//                .toList();
+        inAppNotification.setReceivers(receiversList);
         notificationRepository.save(inAppNotification);
 
         return inAppNotification;
@@ -401,7 +404,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     *
      * @param title
      * @param content
      * @param senderId
@@ -428,7 +430,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .build();
         try {
             NotificationSubscriber subscriber = notificationSubscriberRepository.findByUserId(message.getSender().getId()).orElse(null);
-            if(subscriber == null) {
+            if (subscriber == null) {
                 return;
             }
             firebaseMessagingManager.sendNotification(subscriber.getToken(), notification, data);
@@ -483,7 +485,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     *
      * @param userId
      * @return
      */
@@ -664,7 +665,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     *
      * @param title
      * @param content
      * @param senderId
