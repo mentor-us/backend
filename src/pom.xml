@@ -31,29 +31,23 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- Dependency package version-->
+        <flyway.version>10.11.0</flyway.version>
         <jjwt.version>0.12.5</jjwt.version>
-
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
-
         <lombok.version>1.18.32</lombok.version>
-
         <socketio.version>2.0.9</socketio.version>
-
         <springdoc.version>2.3.0</springdoc.version>
         <api-runtime-javadoc.version>0.15.0</api-runtime-javadoc.version>
-
-        <quartz.version>2.3.2</quartz.version>
-
+        <quartz.version>2.5.0-rc1</quartz.version>
         <jsoup.version>1.17.2</jsoup.version>
         <html2pdf.version>5.0.4</html2pdf.version>
-
         <tika.version>2.9.2</tika.version>
-
-        <commonio.version>2.15.1</commonio.version>
-        <common-csv.version>1.8</common-csv.version>
+        <commonio.version>2.16.1</commonio.version>
+        <common-csv.version>1.10.0</common-csv.version>
         <poi.version>5.2.5</poi.version>
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <minio.version>8.5.9</minio.version>
+        <mapstruct.version>1.6.0.Beta1</mapstruct.version>
+        <minio.version>8.5.10</minio.version>
+        <pipelinr.version>0.8</pipelinr.version>
     </properties>
 
     <dependencies>
@@ -141,12 +135,12 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>10.11.0</version>
+            <version>${flyway.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
-            <version>10.11.0</version>
+            <version>${flyway.version}</version>
         </dependency>
         <!-- End spring boot -->
 
@@ -281,12 +275,13 @@
         <dependency>
             <groupId>net.sizovs</groupId>
             <artifactId>pipelinr</artifactId>
-            <version>0.8</version>
+            <version>${pipelinr.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
 
