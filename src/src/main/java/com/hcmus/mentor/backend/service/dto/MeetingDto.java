@@ -54,7 +54,7 @@ public class MeetingDto {
                 .attendees(meeting.getAttendees().stream().map(com.hcmus.mentor.backend.domain.User::getId).toList())
                 .groupId(meeting.getGroup().getId())
                 .createdDate(meeting.getCreatedDate())
-                .histories(meeting.getHistories().stream().map(MeetingHistoryDto::from).toList() )
+                .histories(meeting.getHistories().stream().map(MeetingHistoryDto::from).toList())
                 .build();
     }
 
@@ -77,6 +77,17 @@ public class MeetingDto {
 
         private Date modifyDate;
 
+        public static MeetingHistoryDto from(com.hcmus.mentor.backend.domain.MeetingHistory history) {
+            return MeetingHistoryDto.builder()
+                    .id(history.getId())
+                    .timeStart(history.getTimeStart())
+                    .timeEnd(history.getTimeEnd())
+                    .place(history.getPlace())
+                    .modifierId(history.getModifier().getId())
+                    .modifyDate(history.getModifyDate())
+                    .build();
+        }
+
         @Override
         public String toString() {
             return "\tLịch hẹn: "
@@ -93,17 +104,6 @@ public class MeetingDto {
                     + ", Ngày cập nhật ="
                     + modifyDate
                     + '\n';
-        }
-
-        public static MeetingHistoryDto from(com.hcmus.mentor.backend.domain.MeetingHistory history) {
-            return MeetingHistoryDto.builder()
-                    .id(history.getId())
-                    .timeStart(history.getTimeStart())
-                    .timeEnd(history.getTimeEnd())
-                    .place(history.getPlace())
-                    .modifierId(history.getModifier().getId())
-                    .modifyDate(history.getModifyDate())
-                    .build();
         }
     }
 }

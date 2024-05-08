@@ -1,11 +1,10 @@
 package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
 import com.hcmus.mentor.backend.domain.User;
-
-import java.util.Date;
-
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.*;
+
+import java.util.Date;
 
 @Getter
 @Setter

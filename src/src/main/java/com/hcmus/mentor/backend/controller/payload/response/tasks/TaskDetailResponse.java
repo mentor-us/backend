@@ -1,9 +1,11 @@
 package com.hcmus.mentor.backend.controller.payload.response.tasks;
 
 import com.hcmus.mentor.backend.domain.Task;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Date;
 

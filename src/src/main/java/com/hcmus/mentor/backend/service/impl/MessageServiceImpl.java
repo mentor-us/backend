@@ -103,7 +103,7 @@ public class MessageServiceImpl implements MessageService {
     public List<MessageResponse> findGroupMessagesByText(String groupId, String query, int page, int size) {
         return messageRepository.findGroupMessages(groupId, query).stream()
                 .map(message -> {
-                    var sender = ProfileResponse.from( message.getSender());
+                    var sender = ProfileResponse.from(message.getSender());
                     return MessageResponse.from(message, sender);
                 }).toList();
     }
@@ -121,7 +121,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional(readOnly = true)
-    public  String getMessageContentById(String messageId){
+    public String getMessageContentById(String messageId) {
         var message = messageRepository.findById(messageId).orElse(null);
 
         return getMessageContent(message);
@@ -295,7 +295,7 @@ public class MessageServiceImpl implements MessageService {
             imageKeys.add(key);
         }
 
-        Message message = messageRepository.save( Message.builder()
+        Message message = messageRepository.save(Message.builder()
                 .id(request.getId())
                 .sender(user)
                 .channel(channel)
@@ -371,7 +371,7 @@ public class MessageServiceImpl implements MessageService {
                 return message;
             }
             // Todo: vrify user is member of group
-            var sender =messageReply.getSender();
+            var sender = messageReply.getSender();
             var senderProfile = sender.isStatus() ? new ShortProfile(sender) : null;
             message.setReply(MessageDetailResponse.ReplyMessage.builder()
                     .id(messageReply.getId())
@@ -583,7 +583,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-       var task = taskRepository.findById(taskId).orElse(null);
+        var task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
             return Collections.emptyList();
         }
@@ -596,12 +596,12 @@ public class MessageServiceImpl implements MessageService {
                 .toList();
 
         Map<String, TaskStatus> statuses = task.getAssignees().stream()
-                .collect(Collectors.toMap(a->a.getUser().getId(), Assignee::getStatus, (s1, s2) -> s2));
+                .collect(Collectors.toMap(a -> a.getUser().getId(), Assignee::getStatus, (s1, s2) -> s2));
 
         return assignees.stream()
                 .map(assignee -> {
                     boolean isMentor = group.isMentor(assignee.getId());
-                    return TaskAssigneeResponse.from(assignee, statuses.get(assignee.getId()),isMentor);
+                    return TaskAssigneeResponse.from(assignee, statuses.get(assignee.getId()), isMentor);
                 })
                 .toList();
     }

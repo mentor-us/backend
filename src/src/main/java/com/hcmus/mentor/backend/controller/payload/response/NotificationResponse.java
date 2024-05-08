@@ -1,15 +1,14 @@
 package com.hcmus.mentor.backend.controller.payload.response;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.domain.Notification;
-
-import java.util.Date;
-
+import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.Date;
 
 @Getter
 @AllArgsConstructor

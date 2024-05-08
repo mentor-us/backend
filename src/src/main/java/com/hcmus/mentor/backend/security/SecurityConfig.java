@@ -32,14 +32,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final GlobalControllerExceptionHandler exceptionHandler;
-    private final CustomOidcUserService customOidcUserService;
-    private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
-    private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
-    private final OAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
-    private final FirebaseClearingLogoutHandler firebaseClearingLogoutHandler;
-    private final JwtAuthFilter jwtAuthFilter;
-
     private static final String[] AUTH_WHITELIST = {
             "/api/auth/**",
             "/api/files/**",
@@ -50,6 +42,13 @@ public class SecurityConfig {
             "**/oauth2/**",
             "/actuator/**",
     };
+    private final GlobalControllerExceptionHandler exceptionHandler;
+    private final CustomOidcUserService customOidcUserService;
+    private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
+    private final OAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+    private final FirebaseClearingLogoutHandler firebaseClearingLogoutHandler;
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public CommonsRequestLoggingFilter requestLoggingFilter() {

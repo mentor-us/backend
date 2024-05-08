@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ToggleMarkMenteeCommand implements Command<Void>{
+public class ToggleMarkMenteeCommand implements Command<Void> {
 
     /**
      * Current user id.

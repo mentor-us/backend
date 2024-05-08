@@ -90,7 +90,7 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
                 .type(channel.getType())
                 .build();
 
-        GroupCategory groupCategory =channel.getGroup().getGroupCategory();
+        GroupCategory groupCategory = channel.getGroup().getGroupCategory();
 
         if (groupCategory != null) {
             response.setPermissions(groupCategory.getPermissions());

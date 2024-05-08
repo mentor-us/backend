@@ -26,7 +26,7 @@ public class FileModel implements Serializable {
     private UploadStatus uploadStatus = UploadStatus.Success;
 
     public FileModel(File file) {
-        if(file == null) {
+        if (file == null) {
             return;
         }
 

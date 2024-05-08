@@ -1,13 +1,9 @@
 package com.hcmus.mentor.backend.controller.exception;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import lombok.Getter;
 import org.springframework.validation.BindingResult;
+
+import java.util.*;
 
 /**
  * The collection of key-value validation messages. Allows accumulating errors per key.
@@ -16,13 +12,13 @@ import org.springframework.validation.BindingResult;
 public class ValidationErrors extends HashMap<String, List<String>> {
 
     /**
-     * Returns {@code true} if there were any errors added.
-     */
-    public Boolean hasError = !this.isEmpty();
-    /**
      * Default summary validation key. Should contain the overall message.
      */
     private final String summaryKey = "";
+    /**
+     * Returns {@code true} if there were any errors added.
+     */
+    public Boolean hasError = !this.isEmpty();
 
     /**
      * Constructor.

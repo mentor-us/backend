@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class DoVotingCommandHandler implements Command.Handler<DoVotingCommand, Void>{
+public class DoVotingCommandHandler implements Command.Handler<DoVotingCommand, Void> {
     private final ChoiceRepository choiceRepository;
     private final UserRepository userRepository;
     private final VoteRepository voteRepository;

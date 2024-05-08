@@ -45,7 +45,6 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     private final ChannelRepository channelRepository;
 
     /**
-     *
      * @param command The command to create a new group.
      * @return The group service DTO.
      */
@@ -97,7 +96,6 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .build());
 
 
-
         groupRepository.save(group);
 
         List<GroupUser> groupUsers = new ArrayList<>();
@@ -123,7 +121,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .users(groupUsers.stream().map(GroupUser::getUser).toList())
                 .build());
         group.setDefaultChannel(channel);
-         groupRepository.save(group);
+        groupRepository.save(group);
 
         return new GroupServiceDto(SUCCESS, null, group);
     }

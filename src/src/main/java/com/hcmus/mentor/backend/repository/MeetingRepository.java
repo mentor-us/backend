@@ -38,7 +38,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
             "from Meeting m " +
             "inner join m.group ch " +
             "inner join m.attendees attendees " +
-            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 " )
+            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 ")
     Page<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
             List<String> groupId,
             String userId,

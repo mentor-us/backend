@@ -1,10 +1,9 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import lombok.*;
 
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter

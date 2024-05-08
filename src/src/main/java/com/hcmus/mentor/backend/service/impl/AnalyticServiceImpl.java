@@ -73,9 +73,28 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
+    private final SpringTemplateEngine templateEngine;
     @PersistenceContext
     private EntityManager entityManager;
-    private final SpringTemplateEngine templateEngine;
+
+    @NotNull
+    static ResponseEntity<Resource> getResourceResponseEntity(List<String> remainColumns, List<List<String>> data, List<String> headers, String fileName, Map<String, Integer> indexMap) throws IOException {
+        List<Integer> remainColumnIndexes = new ArrayList<>();
+        remainColumnIndexes.add(0);
+        remainColumns.forEach(remainColumn -> {
+            if (indexMap.containsKey(remainColumn)) {
+                remainColumnIndexes.add(indexMap.get(remainColumn));
+            }
+        });
+        File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
+        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
+    }
 
     private SystemAnalyticResponse getGeneralInformationForSuperAdmin() {
         long totalGroups = groupRepository.count();
@@ -656,25 +675,6 @@ public class AnalyticServiceImpl implements AnalyticService {
         indexMap.put("totalMeetings", 8);
         indexMap.put("lastTimeActive", 9);
         return getResourceResponseEntity(remainColumns, data, headers, fileName, indexMap);
-    }
-
-    @NotNull
-    static ResponseEntity<Resource> getResourceResponseEntity(List<String> remainColumns, List<List<String>> data, List<String> headers, String fileName, Map<String, Integer> indexMap) throws IOException {
-        List<Integer> remainColumnIndexes = new ArrayList<>();
-        remainColumnIndexes.add(0);
-        remainColumns.forEach(remainColumn -> {
-            if (indexMap.containsKey(remainColumn)) {
-                remainColumnIndexes.add(indexMap.get(remainColumn));
-            }
-        });
-        File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
-        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
-                .body(resource);
     }
 
     @Override

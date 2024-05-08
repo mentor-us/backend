@@ -37,8 +37,8 @@ public class NotificationController {
      * Get all notifications with paging.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param page          The page number (default is 0).
-     * @param pageSize      The number of notifications per page (default is 25).
+     * @param page                The page number (default is 0).
+     * @param pageSize            The number of notifications per page (default is 25).
      * @return APIResponse containing the list of notifications for the user.
      */
     @GetMapping("")
@@ -70,7 +70,7 @@ public class NotificationController {
      * Create a new notification.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request payload for creating a new notification.
+     * @param request             The request payload for creating a new notification.
      * @return APIResponse containing the created notification or a response indicating failure.
      */
     @PostMapping("")
@@ -87,8 +87,8 @@ public class NotificationController {
      * Respond to a notification (e.g., see, accept, or deny).
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the notification to respond to.
-     * @param action        The action to perform in response to the notification.
+     * @param id                  The ID of the notification to respond to.
+     * @param action              The action to perform in response to the notification.
      * @return APIResponse containing the updated notification or a not-found response.
      */
     @PatchMapping("{id}")

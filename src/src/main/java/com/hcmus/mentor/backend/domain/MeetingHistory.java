@@ -19,7 +19,7 @@ public class MeetingHistory implements Serializable {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id ;
+    private String id;
 
     @Column(name = "time_start")
     private Date timeStart;

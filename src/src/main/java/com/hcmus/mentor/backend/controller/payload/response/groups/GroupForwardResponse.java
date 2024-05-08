@@ -1,8 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,6 +22,7 @@ public class GroupForwardResponse {
      * Group image url
      */
     private String imageUrl;
+
     public static GroupForwardResponse from(Group group) {
         return GroupForwardResponse.builder()
                 .id(group.getId())

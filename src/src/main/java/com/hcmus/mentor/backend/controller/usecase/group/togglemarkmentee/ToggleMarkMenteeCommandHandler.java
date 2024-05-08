@@ -41,8 +41,8 @@ public class ToggleMarkMenteeCommandHandler implements Command.Handler<ToggleMar
                 .findFirst()
                 .orElseThrow(() -> new DomainException("Không phải là thành viên của nhóm."));
 
-        if(command.isMarked() == groupUser.isMarked()){
-            if(command.isMarked()){
+        if (command.isMarked() == groupUser.isMarked()) {
+            if (command.isMarked()) {
                 throw new DomainException("Mentee đã được đánh dấu rồi.");
             } else {
                 throw new DomainException("Mentee chưa được đánh dấu.");

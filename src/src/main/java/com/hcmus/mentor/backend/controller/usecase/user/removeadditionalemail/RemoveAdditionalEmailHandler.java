@@ -1,15 +1,15 @@
 package com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail;
 
 import an.awesome.pipelinr.Command;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.service.dto.UserServiceDto;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-import com.hcmus.mentor.backend.service.dto.UserServiceDto;
-import org.springframework.stereotype.Component;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 
 /**
  * Handler for {@link RemoveAdditionalEmailCommand}.
@@ -29,7 +29,7 @@ public class RemoveAdditionalEmailHandler implements Command.Handler<RemoveAddit
      */
     @Override
     public UserServiceDto handle(RemoveAdditionalEmailCommand command) {
-        if(userRepository.findByEmail(command.getAdditionalEmail()).isPresent())
+        if (userRepository.findByEmail(command.getAdditionalEmail()).isPresent())
             return new UserServiceDto(NOT_FOUND, "Can't not remove primary email!", null);
 
         Optional<User> userOptional = userRepository.findById(command.getUserId());

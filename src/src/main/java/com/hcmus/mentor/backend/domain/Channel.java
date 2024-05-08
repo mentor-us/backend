@@ -82,7 +82,7 @@ public class Channel implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @BatchSize(size = 10)
-    @JoinColumn(name = "group_id",referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
     @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "messagesPinned", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private Group group;
 

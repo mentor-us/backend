@@ -1,14 +1,13 @@
 package com.hcmus.mentor.backend.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.util.StringUtils;
 
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.util.StringUtils;
 
 public class RequestUtils {
 

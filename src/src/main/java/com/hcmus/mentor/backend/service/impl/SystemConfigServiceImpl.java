@@ -99,12 +99,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         domains.add("fit.gmail.com.vn");
 
         SystemConfig validDomains = SystemConfig.builder()
-                        .name("Domain hợp lệ")
-                        .description("Các domain cho phép đăng nhập trên hệ thống")
-                        .type(String.valueOf(domains.getClass()).split(" ")[1])
-                        .key("valid_domain")
-                        .value(String.valueOf(domains))
-                        .build();
+                .name("Domain hợp lệ")
+                .description("Các domain cho phép đăng nhập trên hệ thống")
+                .type(String.valueOf(domains.getClass()).split(" ")[1])
+                .key("valid_domain")
+                .value(String.valueOf(domains))
+                .build();
         systemConfigRepository.save(validDomains);
 
         Integer maxYear = 7;

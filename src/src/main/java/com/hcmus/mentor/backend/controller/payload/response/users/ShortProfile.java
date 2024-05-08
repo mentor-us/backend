@@ -16,7 +16,7 @@ public class ShortProfile {
 
     private String imageUrl;
 
-    public ShortProfile(User user){
+    public ShortProfile(User user) {
         this.id = user.getId();
         this.name = user.getName();
         this.imageUrl = user.getImageUrl();

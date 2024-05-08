@@ -48,7 +48,7 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public VoteDetailResponse get(String userId, String voteId) {
         var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
-        vote.getGroup().getGroup().isMentor(userId) ;
+        vote.getGroup().getGroup().isMentor(userId);
         if (!permissionService.isUserIdInGroup(userId, vote.getGroup().getId())) {
             return null;
         }
@@ -190,7 +190,7 @@ public class VoteServiceImpl implements VoteService {
     @Override
     public Vote doVoting(DoVotingRequest request) {
         var vote = voteRepository.findById(request.getVoterId()).orElse(null);
-        if(vote==null){
+        if (vote == null) {
             return null;
         }
 
@@ -199,7 +199,7 @@ public class VoteServiceImpl implements VoteService {
         }
 
         var voter = userRepository.findById(request.getVoterId()).orElse(null);
-        if(voter==null){
+        if (voter == null) {
             return null;
         }
 

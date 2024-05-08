@@ -33,8 +33,8 @@ public class FaqController {
     /**
      * Retrieves all FAQs of a group.
      *
-     * @param loggedUser    The current user's principal information.
-     * @param groupId       The ID of the group to retrieve FAQs.
+     * @param loggedUser The current user's principal information.
+     * @param groupId    The ID of the group to retrieve FAQs.
      * @return ResponseEntity containing a list of FAQs for the specified group.
      */
     @GetMapping("")
@@ -52,7 +52,7 @@ public class FaqController {
      * Retrieves the details of a specific FAQ.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param faqId         The ID of the FAQ to retrieve details.
+     * @param faqId               The ID of the FAQ to retrieve details.
      * @return ResponseEntity containing the detailed information of the specified FAQ.
      */
     @GetMapping("{faqId}")
@@ -72,7 +72,7 @@ public class FaqController {
      * Adds a new FAQ to a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request containing information to create a new FAQ.
+     * @param request             The request containing information to create a new FAQ.
      * @return ResponseEntity containing the ID of the newly created FAQ.
      */
     @PostMapping("")
@@ -92,8 +92,8 @@ public class FaqController {
      * Updates an existing FAQ in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param faqId         The ID of the FAQ to be updated.
-     * @param request       The request containing updated information for the FAQ.
+     * @param faqId               The ID of the FAQ to be updated.
+     * @param request             The request containing updated information for the FAQ.
      * @return ResponseEntity containing the ID of the updated FAQ.
      */
     @PatchMapping("{faqId}")
@@ -113,8 +113,8 @@ public class FaqController {
     /**
      * Deletes an existing FAQ from a group.
      *
-     * @param loggedUser    The current user's principal information.
-     * @param faqId         The ID of the FAQ to be deleted.
+     * @param loggedUser The current user's principal information.
+     * @param faqId      The ID of the FAQ to be deleted.
      * @return ResponseEntity indicating the success of the deletion operation.
      */
     @DeleteMapping("{faqId}")
@@ -124,16 +124,16 @@ public class FaqController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @PathVariable String faqId) {
         faqService.deleteFaq(loggedUser.getId(), faqId);
-        
+
         return ResponseEntity.ok().build();
     }
 
     /**
      * Imports existing FAQs from another group.
      *
-     * @param loggedUser    The current user's principal information.
-     * @param destGroupId   The ID of the FAQ to which FAQs will be imported.
-     * @param request       The request containing information about the FAQs to import.
+     * @param loggedUser  The current user's principal information.
+     * @param destGroupId The ID of the FAQ to which FAQs will be imported.
+     * @param request     The request containing information about the FAQs to import.
      * @return ResponseEntity indicating the success of the import operation.
      */
     @PostMapping("{groupIdgroupId}/import")
@@ -152,7 +152,7 @@ public class FaqController {
      * Upvotes an existing FAQ in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param faqId         The ID of the FAQ to be upvoted.
+     * @param faqId               The ID of the FAQ to be upvoted.
      * @return ResponseEntity indicating the success of the upvote operation.
      */
     @PostMapping("{faqId}/upvote")
@@ -170,7 +170,7 @@ public class FaqController {
      * Downvotes an existing FAQ in a group.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param faqId         The ID of the FAQ to be downvoted.
+     * @param faqId               The ID of the FAQ to be downvoted.
      * @return ResponseEntity indicating the success of the downvote operation.
      */
     @PostMapping("{faqId}/downVote")

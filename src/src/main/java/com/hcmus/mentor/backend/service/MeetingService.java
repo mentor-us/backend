@@ -130,7 +130,7 @@ public class MeetingService implements IRemindableService {
     }
 
     public Meeting updateMeeting(String modifierId, String meetingId, UpdateMeetingRequest request) {
-       var meeting = meetingRepository.findById(meetingId).orElse(null);
+        var meeting = meetingRepository.findById(meetingId).orElse(null);
         if (meeting == null) {
             return null;
         }
@@ -236,7 +236,7 @@ public class MeetingService implements IRemindableService {
 
     @Transactional(readOnly = true)
     public List<Meeting> getAllOwnMeetings(String userId) {
-       var channelIds =  channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
+        var channelIds = channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
 
         return meetingRepository.findAllByOwn(channelIds, userId);
     }

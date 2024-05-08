@@ -56,7 +56,7 @@ public class MessageDto {
     private Boolean isForward = false;
 
     public static MessageDto from(Message message) {
-        var messageDto =  MessageDto.builder()
+        var messageDto = MessageDto.builder()
                 .id(message.getId())
                 .senderId(message.getSender().getId())
                 .content(message.getContent())
@@ -64,7 +64,7 @@ public class MessageDto {
                 .type(message.getType())
                 .groupId(message.getChannel().getId())
                 .voteId(message.getVote().getId())
-                .meetingId(message.getMeeting() != null ? message.getMeeting().getId(): null)
+                .meetingId(message.getMeeting() != null ? message.getMeeting().getId() : null)
                 .taskId(message.getTask() != null ? message.getTask().getId() : null)
                 .editedAt(message.getEditedAt())
 //                .reactions(ReactionDto.from(message.getReactions()))

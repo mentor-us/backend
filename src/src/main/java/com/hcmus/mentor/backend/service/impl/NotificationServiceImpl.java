@@ -273,7 +273,7 @@ public class NotificationServiceImpl implements NotificationService {
         var assignees = task.getAssignees();
         var assigner = task.getAssigner();
 
-        Notification inAppNotification =Notification.builder()
+        Notification inAppNotification = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_TASK)

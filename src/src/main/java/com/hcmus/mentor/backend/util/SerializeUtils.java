@@ -1,10 +1,9 @@
 package com.hcmus.mentor.backend.util;
 
 import jakarta.servlet.http.Cookie;
+import org.springframework.util.SerializationUtils;
 
 import java.util.Base64;
-
-import org.springframework.util.SerializationUtils;
 
 public class SerializeUtils {
 

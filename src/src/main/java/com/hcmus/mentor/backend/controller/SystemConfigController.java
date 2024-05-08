@@ -4,8 +4,8 @@ import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.domain.SystemConfig;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import com.hcmus.mentor.backend.service.SystemConfigService;
+import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -49,8 +49,8 @@ public class SystemConfigController {
      * Update the value of an existing system configuration.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the system configuration to update.
-     * @param value         The new value to set for the system configuration.
+     * @param id                  The ID of the system configuration to update.
+     * @param value               The new value to set for the system configuration.
      * @return APIResponse containing the updated system configuration or an error response.
      */
     @PatchMapping(value = "{id}")

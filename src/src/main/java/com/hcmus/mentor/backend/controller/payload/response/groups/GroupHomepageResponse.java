@@ -62,7 +62,7 @@ public class GroupHomepageResponse {
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
         this.mentors = users.stream().filter(GroupUser::isMentor).map(GroupUser::getId).toList();
-        this.mentees = users.stream().filter(groupUser-> !groupUser.isMentor()).map(GroupUser::getId).toList();
+        this.mentees = users.stream().filter(groupUser -> !groupUser.isMentor()).map(GroupUser::getId).toList();
         this.groupCategory = group.getGroupCategory().getId();
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
@@ -72,7 +72,7 @@ public class GroupHomepageResponse {
         this.pinned = isPinned;
         this.hasNewMessage = group.getHasNewMessage();
         this.newMessage = group.getLastMessage() != null ? group.getLastMessage().getContent() : null;
-        this.newMessageId =group.getLastMessage() != null ? group.getLastMessage().getId() : null;
+        this.newMessageId = group.getLastMessage() != null ? group.getLastMessage().getId() : null;
         this.defaultChannelId = group.getDefaultChannel() != null ? group.getDefaultChannel().getId() : null;
 
     }

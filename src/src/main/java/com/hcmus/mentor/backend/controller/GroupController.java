@@ -35,8 +35,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
@@ -64,15 +62,12 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 @RequiredArgsConstructor
 public class GroupController {
 
-    private static final Logger logger = LogManager.getLogger(GroupController.class);
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupService groupService;
     private final EventService eventService;
     private final PermissionService permissionService;
     private final Pipeline pipeline;
-    private static final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
-    private static final String TEMP_TEMPLATE_PATH = "src/main/resources/templates/temp-import-groups.xlsx";
 
     /**
      * Retrieves groups based on the user's role and group type.
@@ -179,7 +174,7 @@ public class GroupController {
     public ApiResponseDto<GroupDetailResponse> get(
             @PathVariable("id") String id) {
         Optional<Group> groupWrapper = groupRepository.findById(id);
-        if(groupWrapper.isPresent()){
+        if (groupWrapper.isPresent()) {
             return ApiResponseDto.success(new GroupDetailResponse(groupWrapper.get()));
         }
         return ApiResponseDto.notFound(NOT_FOUND);
@@ -199,7 +194,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody CreateGroupRequest command) {
         String creatorEmail = loggedUser.getEmail();
-        GroupServiceDto groupReturn =  pipeline.send(new CreateGroupCommand(creatorEmail, command));
+        GroupServiceDto groupReturn = pipeline.send(new CreateGroupCommand(creatorEmail, command));
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
@@ -304,7 +299,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,false );
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request, false);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
@@ -325,7 +320,7 @@ public class GroupController {
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
         String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request,true );
+        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request, true);
         return new ApiResponseDto(
                 groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }

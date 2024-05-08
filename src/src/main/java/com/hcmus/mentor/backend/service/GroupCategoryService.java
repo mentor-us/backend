@@ -1,16 +1,15 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
-
-import java.io.IOException;
-import java.util.List;
-
+import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
+import java.util.List;
 
 public interface GroupCategoryService {
     List<GroupCategory> findAll();

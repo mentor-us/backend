@@ -7,8 +7,8 @@ import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
+import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -70,7 +70,7 @@ public class GroupCategoryController {
      * Creates a new group category.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request containing information to create a new group category.
+     * @param request             The request containing information to create a new group category.
      * @return ResponseEntity containing the newly created group category information.
      */
     @PostMapping("")
@@ -91,8 +91,8 @@ public class GroupCategoryController {
      * Updates an existing group category.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param id            The ID of the group category to be updated.
-     * @param request       The request containing updated information for the group category.
+     * @param id                  The ID of the group category to be updated.
+     * @param request             The request containing updated information for the group category.
      * @return ResponseEntity containing the updated group category information.
      */
     @PatchMapping("{id}")
@@ -114,8 +114,8 @@ public class GroupCategoryController {
      * Deletes an existing group category.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request containing information to delete the group category.
-     * @param id            The ID of the group category to be deleted.
+     * @param request             The request containing information to delete the group category.
+     * @param id                  The ID of the group category to be deleted.
      * @return APIResponse indicating the success of the deletion operation.
      */
     @DeleteMapping("{id}")
@@ -138,11 +138,11 @@ public class GroupCategoryController {
      * Finds group categories with multiple filters.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param name          The name filter for group categories.
-     * @param description   The description filter for group categories.
-     * @param status        The status filter for group categories.
-     * @param page          The page number for pagination.
-     * @param size          The page size for pagination.
+     * @param name                The name filter for group categories.
+     * @param description         The description filter for group categories.
+     * @param status              The status filter for group categories.
+     * @param page                The page number for pagination.
+     * @param size                The page size for pagination.
      * @return APIResponse containing the paginated list of group categories.
      */
     @GetMapping("find")
@@ -169,7 +169,7 @@ public class GroupCategoryController {
      * Deletes multiple existing group categories.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param request       The request containing information to delete multiple group categories.
+     * @param request             The request containing information to delete multiple group categories.
      * @return APIResponse indicating the success of the deletion operation.
      */
     @DeleteMapping("")
@@ -193,10 +193,10 @@ public class GroupCategoryController {
      * Exports group categories table based on search conditions.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param name          The name filter for group categories.
-     * @param description   The description filter for group categories.
-     * @param status        The status filter for group categories.
-     * @param remainColumns The columns to include in the export.
+     * @param name                The name filter for group categories.
+     * @param description         The description filter for group categories.
+     * @param status              The status filter for group categories.
+     * @param remainColumns       The columns to include in the export.
      * @return ResponseEntity containing the exported group categories table as a Resource.
      * @throws IOException If an I/O error occurs during the export process.
      */
@@ -218,7 +218,7 @@ public class GroupCategoryController {
      * Exports the entire group categories table.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param remainColumns The columns to include in the export.
+     * @param remainColumns       The columns to include in the export.
      * @return ResponseEntity containing the exported group categories table as a Resource.
      * @throws IOException If an I/O error occurs during the export process.
      */

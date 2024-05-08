@@ -53,4 +53,5 @@ public class ReceivedMessageRequest {
     private String reply;
 
     @Builder.Default
-    private Boolean isForward = false;}
+    private Boolean isForward = false;
+}

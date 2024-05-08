@@ -3,10 +3,9 @@ package com.hcmus.mentor.backend.controller.payload.request;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.*;
 
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter

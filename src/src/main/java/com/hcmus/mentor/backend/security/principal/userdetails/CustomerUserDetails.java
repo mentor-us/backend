@@ -25,17 +25,13 @@ public class CustomerUserDetails implements OAuth2User, OidcUser, UserDetails {
 
     @Getter
     private final String password;
-
-    @Getter
-    List<UserRole> roles;
-
     @Getter
     private final Collection<? extends GrantedAuthority> authorities;
-
     @Getter
     @Setter
     public Map<String, Object> attributes;
-
+    @Getter
+    List<UserRole> roles;
     private OidcUserInfo oidcUserInfo;
     private OidcIdToken oidcIdToken;
 

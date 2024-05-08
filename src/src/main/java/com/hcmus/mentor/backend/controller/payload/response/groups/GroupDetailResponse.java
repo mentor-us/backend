@@ -70,8 +70,7 @@ public class GroupDetailResponse {
 
     private String defaultChannelId;
 
-    public GroupDetailResponse(Group group)
-    {
+    public GroupDetailResponse(Group group) {
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
@@ -185,7 +184,7 @@ public class GroupDetailResponse {
                     .creatorId(channel.getCreator().getId())
                     .hasNewMessage(channel.getHasNewMessage())
                     .imageUrl(channel.getImageUrl())
-                    .pinnedMessageIds(channel.getMessagesPinned().stream().map(m->m.getId()).toList())
+                    .pinnedMessageIds(channel.getMessagesPinned().stream().map(m -> m.getId()).toList())
                     .parentId(channel.getGroup().getId())
                     .newMessageId(channel.getLastMessage() == null ? null : channel.getLastMessage().getId())
                     .build();

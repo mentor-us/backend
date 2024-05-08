@@ -16,8 +16,8 @@ import org.springframework.data.domain.Page;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FindOwnGroupsCommand implements Command<Page<GroupHomepageResponse>> {
-    private  String userId;
+    private String userId;
     private Boolean isMentor;
-    private  int page;
-    private  int pageSize;
+    private int page;
+    private int pageSize;
 }

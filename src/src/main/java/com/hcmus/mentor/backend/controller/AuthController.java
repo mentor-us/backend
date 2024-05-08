@@ -86,6 +86,6 @@ public class AuthController {
     @PostMapping("/register")
     @Profile("!prod")
     public UserServiceDto fakeRegister(@RequestBody AddUserRequest request) {
-       return userService.addUser(request);
+        return userService.addUser(request);
     }
 }

@@ -1,10 +1,10 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.domain.Faq;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.response.FAQDetail;
+import com.hcmus.mentor.backend.domain.Faq;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 
 import java.util.List;

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 @Setter
 @Builder
 public class GetChannelByIdQuery implements Command<GroupDetailResponse> {
-    
+
     /**
      * The ID of the channel to retrieve.
      */

@@ -90,11 +90,6 @@ public class Vote {
         setChoices(newChoices);
     }
 
-    public enum Status {
-        OPEN,
-        CLOSED
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "(" +
@@ -107,5 +102,10 @@ public class Vote {
                 "deletedDate = " + deletedDate + ", " +
                 "isMultipleChoice = " + isMultipleChoice + ", " +
                 "status = " + status + ")";
+    }
+
+    public enum Status {
+        OPEN,
+        CLOSED
     }
 }
