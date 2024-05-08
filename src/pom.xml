@@ -45,7 +45,7 @@
         <quartz.version>2.3.2</quartz.version>
 
         <jsoup.version>1.17.2</jsoup.version>
-        <html2pdf.version>5.0.1</html2pdf.version>
+        <html2pdf.version>5.0.4</html2pdf.version>
 
         <tika.version>2.9.2</tika.version>
 
