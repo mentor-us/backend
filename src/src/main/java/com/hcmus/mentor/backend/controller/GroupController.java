@@ -16,6 +16,7 @@ import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.Get
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.domain.Group;
@@ -812,17 +813,16 @@ public class GroupController {
     /**
      * Get the central workspace of a group for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which the workspace is requested.
+     * @param groupId The ID of the group for which the workspace is requested.
      * @return ResponseEntity containing the group workspace information.
      */
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GroupDetailResponse> getWorkspace(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+    public ResponseEntity<GetGroupWorkspaceResult> getWorkspace(
             @PathVariable String groupId) {
-        var response = pipeline.send(new GetGroupWorkSpaceQuery(customerUserDetails.getId(), groupId));
+        var response = pipeline.send(new GetGroupWorkSpaceQuery(groupId));
+
         return ResponseEntity.ok(response);
     }
 
