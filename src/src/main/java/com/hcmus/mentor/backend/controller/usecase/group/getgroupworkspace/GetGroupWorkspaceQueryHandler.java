@@ -9,6 +9,7 @@ import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWorkSpaceQuery, GroupDetailResponse> {
 
+    private final LoggedUserAccessor loggedUserAccessor;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
 
@@ -43,23 +45,27 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         var groupUsers = group.getGroupUsers();
 
         var groupDetailResponse = new GroupDetailResponse(group);
-        var channels = group.getChannels();
+        var allChannels = group.getChannels();
 
-        groupDetailResponse.setChannels(channels.stream()
+        var publicChannel = allChannels.stream()
                 .filter(c -> c.getType() == ChannelType.PUBLIC)
                 .map(GroupDetailResponse.GroupChannel::from)
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                .toList());
+                .toList();
+        groupDetailResponse.setChannels(publicChannel);
 
-        groupDetailResponse.setPrivates(channels.stream()
-                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE && channels.stream()
-                        .anyMatch(ch -> ch.getUsers().stream()
-                                .anyMatch(u -> Objects.equals(u.getId(), command.getCurrentUserId()))))
+        var privateChannel = allChannels.stream()
+                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE &&
+                        allChannels.stream().anyMatch(ch -> ch.getUsers().stream()
+                                .anyMatch(u -> Objects.equals(u.getId(), command.getCurrentUserId()))
+                        )
+                )
                 .map(channel -> {
                     ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), command.getCurrentUserId())).map(ShortProfile::new).findFirst().orElse(null);
                     if (penpal == null) {
                         return null;
                     }
+
                     channel.setName(penpal.getName());
                     channel.setImageUrl(penpal.getImageUrl());
 
@@ -69,7 +75,12 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
                 .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
-                .toList());
+                .toList();
+        groupDetailResponse.setPrivates(privateChannel);
+
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+        groupDetailResponse.setRole(currentUserId);
+
 
         return groupDetailResponse;
     }

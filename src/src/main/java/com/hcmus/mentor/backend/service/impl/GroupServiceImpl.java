@@ -1012,16 +1012,12 @@ public class GroupServiceImpl implements GroupService {
         }
 
         var group = channel.getGroup();
-//        if (!group.isMentor(userId)) {
-//            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-//        }
 
-        GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, channel.getGroup());
+        GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, group);
         if (channelDetail == null) {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
-//        var groupDetail = new GroupDetailResponse(group);
         channelDetail.setPinnedMessages(fullFillPinMessages(userId, channelDetail.getPinnedMessageIds()));
 
         return new GroupServiceDto(SUCCESS, null, channelDetail);
@@ -1053,6 +1049,8 @@ public class GroupServiceImpl implements GroupService {
                 .parentId(parentGroup.getId())
                 .totalMember(channel.getUsers().size())
                 .type(channel.getType())
+                .mentors(parentGroup.getMentors().stream().map(User::getId).toList())
+                .mentors(parentGroup.getMentees().stream().map(User::getId).toList())
                 .build();
 
         GroupCategory groupCategory = parentGroup.getGroupCategory();
