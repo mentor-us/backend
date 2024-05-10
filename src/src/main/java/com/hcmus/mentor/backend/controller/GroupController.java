@@ -17,6 +17,7 @@ import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGr
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.domain.Group;
@@ -136,7 +137,7 @@ public class GroupController {
     @GetMapping("recent")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> recentGroups(
+    public ApiResponseDto<Page<GroupDetailDto>> recentGroups(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize) {

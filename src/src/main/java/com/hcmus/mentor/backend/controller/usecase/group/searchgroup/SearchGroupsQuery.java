@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.group.searchgroup;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.domain.Group;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +11,7 @@ import org.springframework.data.domain.Page;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SearchGroupsQuery implements Command<Page<Group>> {
+public class SearchGroupsQuery implements Command<Page<GroupDetailDto>> {
 
     private int page = 0;
     private int size = 25;

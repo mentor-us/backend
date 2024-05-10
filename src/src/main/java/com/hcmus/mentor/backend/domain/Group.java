@@ -17,14 +17,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@Setter
-@Getter
 @Entity
-@Builder
 @Table(name = "groups")
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Group implements Serializable {
+public class Group extends BaseDomain implements Serializable {
 
     /**
      * Map of group status
@@ -96,20 +96,6 @@ public class Group implements Serializable {
      */
     @Column(name = "duration")
     private Duration duration;
-
-    /**
-     * Created date
-     */
-    @Builder.Default
-    @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
-
-    /**
-     * Updated date
-     */
-    @Builder.Default
-    @Column(name = "updated_date", nullable = false)
-    private Date updatedDate = new Date();
 
     @Builder.Default
     @BatchSize(size = 10)
@@ -233,7 +219,7 @@ public class Group implements Serializable {
     }
 
     public void ping() {
-        setUpdatedDate(new Date());
+        this.updatedDate = new Date();
     }
 
     @Override

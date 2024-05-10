@@ -13,15 +13,12 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQuery, Page<Group>> {
+public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQuery, Page<GroupDetailDto>> {
 
     private final Logger logger = LoggerFactory.getLogger(SearchGroupsQueryHandler.class);
     private final ModelMapper modelMapper;
@@ -32,7 +29,7 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
     private final UserRepository userRepository;
 
     @Override
-    public Page<Group> handle(SearchGroupsQuery query) {
+    public Page<GroupDetailDto> handle(SearchGroupsQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         if (!query.getType().equals("admin")) {
@@ -68,6 +65,6 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
             }
         }
 
-        return groups;
+        return new PageImpl<>(groups.getContent().stream().map(group -> modelMapper.map(group, GroupDetailDto.class)).toList(), pageRequest, groups.getTotalElements());
     }
 }
