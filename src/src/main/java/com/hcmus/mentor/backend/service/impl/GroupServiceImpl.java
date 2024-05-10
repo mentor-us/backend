@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
@@ -87,14 +86,11 @@ public class GroupServiceImpl implements GroupService {
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
     private final BlobStorage blobStorage;
-    private final ShareService shareService;
-    private final Pipeline pipeline;
     private final GroupUserRepository groupUserRepository;
 
 
     public Date changeGroupTime(Date time, String type) {
-        LocalDateTime timeInstant =
-                time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime timeInstant = time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
         if (type.equals("START")) {
             timeInstant = timeInstant.withHour(0).withMinute(0);

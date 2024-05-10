@@ -3,7 +3,6 @@ package com.hcmus.mentor.backend.controller;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
@@ -184,18 +183,16 @@ public class GroupController {
     /**
      * Creates a new group (Only Admins).
      *
-     * @param loggedUser The current user's principal information.
-     * @param command    The request body containing information to create a new group.
+     * @param command The request body containing information to create a new group.
      * @return APIResponse containing the created Group entity or an error response.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody CreateGroupRequest command) {
-        String creatorEmail = loggedUser.getEmail();
-        GroupServiceDto groupReturn = pipeline.send(new CreateGroupCommand(creatorEmail, command));
+            @RequestBody CreateGroupCommand command) {
+        var groupReturn = pipeline.send(command);
+
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 

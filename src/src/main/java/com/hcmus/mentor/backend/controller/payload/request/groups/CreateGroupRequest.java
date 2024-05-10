@@ -17,8 +17,8 @@ import java.util.List;
  */
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class CreateGroupRequest {
 
     /**
