@@ -1,9 +1,10 @@
 package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
@@ -13,15 +14,19 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersR
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
@@ -52,11 +57,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 
 /**
@@ -156,11 +159,15 @@ public class GroupController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupDetailResponse> get(
             @PathVariable("id") String id) {
-        Optional<Group> groupWrapper = groupRepository.findById(id);
-        if (groupWrapper.isPresent()) {
-            return ApiResponseDto.success(new GroupDetailResponse(groupWrapper.get()));
+        try {
+            var query = GetGroupByIdQuery.builder().id(id).build();
+
+            var group = pipeline.send(query);
+
+            return ApiResponseDto.success(group);
+        } catch (DomainException ex) {
+            return ApiResponseDto.notFound(NOT_FOUND);
         }
-        return ApiResponseDto.notFound(NOT_FOUND);
     }
 
     /**
@@ -430,22 +437,24 @@ public class GroupController {
     /**
      * Updates a group's information.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param id                  The ID of the group to be updated.
-     * @param request             The request body containing the updated information.
+     * @param command The request body containing the updated information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> update(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
-            @RequestBody UpdateGroupRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.updateGroup(email, id, request);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @RequestBody UpdateGroupByIdCommand command) {
+        command.setId(id);
+
+        try {
+            var group = pipeline.send(command);
+
+            return new ApiResponseDto(group, 200, "Success");
+        } catch (DomainException ex) {
+            return new ApiResponseDto(null, 400, ex.getMessage());
+        }
     }
 
     /**
@@ -492,39 +501,69 @@ public class GroupController {
     /**
      * Disables multiple groups.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param ids                 The list of group IDs to be disabled.
+     * @param ids The list of group IDs to be disabled.
      * @return APIResponse indicating the success or failure of disabling the groups.
      */
     @PatchMapping(value = "disable")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto disableMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.disableMultiple(email, ids);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        var groups = new ArrayList<GroupDetailDto>();
+        var notfoundGroups = new ArrayList<String>();
+
+        for (var groupId : ids) {
+            try {
+                var comamnd = EnableDisableGroupByIdCommand.builder().id(groupId).status(GroupStatus.DISABLED).build();
+
+                var group = pipeline.send(comamnd);
+
+                groups.add(group);
+            } catch (ForbiddenException ex) {
+                return new ApiResponseDto(null, INVALID_PERMISSION, "Không có quyền chỉnh sửa");
+            } catch (DomainException ex) {
+                notfoundGroups.add(groupId);
+            }
+        }
+        if (!notfoundGroups.isEmpty()) {
+            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+        }
+
+        return new ApiResponseDto(groups, 200, "Success");
     }
 
     /**
      * Enables multiple groups, checking time start and time end to generate status.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param ids                 The list of group IDs to be enabled.
+     * @param ids The list of group IDs to be enabled.
      * @return APIResponse indicating the success or failure of enabling the groups.
      */
     @PatchMapping(value = "enable")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto enableMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.enableMultiple(email, ids);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        var groups = new ArrayList<GroupDetailDto>();
+        var notfoundGroups = new ArrayList<String>();
+
+        for (var groupId : ids) {
+            try {
+                var comamnd = EnableDisableGroupByIdCommand.builder().id(groupId).status(GroupStatus.ACTIVE).build();
+
+                var group = pipeline.send(comamnd);
+
+                groups.add(group);
+            } catch (ForbiddenException ex) {
+                return new ApiResponseDto(null, INVALID_PERMISSION, "Không có quyền chỉnh sửa");
+            } catch (DomainException ex) {
+                notfoundGroups.add(groupId);
+            }
+        }
+        if (!notfoundGroups.isEmpty()) {
+            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+        }
+
+        return new ApiResponseDto(groups, 200, "Success");
     }
 
     /**

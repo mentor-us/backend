@@ -5,6 +5,7 @@ import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -28,7 +29,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -50,6 +50,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
     private final UserRepository userRepository;
     private final Pipeline pipeline;
     private final UserService userService;
+    private final GroupDomainService groupDomainService;
 
     /**
      * @param command command to import group
@@ -168,9 +169,9 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             }
             timeEnd = row.getCell(7).getLocalDateTimeCellValue();
 
-            GroupServiceDto isValidTimeRange = groupService.validateTimeRange(timeStart, timeEnd);
-            if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-                return isValidTimeRange;
+            var isValidTimeRange = groupDomainService.isStartAndEndTimeValid(timeStart, timeEnd);
+            if (!isValidTimeRange) {
+                return new GroupServiceDto(INVALID_DOMAINS, "Invalid time range", null);
             }
 
             var command = CreateGroupCommand.builder()

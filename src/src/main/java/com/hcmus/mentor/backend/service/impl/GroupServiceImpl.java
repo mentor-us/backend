@@ -4,7 +4,6 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
@@ -53,7 +52,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -145,29 +143,6 @@ public class GroupServiceImpl implements GroupService {
     public Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
         return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
-    }
-
-    public GroupServiceDto validateTimeRange(LocalDateTime timeStart, LocalDateTime timeEnd) {
-        int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt((String) systemConfigRepository.findByKey("valid_max_year").getValue());
-
-        if (timeEnd.isBefore(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupServiceDto(TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
-        }
-        if (timeEnd.isBefore(LocalDateTime.now(ZoneOffset.UTC)) || timeEnd.equals(LocalDateTime.now(ZoneOffset.UTC))) {
-            return new GroupServiceDto(TIME_END_BEFORE_NOW, "Time end can't be before now", null);
-        }
-
-        if (ChronoUnit.YEARS.between(timeStart, timeEnd)
-                > maxYearsBetweenTimeStartAndTimeEnd) {
-            return new GroupServiceDto(
-                    TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
-        }
-        if (Math.abs(ChronoUnit.YEARS.between(timeStart, LocalDateTime.now(ZoneOffset.UTC)))
-                > MAX_YEAR_FROM_TIME_START_AND_NOW) {
-            return new GroupServiceDto(
-                    TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
-        }
-        return new GroupServiceDto(SUCCESS, "", null);
     }
 
     private List<String> validateInvalidMails(List<String> mentors, List<String> mentees) {
@@ -788,45 +763,6 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public GroupServiceDto updateGroup(String emailUser, String groupId, UpdateGroupRequest request) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        if (groupRepository.existsByName(request.getName()) && !request.getName().equals(group.getName())) {
-            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
-        }
-
-        var groupCategory = groupCategoryRepository.findById(request.getGroupCategory()).orElse(null);
-        if (groupCategory == null) {
-            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
-        }
-        group.update(request.getName(), request.getDescription(), request.getStatus(), request.getTimeStart(), request.getTimeEnd(), groupCategory);
-
-
-        GroupServiceDto isValidTimeRange = validateTimeRange(group.getTimeStart(), group.getTimeEnd());
-        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-            return isValidTimeRange;
-        }
-
-        Duration duration = calculateDuration(group.getTimeStart(), group.getTimeEnd());
-        group.setDuration(duration);
-        GroupStatus status =
-                getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
-        group.setStatus(status);
-        if (request.getStatus().equals(GroupStatus.DISABLED)) {
-            group.setStatus(GroupStatus.DISABLED);
-        }
-
-        group.setUpdatedDate(new Date());
-        groupRepository.save(group);
-
-        return new GroupServiceDto(SUCCESS, null, group);
-    }
-
-    @Override
     public GroupServiceDto deleteGroup(String emailUser, String groupId) {
         var groupServiceDto = getGroupById(emailUser, groupId);
         if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
@@ -897,58 +833,6 @@ public class GroupServiceImpl implements GroupService {
         List<Group> groups = groupRepository.findByIdIn(ids);
         groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
         groupRepository.saveAll(groups);
-        return new GroupServiceDto(SUCCESS, null, groups);
-    }
-
-    @Override
-    public GroupServiceDto disableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        List<String> notFoundIds = new ArrayList<>();
-        for (String id : ids) {
-            Optional<Group> groupOptional = groupRepository.findById(id);
-            if (groupOptional.isEmpty()) {
-                notFoundIds.add(id);
-            }
-        }
-
-        if (!notFoundIds.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
-        }
-        List<Group> groups = groupRepository.findByIdIn(ids);
-        for (Group group : groups) {
-            group.setStatus(GroupStatus.DISABLED);
-            groupRepository.save(group);
-        }
-
-        return new GroupServiceDto(SUCCESS, null, groups);
-    }
-
-    @Override
-    public GroupServiceDto enableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        List<String> notFoundIds = new ArrayList<>();
-        for (String id : ids) {
-            Optional<Group> groupOptional = groupRepository.findById(id);
-            if (groupOptional.isEmpty()) {
-                notFoundIds.add(id);
-            }
-        }
-
-        if (!notFoundIds.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
-        }
-        List<Group> groups = groupRepository.findByIdIn(ids);
-        for (Group group : groups) {
-            GroupStatus status =
-                    getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
-            group.setStatus(status);
-            groupRepository.save(group);
-        }
-
         return new GroupServiceDto(SUCCESS, null, groups);
     }
 

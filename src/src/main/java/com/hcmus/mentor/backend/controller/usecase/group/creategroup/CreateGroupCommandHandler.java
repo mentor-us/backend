@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.authentication.ui.DefaultLogoutPageGeneratingFilter;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -29,8 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.DUPLICATE_GROUP;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.GROUP_CATEGORY_NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 
@@ -136,9 +136,9 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        GroupServiceDto isValidTimeRange = groupService.validateTimeRange(command.getTimeStart(), command.getTimeEnd());
-        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-            return isValidTimeRange;
+        var isValidTimeRange = groupDomainService.isStartAndEndTimeValid(command.getTimeStart(), command.getTimeEnd());
+        if (!isValidTimeRange) {
+            return new GroupServiceDto(INVALID_DOMAINS, "Invalid time range", null);
         }
 
         if (groupRepository.existsByName(command.getName())) {
