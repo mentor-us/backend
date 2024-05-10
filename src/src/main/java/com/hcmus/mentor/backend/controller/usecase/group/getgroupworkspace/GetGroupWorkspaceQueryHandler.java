@@ -2,14 +2,15 @@ package com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +23,11 @@ import java.util.Objects;
  */
 @Component
 @RequiredArgsConstructor
-public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWorkSpaceQuery, GroupDetailResponse> {
+public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWorkSpaceQuery, GetGroupWorkspaceResult> {
 
+    private final LoggedUserAccessor loggedUserAccessor;
     private final GroupRepository groupRepository;
-    private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
     /**
      * @param command command to get group detail.
@@ -33,44 +35,58 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
      */
     @Override
     @Transactional(readOnly = true)
-    public GroupDetailResponse handle(GetGroupWorkSpaceQuery command) {
+    public GetGroupWorkspaceResult handle(GetGroupWorkSpaceQuery command) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
         Group group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tim thấy nhóm"));
 
-        if (group.getGroupUsers().stream().noneMatch(groupUser -> groupUser.getUser().getId().equals(command.getCurrentUserId()))) {
+        if (group.getGroupUsers().stream().noneMatch(groupUser -> groupUser.getUser().getId().equals(currentUserId))) {
             throw new DomainException("Bạn không thể xem nhóm này");
         }
 
-        var groupUsers = group.getGroupUsers();
+        var groupWorkspace = modelMapper.map(group, GetGroupWorkspaceResult.class);
+        groupWorkspace.setMentors(group.getMentors().stream().map(User::getId).toList());
+        groupWorkspace.setMentees(group.getMentees().stream().map(User::getId).toList());
+        groupWorkspace.setTotalMember(group.getMembers().size());
+        groupWorkspace.setRole(currentUserId);
 
-        var groupDetailResponse = new GroupDetailResponse(group);
-        var channels = group.getChannels();
-
-        groupDetailResponse.setChannels(channels.stream()
+        var allChannels = group.getChannels();
+        var publicChannel = allChannels.stream()
                 .filter(c -> c.getType() == ChannelType.PUBLIC)
-                .map(GroupDetailResponse.GroupChannel::from)
-                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                .toList());
+                .map(channel -> modelMapper.map(channel, WorkspaceChannelDto.class))
+                .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
+                .toList();
+        groupWorkspace.setChannels(publicChannel);
 
-        groupDetailResponse.setPrivates(channels.stream()
-                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE && channels.stream()
-                        .anyMatch(ch -> ch.getUsers().stream()
-                                .anyMatch(u -> Objects.equals(u.getId(), command.getCurrentUserId()))))
+        var groupUsers = group.getGroupUsers();
+        var privateChannel = allChannels.stream()
+                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE &&
+                        allChannels.stream().anyMatch(ch -> ch.getUsers().stream()
+                                .anyMatch(u -> Objects.equals(u.getId(), currentUserId))
+                        )
+                )
                 .map(channel -> {
-                    ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), command.getCurrentUserId())).map(ShortProfile::new).findFirst().orElse(null);
+                    ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), currentUserId)).map(ShortProfile::new).findFirst().orElse(null);
                     if (penpal == null) {
                         return null;
                     }
+
                     channel.setName(penpal.getName());
                     channel.setImageUrl(penpal.getImageUrl());
 
                     List<String> markedMentees = groupUsers.stream().filter(GroupUser::isMarked).map(gu -> gu.getUser().getId()).toList();
-                    return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
+
+                    var workspaceChannelDto = modelMapper.map(channel, WorkspaceChannelDto.class);
+                    workspaceChannelDto.setMarked(markedMentees.contains(penpal.getId()));
+
+                    return workspaceChannelDto;
                 })
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
-                .toList());
+                .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
+                .sorted(Comparator.comparing(WorkspaceChannelDto::getMarked).reversed())
+                .toList();
+        groupWorkspace.setPrivates(privateChannel);
 
-        return groupDetailResponse;
+        return groupWorkspace;
     }
 }
