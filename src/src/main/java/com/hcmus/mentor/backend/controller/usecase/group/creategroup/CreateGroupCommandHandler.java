@@ -6,7 +6,7 @@ import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -23,13 +23,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.DUPLICATE_GROUP;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.GROUP_CATEGORY_NOT_FOUND;
@@ -53,13 +51,14 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     private final UserService userService;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final GroupDomainService groupDomainService;
 
     /**
      * @param command The command to create a new group.
      * @return The group service DTO.
      */
     @Override
-    public GroupServiceDto handle(final CreateGroupCommand command) {
+    public GroupServiceDto handle(CreateGroupCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         GroupServiceDto groupServiceDto = validate(command);
@@ -79,21 +78,17 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         var group = modelMapper.map(command, Group.class);
 
+        group.setCreator(creator);
+        group.setGroupCategory(groupCategory);
+        group.setImageUrl(groupCategory.getIconUrl());
+
         var timeStart = command.getTimeStart().with(LocalTime.of(0, 0, 0));
         var timeEnd = command.getTimeEnd().with(LocalTime.of(23, 59, 59));
         var duration = Duration.between(timeStart, timeEnd);
+        var groupStatus = groupDomainService.getGroupStatus(timeStart, timeEnd);
 
-        var groupStatus = GroupStatus.ACTIVE;
-        var now = LocalDateTime.now();
-        if (timeStart.isBefore(now) || timeEnd.isBefore(now)) {
-            groupStatus = GroupStatus.INACTIVE;
-        }
-        if (timeStart.isAfter(now) && timeEnd.isAfter(now)) {
-            groupStatus = GroupStatus.OUTDATED;
-        }
-
-        group.setTimeStart(Date.from(timeStart.atZone(ZoneId.of("UTC")).toInstant()));
-        group.setTimeEnd(Date.from(timeEnd.atZone(ZoneId.of("UTC")).toInstant()));
+        group.setTimeStart(timeStart);
+        group.setTimeEnd(timeEnd);
         group.setDuration(duration);
         group.setStatus(groupStatus);
 
@@ -101,11 +96,14 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         List<GroupUser> groupUsers = new ArrayList<>();
         var mentors = command.getMentorEmails().stream()
-                .filter(email -> !email.isEmpty())
+                .filter(Objects::nonNull)
+                .filter(Predicate.not(String::isEmpty))
                 .map(email -> userService.importUser(email, command.getName())).toList();
         var mentees = command.getMenteeEmails().stream()
-                .filter(email -> !email.isEmpty())
+                .filter(Objects::nonNull)
+                .filter(Predicate.not(String::isEmpty))
                 .map(email -> userService.importUser(email, command.getName())).toList();
+
         Group finalGroup = group;
         groupUsers.addAll(mentors.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(true).build()).toList());
         groupUsers.addAll(mentees.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(false).build()).toList());
@@ -123,7 +121,10 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .users(groupUsers.stream().map(GroupUser::getUser).toList())
                 .build());
         group.setDefaultChannel(channel);
+
         groupRepository.save(group);
+
+        logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}", group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
 
         return new GroupServiceDto(SUCCESS, null, group);
     }
@@ -131,14 +132,11 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     private GroupServiceDto validate(CreateGroupCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        if (!permissionService.isAdmin(currentUserId)) {
+        if (!permissionService.isAdmin(currentUserId, 0)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        GroupServiceDto isValidTimeRange = groupService.validateTimeRange(
-                Date.from(command.getTimeStart().atZone(ZoneId.of("UTC")).toInstant()),
-                Date.from(command.getTimeEnd().atZone(ZoneId.of("UTC")).toInstant())
-        );
+        GroupServiceDto isValidTimeRange = groupService.validateTimeRange(command.getTimeStart(), command.getTimeEnd());
         if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
             return isValidTimeRange;
         }

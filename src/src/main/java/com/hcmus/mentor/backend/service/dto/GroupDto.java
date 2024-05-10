@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -68,9 +69,9 @@ public class GroupDto {
     @Builder.Default
     private List<String> markedMenteeIds = new ArrayList<>();
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private Duration duration;
 

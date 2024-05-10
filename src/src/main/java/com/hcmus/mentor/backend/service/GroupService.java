@@ -5,7 +5,6 @@ import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupReq
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -15,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -90,7 +89,7 @@ public interface GroupService {
 
     GroupServiceDto getGroupDetail(String userId, String groupId);
 
-    List<String> findAllMenteeIdsGroup(String groupId);
+//    List<String> findAllMenteeIdsGroup(String groupId);
 
     void pingGroup(String groupId);
 
@@ -122,23 +121,24 @@ public interface GroupService {
 
     void unpinChannelMessage(String userId, String channelId, String messageId);
 
-    void updateLastMessageId(String groupId, String messageId);
+//    void updateLastMessageId(String groupId, String messageId);
+//    GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
 
-    //    GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId);
     GroupServiceDto validateListMentorsMentees(List<String> mentors, List<String> mentees);
 
-    GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd);
+    GroupServiceDto validateTimeRange(LocalDateTime timeStart, LocalDateTime timeEnd);
 
-    Date changeGroupTime(Date time, String type);
+//    Date changeGroupTime(Date time, String type);
 
-    Duration calculateDuration(Date from, Date to);
+//    Duration calculateDuration(Date from, Date to);
 
-    GroupStatus getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd);
+//    GroupStatus getStatusFromTimeStartAndTimeEnd(LocalDateTime timeStart, LocalDateTime timeEnd);
 
 //    void markMentee(CustomerUserDetails user, String groupId, String menteeId);
-//
+
 //    void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId);
-//
+
 //    List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name);
+
 
 }

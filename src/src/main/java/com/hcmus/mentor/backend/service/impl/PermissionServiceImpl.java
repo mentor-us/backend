@@ -22,6 +22,14 @@ public class PermissionServiceImpl implements PermissionService {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
 
+    public boolean isAdmin(String id, int dummy) {
+        return isSuperAdmin(id, dummy) || userRepository.existsByIdAndRolesContains(id, ADMIN);
+    }
+
+    public boolean isSuperAdmin(String id, int dummy) {
+        return userRepository.existsByIdAndRolesContains(id, SUPER_ADMIN);
+    }
+
     @Override
     public boolean isAdmin(String email) {
         return isSuperAdmin(email) || userRepository.existsByEmailAndRolesContains(email, ADMIN);

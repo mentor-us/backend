@@ -3,7 +3,6 @@ package com.hcmus.mentor.backend.controller.usecase.group.importgroup;
 import an.awesome.pipelinr.Command;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupRequest;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
@@ -28,6 +27,8 @@ import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -106,8 +107,8 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
         List<String> mentorEmails;
         String groupName;
         String description = "";
-        Date timeStart;
-        Date timeEnd;
+        LocalDateTime timeStart;
+        LocalDateTime timeEnd;
 
         DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -159,13 +160,13 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
             }
-            timeStart = row.getCell(6).getDateCellValue();
+            timeStart = row.getCell(6).getLocalDateTimeCellValue();
 
             // End date
             if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
                 return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
             }
-            timeEnd = row.getCell(7).getDateCellValue();
+            timeEnd = row.getCell(7).getLocalDateTimeCellValue();
 
             GroupServiceDto isValidTimeRange = groupService.validateTimeRange(timeStart, timeEnd);
             if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
@@ -173,16 +174,14 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             }
 
             var command = CreateGroupCommand.builder()
-                    .request(CreateGroupRequest.builder()
-                            .name(groupName)
-                            .description(description)
-                            .createdDate(new Date())
-                            .menteeEmails(menteeEmails)
-                            .mentorEmails(mentorEmails)
-                            .groupCategory(groupCategoryId)
-                            .timeStart(timeStart)
-                            .timeEnd(timeEnd)
-                            .build())
+                    .name(groupName)
+                    .description(description)
+                    .createdDate(new Date())
+                    .menteeEmails(menteeEmails)
+                    .mentorEmails(mentorEmails)
+                    .groupCategory(groupCategoryId)
+                    .timeStart(timeStart)
+                    .timeEnd(timeEnd)
                     .build();
             commands.put(groupName, command);
         }

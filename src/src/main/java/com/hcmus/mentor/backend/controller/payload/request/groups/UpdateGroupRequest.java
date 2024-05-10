@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -23,7 +24,7 @@ public class UpdateGroupRequest {
     private String description;
 
     private GroupStatus status;
-    private Date timeStart;
-    private Date timeEnd;
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
     private String groupCategory;
 }

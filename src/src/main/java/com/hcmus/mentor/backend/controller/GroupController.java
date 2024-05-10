@@ -17,6 +17,7 @@ import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGr
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
@@ -26,7 +27,6 @@ import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,9 +35,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -48,7 +51,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 
@@ -62,50 +68,26 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 @RequiredArgsConstructor
 public class GroupController {
 
+    private final Logger logger = LoggerFactory.getLogger(GroupController.class);
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupService groupService;
     private final EventService eventService;
-    private final PermissionService permissionService;
     private final Pipeline pipeline;
 
     /**
      * Retrieves groups based on the user's role and group type.
      * Admins can get all groups (Paging), while users can get mentee groups or mentor groups (Paging).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param page                The page number for pagination.
-     * @param pageSize            The number of items per page.
-     * @param type                The type of groups to retrieve ("admin" for all groups).
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
      */
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> all(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int pageSize,
-            @RequestParam(defaultValue = "") String type) {
-        Page<Group> groups = new PageImpl<>(new ArrayList<>());
-        if (!type.equals("admin")) {
-            return ApiResponseDto.success(pagingResponse(groups));
-        }
+    public ApiResponseDto<Map<String, Object>> all(
+            SearchGroupsQuery query) {
+        var groups = pipeline.send(query);
 
-        boolean isSuperAdmin = permissionService.isSuperAdmin(customerUserDetails.getEmail());
-        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
-        if (isSuperAdmin) {
-            groups = groupRepository.findAll(pageRequest);
-        } else {
-            var user = userRepository.findByEmail(customerUserDetails.getEmail());
-            if (user.isEmpty()) {
-                return ApiResponseDto.notFound(NOT_FOUND);
-            }
-            String creatorId = user.get().getId();
-            groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
-        }
-
-        groups = new PageImpl<>(groupService.validateTimeGroups(groups.getContent()), pageRequest, groups.getTotalElements());
         return ApiResponseDto.success(pagingResponse(groups));
     }
 
@@ -139,7 +121,7 @@ public class GroupController {
                 command.setIsMentor(null);
                 break;
         }
-        return ApiResponseDto.success(pagingHomepageResponse(pipeline.send(command)));
+        return ApiResponseDto.success(pagingResponse(pipeline.send(command)));
     }
 
 
@@ -361,8 +343,7 @@ public class GroupController {
             @PathVariable("mentorId") String mentorId) {
         String email = customerUserDetails.getEmail();
         GroupServiceDto groupReturn = groupService.deleteMentor(email, groupId, mentorId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
@@ -878,21 +859,12 @@ public class GroupController {
         return ResponseEntity.ok(pipeline.send(new GetChannelsForwardCommand(customerUserDetails.getId(), name.orElse(""))));
     }
 
-    private Map<String, Object> pagingResponse(Page<Group> groups) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("groups", groups.getContent());
-        response.put("currentPage", groups.getNumber());
-        response.put("totalItems", groups.getTotalElements());
-        response.put("totalPages", groups.getTotalPages());
-        return response;
-    }
-
-    private Map<String, Object> pagingHomepageResponse(Page<GroupHomepageResponse> groups) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("groups", groups.getContent());
-        response.put("currentPage", groups.getNumber());
-        response.put("totalItems", groups.getTotalElements());
-        response.put("totalPages", groups.getTotalPages());
-        return response;
+    private Map<String, Object> pagingResponse(Page<?> groups) {
+        return Map.ofEntries(
+                Map.entry("groups", groups.getContent()),
+                Map.entry("currentPage", groups.getNumber()),
+                Map.entry("totalItems", groups.getTotalElements()),
+                Map.entry("totalPages", groups.getTotalPages())
+        );
     }
 }

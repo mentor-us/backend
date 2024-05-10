@@ -50,7 +50,9 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -546,11 +548,11 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private GroupGeneralResponse getGroupGeneralAnalytic(Group group) {
         if (group.getStatus() != GroupStatus.DELETED && group.getStatus() != GroupStatus.DISABLED) {
-            if (group.getTimeEnd().before(new Date())) {
+            if (group.getTimeEnd().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
                 group.setStatus(GroupStatus.OUTDATED);
                 groupRepository.save(group);
             }
-            if (group.getTimeStart().after(new Date())) {
+            if (group.getTimeStart().isAfter(LocalDateTime.now(ZoneOffset.UTC))) {
                 group.setStatus(GroupStatus.INACTIVE);
                 groupRepository.save(group);
             }

@@ -147,24 +147,22 @@ public class GroupServiceImpl implements GroupService {
         return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
     }
 
-    public GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
+    public GroupServiceDto validateTimeRange(LocalDateTime timeStart, LocalDateTime timeEnd) {
         int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt((String) systemConfigRepository.findByKey("valid_max_year").getValue());
-        LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        if (timeEnd.before(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupServiceDto(
-                    TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
+
+        if (timeEnd.isBefore(timeStart) || timeEnd.equals(timeStart)) {
+            return new GroupServiceDto(TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
         }
-        if (timeEnd.before(new Date()) || timeEnd.equals(new Date())) {
+        if (timeEnd.isBefore(LocalDateTime.now(ZoneOffset.UTC)) || timeEnd.equals(LocalDateTime.now(ZoneOffset.UTC))) {
             return new GroupServiceDto(TIME_END_BEFORE_NOW, "Time end can't be before now", null);
         }
-        if (ChronoUnit.YEARS.between(localTimeStart, localTimeEnd)
+
+        if (ChronoUnit.YEARS.between(timeStart, timeEnd)
                 > maxYearsBetweenTimeStartAndTimeEnd) {
             return new GroupServiceDto(
                     TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
         }
-        if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
+        if (Math.abs(ChronoUnit.YEARS.between(timeStart, LocalDateTime.now(ZoneOffset.UTC)))
                 > MAX_YEAR_FROM_TIME_START_AND_NOW) {
             return new GroupServiceDto(
                     TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
@@ -310,12 +308,16 @@ public class GroupServiceImpl implements GroupService {
         return Duration.between(from.toInstant(), to.toInstant());
     }
 
-    public GroupStatus getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd) {
-        Date now = new Date();
-        if (timeStart.before(now) && timeEnd.before(now)) {
+    public Duration calculateDuration(LocalDateTime from, LocalDateTime to) {
+        return Duration.between(from, to);
+    }
+
+    public GroupStatus getStatusFromTimeStartAndTimeEnd(LocalDateTime timeStart, LocalDateTime timeEnd) {
+        var now = LocalDateTime.now(ZoneOffset.UTC);
+        if (timeStart.isBefore(now) && timeEnd.isBefore(now)) {
             return GroupStatus.OUTDATED;
         }
-        if (timeStart.before(now) && timeEnd.after(now)) {
+        if (timeStart.isAfter(now) && timeEnd.isAfter(now)) {
             return GroupStatus.ACTIVE;
         }
         return GroupStatus.INACTIVE;
@@ -797,14 +799,11 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
         }
 
-        Date timeStart = changeGroupTime(request.getTimeStart(), "START");
-        Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
-
         var groupCategory = groupCategoryRepository.findById(request.getGroupCategory()).orElse(null);
         if (groupCategory == null) {
             return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
         }
-        group.update(request.getName(), request.getDescription(), request.getStatus(), timeStart, timeEnd, groupCategory);
+        group.update(request.getName(), request.getDescription(), request.getStatus(), request.getTimeStart(), request.getTimeEnd(), groupCategory);
 
 
         GroupServiceDto isValidTimeRange = validateTimeRange(group.getTimeStart(), group.getTimeEnd());
@@ -1109,20 +1108,20 @@ public class GroupServiceImpl implements GroupService {
         return messageService.fulfillMessages(messageResponses, userId);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<String> findAllMenteeIdsGroup(String groupId) {
-        Optional<Group> wrapper = groupRepository.findById(groupId);
-        if (wrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Group group = wrapper.get();
-        return group.getGroupUsers().stream()
-                .filter(gu -> !gu.isMentor())
-                .map(gu -> gu.getUser().getId())
-                .distinct()
-                .toList();
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<String> findAllMenteeIdsGroup(String groupId) {
+//        Optional<Group> wrapper = groupRepository.findById(groupId);
+//        if (wrapper.isEmpty()) {
+//            return Collections.emptyList();
+//        }
+//        Group group = wrapper.get();
+//        return group.getGroupUsers().stream()
+//                .filter(gu -> !gu.isMentor())
+//                .map(gu -> gu.getUser().getId())
+//                .distinct()
+//                .toList();
+//    }
 
     @Override
     public void pingGroup(String groupId) {
@@ -1417,17 +1416,17 @@ public class GroupServiceImpl implements GroupService {
         notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerMessage);
     }
 
-    @Override
-    public void updateLastMessageId(String groupId, String messageId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return;
-        }
-
-        Group group = groupWrapper.get();
-        group.setLastMessage(messageRepository.findById(messageId).orElse(null));
-        groupRepository.save(group);
-    }
+//    @Override
+//    public void updateLastMessageId(String groupId, String messageId) {
+//        Optional<Group> groupWrapper = groupRepository.findById(groupId);
+//        if (groupWrapper.isEmpty()) {
+//            return;
+//        }
+//
+//        Group group = groupWrapper.get();
+//        group.setLastMessage(messageRepository.findById(messageId).orElse(null));
+//        groupRepository.save(group);
+//    }
 
 //    @Override
 //    public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {

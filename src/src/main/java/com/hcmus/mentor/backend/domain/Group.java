@@ -4,22 +4,25 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Setter
 @Getter
 @Entity
 @Builder
 @Table(name = "groups")
+@NoArgsConstructor
 @AllArgsConstructor
 public class Group implements Serializable {
 
@@ -27,7 +30,13 @@ public class Group implements Serializable {
      * Map of group status
      */
     @Getter
-    private static Map<GroupStatus, String> statusMap;
+    private static Map<GroupStatus, String> statusMap = Map.ofEntries(
+            Map.entry(GroupStatus.ACTIVE, "Đang hoạt động"),
+            Map.entry(GroupStatus.DISABLED, "Bị khoá"),
+            Map.entry(GroupStatus.OUTDATED, "Hết thời hạn"),
+            Map.entry(GroupStatus.INACTIVE, "Chưa hoạt động"),
+            Map.entry(GroupStatus.DELETED, "Đã xóa")
+    );
 
     /**
      * Group identifier
@@ -74,13 +83,13 @@ public class Group implements Serializable {
      * Time start of the group
      */
     @Column(name = "time_start")
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     /**
      * Time end of the group
      */
     @Column(name = "time_end")
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     /**
      * Duration of the group
@@ -171,19 +180,6 @@ public class Group implements Serializable {
     @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
-    public Group() {
-        statusMap = new EnumMap<>(GroupStatus.class);
-        initializeStatusMap();
-    }
-
-    private void initializeStatusMap() {
-        statusMap.put(GroupStatus.ACTIVE, "Đang hoạt động");
-        statusMap.put(GroupStatus.DISABLED, "Bị khoá");
-        statusMap.put(GroupStatus.OUTDATED, "Hết thời hạn");
-        statusMap.put(GroupStatus.INACTIVE, "Chưa hoạt động");
-        statusMap.put(GroupStatus.DELETED, "Đã xóa");
-    }
-
     public boolean isMentor(String userId) {
         return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId) && member.isMentor());
     }
@@ -208,13 +204,12 @@ public class Group implements Serializable {
         return groupUsers.stream().map(GroupUser::getUser).toList();
     }
 
-
     public void update(
             String name,
             String description,
             GroupStatus status,
-            Date timeStart,
-            Date timeEnd,
+            LocalDateTime timeStart,
+            LocalDateTime timeEnd,
             GroupCategory groupCategory) {
         if (name != null) {
             this.setName(name);
@@ -226,14 +221,11 @@ public class Group implements Serializable {
             this.setStatus(status);
         }
         if (timeStart != null) {
-            timeStart.setHours(0);
-            timeStart.setMinutes(0);
-            this.setTimeStart(timeStart);
+            this.setTimeStart(timeStart.with(LocalTime.of(0, 0, 0)));
         }
         if (timeEnd != null) {
-            timeStart.setHours(23);
-            timeStart.setMinutes(59);
-            this.setTimeEnd(timeEnd);
+            timeStart.with(LocalTime.of(23, 59, 59));
+            this.setTimeEnd(timeEnd.with(LocalTime.of(0, 0, 0)));
         }
         if (groupCategory != null) {
             this.setGroupCategory(groupCategory);
