@@ -1,6 +1,10 @@
 package com.hcmus.mentor.backend.service;
 
 public interface PermissionService {
+    boolean isAdmin(String id, int dummy);
+
+    boolean isSuperAdmin(String id, int dummy);
+
     boolean isAdmin(String email);
 
     boolean isSuperAdmin(String email);

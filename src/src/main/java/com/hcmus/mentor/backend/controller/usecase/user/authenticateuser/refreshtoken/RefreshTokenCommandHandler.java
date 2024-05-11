@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -44,7 +45,7 @@ public class RefreshTokenCommandHandler
         var tokenCreationDate = getTokenCreateDate(command.getToken());
         if (tokenCreationDate
                 .plusSeconds(AuthenticateConstant.ACCESS_TOKEN_EXPIRATION_TIME.getSeconds())
-                .isBefore(LocalDateTime.now())) {
+                .isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             throw new DomainException("Token has been expired.");
         }
 
@@ -62,7 +63,7 @@ public class RefreshTokenCommandHandler
             var claims = getTokenClaims(token);
 
             return Instant.ofEpochSecond((int) claims.get("iat"))
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(ZoneId.of("UTC"))
                     .toLocalDateTime();
         } catch (Exception ex) {
             throw new DomainException("User identifier claim cannot be found. Invalid token");

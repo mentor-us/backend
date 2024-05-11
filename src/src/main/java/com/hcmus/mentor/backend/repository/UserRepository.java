@@ -18,19 +18,21 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     long countByStatus(Boolean status);
 
-    long countByIdInAndStatus(List<String> userIds, Boolean status);
+//    long countByIdInAndStatus(List<String> userIds, Boolean status);
 
     long countByCreatedDateBetween(Date start, Date end);
 
-    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
+//    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
     Boolean existsByEmail(String email);
 
     Boolean existsByEmailAndRolesContains(String email, UserRole role);
 
+    Boolean existsByIdAndRolesContains(String id, UserRole role);
+
     Optional<User> findByEmail(String email);
 
-    List<User> findByEmailIn(List<String> emails);
+//    List<User> findByEmailIn(List<String> emails);
 
     Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
 

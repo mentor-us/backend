@@ -104,12 +104,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User importUser(String emailAddress, String groupName) {
-        if (!userRepository.existsByEmail(emailAddress)) {
+        if (Boolean.FALSE.equals(userRepository.existsByEmail(emailAddress))) {
             addNewAccount(emailAddress);
         }
-        var user = userRepository.findByEmail(emailAddress).orElse(null);
-//         mailService.sendInvitationMail(emailAddress, group);
-        return user;
+        return userRepository.findByEmail(emailAddress).orElse(null);
     }
 
     @Override

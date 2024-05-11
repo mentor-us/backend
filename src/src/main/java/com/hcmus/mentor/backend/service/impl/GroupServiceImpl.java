@@ -1,11 +1,8 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
@@ -32,8 +29,6 @@ import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
@@ -52,9 +47,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,44 +64,19 @@ import static com.hcmus.mentor.backend.service.impl.AnalyticServiceImpl.getResou
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
-    private static final Integer MAX_YEAR_FROM_TIME_START_AND_NOW = 4;
-    private static final String MENTOR = "MENTOR";
-    private static final String MENTEE = "MENTEE";
-    private final Logger logger = LogManager.getLogger(this.getClass());
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
-    private final MailService mailService;
     private final PermissionService permissionService;
     private final MailUtils mailUtils;
-    private final SystemConfigRepository systemConfigRepository;
     private final MessageRepository messageRepository;
     private final MessageService messageService;
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
     private final BlobStorage blobStorage;
-    private final ShareService shareService;
-    private final Pipeline pipeline;
     private final GroupUserRepository groupUserRepository;
 
-
-    public Date changeGroupTime(Date time, String type) {
-        LocalDateTime timeInstant =
-                time.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-        if (type.equals("START")) {
-            timeInstant = timeInstant.withHour(0).withMinute(0);
-        } else {
-            timeInstant = timeInstant.withHour(23).withMinute(59);
-        }
-
-        ZonedDateTime zonedDateTime = timeInstant.atZone(ZoneId.of("UTC"));
-        Instant instant = zonedDateTime.toInstant();
-
-        return Date.from(instant);
-    }
 
     /**
      * @param groups List of groups
@@ -149,31 +119,6 @@ public class GroupServiceImpl implements GroupService {
     public Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize) {
         Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by("updatedDate").descending());
         return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
-    }
-
-    public GroupServiceDto validateTimeRange(Date timeStart, Date timeEnd) {
-        int maxYearsBetweenTimeStartAndTimeEnd = Integer.parseInt((String) systemConfigRepository.findByKey("valid_max_year").getValue());
-        LocalDate localTimeStart = timeStart.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localTimeEnd = timeEnd.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate localNow = new Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        if (timeEnd.before(timeStart) || timeEnd.equals(timeStart)) {
-            return new GroupServiceDto(
-                    TIME_END_BEFORE_TIME_START, "Time end can't be before time start", null);
-        }
-        if (timeEnd.before(new Date()) || timeEnd.equals(new Date())) {
-            return new GroupServiceDto(TIME_END_BEFORE_NOW, "Time end can't be before now", null);
-        }
-        if (ChronoUnit.YEARS.between(localTimeStart, localTimeEnd)
-                > maxYearsBetweenTimeStartAndTimeEnd) {
-            return new GroupServiceDto(
-                    TIME_END_TOO_FAR_FROM_TIME_START, "Time end is too far from time start", null);
-        }
-        if (Math.abs(ChronoUnit.YEARS.between(localTimeStart, localNow))
-                > MAX_YEAR_FROM_TIME_START_AND_NOW) {
-            return new GroupServiceDto(
-                    TIME_START_TOO_FAR_FROM_NOW, "Time start is too far from now", null);
-        }
-        return new GroupServiceDto(SUCCESS, "", null);
     }
 
     private List<String> validateInvalidMails(List<String> mentors, List<String> mentees) {
@@ -221,279 +166,16 @@ public class GroupServiceImpl implements GroupService {
         return new GroupServiceDto(SUCCESS, "", null);
     }
 
-//    public GroupServiceDto createGroup(String creatorEmail, CreateGroupCommand command) {
-//        if (!permissionService.isAdmin(creatorEmail)) {
-//            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-//        }
-//
-//        GroupServiceDto isValidTimeRange = validateTimeRange(command.getRequest().getTimeStart(), command.getRequest().getTimeEnd());
-//        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-//            return isValidTimeRange;
-//        }
-//        if (groupRepository.existsByName(command.getRequest().getName())) {
-//            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
-//        }
-//        var groupCategory = groupCategoryRepository.findById(command.getRequest().getGroupCategory());
-//        if (groupCategory.isEmpty()) {
-//            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
-//        }
-//
-//        List<String> menteeEmails = command.getRequest().getMenteeEmails();
-//        List<String> mentorEmails = command.getRequest().getMentorEmails();
-//        GroupServiceDto isValidEmails = validateListMentorsMentees(mentorEmails, menteeEmails);
-//        if (!isValidEmails.getReturnCode().equals(SUCCESS)) {
-//            return isValidEmails;
-//        }
-//
-//        List<String> menteeIds = menteeEmails.stream()
-//                .filter(email -> !email.isEmpty())
-//                .map(email -> userService.importUser(email, command.getRequest().getName()))
-//                .filter(Objects::nonNull)
-//                .toList();
-//
-//        List<String> mentorIds = mentorEmails.stream()
-//                .filter(email -> !email.isEmpty())
-//                .map(email -> userService.importUser(email, command.getName()))
-//                .filter(Objects::nonNull)
-//                .toList();
-//
-//        Date timeStart = changeGroupTime(command.getTimeStart(), "START");
-//        Date timeEnd = changeGroupTime(command.getTimeEnd(), "END");
-//        Duration duration = calculateDuration(timeStart, timeEnd);
-//        GroupStatus status = getStatusFromTimeStartAndTimeEnd(timeStart, timeEnd);
-//        Optional<User> userOptional = userRepository.findByEmail(creatorEmail);
-//        String creatorId = null;
-//        if (userOptional.isPresent()) {
-//            creatorId = userOptional.get().getId();
-//        }
-//
-//        Group group = Group.builder()
-//                .name(command.getName())
-//                .description(command.getDescription())
-//                .mentees(menteeIds)
-//                .mentors(mentorIds)
-//                .groupCategory(command.getGroupCategory())
-//                .status(status)
-//                .timeStart(timeStart)
-//                .timeEnd(timeEnd)
-//                .duration(duration)
-//                .creatorId(creatorId)
-//                .channelIds(new ArrayList<>())
-//                .imageUrl(groupCategory.get().getIconUrl())
-//                .build();
-//        groupRepository.save(group);
-//
-//        var channel = Channel.builder()
-//                .creatorId(creatorId)
-//                .status(ChannelStatus.ACTIVE)
-//                .description("Kênh chat chung")
-//                .name("Kênh chung")
-//                .type(ChannelType.PUBLIC)
-//                .parentId(group.getId())
-//                .build();
-//        channelRepository.save(channel);
-//
-//        var userIds = new ArrayList<String>();
-//        userIds.addAll(menteeIds);
-//        userIds.addAll(mentorIds);
-//
-//        addUsersToChannel(channel.getId(), userIds);
-//
-//
-//        group.setChannelIds(new ArrayList<>());
-//        group.setDefaultChannelId(channel.getId());
-//        groupRepository.save(group);
-//
-//        menteeEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
-//        mentorEmails.forEach(email -> mailService.sendInvitationToGroupMail(email, group));
-//
-//        return new GroupServiceDto(SUCCESS, null, group);
-//    }
-
-    public Duration calculateDuration(Date from, Date to) {
-        return Duration.between(from.toInstant(), to.toInstant());
-    }
-
-    public GroupStatus getStatusFromTimeStartAndTimeEnd(Date timeStart, Date timeEnd) {
-        Date now = new Date();
-        if (timeStart.before(now) && timeEnd.before(now)) {
+    public GroupStatus getStatusFromTimeStartAndTimeEnd(LocalDateTime timeStart, LocalDateTime timeEnd) {
+        var now = LocalDateTime.now(ZoneOffset.UTC);
+        if (timeStart.isBefore(now) && timeEnd.isBefore(now)) {
             return GroupStatus.OUTDATED;
         }
-        if (timeStart.before(now) && timeEnd.after(now)) {
+        if (timeStart.isAfter(now) && timeEnd.isAfter(now)) {
             return GroupStatus.ACTIVE;
         }
         return GroupStatus.INACTIVE;
     }
-
-    private void removeBlankRows(Sheet sheet) {
-        int lastRowNum = sheet.getLastRowNum();
-        for (int i = lastRowNum; i >= 0; i--) {
-            Row row = sheet.getRow(i);
-            if (row == null
-                    || row.getCell(0) == null
-                    || row.getCell(0).getCellType() == org.apache.poi.ss.usermodel.CellType.BLANK) {
-                sheet.removeRow(row);
-            }
-        }
-    }
-
-//    @Override
-//    public GroupServiceDto readGroups(Workbook workbook) throws ParseException {
-//        Map<String, Group> groups = new HashMap<>();
-//        Sheet sheet = workbook.getSheet("Data");
-//        removeBlankRows(sheet);
-//        String groupCategoryName;
-//        List<String> menteeEmails;
-//        List<String> mentorEmails;
-//        String groupName;
-//        String description = "";
-//        Date timeStart;
-//        Date timeEnd;
-//
-//        DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-//        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
-//
-//        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
-//            var errorOnRow = String.format("tại dòng %d không có dữ liệu.", i);
-//            Row row = sheet.getRow(i);
-//            if (i == 0) {
-//                continue;
-//            }
-//            // Validate required fields
-//            // Group category
-//            if (row.getCell(1) == null || row.getCell(2).getStringCellValue().isEmpty()) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Loại nhóm %s", errorOnRow), null);
-//            }
-//            groupCategoryName = row.getCell(1).getStringCellValue();
-//            if (!groupCategoryRepository.existsByName(groupCategoryName)) {
-//                return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
-//            }
-//            String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
-//
-//            // Mentee email
-//            if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
-//            }
-//            menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n"))
-//                    .filter(Objects::nonNull)
-//                    .filter(Predicate.not(String::isEmpty))
-//                    .toList();
-//
-//            // Group name
-//            if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Tên nhóm  %s", errorOnRow), null);
-//            }
-//            groupName = row.getCell(3).getStringCellValue();
-//            if (groups.containsKey(groupName) || groupCategoryRepository.existsByName(groupName))
-//                return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
-//
-//            // Mentor email
-//            if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
-//            }
-//            mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
-//                    .filter(Objects::nonNull)
-//                    .filter(Predicate.not(String::isEmpty))
-//                    .toList();
-//
-//            // Start date
-//            if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
-//            }
-//            timeStart = row.getCell(6).getDateCellValue();
-//
-//            // End date
-//            if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
-//                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
-//            }
-//            timeEnd = row.getCell(7).getDateCellValue();
-//
-//            GroupServiceDto isValidTimeRange = validateTimeRange(timeStart, timeEnd);
-//            if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-//                return isValidTimeRange;
-//            }
-//
-//            Group group = Group.builder()
-//                    .name(groupName)
-//                    .description(description)
-//                    .createdDate(new Date())
-//                    .mentees(menteeEmails)
-//                    .mentors(mentorEmails)
-//                    .groupCategory(groupCategoryId)
-//                    .timeStart(timeStart)
-//                    .timeEnd(timeEnd)
-//                    .build();
-//            groups.put(groupName, group);
-//        }
-//
-//        return new GroupServiceDto(SUCCESS, "", groups);
-//    }
-
-//    @Override
-//    public GroupServiceDto importGroups(String emailUser, MultipartFile file) throws IOException {
-//        if (!permissionService.isAdmin(emailUser)) {
-//            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-//        }
-//        Map<String, Group> groups;
-//        try (InputStream data = file.getInputStream();
-//             Workbook workbook = new XSSFWorkbook(data)) {
-//            List<String> nameHeaders = new ArrayList<>();
-//            nameHeaders.add("STT");
-//            nameHeaders.add("Loại nhóm *");
-//            nameHeaders.add("Emails người được quản lí *");
-//            nameHeaders.add("Tên nhóm *");
-//            nameHeaders.add("Mô tả");
-//            nameHeaders.add("Emails người quản lí *");
-//            nameHeaders.add("Ngày bắt đầu *\n" + "(dd/MM/YYYY)");
-//            nameHeaders.add("Ngày kết thúc *\n" + "(dd/MM/YYYY)");
-//
-//            if (!shareService.isValidTemplate(workbook, 2, nameHeaders)) {
-//                return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
-//            }
-//
-//            GroupServiceDto validReadGroups = readGroups(workbook);
-//            if (!Objects.equals(validReadGroups.getReturnCode(), SUCCESS)) {
-//                return validReadGroups;
-//            }
-//            groups = (Map<String, Group>) validReadGroups.getData();
-//        } catch (ParseException e) {
-//            throw new DomainException(String.valueOf(e));
-//        }
-//        for (Group group : groups.values()) {
-//            var mentors = group.getMentors();
-//            var mentees = group.getMentees();
-//            GroupServiceDto isValidMails = validateListMentorsMentees(mentors, mentees);
-//            if (!Objects.equals(isValidMails.getReturnCode(), SUCCESS)) {
-//                return isValidMails;
-//            }
-//        }
-//
-//        List<CreateGroupCommand> createGroupRequests = groups.values().stream()
-//                .map(group -> CreateGroupCommand.builder()
-//                        .name(group.getName())
-//                        .createdDate(new Date())
-//                        .menteeEmails(group.getMentees())
-//                        .mentorEmails(group.getMentors())
-//                        .groupCategory(group.getGroupCategory())
-//                        .timeStart(group.getTimeStart())
-//                        .timeEnd(group.getTimeEnd())
-//                        .build())
-//                .toList();
-//        for (CreateGroupCommand createGroupRequest : createGroupRequests) {
-//            GroupServiceDto returnData = createGroup(emailUser, createGroupRequest);
-//            if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
-//                return returnData;
-//            }
-//        }
-//        for (Group group : groups.values()) {
-//            group.setId(groupRepository.findByName(group.getName()).getId());
-//            group.setDuration(groupRepository.findByName(group.getName()).getDuration());
-//            group.setMentors(groupRepository.findByName(group.getName()).getMentors());
-//            group.setMentees(groupRepository.findByName(group.getName()).getMentees());
-//        }
-//
-//        return new GroupServiceDto(SUCCESS, null, groups.values());
-//    }
 
     @Override
     public List<Group> validateTimeGroups(List<Group> groups) {
@@ -507,43 +189,6 @@ public class GroupServiceImpl implements GroupService {
         }
 
         return groups;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public GroupServiceDto findGroups(
-            String emailUser,
-            String name,
-            String mentorEmail,
-            String menteeEmail,
-            String groupCategory,
-            Date timeStart1,
-            Date timeEnd1,
-            Date timeStart2,
-            Date timeEnd2,
-            String status,
-            int page,
-            int pageSize) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        Pair<Long, List<Group>> groups = getGroupsByConditions(
-                emailUser,
-                name,
-                mentorEmail,
-                menteeEmail,
-                groupCategory,
-                timeStart1,
-                timeEnd1,
-                timeStart2,
-                timeEnd2,
-                status,
-                page,
-                pageSize);
-        return new GroupServiceDto(
-                SUCCESS,
-                "",
-                new PageImpl<>(groups.getValue(), PageRequest.of(page, pageSize), groups.getKey()));
     }
 
     private Pair<Long, List<Group>> getGroupsByConditions(
@@ -615,121 +260,6 @@ public class GroupServiceImpl implements GroupService {
         return userOptional.map(User::getId).orElse(null);
     }
 
-
-    @Override
-    public GroupServiceDto addMembers(String emailUser, String groupId, AddMembersRequest request, final Boolean isMentor) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        List<String> emails = request.getEmails();
-        List<User> users = emails.stream()
-                .filter(email -> !email.isEmpty())
-                .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                .toList();
-
-        if (group.getGroupUsers().stream().anyMatch(gu -> users.contains(gu.getUser()))) {
-            return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", null);
-        }
-
-        List<GroupUser> groupUsers = users.stream()
-                .map(user -> GroupUser.builder().user(user).group(group).build())
-                .toList();
-        groupUserRepository.saveAll(groupUsers);
-
-        addUsersToChannel(group.getDefaultChannel().getId(), users);
-
-        for (String emailAddress : emails) {
-            mailService.sendInvitationToGroupMail(emailAddress, group);
-        }
-        return new GroupServiceDto(SUCCESS, null, group);
-    }
-
-
-    private void addUsersToChannel(String channelId, List<User> users) {
-        Channel channel = channelRepository.findById(channelId).orElse(null);
-        if (channel == null) {
-            return;
-        }
-
-        var usersInGroup = channel.getUsers();
-        usersInGroup.addAll(users);
-        channel.setUsers(usersInGroup);
-
-        channelRepository.save(channel);
-    }
-
-
-    @Override
-    public GroupServiceDto deleteMentee(String emailUser, String groupId, String menteeId) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(menteeId)).findFirst().orElse(null);
-        if (user != null) {
-            groupUserRepository.delete(user);
-            return new GroupServiceDto(SUCCESS, null, group);
-        }
-        return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
-    }
-
-    @Override
-    public GroupServiceDto deleteMentor(String emailUser, String groupId, String mentorId) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-        var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(mentorId)).findFirst().orElse(null);
-        if (user != null) {
-            groupUserRepository.delete(user);
-            return new GroupServiceDto(SUCCESS, null, group);
-        }
-
-        return new GroupServiceDto(MENTOR_NOT_FOUND, "mentor not found", null);
-    }
-
-    @Override
-    public GroupServiceDto promoteToMentor(String emailUser, String groupId, String menteeId) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(menteeId)).findFirst().orElse(null);
-        if (user != null) {
-            user.setMentor(true);
-            groupUserRepository.save(user);
-            return new GroupServiceDto(SUCCESS, null, group);
-        }
-
-        return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
-    }
-
-    @Override
-    public GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(mentorId)).findFirst().orElse(null);
-        if (user != null) {
-            user.setMentor(false);
-            groupUserRepository.save(user);
-            return new GroupServiceDto(SUCCESS, null, group);
-        }
-
-        return new GroupServiceDto(MENTOR_NOT_FOUND, "Mentor not found", null);
-    }
-
     @Override
     public InputStream loadTemplate(String pathToTemplate) throws Exception {
         String[] groupCategoryNames = groupCategoryRepository
@@ -786,48 +316,6 @@ public class GroupServiceImpl implements GroupService {
         if (group.getStatus() == GroupStatus.DELETED) {
             return new GroupServiceDto(NOT_FOUND, "Group has been deleted", null);
         }
-        return new GroupServiceDto(SUCCESS, null, group);
-    }
-
-    @Override
-    public GroupServiceDto updateGroup(String emailUser, String groupId, UpdateGroupRequest request) {
-        var groupServiceDto = getGroupById(emailUser, groupId);
-        if (!groupServiceDto.getReturnCode().equals(SUCCESS)) {
-            return groupServiceDto;
-        }
-        Group group = (Group) groupServiceDto.getData();
-
-        if (groupRepository.existsByName(request.getName()) && !request.getName().equals(group.getName())) {
-            return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", null);
-        }
-
-        Date timeStart = changeGroupTime(request.getTimeStart(), "START");
-        Date timeEnd = changeGroupTime(request.getTimeEnd(), "END");
-
-        var groupCategory = groupCategoryRepository.findById(request.getGroupCategory()).orElse(null);
-        if (groupCategory == null) {
-            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", null);
-        }
-        group.update(request.getName(), request.getDescription(), request.getStatus(), timeStart, timeEnd, groupCategory);
-
-
-        GroupServiceDto isValidTimeRange = validateTimeRange(group.getTimeStart(), group.getTimeEnd());
-        if (!Objects.equals(isValidTimeRange.getReturnCode(), SUCCESS)) {
-            return isValidTimeRange;
-        }
-
-        Duration duration = calculateDuration(group.getTimeStart(), group.getTimeEnd());
-        group.setDuration(duration);
-        GroupStatus status =
-                getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
-        group.setStatus(status);
-        if (request.getStatus().equals(GroupStatus.DISABLED)) {
-            group.setStatus(GroupStatus.DISABLED);
-        }
-
-        group.setUpdatedDate(new Date());
-        groupRepository.save(group);
-
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
@@ -902,58 +390,6 @@ public class GroupServiceImpl implements GroupService {
         List<Group> groups = groupRepository.findByIdIn(ids);
         groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
         groupRepository.saveAll(groups);
-        return new GroupServiceDto(SUCCESS, null, groups);
-    }
-
-    @Override
-    public GroupServiceDto disableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        List<String> notFoundIds = new ArrayList<>();
-        for (String id : ids) {
-            Optional<Group> groupOptional = groupRepository.findById(id);
-            if (groupOptional.isEmpty()) {
-                notFoundIds.add(id);
-            }
-        }
-
-        if (!notFoundIds.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
-        }
-        List<Group> groups = groupRepository.findByIdIn(ids);
-        for (Group group : groups) {
-            group.setStatus(GroupStatus.DISABLED);
-            groupRepository.save(group);
-        }
-
-        return new GroupServiceDto(SUCCESS, null, groups);
-    }
-
-    @Override
-    public GroupServiceDto enableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        List<String> notFoundIds = new ArrayList<>();
-        for (String id : ids) {
-            Optional<Group> groupOptional = groupRepository.findById(id);
-            if (groupOptional.isEmpty()) {
-                notFoundIds.add(id);
-            }
-        }
-
-        if (!notFoundIds.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
-        }
-        List<Group> groups = groupRepository.findByIdIn(ids);
-        for (Group group : groups) {
-            GroupStatus status =
-                    getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd());
-            group.setStatus(status);
-            groupRepository.save(group);
-        }
-
         return new GroupServiceDto(SUCCESS, null, groups);
     }
 
@@ -1078,23 +514,6 @@ public class GroupServiceImpl implements GroupService {
         return response;
     }
 
-    private GroupDetailResponse fulfillGroupDetail(String userId, GroupDetailResponse response) {
-        response.setRole(userId);
-
-        Optional<User> userWrapper = userRepository.findById(userId);
-        if (userWrapper.isPresent()) {
-            User user = userWrapper.get();
-            response.setPinned(user.isPinnedGroup(response.getId()));
-        }
-        GroupCategory groupCategory = groupCategoryRepository.findByName(response.getGroupCategory());
-        if (groupCategory != null) {
-            response.setPermissions(groupCategory.getPermissions());
-        }
-
-        response.setPinnedMessages(fullFillPinMessages(userId, response.getPinnedMessageIds()));
-        return response;
-    }
-
 
     private List<MessageDetailResponse> fullFillPinMessages(String userId, List<String> pinMessageIds) {
         List<MessageResponse> messageResponses = new ArrayList<>();
@@ -1113,20 +532,20 @@ public class GroupServiceImpl implements GroupService {
         return messageService.fulfillMessages(messageResponses, userId);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<String> findAllMenteeIdsGroup(String groupId) {
-        Optional<Group> wrapper = groupRepository.findById(groupId);
-        if (wrapper.isEmpty()) {
-            return Collections.emptyList();
-        }
-        Group group = wrapper.get();
-        return group.getGroupUsers().stream()
-                .filter(gu -> !gu.isMentor())
-                .map(gu -> gu.getUser().getId())
-                .distinct()
-                .toList();
-    }
+//    @Override
+//    @Transactional(readOnly = true)
+//    public List<String> findAllMenteeIdsGroup(String groupId) {
+//        Optional<Group> wrapper = groupRepository.findById(groupId);
+//        if (wrapper.isEmpty()) {
+//            return Collections.emptyList();
+//        }
+//        Group group = wrapper.get();
+//        return group.getGroupUsers().stream()
+//                .filter(gu -> !gu.isMentor())
+//                .map(gu -> gu.getUser().getId())
+//                .distinct()
+//                .toList();
+//    }
 
     @Override
     public void pingGroup(String groupId) {
@@ -1257,8 +676,8 @@ public class GroupServiceImpl implements GroupService {
 
             Map<GroupStatus, String> statusMap = Group.getStatusMap();
             String status = statusMap.get(group.getStatus());
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-            String dateStart = dateFormat.format(group.getTimeStart());
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            String dateStart = group.getTimeStart().format(dateFormat);
             String dateEnd = dateFormat.format(group.getTimeEnd());
             String duration = DateUtils.parseDuration(group.getDuration());
 
@@ -1421,17 +840,17 @@ public class GroupServiceImpl implements GroupService {
         notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerMessage);
     }
 
-    @Override
-    public void updateLastMessageId(String groupId, String messageId) {
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            return;
-        }
-
-        Group group = groupWrapper.get();
-        group.setLastMessage(messageRepository.findById(messageId).orElse(null));
-        groupRepository.save(group);
-    }
+//    @Override
+//    public void updateLastMessageId(String groupId, String messageId) {
+//        Optional<Group> groupWrapper = groupRepository.findById(groupId);
+//        if (groupWrapper.isEmpty()) {
+//            return;
+//        }
+//
+//        Group group = groupWrapper.get();
+//        group.setLastMessage(messageRepository.findById(messageId).orElse(null));
+//        groupRepository.save(group);
+//    }
 
 //    @Override
 //    public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {

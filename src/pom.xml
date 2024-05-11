@@ -49,6 +49,7 @@
         <minio.version>8.5.10</minio.version>
         <pipelinr.version>0.8</pipelinr.version>
         <modelmapper.version>3.2.0</modelmapper.version>
+        <guava.version>33.2.0-jre</guava.version>
     </properties>
 
     <dependencies>
@@ -241,6 +242,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>${common-csv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>

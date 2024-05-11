@@ -25,12 +25,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-public class User implements Serializable {
+public class User extends BaseDomain implements Serializable {
 
-    @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+//    @Id
+//    @Column(name = "id")
+//    @GeneratedValue(strategy = GenerationType.UUID)
+//    private String id;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -82,9 +82,9 @@ public class User implements Serializable {
     @Column(name = "birth_date")
     private Date birthDate;
 
-    @Builder.Default
-    @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+//    @Builder.Default
+//    @Column(name = "created_date", nullable = false)
+//    private Date createdDate = new Date();
 
     @Column(name = "training_point")
     private int trainingPoint;

@@ -12,6 +12,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,9 +40,9 @@ public class GroupDetailResponse {
 
     private String groupCategory;
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private Duration duration;
 
