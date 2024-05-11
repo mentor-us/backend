@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
@@ -24,30 +23,6 @@ public interface GroupService {
     Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize);
 
     List<Group> validateTimeGroups(List<Group> groups);
-
-    GroupServiceDto findGroups(
-            String emailUser,
-            String name,
-            String mentorEmail,
-            String menteeEmail,
-            String groupCategory,
-            Date timeStart1,
-            Date timeEnd1,
-            Date timeStart2,
-            Date timeEnd2,
-            String status,
-            int page,
-            int pageSize);
-
-    GroupServiceDto addMembers(String emailUser, String groupId, AddMembersRequest request, final Boolean isMentor);
-
-    GroupServiceDto deleteMentee(String emailUser, String groupId, String menteeId);
-
-    GroupServiceDto deleteMentor(String emailUser, String groupId, String mentorId);
-
-    GroupServiceDto promoteToMentor(String emailUser, String groupId, String menteeId);
-
-    GroupServiceDto demoteToMentee(String emailUser, String groupId, String mentorId);
 
     InputStream loadTemplate(String pathToTemplate) throws Exception;
 

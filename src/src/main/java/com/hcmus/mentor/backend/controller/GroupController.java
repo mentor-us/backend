@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepage
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
@@ -22,6 +23,8 @@ import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupBy
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
@@ -220,126 +223,179 @@ public class GroupController {
     /**
      * Adds mentees to a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group to which mentees will be added.
-     * @param request             The request body containing mentee information.
+     * @param groupId The ID of the group to which mentees will be added.
+     * @param request The request body containing mentee information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentees")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> addMentees(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request, false);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = AddMemberToGroupCommand.builder()
+                    .emails(request.getEmails())
+                    .groupId(groupId)
+                    .isMentor(false)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Adds mentors to a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group to which mentors will be added.
-     * @param request             The request body containing mentor information.
+     * @param groupId The ID of the group to which mentors will be added.
+     * @param request The request body containing mentor information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentors")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> addMentors(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMembers(email, groupId, request, true);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = AddMemberToGroupCommand.builder()
+                    .emails(request.getEmails())
+                    .groupId(groupId)
+                    .isMentor(true)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Deletes a mentee from a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group from which the mentee will be deleted.
-     * @param menteeId            The ID of the mentee to be deleted from the group.
+     * @param groupId  The ID of the group from which the mentee will be deleted.
+     * @param menteeId The ID of the mentee to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentees/{menteeId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto deleteMentee(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.deleteMentee(email, groupId, menteeId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = RemoveMemberToGroupCommand.builder()
+                    .userId(menteeId)
+                    .groupId(groupId)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Deletes a mentor from a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group from which the mentor will be deleted.
-     * @param mentorId            The ID of the mentor to be deleted from the group.
+     * @param groupId  The ID of the group from which the mentor will be deleted.
+     * @param mentorId The ID of the mentor to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentors/{mentorId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto deleteMentor(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.deleteMentor(email, groupId, mentorId);
-        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = RemoveMemberToGroupCommand.builder()
+                    .userId(mentorId)
+                    .groupId(groupId)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Promotes a mentee to a mentor within a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group in which the promotion will occur.
-     * @param menteeId            The ID of the mentee to be promoted to mentor.
+     * @param groupId  The ID of the group in which the promotion will occur.
+     * @param menteeId The ID of the mentee to be promoted to mentor.
      * @return APIResponse indicating the success or failure of the promotion.
      */
     @PatchMapping("{groupId}/mentors/{menteeId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto promoteToMentor(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.promoteToMentor(email, groupId, menteeId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = PromoteDenoteUserByIdCommand.builder()
+                    .userId(menteeId)
+                    .groupId(groupId)
+                    .toMentor(true)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Demotes a mentor to a mentee within a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group in which the demotion will occur.
-     * @param mentorId            The ID of the mentor to be demoted to mentee.
+     * @param groupId  The ID of the group in which the demotion will occur.
+     * @param mentorId The ID of the mentor to be demoted to mentee.
      * @return APIResponse indicating the success or failure of the demotion.
      */
     @PatchMapping("{groupId}/mentees/{mentorId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto demoteToMentee(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.demoteToMentee(email, groupId, mentorId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = PromoteDenoteUserByIdCommand.builder()
+                    .userId(mentorId)
+                    .groupId(groupId)
+                    .toMentor(false)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
