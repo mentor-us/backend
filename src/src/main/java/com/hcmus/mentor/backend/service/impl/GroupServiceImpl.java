@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
@@ -37,6 +38,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.tika.Tika;
+import org.modelmapper.ModelMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -50,8 +52,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,10 +68,8 @@ import static com.hcmus.mentor.backend.service.impl.AnalyticServiceImpl.getResou
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private static final Integer SUCCESS = 200;
-    private static final Integer MAX_YEAR_FROM_TIME_START_AND_NOW = 4;
-    private static final String MENTOR = "MENTOR";
-    private static final String MENTEE = "MENTEE";
-    private final Logger logger = LogManager.getLogger(this.getClass());
+    private final Logger logger = LogManager.getLogger(GroupServiceImpl.class);
+    private final ModelMapper modelmapper;
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserRepository userRepository;
@@ -77,7 +77,6 @@ public class GroupServiceImpl implements GroupService {
     private final MailService mailService;
     private final PermissionService permissionService;
     private final MailUtils mailUtils;
-    private final SystemConfigRepository systemConfigRepository;
     private final MessageRepository messageRepository;
     private final MessageService messageService;
     private final SocketIOService socketIOService;
@@ -608,7 +607,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         List<GroupUser> groupUsers = users.stream()
-                .map(user -> GroupUser.builder().user(user).group(group).build())
+                .map(user -> GroupUser.builder().user(user).group(group).isMentor(isMentor).build())
                 .toList();
         groupUserRepository.saveAll(groupUsers);
 
@@ -617,7 +616,7 @@ public class GroupServiceImpl implements GroupService {
         for (String emailAddress : emails) {
             mailService.sendInvitationToGroupMail(emailAddress, group);
         }
-        return new GroupServiceDto(SUCCESS, null, group);
+        return new GroupServiceDto(SUCCESS, null, modelmapper.map(group, GroupDetailDto.class));
     }
 
 
@@ -646,7 +645,7 @@ public class GroupServiceImpl implements GroupService {
         var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(menteeId)).findFirst().orElse(null);
         if (user != null) {
             groupUserRepository.delete(user);
-            return new GroupServiceDto(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, modelmapper.map(group, GroupDetailDto.class));
         }
         return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
     }
@@ -661,7 +660,7 @@ public class GroupServiceImpl implements GroupService {
         var user = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(mentorId)).findFirst().orElse(null);
         if (user != null) {
             groupUserRepository.delete(user);
-            return new GroupServiceDto(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, modelmapper.map(group, GroupDetailDto.class));
         }
 
         return new GroupServiceDto(MENTOR_NOT_FOUND, "mentor not found", null);
@@ -679,7 +678,7 @@ public class GroupServiceImpl implements GroupService {
         if (user != null) {
             user.setMentor(true);
             groupUserRepository.save(user);
-            return new GroupServiceDto(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, modelmapper.map(group, GroupDetailDto.class));
         }
 
         return new GroupServiceDto(MENTEE_NOT_FOUND, "Mentee not found", null);
@@ -697,7 +696,7 @@ public class GroupServiceImpl implements GroupService {
         if (user != null) {
             user.setMentor(false);
             groupUserRepository.save(user);
-            return new GroupServiceDto(SUCCESS, null, group);
+            return new GroupServiceDto(SUCCESS, null, modelmapper.map(group, GroupDetailDto.class));
         }
 
         return new GroupServiceDto(MENTOR_NOT_FOUND, "Mentor not found", null);
@@ -1136,8 +1135,8 @@ public class GroupServiceImpl implements GroupService {
 
             Map<GroupStatus, String> statusMap = Group.getStatusMap();
             String status = statusMap.get(group.getStatus());
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-            String dateStart = dateFormat.format(group.getTimeStart());
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            String dateStart = group.getTimeStart().format(dateFormat);
             String dateEnd = dateFormat.format(group.getTimeEnd());
             String duration = DateUtils.parseDuration(group.getDuration());
 

@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group;
 
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.WorkspaceChannelDto;
-import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.GroupDetailDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.BaseDomain;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;

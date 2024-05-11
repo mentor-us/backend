@@ -1,7 +1,8 @@
-package com.hcmus.mentor.backend.controller.usecase.group.searchgroup;
+package com.hcmus.mentor.backend.controller.usecase.group.getallgroups;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
@@ -18,9 +19,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQuery, Page<GroupDetailDto>> {
+public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQuery, Page<GroupDetailDto>> {
 
-    private final Logger logger = LoggerFactory.getLogger(SearchGroupsQueryHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(GetAllGroupsQueryHandler.class);
     private final ModelMapper modelMapper;
     private final LoggedUserAccessor loggedUserAccessor;
     private final PermissionService permissionService;
@@ -29,7 +30,7 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
     private final UserRepository userRepository;
 
     @Override
-    public Page<GroupDetailDto> handle(SearchGroupsQuery query) {
+    public Page<GroupDetailDto> handle(GetAllGroupsQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         if (!query.getType().equals("admin")) {
@@ -40,7 +41,7 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
 
         boolean isSuperAdmin = permissionService.isSuperAdmin(currentUserId, 0);
 
-        Pageable pageRequest = PageRequest.of(query.getPage(), query.getSize(), Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageRequest = PageRequest.of(query.getPage(), query.getPageSize(), Sort.by(Sort.Direction.DESC, "createdDate"));
 
         if (isSuperAdmin) {
             groups = groupRepository.findAll(pageRequest);

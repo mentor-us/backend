@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.group.searchgroup;
+package com.hcmus.mentor.backend.controller.usecase.group.common;
 
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import lombok.*;

@@ -7,20 +7,17 @@ import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroup
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.GroupService;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.ShareService;
-import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,14 +39,13 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
 @Component
 @RequiredArgsConstructor
 public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCommand, GroupServiceDto> {
-    private final GroupRepository groupRepository;
+
+    private final Logger logger = LoggerFactory.getLogger(ImportGroupCommandHandler.class);
+    private final LoggedUserAccessor loggedUserAccessor;
     private final PermissionService permissionService;
-    private final GroupService groupService;
     private final ShareService shareService;
     private final GroupCategoryRepository groupCategoryRepository;
-    private final UserRepository userRepository;
     private final Pipeline pipeline;
-    private final UserService userService;
     private final GroupDomainService groupDomainService;
 
     /**
@@ -58,10 +54,13 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
      */
     @Override
     public GroupServiceDto handle(final ImportGroupCommand command) {
-        if (!permissionService.isAdmin(command.emailUser)) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        if (!permissionService.isAdmin(currentUserId, 0)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        ReadFileGroupResult commands;
+
+        List<CreateGroupCommand> commands;
         try (InputStream data = command.getFile().getInputStream();
              Workbook workbook = new XSSFWorkbook(data)) {
             List<String> nameHeaders = new ArrayList<>();
@@ -82,12 +81,13 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             if (!Objects.equals(validReadGroups.getReturnCode(), SUCCESS)) {
                 return validReadGroups;
             }
-            commands = (ReadFileGroupResult) validReadGroups.getData();
+
+            commands = (List<CreateGroupCommand>) validReadGroups.getData();
         } catch (ParseException | IOException e) {
             throw new DomainException(String.valueOf(e));
         }
         List<Group> groups = new ArrayList<>();
-        for (var cm : commands.getCommands()) {
+        for (var cm : commands) {
             GroupServiceDto returnData = pipeline.send(cm);
             if (!Objects.equals(returnData.getReturnCode(), SUCCESS)) {
                 return returnData;
@@ -95,12 +95,14 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             groups.add((Group) returnData.getData());
         }
 
+        logger.info("Imported groups successfully, name: {}", groups.stream().map(Group::getName).toList());
+
         return new GroupServiceDto(SUCCESS, null, groups);
     }
 
     private GroupServiceDto readGroups(Workbook workbook) throws ParseException {
-//        Map<String, Group> groups = new HashMap<>();
         Map<String, CreateGroupCommand> commands = new HashMap<>();
+
         Sheet sheet = workbook.getSheet("Data");
         removeBlankRows(sheet);
         String groupCategoryName;
@@ -186,6 +188,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
                     .build();
             commands.put(groupName, command);
         }
+
         return new GroupServiceDto(SUCCESS, "", commands.values().stream().toList());
     }
 
@@ -200,10 +203,4 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             }
         }
     }
-}
-
-@Data
-@AllArgsConstructor
-class ReadFileGroupResult {
-    private List<CreateGroupCommand> commands;
 }

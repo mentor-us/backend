@@ -13,21 +13,21 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepage
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
-import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.GroupDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.group.searchgroup.SearchGroupsQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
-import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -56,7 +56,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
@@ -73,7 +72,6 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 public class GroupController {
 
     private final Logger logger = LoggerFactory.getLogger(GroupController.class);
-    private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupService groupService;
     private final EventService eventService;
@@ -88,8 +86,8 @@ public class GroupController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> all(
-            SearchGroupsQuery query) {
+    public ApiResponseDto<Map<String, Object>> getAllGroup(
+            GetAllGroupsQuery query) {
         var groups = pipeline.send(query);
 
         return ApiResponseDto.success(pagingResponse(groups));
@@ -157,7 +155,7 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> get(
+    public ApiResponseDto<GroupDetailResponse> searchGroup(
             @PathVariable("id") String id) {
         try {
             var query = GetGroupByIdQuery.builder().id(id).build();
@@ -189,86 +187,34 @@ public class GroupController {
     /**
      * Imports multiple groups by a template file.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param file                The template file containing group information.
+     * @param file The template file containing group information.
      * @return APIResponse containing a list of imported Group entities or an error response.
-     * @throws IOException If an I/O error occurs during the import process.
      */
     @PostMapping(value = "import", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<Group>> importGroups(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam("file") MultipartFile file)
-            throws IOException {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = pipeline.send(new ImportGroupCommand(email, file));
+            @RequestParam("file") MultipartFile file) {
+        var command = ImportGroupCommand.builder().file(file).build();
+
+        GroupServiceDto groupReturn = pipeline.send(command);
+
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
      * Finds groups with multiple filters.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param name                The name filter for groups.
-     * @param mentorEmail         The mentor's email filter for groups.
-     * @param menteeEmail         The mentee's email filter for groups.
-     * @param groupCategory       The group category filter for groups.
-     * @param timeStart1          The start time filter for groups (first range).
-     * @param timeEnd1            The end time filter for groups (first range).
-     * @param timeStart2          The start time filter for groups (second range).
-     * @param timeEnd2            The end time filter for groups (second range).
-     * @param status              The status filter for groups.
-     * @param page                The page number for pagination.
-     * @param size                The number of items per page.
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
-     * @throws InvocationTargetException If an invocation target exception occurs during the method invocation.
-     * @throws NoSuchMethodException     If a method is not found during reflection.
-     * @throws IllegalAccessException    If access to the method is not allowed.
      */
     @GetMapping("find")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> get(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "") String name,
-            @RequestParam(defaultValue = "") String mentorEmail,
-            @RequestParam(defaultValue = "") String menteeEmail,
-            @RequestParam(defaultValue = "") String groupCategory,
-            @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart1,
-            @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd1,
-            @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart2,
-            @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd2,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "25") Integer size)
-            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.findGroups(
-                email,
-                name,
-                mentorEmail,
-                menteeEmail,
-                groupCategory,
-                timeStart1,
-                timeEnd1,
-                timeStart2,
-                timeEnd2,
-                status,
-                page,
-                size);
-        return new ApiResponseDto(
-                pagingResponse((Page<Group>) groupReturn.getData()),
-                groupReturn.getReturnCode(),
-                groupReturn.getMessage());
+    public ApiResponseDto<Page<Group>> searchGroup(
+            SearchGroupsQuery query) {
+        var groups = pipeline.send(query);
+
+        return ApiResponseDto.success(pagingResponse(groups));
     }
 
     /**
