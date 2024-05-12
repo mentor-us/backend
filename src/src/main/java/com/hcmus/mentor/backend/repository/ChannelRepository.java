@@ -39,14 +39,9 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
             "order by c.group.name, c.name")
     List<ChannelForwardResponse> getListChannelForward(List<String> channelIds, String userId, ChannelStatus status);
 
-//    List<Channel> findAllByParentIdInAndUserIdsContaining(List<String> parentIds, String userId);
-
-    @Query("select c,u,t " +
+    @Query("select c,u " +
             "from Channel c " +
-            "inner join fetch c.users u " +
-            "inner join fetch c.tasks t " +
-            "inner join fetch t.assignees " +
-            "inner join fetch t.assigner " +
+            "join fetch c.users u " +
             "where u.id = ?1 and c.group.status = 'ACTIVE' and c.status = 'ACTIVE'")
     List<Channel> findOwnChannelsByUserId(String userId);
 }

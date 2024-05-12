@@ -66,7 +66,8 @@ public class Task implements IRemindable, Serializable {
     @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
     private Task parentTask = null;
 
-    @ManyToOne(optional = false)
+    @BatchSize(size = 10)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
@@ -86,10 +87,6 @@ public class Task implements IRemindable, Serializable {
     @ToString.Exclude
     @Fetch(FetchMode.SUBSELECT)
     private List<Assignee> assignees = new ArrayList<>();
-
-//    public static AssigneeDto newTask(String userId) {
-//        return new AssigneeDto(userId, TaskStatus.TO_DO);
-//    }
 
     @Override
     public Reminder toReminder() {

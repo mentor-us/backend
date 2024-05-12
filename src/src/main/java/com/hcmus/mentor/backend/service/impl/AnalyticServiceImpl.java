@@ -493,12 +493,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             long totalTasksMember = taskRepository.countAllOwnTaskOfGroup(channelIds, user.getId());
             long totalDoneTasks = taskRepository.countAllOwnTaskOfGroupWithStatus(channelIds, user.getId(), TaskStatus.DONE);
 
-//            Date lastTimeTaskMember = Optional.ofNullable(taskRepository.findLatestOwnTaskByGroup(groupId, user.getId())).map(Task::getCreatedDate).orElse(null);
-//            Date lastTimeMeetingMember = Optional.ofNullable(meetingRepository.findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(groupId, user.getId()))
-//                    .map(Meeting::getCreatedDate)
-//                    .orElse(null);
-//            Date lastTimeActiveMember = getLatestDate(lastTimeMessageMember, lastTimeTaskMember, lastTimeMeetingMember);
-            Date lastTimeMessageMember = Optional.ofNullable(messageRepository.findLatestOwnMessageByChannel(channelIds, user.getId())).map(m -> m.get().getCreatedDate()).orElse(null);
+            Date lastTimeMessageMember = messageRepository.findLatestOwnMessageByChannel(channelIds, user.getId())
+                    .map(Message::getCreatedDate).orElse(null);
 
             GroupAnalyticResponse.Member member = GroupAnalyticResponse.Member.builder()
                     .id(user.getId())

@@ -2,8 +2,10 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
+import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.Task;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.MeetingService;
 import com.hcmus.mentor.backend.service.TaskServiceImpl;
@@ -27,6 +29,7 @@ public class EventServiceImpl implements EventService {
 
     private final MeetingService meetingService;
     private final TaskServiceImpl taskService;
+    private final ChannelRepository channelRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,9 +44,11 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EventDto> getAllOwnEvents(String userId) {
-        List<Meeting> meetings = meetingService.getAllOwnMeetings(userId);
-        List<Task> tasks = taskService.getAllOwnTasks(userId);
+        var channelIds = channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
+        List<Meeting> meetings = meetingService.getAllOwnMeetings(userId, channelIds);
+        List<Task> tasks = taskService.getAllOwnTasks(userId, channelIds);
 
         return mergeEvents(meetings, tasks);
     }

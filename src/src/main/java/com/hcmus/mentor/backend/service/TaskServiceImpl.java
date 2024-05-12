@@ -426,15 +426,8 @@ public class TaskServiceImpl implements IRemindableService {
                 .toList();
     }
 
-    public List<Task> getAllOwnTasks(String userId) {
-        var channels = channelRepository.findOwnChannelsByUserId(userId).stream()
-                .toList();
-
-        return channels.stream()
-                .map(Channel::getTasks)
-                .flatMap(Collection::stream)
-                .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
-                .toList();
+    public List<Task> getAllOwnTasks(String userId, List<String> channelIds) {
+        return taskRepository.findAllByOwn(channelIds, userId);
     }
 
     public List<Task> getAllOwnTaskByDate(String userId, Date date) {
@@ -476,13 +469,7 @@ public class TaskServiceImpl implements IRemindableService {
         if (!group.isMember(userId)) {
             return new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
         }
-//
-//        List<TaskResponse> assignedTask = getOwnAssignedTasks(groupId, userId);
-//        List<TaskResponse> assignedByMe = getAssignedByMeTasks(groupId, userId);
-//        List<TaskResponse> ownTasks = Stream.concat(assignedTask.stream(), assignedByMe.stream())
-//                .filter(distinctById(TaskResponse::getId))
-//                .sorted(Comparator.comparing(TaskResponse::getCreatedDate).reversed())
-//                .toList();
+
         var abc = group.getChannels().stream()
                 .map(Channel::getTasks)
                 .flatMap(Collection::stream)
@@ -499,11 +486,6 @@ public class TaskServiceImpl implements IRemindableService {
                 .toList();
         return new TaskReturnService(SUCCESS, "", abc);
     }
-
-//    private Predicate<TaskResponse> distinctById(Function<TaskResponse, String> predicater) {
-//        Set<Object> seen = ConcurrentHashMap.newKeySet();
-//        return t -> seen.add(predicater.apply(t));
-//    }
 
     private List<TaskResponse> getOwnAssignedTasks(String groupId, String userId) {
         var group = groupRepository.findById(groupId).orElse(null);

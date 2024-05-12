@@ -63,7 +63,8 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "join m.sender s " +
             "join m.channel c " +
             "WHERE m.channel.id IN :channelIds AND m.sender.id = :senderId " +
-            "ORDER BY m.createdDate DESC ")
+            "ORDER BY m.createdDate DESC " +
+            "limit 1")
     Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);
 
     @Modifying

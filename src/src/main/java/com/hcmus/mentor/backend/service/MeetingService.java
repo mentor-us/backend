@@ -235,9 +235,7 @@ public class MeetingService implements IRemindableService {
     }
 
     @Transactional(readOnly = true)
-    public List<Meeting> getAllOwnMeetings(String userId) {
-        var channelIds = channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
-
+    public List<Meeting> getAllOwnMeetings(String userId, List<String> channelIds) {
         return meetingRepository.findAllByOwn(channelIds, userId);
     }
 

@@ -65,10 +65,9 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     @Query("SELECT t, assignees " +
             "FROM Task t " +
             "INNER JOIN t.assignees assignees " +
-            "WHERE t.group.id = ?1 " +
-            "AND assignees.id = ?2 " +
-            "AND (t.deadline BETWEEN ?3 AND ?4) ")
-    List<Task> findByGroupIdInAndAssigneeIdsContainingAndDeadlineBetween(List<String> groupIds, String userId, Date startTime, Date endTime);
+            "WHERE (t.assigner.id = ?2 or assignees.id = ?2)" +
+            "and t.group.id in ?1")
+    List<Task> findAllByOwn(List<String> channelIds, String userId);
 
     @Query("SELECT t FROM Task t " +
             "INNER JOIN t.assignees a " +
