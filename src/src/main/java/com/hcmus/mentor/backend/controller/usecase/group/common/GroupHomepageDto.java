@@ -1,12 +1,10 @@
 package com.hcmus.mentor.backend.controller.usecase.group.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -21,8 +19,8 @@ public class GroupHomepageDto {
     private String description;
     private Date createdDate;
     private Date updatedDate;
-    private List<String> mentors;
-    private List<String> mentees;
+    private List<String> mentors = new ArrayList<>();
+    private List<String> mentees = new ArrayList<>();
     private String groupCategory;
     private LocalDateTime timeStart;
     private LocalDateTime timeEnd;
@@ -34,6 +32,8 @@ public class GroupHomepageDto {
     private String newMessage;
     private String newMessageId;
     private String defaultChannelId;
+    @Setter(AccessLevel.NONE)
+    private int totalMember;
 
     public void setRole(String userId) {
         if (mentors == null) {
@@ -41,5 +41,9 @@ public class GroupHomepageDto {
         }
 
         role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+    }
+
+    public int getTotalMember() {
+        return mentors.size() + mentees.size();
     }
 }

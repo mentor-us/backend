@@ -44,12 +44,18 @@ public class FileController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<Resource> getFile(@ParameterObject DownloadFileReq request) {
-        var stream = blobStorage.get(request.getKey());
-        var contentType = new Tika().detect(request.getKey());
+        try{
+            var stream = blobStorage.get(request.getKey());
+            var contentType = new Tika().detect(request.getKey());
 
         return ResponseEntity.ok()
                 .contentType(MediaType.valueOf(contentType))
                 .body(new InputStreamResource(stream));
+        }
+        catch (Exception e) {
+            logger.error(e);
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**

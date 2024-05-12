@@ -40,7 +40,7 @@ public class GroupMapper {
         modelMapper.createTypeMap(Group.class, GroupDetailDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getCreator().getId(), GroupDetailDto::setCreatorId);
             mapper.map(src -> src.getDefaultChannel().getId(), GroupDetailDto::setDefaultChannelId);
-            mapper.map(src -> src.getGroupCategory().getId(), GroupDetailDto::setGroupCategory);
+            mapper.map(src -> src.getGroupCategory().getName(), GroupDetailDto::setGroupCategory);
             mapper.map(src -> src.getLastMessage().getContent(), GroupDetailDto::setLastMessage);
             mapper.map(src -> src.getLastMessage().getId(), GroupDetailDto::setLastMessageId);
             mapper.using(mapIdConverter).map(Group::getMembers, GroupDetailDto::setMembers);
@@ -48,7 +48,7 @@ public class GroupMapper {
             mapper.using(mapIdConverter).map(Group::getMentors, GroupDetailDto::setMentors);
         });
         modelMapper.createTypeMap(Group.class, GroupHomepageDto.class).addMappings(mapper -> {
-            mapper.map(src -> src.getGroupCategory().getId(), GroupHomepageDto::setGroupCategory);
+            mapper.map(src -> src.getGroupCategory().getName(), GroupHomepageDto::setGroupCategory);
             mapper.map(src -> src.getDefaultChannel().getId(), GroupHomepageDto::setDefaultChannelId);
             mapper.using(mapIdConverter).map(Group::getMentees, GroupHomepageDto::setMentees);
             mapper.using(mapIdConverter).map(Group::getMentors, GroupHomepageDto::setMentors);
