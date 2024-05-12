@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace;
+package com.hcmus.mentor.backend.controller.usecase.group.common;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;

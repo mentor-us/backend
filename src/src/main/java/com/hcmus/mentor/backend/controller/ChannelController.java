@@ -2,10 +2,10 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.addchannel.AddChannelCommand;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelsbygroupid.GetChannelsByGroupIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
@@ -66,13 +66,15 @@ public class ChannelController {
      * @return ResponseEntity containing the group detail response
      */
     @GetMapping("{id}")
-    public ResponseEntity<GroupDetailResponse> getChannelById(
+    public ResponseEntity<ChannelDetailDto> getChannelById(
             @PathVariable String id) {
         var query = GetChannelByIdQuery.builder()
                 .id(id)
                 .build();
 
-        return ResponseEntity.ok(pipeline.send(query));
+        var channel = pipeline.send(query);
+
+        return ResponseEntity.ok(channel);
     }
 
     /**

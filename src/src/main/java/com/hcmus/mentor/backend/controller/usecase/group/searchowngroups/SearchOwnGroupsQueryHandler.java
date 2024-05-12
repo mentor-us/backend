@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
 
 import an.awesome.pipelinr.Command;
 import com.google.common.base.Strings;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.repository.GroupRepository;

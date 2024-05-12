@@ -3,6 +3,8 @@ package com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace;
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannelDto;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
@@ -68,7 +70,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
                                 .anyMatch(u -> Objects.equals(u.getId(), currentUserId))
                         )
                 )
-                .map(mapToWorkspaceChannalDto(currentUserId, groupUsers))
+                .map(mapToWorkspaceChannelDto(currentUserId, groupUsers))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
                 .sorted(Comparator.comparing(WorkspaceChannelDto::getMarked).reversed())
@@ -78,20 +80,25 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         return groupWorkspace;
     }
 
-    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannalDto(String currentUserId, List<GroupUser> groupUsers) {
+    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannelDto(String currentUserId, List<GroupUser> groupUsers) {
         return channel -> {
-            ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), currentUserId)).map(ShortProfile::new).findFirst().orElse(null);
-            if (penpal == null) {
+            ShortProfile friendId = channel.getUsers().stream()
+                    .filter(u -> !Objects.equals(u.getId(), currentUserId))
+                    .map(ShortProfile::new)
+                    .findFirst()
+                    .orElse(null);
+
+            if (friendId == null) {
                 return null;
             }
 
-            channel.setName(penpal.getName());
-            channel.setImageUrl(penpal.getImageUrl());
+            channel.setName(friendId.getName());
+            channel.setImageUrl(friendId.getImageUrl());
 
             List<String> markedMentees = groupUsers.stream().filter(GroupUser::isMarked).map(gu -> gu.getUser().getId()).toList();
 
             var workspaceChannelDto = modelMapper.map(channel, WorkspaceChannelDto.class);
-            workspaceChannelDto.setMarked(markedMentees.contains(penpal.getId()));
+            workspaceChannelDto.setMarked(markedMentees.contains(friendId.getId()));
 
             return workspaceChannelDto;
         };

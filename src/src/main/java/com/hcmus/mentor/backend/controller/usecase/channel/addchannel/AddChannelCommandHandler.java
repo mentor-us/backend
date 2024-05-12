@@ -65,29 +65,4 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
 
         return channelRepository.save(data);
     }
-
-//    private Channel addPrivateChat(String adderId, AddChannelCommand request, Group group) {
-//        request.getUserIds().add(adderId);
-//        List<String> memberIds = request.getUserIds().stream().distinct().sorted().toList();
-//
-//        String channelName = String.join("|", memberIds) + "|" + group.getId();
-//        Channel existedChannel = channelRepository.findTopByParentIdAndName(group.getId(), channelName);
-//        if (existedChannel != null) {
-//            return existedChannel;
-//        }
-//
-//        Channel data = Channel.builder()
-//                .name(channelName)
-//                .description(request.getDescription())
-//                .type(ChannelType.PRIVATE_MESSAGE)
-//                .userIds(memberIds)
-//                .parentId(group.getId())
-//                .creatorId(request.getCreatorId())
-//                .build();
-//
-//        Channel newChannel = channelRepository.save(data);
-//        group.addPrivate(newChannel.getId());
-//        groupRepository.save(group);
-//        return newChannel;
-//    }
 }

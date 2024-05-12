@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.controller.usecase.group;
 
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GroupWorkspaceDto;
-import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.WorkspaceChannelDto;
-import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.GroupHomepageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannelDto;
 import com.hcmus.mentor.backend.domain.BaseDomain;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;

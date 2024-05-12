@@ -10,6 +10,7 @@ import com.hcmus.mentor.backend.service.TaskServiceImpl;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.Date;
@@ -28,6 +29,7 @@ public class EventServiceImpl implements EventService {
     private final TaskServiceImpl taskService;
 
     @Override
+    @Transactional(readOnly = true)
     public List<EventDto> getMostRecentEvents(String userId) {
         List<MeetingResponse> meetings = meetingService.getMostRecentMeetings(userId);
         List<TaskResponse> tasks = taskService.getMostRecentTasks(userId);
