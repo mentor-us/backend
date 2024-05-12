@@ -8,10 +8,7 @@ import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.PermissionService;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -47,7 +44,7 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
             throw new ForbiddenException("Không có quyền truy cập");
         }
 
-        Specification<Group> specification = (Root<Group> root, CriteriaQuery<?> criteriaQuery, CriteriaBuilder builder) -> {
+        Specification<Group> specification = (root, criteriaQuery, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (!Strings.isNullOrEmpty(query.getName())) {
