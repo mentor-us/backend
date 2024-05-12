@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
 
 import an.awesome.pipelinr.Command;
 import com.google.common.base.Strings;
-import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.GroupHomepageDto;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -73,8 +72,7 @@ public class SearchOwnGroupsQueryHandler implements Command.Handler<SearchOwnGro
         return group -> {
             var groupHomepageDto = modelMapper.map(group, GroupHomepageDto.class);
 
-            var isMentor = group.isMentor(currentUserId);
-            groupHomepageDto.setRole(isMentor ? "mentor" : "mentee");
+            groupHomepageDto.setRole(currentUserId);
 
             var isPinned = group.getGroupUsers().stream()
                     .filter(gu -> gu.getUser().getId().equals(currentUserId))

@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.group.serachgroups;
+package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +34,12 @@ public class GroupHomepageDto {
     private String newMessage;
     private String newMessageId;
     private String defaultChannelId;
+
+    public void setRole(String userId) {
+        if (mentors == null) {
+            return;
+        }
+
+        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+    }
 }

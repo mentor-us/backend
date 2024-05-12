@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.usecase.common.pagination.PageQueryFilter;
-import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.GroupHomepageDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

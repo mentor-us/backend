@@ -20,12 +20,12 @@ import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgrou
 import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
-import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.SearchOwnGroupsQuery;
-import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.GroupHomepageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.GroupHomepageDto;
 import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
@@ -823,9 +823,13 @@ public class GroupController {
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GetGroupWorkspaceResult> getWorkspace(
+    public ResponseEntity<GroupWorkspaceDto> getWorkspace(
             @PathVariable String groupId) {
-        var response = pipeline.send(new GetGroupWorkSpaceQuery(groupId));
+        var query = GetGroupWorkSpaceQuery.builder()
+                .groupId(groupId)
+                .build();
+
+        var response = pipeline.send(query);
 
         return ResponseEntity.ok(response);
     }
