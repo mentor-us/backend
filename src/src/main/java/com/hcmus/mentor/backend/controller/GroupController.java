@@ -608,9 +608,9 @@ public class GroupController {
     }
 
     /**
-     * (Use /api/channels/{id}) Get detailed information about a channel.
+     * (Use /api/channels/{id} for channel) (/api/groups/{id} for group) Get detailed information about a channel (if not found it will get the group for compatibility issue).
      *
-     * @param channelId The ID of the group for which details are requested.
+     * @param id The ID of the group for which details are requested.
      * @return APIResponse containing detailed information about the group.
      */
     @Deprecated(forRemoval = true)
@@ -618,10 +618,10 @@ public class GroupController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupDetailResponse> getChannelById(
-            @PathVariable("id") String channelId) {
+            @PathVariable("id") String id) {
         try {
             var query = GetChannelByIdQuery.builder()
-                    .id(channelId)
+                    .id(id)
                     .build();
 
             var channel = pipeline.send(query);
@@ -630,6 +630,18 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
+            if (ex.getMessage() == "Không tìm thấy kênh") {
+                try {
+                    var query = GetGroupByIdQuery.builder().id(id).build();
+
+                    var group = pipeline.send(query);
+
+                    return ApiResponseDto.success(group);
+                } catch (DomainException groupException) {
+                    return new ApiResponseDto<>(null, NOT_FOUND, groupException.getMessage());
+                }
+            }
+
             return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
         }
     }
