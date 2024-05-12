@@ -33,7 +33,7 @@ public class TaskResponse {
                 .title(task.getTitle())
                 .description(task.getDescription())
                 .deadline(task.getDeadline())
-                .parentTask(task.getParentTask().getId())
+                .parentTask(task.getParentTask() == null ? null : task.getParentTask().getId())
                 .group(group)
                 .assigner(task.getAssigner())
                 .status(assignee == null ? null : assignee.getStatus())
