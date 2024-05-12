@@ -50,33 +50,35 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
                 .filter(user -> group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(user.getId())));
 
         if (command.isMentor()) {
-            // Filter all mentor in list
-            usersStream = usersStream.filter(user -> group.isMentor(user.getId()));
-        } else {
-            // Filter all mentee in list
+            // Get all mentee in list
             usersStream = usersStream.filter(user -> !group.isMentor(user.getId()));
+        } else {
+            // Get all mentor in list
+            usersStream = usersStream.filter(user -> group.isMentor(user.getId()));
         }
 
         var users = usersStream.toList();
 
-        List<GroupUser> groupUsers = users.stream()
-                .map(user -> GroupUser.builder().user(user).group(group).isMentor(command.isMentor()).build())
-                .toList();
-        groupUserRepository.saveAll(groupUsers);
+        if (!users.isEmpty()) {
+            List<GroupUser> groupUsers = users.stream()
+                    .map(user -> GroupUser.builder().user(user).group(group).isMentor(command.isMentor()).build())
+                    .toList();
+            groupUserRepository.saveAll(groupUsers);
 
-        Channel channel = channelRepository.findById(group.getDefaultChannel().getId()).orElse(null);
-        if (channel == null) {
-            throw new DomainException("Không tìm thấy kênh mặc định của nhóm");
-        }
+            Channel channel = channelRepository.findById(group.getDefaultChannel().getId()).orElse(null);
+            if (channel == null) {
+                throw new DomainException("Không tìm thấy kênh mặc định của nhóm");
+            }
 
-        var usersInGroup = channel.getUsers();
-        usersInGroup.addAll(users);
-        channel.setUsers(usersInGroup);
+            var usersInGroup = channel.getUsers();
+            usersInGroup.addAll(users);
+            channel.setUsers(usersInGroup);
 
-        channelRepository.save(channel);
+            channelRepository.save(channel);
 
-        for (String email : command.getEmails()) {
-            mailService.sendInvitationToGroupMail(email, group);
+            for (String email : command.getEmails()) {
+                mailService.sendInvitationToGroupMail(email, group);
+            }
         }
 
         var refreshGroup = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
