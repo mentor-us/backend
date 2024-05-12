@@ -24,6 +24,7 @@ public class GroupAnalyticResponse {
     private long totalMentees;
     private long totalMentors;
     private GroupStatus status;
+    private String imageUrl;
 
     private List<Member> members;
 

@@ -390,6 +390,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                 .totalTasks(totalTasks)
                 .status(group.getStatus())
                 .members(members)
+                .imageUrl(group.getImageUrl())
                 .build();
     }
 
