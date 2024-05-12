@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetGroupWorkSpaceQuery implements Command<GetGroupWorkspaceResult> {
+public class GetGroupWorkSpaceQuery implements Command<GroupWorkspaceDto> {
 
     private String groupId;
 }

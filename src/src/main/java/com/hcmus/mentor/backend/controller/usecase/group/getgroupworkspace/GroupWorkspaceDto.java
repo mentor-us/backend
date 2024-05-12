@@ -2,12 +2,10 @@ package com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,7 +14,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GetGroupWorkspaceResult {
+public class GroupWorkspaceDto {
 
     private String id;
     private String name;
@@ -26,18 +24,23 @@ public class GetGroupWorkspaceResult {
     private List<String> mentors = new ArrayList<>();
     private List<String> mentees = new ArrayList<>();
     private String groupCategory;
-    private Date timeStart;
-    private Date timeEnd;
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
     private Duration duration;
     private String role;
     private String imageUrl;
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
-    private List<String> pinnedMessageIds;
+    private List<String> pinnedMessageIds = new ArrayList<>();
     private List<MessageDetailResponse> pinnedMessages = new ArrayList<>();
     private List<WorkspaceChannelDto> channels = new ArrayList<>();
     private List<WorkspaceChannelDto> privates = new ArrayList<>();
+    @Setter(AccessLevel.NONE)
     private Integer totalMember;
     private String defaultChannelId;
+
+    public Integer getTotalMember() {
+        return mentors.size() + mentees.size();
+    }
 
     public void setRole(String userId) {
         if (mentors == null) {

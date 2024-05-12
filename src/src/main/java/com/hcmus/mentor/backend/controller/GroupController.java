@@ -17,14 +17,15 @@ import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMem
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
-import com.hcmus.mentor.backend.controller.usecase.group.findowngroups.FindOwnGroupsCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
-import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkspaceResult;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.SearchOwnGroupsQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.GroupHomepageDto;
 import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
@@ -96,37 +97,20 @@ public class GroupController {
         return ApiResponseDto.success(pagingResponse(groups));
     }
 
-
     /**
      * Retrieves the user's own groups based on the specified type (mentor, mentee, or all).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param page                The page number for pagination.
-     * @param pageSize            The number of items per page.
-     * @param type                The type of groups to retrieve ("mentor", "mentee", or empty for all).
-     * @return APIResponse containing a Page of GroupHomepageResponse entities.
+     * @param query The query containing the user's ID and group type.
+     * @return APIResponse containing a Page of GroupHomepageDto entities.
      */
     @GetMapping("own")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<GroupHomepageResponse>> getOwnGroups(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int pageSize,
-            @RequestParam(defaultValue = "") String type) {
-        var command = new FindOwnGroupsCommand(customerUserDetails.getId(), null, page, pageSize);
-        switch (type) {
-            case "mentor":
-                command.setIsMentor(true);
-                break;
-            case "mentee":
-                command.setIsMentor(false);
-                break;
-            default:
-                command.setIsMentor(null);
-                break;
-        }
-        return ApiResponseDto.success(pagingResponse(pipeline.send(command)));
+    public ApiResponseDto<Page<GroupHomepageDto>> getOwnGroups(
+            SearchOwnGroupsQuery query) {
+        var groups = pipeline.send(query);
+
+        return ApiResponseDto.success(pagingResponse(groups));
     }
 
 
@@ -839,9 +823,13 @@ public class GroupController {
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GetGroupWorkspaceResult> getWorkspace(
+    public ResponseEntity<GroupWorkspaceDto> getWorkspace(
             @PathVariable String groupId) {
-        var response = pipeline.send(new GetGroupWorkSpaceQuery(groupId));
+        var query = GetGroupWorkSpaceQuery.builder()
+                .groupId(groupId)
+                .build();
+
+        var response = pipeline.send(query);
 
         return ResponseEntity.ok(response);
     }
