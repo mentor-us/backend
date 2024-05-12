@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
+package com.hcmus.mentor.backend.controller.usecase.group.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -50,6 +50,6 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     @Query("SELECT u FROM User u WHERE u.email = ?1 OR ?1 MEMBER OF u.additionalEmails")
     Optional<User> findByAdditionalEmailsContains(String email);
 
-    @Query("SELECT id, name, imageUrl FROM User WHERE id = ?1")
+    @Query("SELECT u FROM User u WHERE u.id = ?1")
     Optional<User> findShortProfile(String id);
 }

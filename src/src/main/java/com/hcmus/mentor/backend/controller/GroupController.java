@@ -12,20 +12,21 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailRe
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
-import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.SearchOwnGroupsQuery;
-import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.GroupHomepageDto;
 import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
@@ -142,7 +143,7 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> searchGroup(
+    public ApiResponseDto<GroupDetailResponse> getGroupById(
             @PathVariable("id") String id) {
         try {
             var query = GetGroupByIdQuery.builder().id(id).build();
@@ -609,19 +610,28 @@ public class GroupController {
     /**
      * (Use /api/channels/{id}) Get detailed information about a channel.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which details are requested.
+     * @param channelId The ID of the group for which details are requested.
      * @return APIResponse containing detailed information about the group.
      */
     @Deprecated(forRemoval = true)
     @GetMapping("{id}/detail")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> getGroup(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @PathVariable("id") String groupId) {
-        GroupServiceDto groupData = groupService.getGroupDetail(customerUserDetails.getId(), groupId);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+    public ApiResponseDto<GroupDetailResponse> getChannelById(
+            @PathVariable("id") String channelId) {
+        try {
+            var query = GetChannelByIdQuery.builder()
+                    .id(channelId)
+                    .build();
+
+            var channel = pipeline.send(query);
+
+            return ApiResponseDto.success(channel);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
