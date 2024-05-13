@@ -42,14 +42,14 @@ public class GroupDetailDto {
     private LocalDateTime timeEnd;
 
     @Setter(AccessLevel.NONE)
-    private int totalMembers;
+    private int totalMember;
     private LocalDateTime updatedDate;
 
     public boolean getStopWorking() {
         return Arrays.asList(GroupStatus.DISABLED, GroupStatus.INACTIVE, GroupStatus.DELETED).contains(status);
     }
 
-    public int getTotalMembers() {
+    public int getTotalMember() {
         return members.size();
     }
 }

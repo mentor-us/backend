@@ -37,14 +37,14 @@ public class ChannelDetailDto {
     @Setter(AccessLevel.NONE)
     private String role;
     @Setter(AccessLevel.NONE)
-    private int totalMembers;
+    private int totalMember;
     private String groupCategory;
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
     private List<String> pinnedMessageIds = new ArrayList<>();
     private List<MessageDetailResponse> pinnedMessages = new ArrayList<>();
 
 
-    public int getTotalMembers() {
+    public int getTotalMember() {
         return members.size();
     }
 
