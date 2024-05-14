@@ -8,7 +8,6 @@ import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotification
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.repository.*;
@@ -18,6 +17,7 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -45,13 +45,14 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
     private final NotificationUserRepository notificationUserRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
         List<NotificationResponse> notificationsResponse = notifications.stream()
-                .map(notification -> NotificationResponse.from(notification, new ShortProfile(notification.getSender()))).toList();
+                .map(notification -> modelMapper.map(notification, NotificationResponse.class)).toList();
         return pagingResponse(notifications, notificationsResponse);
     }
 
@@ -324,13 +325,6 @@ public class NotificationServiceImpl implements NotificationService {
                 .refId(meeting.getId())
                 .build());
 
-//        List<NotificationUser> receivers = Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizer()))
-//                .distinct()
-//                .map(nu -> NotificationUser.builder().notification(notification).user(nu).build())
-//                .toList();
-//
-//        notification.setReceivers(receivers);
-//        notificationRepository.save(notification);
         return notification;
     }
 
@@ -488,7 +482,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Async
     public void sendNewVoteNotification(String creatorId, Vote vote) {
         if (vote == null) {
             return;
@@ -497,7 +490,7 @@ public class NotificationServiceImpl implements NotificationService {
         Group group = vote.getGroup().getGroup();
         String title = group.getName();
         String content = "Nhóm có cuộc bình chọn mới \"" + vote.getQuestion() + "\"";
-        Notification notif = createNewVoteNotification(title, content, creatorId, group, vote);
+        Notification notif = createNewVoteNotification(title, content, vote.getCreator(), group, vote);
         try {
             firebaseMessagingManager.sendGroupNotification(
                     notif.getReceivers().stream().map(nu -> nu.getUser().getId()).toList(),
@@ -510,18 +503,16 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification createNewVoteNotification(String title, String content, String senderId, Group group, Vote vote) {
-        Notification notif = notificationRepository.save(Notification.builder()
+    public Notification createNewVoteNotification(String title, String content, User sender, Group group, Vote vote) {
+        Notification notif = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_VOTE)
-                .sender(userRepository.findById(senderId).orElse(null))
+                .sender(sender)
                 .refId(vote.getId())
-                .build());
-        var receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                .filter(user -> !user.getId().equals(senderId))
-                .distinct()
-                .map(user -> NotificationUser.builder().notification(notif).user(user).build())
+                .build();
+        var receiverIds = group.getGroupUsers().stream()
+                .map(gu -> NotificationUser.builder().notification(notif).user(gu.getUser()).build())
                 .toList();
         notif.setReceivers(receiverIds);
         notificationRepository.save(notif);

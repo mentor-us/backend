@@ -53,11 +53,10 @@ public interface NotificationService {
 
     long getUnreadNumber(String userId);
 
-    @Async
     void sendNewVoteNotification(String creatorId, Vote vote);
 
     Notification createNewVoteNotification(
-            String title, String content, String senderId, Group group, Vote vote);
+            String title, String content, User sender, Group group, Vote vote);
 
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 

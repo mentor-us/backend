@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -83,10 +84,10 @@ public class VoteController {
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<Vote> create(
+    public ResponseEntity<VoteResult> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody CreateVoteRequest request) {
-        Vote vote = voteService.createNewVote(loggedUser.getId(), request);
+        var vote = voteService.createNewVote(loggedUser.getId(), request);
 
         return ResponseEntity.ok(vote);
     }

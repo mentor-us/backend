@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -19,7 +20,7 @@ public interface VoteService {
 
     VoteDetailResponse.ChoiceDetail fulfillChoice(Choice choice);
 
-    Vote createNewVote(String userId, CreateVoteRequest request);
+    VoteResult createNewVote(String userId, CreateVoteRequest request);
 
     boolean updateVote(CustomerUserDetails userDetails, String voteId, UpdateVoteRequest request);
 

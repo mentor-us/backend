@@ -11,6 +11,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResp
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
@@ -22,12 +23,12 @@ import com.hcmus.mentor.backend.repository.VoteRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.*;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -44,16 +45,16 @@ public class VoteServiceImpl implements VoteService {
     private final ChannelRepository channelRepository;
     private final SocketIOServer socketServer;
     private final ChoiceRepository choiceRepository;
+    private final ModelMapper modelMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public VoteDetailResponse get(String userId, String voteId) {
         var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
-        vote.getGroup().getGroup().isMentor(userId);
-        if (!permissionService.isUserIdInGroup(userId, vote.getGroup().getId())) {
+        Group group = vote.getGroup().getGroup();
+        if (!group.isMember(userId)) {
             return null;
         }
-
-        Group group = vote.getGroup().getGroup();
 
         VoteDetailResponse voteDetail = fulfillChoices(vote);
         voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreator().getId().equals(userId));
@@ -61,6 +62,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
         if (!permissionService.isUserIdInGroup(userId, channelId)) {
             return null;
@@ -73,13 +75,14 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
-        ShortProfile creator = new ShortProfile(vote.getCreator());
-        List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
-                .map(this::fulfillChoice)
-                .filter(Objects::nonNull)
-                .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-                .toList();
-        return VoteDetailResponse.from(vote, creator, choices);
+//        ShortProfile creator = new ShortProfile(vote.getCreator());
+//        List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
+//                .map(this::fulfillChoice)
+//                .filter(Objects::nonNull)
+//                .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
+//                .toList();
+//        return VoteDetailResponse.from(vote, creator, choices);
+        return modelMapper.map(vote, VoteDetailResponse.class);
     }
 
     @Override
@@ -88,32 +91,39 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
 
-        List<ShortProfile> voters = choice.getVoters().stream().map(ShortProfile::new).toList();
+        List<ShortProfile> voters = choice.getVoters().stream().map(user -> modelMapper.map(user, ShortProfile.class)).toList();
         return VoteDetailResponse.ChoiceDetail.from(choice, voters);
     }
 
     @Override
-    public Vote createNewVote(String userId, CreateVoteRequest request) {
-        if (!permissionService.isUserInChannel(request.getGroupId(), userId)) {
-            throw new DomainException("Người dùng không có trong channel!");
+    @Transactional
+    public VoteResult createNewVote(String userId, CreateVoteRequest request) {
+        var sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found."));
+        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(()-> new DomainException("Không tìm thấy kênh"));
+        var group = channel.getGroup();
+
+        if(!group.isMember(userId)) {
+            throw new ForbiddenException("Người dùng không có trong channel!");
         }
 
-        var choices = request.getChoices().stream()
-                .map(choice -> Choice.builder().name(choice.getName()).build())
-                .toList();
-
-        var sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found."));
-        var group = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found."));
-
-        request.setCreatorId(userId);
         Vote newVote = voteRepository.save(Vote.builder()
                 .question(request.getQuestion())
-                .group(group)
+                .group(channel)
                 .creator(sender)
                 .timeEnd(request.getTimeEnd())
-                .choices(choices)
                 .isMultipleChoice(request.getIsMultipleChoice())
                 .build());
+        var choices = request.getChoices().stream()
+                .map(choice -> Choice.builder()
+                        .name(choice.getName())
+                        .creator(sender)
+                        .vote(newVote)
+                        .build())
+                .toList();
+        choiceRepository.saveAll(choices);
+
+        request.setCreatorId(userId);
+
 
         Message message = messageService.saveVoteMessage(newVote);
         MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
@@ -121,7 +131,7 @@ public class VoteServiceImpl implements VoteService {
 
         notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
         groupService.pingGroup(newVote.getGroup().getId());
-        return newVote;
+        return modelMapper.map(newVote, VoteResult.class);
     }
 
     @Override
@@ -189,7 +199,7 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public Vote doVoting(DoVotingRequest request) {
-        var vote = voteRepository.findById(request.getVoterId()).orElse(null);
+        var vote = voteRepository.findById(request.getVoteId()).orElse(null);
         if (vote == null) {
             return null;
         }
@@ -203,16 +213,9 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
 
-        var choices = vote.getChoices();
-
-        List<Choice> newChoices = request.getChoices().stream().map(choiceDto -> {
-            var choice = vote.getChoice(choiceDto.getId());
-            if (choice == null) {
-                var voters = choiceDto.getVoters().stream().map(voterId -> userRepository.findById(voterId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."))).toList();
-                return Choice.builder().name(choiceDto.getName()).creator(voter).voters(voters).vote(vote).build();
-            }
-            return choice;
-        }).toList();
+        List<Choice> newChoices = request.getChoices().stream()
+                .map(choice -> vote.getChoice(choice.getId()))
+                .toList();
 
         if (!newChoices.isEmpty()) {
             choiceRepository.saveAll(newChoices);
