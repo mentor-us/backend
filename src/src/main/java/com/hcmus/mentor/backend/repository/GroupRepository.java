@@ -72,11 +72,21 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             "AND gu.isMentor = true")
     List<Group> findAllByMentorsIn(String mentorId);
 
-    @Query("SELECT g, gu " +
+    @Query("SELECT g " +
             "FROM Group g " +
-            "INNER JOIN FETCH g.groupUsers gu  " +
+            "JOIN FETCH g.groupUsers gu  " +
             "WHERE gu.user.id = ?1")
     Page<Group> findAllByIsMember(String memberId, Pageable pageable);
+
+    @Query("SELECT g " +
+            "FROM Group g " +
+            "ORDER BY g.createdDate desc")
+    Page<Group> findAllWithPageableOrderByCreatedDate(Pageable pageable);
+
+    @Query("SELECT g " +
+            "FROM Group g " +
+            "ORDER BY g.updatedDate desc")
+    Page<Group> findAllWithPageableOrderByUpdatedDate(Pageable pageable);
 
     @Query("SELECT g " +
             "FROM Group g " +
@@ -88,7 +98,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     @Query("SELECT g, gu " +
             "FROM Group g " +
-            "INNER JOIN FETCH g.groupUsers gu " +
+            "JOIN FETCH g.groupUsers gu " +
             "WHERE gu.user.id = ?1 " +
             "AND g.status = ?2")
     List<Group> findByIsMemberAndStatus(String userId, GroupStatus status);
@@ -125,6 +135,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     @Query("SELECT g from Group g join g.groupUsers gu join gu.user u where u.id = :userId and g.id = :groupId")
     boolean existsByMember(@Param("groupId") String groupId, @Param("userId") String userId);
+
 
 //    List<Group> findByMenteesContainsOrMentorsContainsAndStatusIs(String menteeId, String mentorId, GroupStatus status);
 }

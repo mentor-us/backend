@@ -1,24 +1,23 @@
 package com.hcmus.mentor.backend.controller.usecase.group.searchowngroups;
 
 import an.awesome.pipelinr.Command;
-import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -40,28 +39,16 @@ public class SearchOwnGroupsQueryHandler implements Command.Handler<SearchOwnGro
      * @return result of finding own groups.
      */
     @Override
+    @Transactional(readOnly = true)
     public Page<GroupHomepageDto> handle(SearchOwnGroupsQuery command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
         command.setUserId(currentUserId);
 
-        Specification<Group> specification = (root, criteriaQuery, builder) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        Pageable pageable = PageRequest.of(command.getPage(), command.getPageSize());
 
-            predicates.add(builder.equal(root.join("groupUsers", JoinType.INNER).get("user").get("id"), command.getUserId()));
-
-            if (!Strings.isNullOrEmpty(command.getIsMentor())) {
-                var isMentor = getIsMentorStatus(command.getIsMentor());
-
-                predicates.add(builder.equal(root.join("groupUsers", JoinType.INNER).get("isMentor"), isMentor));
-            }
-
-            return builder.and(predicates.toArray(new Predicate[0]));
-        };
-        Pageable pageable = PageRequest.of(command.getPage(), command.getPageSize(), Sort.by("updatedDate").descending());
-
-        var groupsQuery = groupRepository.findAll(specification, pageable);
-
-        var groups = groupsQuery.getContent().stream()
+        Page<Group> groupsQuery = groupRepository.findAllByIsMember(currentUserId, pageable);
+        var abc = groupsQuery.getContent();
+        List<GroupHomepageDto> groups = abc.stream()
                 .map(mapToGroupHomepageDto(currentUserId))
                 .sorted(Comparator.comparing(GroupHomepageDto::getUpdatedDate).reversed())
                 .toList();
@@ -71,7 +58,7 @@ public class SearchOwnGroupsQueryHandler implements Command.Handler<SearchOwnGro
 
     private @NotNull Function<Group, GroupHomepageDto> mapToGroupHomepageDto(String currentUserId) {
         return group -> {
-            var groupHomepageDto = modelMapper.map(group, GroupHomepageDto.class);
+            GroupHomepageDto groupHomepageDto = modelMapper.map(group, GroupHomepageDto.class);
 
             groupHomepageDto.setRole(currentUserId);
 
