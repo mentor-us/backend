@@ -10,9 +10,9 @@ import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 public class GetMediaByChannelIdQueryHandler implements Command.Handler<GetMediaByChannelIdQuery, List<ShortMediaMessage>> {
 
     private final LoggedUserAccessor loggedUserAccessor;
+    private final ModelMapper modelMapper;
     private final ChannelRepository channelRepository;
-    private final UserRepository userRepository;
     private final MessageRepository messageRepository;
 
     /**
@@ -40,57 +40,63 @@ public class GetMediaByChannelIdQueryHandler implements Command.Handler<GetMedia
     @Override
     public List<ShortMediaMessage> handle(GetMediaByChannelIdQuery query) {
         var userId = loggedUserAccessor.getCurrentUserId();
-        List<String> senderIds;
 
         var channel = channelRepository.findById(query.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
-        if (channelRepository.existsByIdAndUserId(query.getId(), userId)) {
+        if (Boolean.TRUE.equals(channelRepository.existsByIdAndUserId(query.getId(), userId))) {
             throw new ForbiddenException("Không thể xem media trong kênh này");
         }
 
-
         Map<String, ProfileResponse> senders = channel.getUsers().stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        user -> ProfileResponse.builder()
-                                .id(user.getId())
-                                .name(user.getName())
-                                .imageUrl(user.getImageUrl())
-                                .build()));
+                .collect(Collectors.toMap(User::getId, user -> modelMapper.map(user, ProfileResponse.class)));
 
-        List<Message> mediaMessages = messageRepository.findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(
+        List<Message> messages = messageRepository.findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(
                 query.getId(),
                 Arrays.asList(Message.Type.IMAGE, Message.Type.FILE),
                 Arrays.asList(Message.Status.SENT, Message.Status.EDITED));
 
         List<ShortMediaMessage> media = new ArrayList<>();
-        mediaMessages.forEach(message -> {
-            ProfileResponse sender = senders.getOrDefault(message.getSender().getId(), null);
+        messages.forEach(message -> {
+            var sender = senders.getOrDefault(message.getSender().getId(), null);
 
             if (Message.Type.IMAGE.equals(message.getType())) {
-                List<ShortMediaMessage> images = message.getImages().stream()
-                        .map(url -> ShortMediaMessage.builder()
-                                .id(message.getId())
-                                .sender(sender)
-                                .imageUrl(url)
-                                .type(message.getType())
-                                .createdDate(message.getCreatedDate())
-                                .build())
-                        .toList();
+                var images = mapToImageMedia(message);
+                images.forEach(image -> image.setSender(sender));
+
                 media.addAll(images);
             }
 
             if (Message.Type.FILE.equals(message.getType())) {
-                ShortMediaMessage file = ShortMediaMessage.builder()
-                        .id(message.getId())
-                        .sender(sender)
-                        .file(new FileModel(message.getFile()))
-                        .type(message.getType())
-                        .createdDate(message.getCreatedDate())
-                        .build();
+                var file = mapToFileMedia(message);
+                file.setSender(sender);
+
                 media.add(file);
             }
         });
+
+        return media;
+    }
+
+    private List<ShortMediaMessage> mapToImageMedia(Message message) {
+        return message.getImages().stream()
+                .map(image -> {
+                    var media = modelMapper.map(image, ShortMediaMessage.class);
+                    media.setId(message.getId());
+                    media.setImageUrl(image);
+                    media.setType(Message.Type.IMAGE);
+                    media.setCreatedDate(message.getCreatedDate());
+
+                    return media;
+                })
+                .toList();
+    }
+
+    private ShortMediaMessage mapToFileMedia(Message message) {
+        var media = modelMapper.map(message, ShortMediaMessage.class);
+        media.setId(message.getId());
+        media.setFile(new FileModel(message.getFile()));
+        media.setType(Message.Type.FILE);
+        media.setCreatedDate(message.getCreatedDate());
 
         return media;
     }

@@ -14,6 +14,7 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersR
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
@@ -649,8 +650,7 @@ public class GroupController {
     /**
      * (Use /api/channels/{id}/media) Get media (images and files) of a group for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which media is requested.
+     * @param id The ID of the group for which media is requested.
      * @return APIResponse containing media information of the group.
      */
     @Deprecated(forRemoval = true)
@@ -658,10 +658,18 @@ public class GroupController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ShortMediaMessage> getGroupMedia(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @PathVariable("id") String groupId) {
-        GroupServiceDto groupData = groupService.getGroupMedia(customerUserDetails.getId(), groupId);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+            @PathVariable("id") String id) {
+        try {
+            var query = GetMediaByChannelIdQuery.builder()
+                    .id(id)
+                    .build();
+
+            var medias = pipeline.send(query);
+
+            return ApiResponseDto.success(medias);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        }
     }
 
     /**

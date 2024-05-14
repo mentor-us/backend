@@ -14,6 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MapperConverter {
     private ModelMapper modelMapper;
+
     public static Converter<List<BaseDomain>, List<String>> mapIdConverter() {
         return ctx -> {
             if (ctx.getSource() == null) {
