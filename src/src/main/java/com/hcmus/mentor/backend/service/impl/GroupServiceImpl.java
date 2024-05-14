@@ -34,6 +34,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.tika.Tika;
+import org.modelmapper.ModelMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -76,6 +77,7 @@ public class GroupServiceImpl implements GroupService {
     private final ChannelRepository channelRepository;
     private final BlobStorage blobStorage;
     private final GroupUserRepository groupUserRepository;
+    private final ModelMapper modelMapper;
 
 
     /**
@@ -467,7 +469,11 @@ public class GroupServiceImpl implements GroupService {
         String imageUrl = null;
 
         if (ChannelType.PRIVATE_MESSAGE.equals(channel.getType())) {
-            ShortProfile penpal = channel.getUsers().stream().filter(u -> Objects.equals(u.getId(), userId)).map(ShortProfile::new).findFirst().orElse(null);
+            ShortProfile penpal = channel.getUsers().stream()
+                    .filter(u -> Objects.equals(u.getId(), userId))
+                    .map(u -> modelMapper.map(u, ShortProfile.class))
+                    .findFirst()
+                    .orElse(null);
             if (penpal == null) {
                 return null;
             }

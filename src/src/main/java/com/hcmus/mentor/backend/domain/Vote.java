@@ -16,12 +16,12 @@ import java.util.List;
 @Table(name = "votes")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Vote {
+public class Vote extends BaseDomain{
 
-    @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+//    @Id
+//    @Column(name = "id")
+//    @GeneratedValue(strategy = GenerationType.UUID)
+//    private String id;
 
     @Column(name = "question")
     private String question;
@@ -31,10 +31,6 @@ public class Vote {
 
     @Column(name = "closed_date")
     private Date closedDate;
-
-    @Builder.Default
-    @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -53,12 +49,12 @@ public class Vote {
     @Column(name = "status", nullable = false)
     private Status status = Status.OPEN;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;

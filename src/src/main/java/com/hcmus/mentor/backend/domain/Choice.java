@@ -15,11 +15,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "choices")
-public class Choice {
-    @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+public class Choice extends BaseDomain{
+//    @Id
+//    @Column(name = "id")
+//    @GeneratedValue(strategy = GenerationType.UUID)
+//    private String id;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -29,7 +29,7 @@ public class Choice {
     @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private Vote vote;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;

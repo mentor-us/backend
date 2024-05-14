@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
@@ -35,7 +36,7 @@ public class MessageDetailResponse implements Serializable {
 
     private String groupId;
 
-    private Vote vote;
+    private VoteResult vote;
 
     private MeetingDto meeting;
 
@@ -114,7 +115,7 @@ public class MessageDetailResponse implements Serializable {
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
                 .groupId(message.getGroupId())
-                .vote(vote)
+//                .vote(vote)
                 .reactions(message.getReactions())
                 .images(transformImageResponse(message.getImages()))
                 .file(message.getFile())

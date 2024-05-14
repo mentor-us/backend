@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.service;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
@@ -18,11 +17,15 @@ import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.Upd
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
+import com.hcmus.mentor.backend.repository.MeetingRepository;
+import com.hcmus.mentor.backend.repository.ReminderRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.dto.GroupDto;
 import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +44,6 @@ public class MeetingService implements IRemindableService {
 
     private final MeetingRepository meetingRepository;
     private final UserRepository userRepository;
-    private final GroupRepository groupRepository;
     private final GroupService groupService;
     private final MessageService messageService;
     private final SocketIOService socketIOService;
@@ -49,6 +51,7 @@ public class MeetingService implements IRemindableService {
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
     private final Pipeline pipeline;
+    private final ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
     public List<MeetingResponse> getMostRecentMeetings(String userId) {
@@ -185,7 +188,7 @@ public class MeetingService implements IRemindableService {
         Map<String, ShortProfile> modifiers =
                 meeting.getHistories().stream()
                         .map(MeetingHistory::getModifier)
-                        .map(UserMapper.INSTANCE::userToShortProfile)
+                        .map(user -> modelMapper.map(user, ShortProfile.class))
                         .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
 
         List<MeetingHistoryDetail> historyDetails =
