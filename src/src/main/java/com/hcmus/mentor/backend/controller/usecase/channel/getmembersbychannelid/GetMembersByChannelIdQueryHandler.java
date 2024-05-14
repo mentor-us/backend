@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 public class GetMembersByChannelIdQueryHandler implements Command.Handler<GetMembersByChannelIdQuery, List<ShortProfile>> {
 
     private final ChannelRepository channelRepository;
+    private final ModelMapper modelMapper;
 
     /**
      * {@inheritDoc}
@@ -26,7 +28,7 @@ public class GetMembersByChannelIdQueryHandler implements Command.Handler<GetMem
         var channel = channelRepository.findById(query.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
         return channel.getUsers().stream()
-                .map(ShortProfile::new)
+                .map(user -> modelMapper.map(user, ShortProfile.class))
                 .toList();
     }
 }

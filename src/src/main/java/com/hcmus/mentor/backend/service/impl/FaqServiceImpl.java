@@ -2,7 +2,6 @@ package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.mapper.UserMapper;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.CreateFaqRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.ImportFAQsRequest;
 import com.hcmus.mentor.backend.controller.payload.request.faqs.UpdateFaqRequest;
@@ -17,6 +16,7 @@ import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.FaqService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -31,6 +31,7 @@ public class FaqServiceImpl implements FaqService {
     private final FaqRepository faqRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public List<Faq> getByGroupId(String userId, String groupId) {
@@ -48,7 +49,7 @@ public class FaqServiceImpl implements FaqService {
 
         var group = new GroupDetailResponse(faq.getGroup());
         group.setRole(userId);
-        ShortProfile creator = UserMapper.INSTANCE.userToShortProfile(faq.getCreator());
+        ShortProfile creator = modelMapper.map(faq.getCreator(), ShortProfile.class);
         return FAQDetail.from(faq, creator, group);
     }
 

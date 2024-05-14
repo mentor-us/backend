@@ -2,11 +2,13 @@ package com.hcmus.mentor.backend.controller.mapper;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.User;
-import org.mapstruct.Mapper;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Component;
 
-@Mapper
-public interface UserMapper {
-    UserMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(UserMapper.class);
+@Component
+public class UserMapper {
 
-    ShortProfile userToShortProfile(User user);
+   public UserMapper(ModelMapper modelMapper) {
+       modelMapper.createTypeMap(User.class, ShortProfile.class);
+   }
 }

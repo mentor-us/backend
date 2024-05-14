@@ -16,6 +16,7 @@ import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageRes
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -32,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,6 +66,7 @@ public class MessageServiceImpl implements MessageService {
     private final GroupUserRepository groupUserRepository;
     private final Pipeline pipeline;
 
+    private final ModelMapper modelMapper;
     /**
      * {@inheritDoc}
      */
@@ -372,10 +375,10 @@ public class MessageServiceImpl implements MessageService {
             }
             // Todo: vrify user is member of group
             var sender = messageReply.getSender();
-            var senderProfile = sender.isStatus() ? new ShortProfile(sender) : null;
+//            var senderProfile = sender.isStatus() ? modelMapper.map(sender, ShortProfile.class) : null;
             message.setReply(MessageDetailResponse.ReplyMessage.builder()
                     .id(messageReply.getId())
-                    .senderName(senderProfile != null ? sender.getName() : "Người dùng không tồn tại")
+                    .senderName(sender != null ? sender.getName() : "Người dùng không tồn tại")
                     .content(messageReply.isDeleted() ? "Tin nhắn đã được xoá" : messageReply.getContent())
                     .build());
         }
@@ -398,7 +401,7 @@ public class MessageServiceImpl implements MessageService {
             if (messageReply.isDeleted()) {
                 content = "Tin nhắn đã được xoá";
             }
-            ShortProfile sender = new ShortProfile(messageReply.getSender());
+            ShortProfile sender = modelMapper.map(messageReply.getSender(), ShortProfile.class);
             String senderName = "Người dùng không tồn tại";
             if (groupUserRepository.existsByUserIdAndGroupId(sender.getId(), messageReply.getChannel().getGroup().getId())) {
                 senderName = sender.getName();
@@ -480,25 +483,13 @@ public class MessageServiceImpl implements MessageService {
         if (vote != null) {
             vote.sortChoicesDesc();
         }
-        return MessageDetailResponse.from(message, vote);
+        else
+            return null;
+        var messageDetail = MessageDetailResponse.from(message);
+        var voteResult = modelMapper.map(vote, VoteResult.class);
+        messageDetail.setVote(voteResult);
+        return messageDetail;
     }
-
-//    private Boolean isMemberGroup(String userId, String groupId) {
-//        var groupOpt = groupRepository.findById(groupId);
-//
-//        if (groupOpt.isPresent()) {
-//            var group = groupOpt.get();
-//            return group.isMember(userId);
-//        }
-//
-//        var channelOpt = channelRepository.findById(groupId);
-//        if (channelOpt.isPresent()) {
-//            var channel = channelOpt.get();
-//            return channel.isMember(userId) || isMemberGroup(userId, channel.getGroup().getId());
-//        }
-//
-//        return false;
-//    }
 
     private void pingGroup(String groupId) {
         var groupOpt = groupRepository.findById(groupId);

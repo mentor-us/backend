@@ -84,7 +84,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         return channel -> {
             ShortProfile friendId = channel.getUsers().stream()
                     .filter(u -> !Objects.equals(u.getId(), currentUserId))
-                    .map(ShortProfile::new)
+                    .map(u->modelMapper.map(u, ShortProfile.class))
                     .findFirst()
                     .orElse(null);
 

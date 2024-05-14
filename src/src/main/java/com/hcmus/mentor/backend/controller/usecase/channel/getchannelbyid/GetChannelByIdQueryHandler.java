@@ -52,7 +52,8 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
                 return null;
             }
 
-            ShortProfile friend = userRepository.findShortProfile(friendId).map(ShortProfile::new).orElse(null);
+            ShortProfile friend = userRepository.findShortProfile(friendId)
+                    .map(user -> modelMapper.map(user, ShortProfile.class)).orElse(null);
             if (friend == null) {
                 return null;
             }
