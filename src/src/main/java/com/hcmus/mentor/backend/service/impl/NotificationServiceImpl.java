@@ -504,19 +504,21 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNewVoteNotification(String title, String content, User sender, Group group, Vote vote) {
-        Notification notif = Notification.builder()
+        Notification notification = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_VOTE)
                 .sender(sender)
                 .refId(vote.getId())
                 .build();
+
         var receiverIds = group.getGroupUsers().stream()
-                .map(gu -> NotificationUser.builder().notification(notif).user(gu.getUser()).build())
+                .map(gu -> NotificationUser.builder().notification(notification).user(gu.getUser()).build())
                 .toList();
-        notif.setReceivers(receiverIds);
-        notificationRepository.save(notif);
-        return notif;
+        
+        notification.setReceivers(receiverIds);
+        notificationRepository.save(notification);
+        return notification;
     }
 
     @Override

@@ -1,11 +1,12 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
+import com.hcmus.mentor.backend.controller.usecase.vote.createvote.CreateVoteCommand;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -34,6 +35,7 @@ public class VoteController {
     private final VoteService voteService;
     private final SocketIOServer socketServer;
     private final MessageService messageService;
+    private final Pipeline pipeline;
 
     /**
      * (Use api /api/channels/votes) Get all votes on group.
@@ -74,20 +76,20 @@ public class VoteController {
         return ResponseEntity.ok(vote);
     }
 
+
     /**
-     * Create new vote.
+     * Create vote.
      *
-     * @param loggedUser Current authenticated user's principal.
-     * @param request    CreateVoteRequest containing details to create a new vote.
+     * @param command CreateVoteCommand containing details for creating the vote.
      * @return ResponseEntity<Vote> - Response containing the created vote.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<VoteResult> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody CreateVoteRequest request) {
-        var vote = voteService.createNewVote(loggedUser.getId(), request);
+            @RequestBody CreateVoteCommand command) {
+        var vote = pipeline.send(command);
+
         return ResponseEntity.ok(vote);
     }
 
@@ -230,7 +232,7 @@ public class VoteController {
             @PathVariable String voteId,
             @RequestBody DoVotingRequest request) {
 
-        Vote vote = voteService.doVoting(request,user.getId() );
+        Vote vote = voteService.doVoting(request, user.getId());
 
         messageService.updateCreatedDateVoteMessage(voteId);
         socketServer.getRoomOperations(vote.getGroup().getId()).sendEvent("receive_voting", vote);

@@ -67,7 +67,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public boolean isMemberInChannel(String channelId, String userId) {
-        return channelRepository.existsByIdAndUserId(userId, channelId);
+        return channelRepository.existsByIdAndUserId(channelId, userId);
     }
 
     @Override
