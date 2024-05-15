@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
 @Transactional
@@ -56,7 +56,7 @@ public class VoteServiceImpl implements VoteService {
             return null;
         }
 
-        VoteDetailResponse voteDetail = fulfillChoices(vote);
+        VoteDetailResponse voteDetail = modelMapper.map(vote, VoteDetailResponse.class);
         voteDetail.setCanEdit(group.isMentor(userId) || vote.getCreator().getId().equals(userId));
         return voteDetail;
     }
@@ -64,24 +64,17 @@ public class VoteServiceImpl implements VoteService {
     @Override
     @Transactional(readOnly = true)
     public List<VoteDetailResponse> getGroupVotes(String userId, String channelId) {
-        if (!permissionService.isUserIdInGroup(userId, channelId)) {
+        if (!permissionService.isMemberInGroup(userId, channelId)) {
             return null;
         }
         return voteRepository.findByGroupIdOrderByCreatedDateDesc(channelId).stream()
-                .map(this::fulfillChoices)
+                .map(vote -> modelMapper.map(vote, VoteDetailResponse.class))
                 .toList();
     }
 
 
     @Override
     public VoteDetailResponse fulfillChoices(Vote vote) {
-//        ShortProfile creator = new ShortProfile(vote.getCreator());
-//        List<VoteDetailResponse.ChoiceDetail> choices = vote.getChoices().stream()
-//                .map(this::fulfillChoice)
-//                .filter(Objects::nonNull)
-//                .sorted((c1, c2) -> c2.getVoters().size() - c1.getVoters().size())
-//                .toList();
-//        return VoteDetailResponse.from(vote, creator, choices);
         return modelMapper.map(vote, VoteDetailResponse.class);
     }
 
@@ -99,10 +92,10 @@ public class VoteServiceImpl implements VoteService {
     @Transactional
     public VoteResult createNewVote(String userId, CreateVoteRequest request) {
         var sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found."));
-        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(()-> new DomainException("Không tìm thấy kênh"));
+        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
         var group = channel.getGroup();
 
-        if(!group.isMember(userId)) {
+        if (!group.isMember(userId)) {
             throw new ForbiddenException("Người dùng không có trong channel!");
         }
 
@@ -136,6 +129,7 @@ public class VoteServiceImpl implements VoteService {
 
     @Override
     public boolean updateVote(CustomerUserDetails userDetails, String voteId, UpdateVoteRequest request) {
+        var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."));
         var vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("Không tìm thấy bình chọn."));
 
         if (vote.getGroup().getGroup().isMentor(userDetails.getId())
@@ -155,7 +149,6 @@ public class VoteServiceImpl implements VoteService {
             isUpdate = true;
         }
 
-        var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng."));
 
         if (request.getChoices() != null) {
             List<Choice> newChoices = new ArrayList<>();
@@ -182,117 +175,122 @@ public class VoteServiceImpl implements VoteService {
         return isUpdate;
     }
 
-
     @Override
     public boolean deleteVote(CustomerUserDetails user, String voteId) {
         var vote = voteRepository.findById(voteId).orElse(null);
         if (vote == null) {
-            return false;
+            throw new DomainException("Không tìm thấy bình chọn");
         }
-        if (!permissionService.isMentor(user.getEmail(), vote.getCreator().getId())
-                && !vote.getGroup().getId().equals(user.getId())) {
-            return false;
+
+        if (permissionService.isMentorInChannel(user.getId(), vote.getGroup().getId())) {
+            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
         voteRepository.delete(vote);
         return true;
     }
 
     @Override
-    public Vote doVoting(DoVotingRequest request) {
+    public Vote doVoting(DoVotingRequest request, String userId) {
         var vote = voteRepository.findById(request.getVoteId()).orElse(null);
         if (vote == null) {
-            return null;
+            throw new DomainException("Không tìm thấy bình chọn!");
+        }
+        if (vote.getStatus().equals(Vote.Status.CLOSED)) {
+            throw new DomainException("Bình chọn đang đóng");
         }
 
-        if (Vote.Status.CLOSED.equals(vote.getStatus())) {
-            return null;
-        }
+//        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
+//            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
+//        }
 
-        var voter = userRepository.findById(request.getVoterId()).orElse(null);
-        if (voter == null) {
-            return null;
-        }
+        List<Choice> doChoices = request.getChoices().stream()
+                .map(newChoiceDto -> {
+                    var choice = vote.getChoice(newChoiceDto.getId());
+                    if (choice == null) {
+                        choice = Choice.builder()
+                                .vote(vote)
+                                .creator(userRepository.findById(userId).orElse(null))
+                                .name(newChoiceDto.getName())
+                                .build();
+                        choice.setId(newChoiceDto.getId());
+                    }
 
-        List<Choice> newChoices = request.getChoices().stream()
-                .map(choice -> vote.getChoice(choice.getId()))
-                .toList();
+                    var voters = userRepository.findAllByIdIn(newChoiceDto.getVoters());
+                    choice.setVoters(voters);
 
-        if (!newChoices.isEmpty()) {
-            choiceRepository.saveAll(newChoices);
-        }
+                    return choice;
+                }).toList();
 
+        choiceRepository.saveAll(doChoices);
         return voteRepository.save(vote);
     }
 
     @Override
-    public VoteDetailResponse.ChoiceDetail getChoiceDetail(
-            CustomerUserDetails user, String voteId, String choiceId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (!voteWrapper.isPresent()) {
-            return null;
-        }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
-            return null;
+    public VoteDetailResponse.ChoiceDetail getChoiceDetail(CustomerUserDetails user, String voteId, String choiceId) {
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
+            throw new DomainException("Không tìm thấy bình chọn");
         }
 
-        return fulfillChoice(vote.getChoice(choiceId));
+        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
+            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
+        }
+
+        if (vote.getChoice(choiceId) == null) {
+            throw new DomainException("Không tìm thấy lựa chọn");
+        }
+
+        return modelMapper.map(vote.getChoice(choiceId), VoteDetailResponse.ChoiceDetail.class);
     }
 
     @Override
     public List<VoteDetailResponse.ChoiceDetail> getChoiceResults(CustomerUserDetails user, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (voteWrapper.isEmpty()) {
-            return null;
-        }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isUserIdInGroup(user.getId(), vote.getGroup().getId())) {
-            return null;
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
+            throw new DomainException("Không tìm thấy bình chọn");
         }
 
-        VoteDetailResponse voteDetail = fulfillChoices(vote);
-        if (voteDetail == null) {
-            return null;
+        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
+            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
 
+        VoteDetailResponse voteDetail = modelMapper.map(vote, VoteDetailResponse.class);
         return voteDetail.getChoices();
     }
 
     @Override
-    public boolean closeVote(CustomerUserDetails user, String voteId) {
+    public void closeVote(CustomerUserDetails user, String voteId) {
         var vote = voteRepository.findById(voteId).orElse(null);
         if (vote == null) {
-            return false;
+            throw new DomainException("Không tìm thấy bình chọn!");
+        }
+        if (vote.getStatus().equals(Vote.Status.CLOSED)) {
+            throw new DomainException("Bình chọn đang đóng");
         }
 
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
-                && !vote.getGroup().getId().equals(user.getId())) {
-            return false;
+        if (!permissionService.isMentorInChannel(vote.getGroup().getId(), user.getId()) && !Objects.equals(vote.getCreator().getId(), user.getId())) {
+            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
-        if (Vote.Status.CLOSED.equals(vote.getStatus())) {
-            return false;
-        }
+
         vote.close();
         voteRepository.save(vote);
-        return true;
     }
 
     @Override
-    public boolean reopenVote(CustomerUserDetails user, String voteId) {
-        Optional<Vote> voteWrapper = voteRepository.findById(voteId);
-        if (voteWrapper.isEmpty()) {
-            return false;
+    public void reopenVote(CustomerUserDetails user, String voteId) {
+        var vote = voteRepository.findById(voteId).orElse(null);
+        if (vote == null) {
+            throw new DomainException("Không tìm thấy bình chọn");
         }
-        Vote vote = voteWrapper.get();
-        if (!permissionService.isMentor(user.getEmail(), vote.getGroup().getId())
-                && !vote.getCreator().getId().equals(user.getId())) {
-            return false;
+        if (vote.getStatus().equals(Vote.Status.OPEN)) {
+            throw new DomainException("Bình chọn đang mở");
         }
-        if (Vote.Status.OPEN.equals(vote.getStatus())) {
-            return false;
+
+        if (!permissionService.isMentorInChannel(vote.getGroup().getId(), user.getId()) && !Objects.equals(vote.getCreator().getId(), user.getId())) {
+            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
-        vote.reopen();
+
+        vote.close();
         voteRepository.save(vote);
-        return true;
     }
 }

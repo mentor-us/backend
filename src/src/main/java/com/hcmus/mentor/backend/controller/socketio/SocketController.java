@@ -21,6 +21,7 @@ import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.VoteService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,31 +37,32 @@ public class SocketController {
 
     private final MessageService messageService;
 
-    private final NotificationService notificationService;
-
     private final VoteService voteService;
 
     private final ChannelRepository channelRepository;
 
     private final Pipeline pipeline;
 
+    private final ModelMapper modelMapper;
+
+    private final NotificationService notificationService;
 
     public SocketController(
             SocketIOServer server,
             SocketIOService socketIOService,
             UserRepository userRepository,
             MessageService messageService,
-            NotificationService notificationService,
             VoteService voteService, ChannelRepository channelRepository,
-            Pipeline pipeline) {
+            Pipeline pipeline, ModelMapper modelMapper, NotificationService notificationService) {
         this.server = server;
         this.socketIOService = socketIOService;
         this.userRepository = userRepository;
         this.messageService = messageService;
-        this.notificationService = notificationService;
         this.voteService = voteService;
         this.channelRepository = channelRepository;
         this.pipeline = pipeline;
+        this.modelMapper = modelMapper;
+        this.notificationService = notificationService;
         configureServer(this.server);
     }
 
@@ -117,7 +119,7 @@ public class SocketController {
             }
 
             socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getGroup().getId());
-//            notificationService.sendNewMessageNotification(response);
+            notificationService.sendNewMessageNotification(response);
 
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)
@@ -129,8 +131,8 @@ public class SocketController {
 
     private DataListener<DoVotingRequest> onVotingReceived() {
         return (socketIOClient, doVoting, ackRequest) -> {
-            Vote updatedVote = voteService.doVoting(doVoting);
-            VoteDetailResponse response = voteService.fulfillChoices(updatedVote);
+            Vote updatedVote = voteService.doVoting(doVoting, "dummy");
+            VoteDetailResponse response = modelMapper.map(updatedVote, VoteDetailResponse.class);
             socketIOService.sendUpdatedVote(socketIOClient, response);
         };
     }

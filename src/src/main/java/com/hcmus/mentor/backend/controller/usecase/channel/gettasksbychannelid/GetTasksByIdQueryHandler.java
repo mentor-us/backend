@@ -39,7 +39,7 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
     public List<TaskDetailResult> handle(GetTasksByIdQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        if (!permissionService.isUserInChannel(query.getId(), currentUserId)) {
+        if (!permissionService.isMemberInChannel(query.getId(), currentUserId)) {
             throw new ForbiddenException("Bạn không có quyền truy cập");
         }
 
@@ -56,7 +56,7 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
 
         TaskDetailResultChannel groupInfo = TaskDetailResultChannel.from(task.getGroup());
 
-        TaskDetailResponseRole role = permissionService.isMentor(userId, task.getGroup().getGroup().getId())
+        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(userId, task.getGroup().getGroup().getId())
                 ? TaskDetailResponseRole.MENTOR
                 : TaskDetailResponseRole.MENTEE;
 

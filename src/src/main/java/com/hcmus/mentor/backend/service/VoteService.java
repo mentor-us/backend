@@ -26,15 +26,15 @@ public interface VoteService {
 
     boolean deleteVote(CustomerUserDetails user, String voteId);
 
-    Vote doVoting(DoVotingRequest request);
+    Vote doVoting(DoVotingRequest request, String userId);
 
     VoteDetailResponse.ChoiceDetail getChoiceDetail(
             CustomerUserDetails user, String voteId, String choiceId);
 
     List<VoteDetailResponse.ChoiceDetail> getChoiceResults(CustomerUserDetails user, String voteId);
 
-    boolean closeVote(CustomerUserDetails user, String voteId);
+    void closeVote(CustomerUserDetails user, String voteId);
 
-    boolean reopenVote(CustomerUserDetails user, String voteId);
+    void reopenVote(CustomerUserDetails user, String voteId);
 
 }

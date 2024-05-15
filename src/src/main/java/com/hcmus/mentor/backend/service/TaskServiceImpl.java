@@ -132,7 +132,7 @@ public class TaskServiceImpl implements IRemindableService {
             logger.error("Get tasks by group id : Not found group with id {}", groupId);
             return new TaskReturnService(NOT_FOUND_GROUP, "Not found group", null);
         }
-        if (!permissionService.isInGroup(emailUser, groupId)) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, groupId)) {
             logger.error("Get tasks by group id : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -165,7 +165,7 @@ public class TaskServiceImpl implements IRemindableService {
             logger.error("Delete task : Not found task with id {}", id);
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
-        if (!permissionService.isMentor(user.getEmail(), task.getGroup().getId()) && !task.getAssigner().getId().equals(user.getId())) {
+        if (!permissionService.isMentorByEmailOfGroup(user.getEmail(), task.getGroup().getId()) && !task.getAssigner().getId().equals(user.getId())) {
             logger.error("Delete task : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -186,7 +186,7 @@ public class TaskServiceImpl implements IRemindableService {
     private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
         TaskDetailResponseAssigner assigner = TaskDetailResponseAssigner.from(task.getAssigner());
         TaskDetailResponseGroup groupInfo = TaskDetailResponseGroup.from(task.getGroup().getGroup());
-        TaskDetailResponseRole role = permissionService.isMentor(emailUser, task.getGroup().getGroup().getId())
+        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(emailUser, task.getGroup().getGroup().getId())
                 ? TaskDetailResponseRole.MENTOR
                 : TaskDetailResponseRole.MENTEE;
 
@@ -210,7 +210,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
             logger.error("Get task : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -226,7 +226,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
             logger.error("Get task assigner : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -243,7 +243,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
             logger.error("Get task assignees : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -294,7 +294,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
             logger.error("Update status : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -321,7 +321,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(emailUser, task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
             logger.error("Update status by mentor : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -353,7 +353,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found task", null);
         }
 
-        if (!permissionService.isInGroup(user.getEmail(), task.getGroup().getGroup().getId())) {
+        if (!permissionService.isMemberByEmailInGroup(user.getEmail(), task.getGroup().getGroup().getId())) {
             logger.error("Update task : Invalid permission");
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -362,7 +362,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         for (String assigneeId : request.getUserIds()) {
-            if (!permissionService.isUserIdInGroup(assigneeId, task.getGroup().getGroup().getId())) {
+            if (!permissionService.isMemberInGroup(assigneeId, task.getGroup().getGroup().getId())) {
                 logger.error("Update task : Not found user with id {} in group {}", assigneeId, task.getGroup().getGroup().getId());
                 return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
             }

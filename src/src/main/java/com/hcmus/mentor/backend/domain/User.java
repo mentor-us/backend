@@ -27,11 +27,6 @@ import java.util.List;
 @Table(name = "users")
 public class User extends BaseDomain implements Serializable {
 
-//    @Id
-//    @Column(name = "id")
-//    @GeneratedValue(strategy = GenerationType.UUID)
-//    private String id;
-
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -82,10 +77,6 @@ public class User extends BaseDomain implements Serializable {
     @Column(name = "birth_date")
     private Date birthDate;
 
-//    @Builder.Default
-//    @Column(name = "created_date", nullable = false)
-//    private Date createdDate = new Date();
-
     @Column(name = "training_point")
     private int trainingPoint;
 
@@ -103,36 +94,13 @@ public class User extends BaseDomain implements Serializable {
     @Column(name = "gender", nullable = false)
     private UserGender gender = UserGender.MALE;
 
-//    @Builder.Default
-//    @ElementCollection(fetch = FetchType.EAGER)
-//    private List<UserRole> roles = new ArrayList<>(List.of(USER));
-
-//
-//    @Builder.Default
-//    @JsonIgnore
-//    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-//    private List<Reaction> reactions = new ArrayList<>();
-
-
     @Builder.Default
     @JsonIgnore
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
     @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messages = new ArrayList<>();
 
-    // === Vote ===
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-//    private List<Vote> votesCreated = new ArrayList<>();
-
-
     // === Choice ===
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-//    private List<Choice> choicesCreated = new ArrayList<>();
-
     @JsonIgnore
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
@@ -141,21 +109,12 @@ public class User extends BaseDomain implements Serializable {
 
 
     // === Meeting ===
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
-//    private List<MeetingHistory> meetingHistories = new ArrayList<>();
-
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "organizer", fetch = FetchType.LAZY)
-//    private List<Meeting> meetingsOrganizer = new ArrayList<>();
-
     @Builder.Default
     @JsonIgnore
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private List<Meeting> meetingAttendees = new ArrayList<>();
+
 
     // === Notification ===
     @Builder.Default
@@ -182,14 +141,7 @@ public class User extends BaseDomain implements Serializable {
     @JsonIgnoreProperties(value = {"recipients", "group"}, allowSetters = true)
     private List<Reminder> reminders = new ArrayList<>();
 
-//    @JsonIgnore
-//    @Builder.Default
-//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-//    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
-//    private List<Faq> faqsCreated = new ArrayList<>();
-
     @Builder.Default
-//    @Enumerated(EnumType.STRING)
     @ElementCollection(fetch = FetchType.EAGER)
     private List<UserRole> roles = new ArrayList<>();
 
@@ -199,10 +151,8 @@ public class User extends BaseDomain implements Serializable {
     @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
+
     // === Channel ===
-//    @JsonIgnore
-//    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
-//    private List<Channel> channelsCreated;
 
     @JsonIgnore
     @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})

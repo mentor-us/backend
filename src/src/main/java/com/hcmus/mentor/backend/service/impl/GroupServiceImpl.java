@@ -582,7 +582,7 @@ public class GroupServiceImpl implements GroupService {
             }
 
             Channel channel = channelWrapper.get();
-            if (!channel.isMember(userId) && !permissionService.isUserIdInGroup(userId, channel.getGroup().getId())) {
+            if (!channel.isMember(userId) && !permissionService.isMemberInGroup(userId, channel.getGroup().getId())) {
                 return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
 
