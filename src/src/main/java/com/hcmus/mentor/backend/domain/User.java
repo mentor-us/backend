@@ -119,7 +119,7 @@ public class User extends BaseDomain implements Serializable {
     // === Notification ===
     @Builder.Default
     @JsonIgnore
-    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
     private List<Notification> notificationsSent = new ArrayList<>();
 

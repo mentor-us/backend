@@ -67,6 +67,7 @@ public class MessageServiceImpl implements MessageService {
     private final Pipeline pipeline;
 
     private final ModelMapper modelMapper;
+
     /**
      * {@inheritDoc}
      */
@@ -270,13 +271,16 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveVoteMessage(Vote vote) {
-        var message = messageRepository.save(Message.builder()
+        var message = Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
                 .createdDate(new Date())
                 .type(Message.Type.VOTE)
                 .vote(vote)
-                .build());
+                .build();
+
+        message = messageRepository.save(message);
+
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
     }
@@ -482,8 +486,7 @@ public class MessageServiceImpl implements MessageService {
         Vote vote = voteRepository.findById(message.getVoteId()).orElse(null);
         if (vote != null) {
             vote.sortChoicesDesc();
-        }
-        else
+        } else
             return null;
         var messageDetail = MessageDetailResponse.from(message);
         var voteResult = modelMapper.map(vote, VoteResult.class);

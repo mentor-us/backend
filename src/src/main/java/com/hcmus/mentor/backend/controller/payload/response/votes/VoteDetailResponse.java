@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.domain.Vote;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public class VoteDetailResponse {
 
     private ShortProfile creator;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private Date createdDate;
 

@@ -1,29 +1,26 @@
-package com.hcmus.mentor.backend.controller.payload.request;
+package com.hcmus.mentor.backend.controller.usecase.vote.createvote;
 
+import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.dto.ChoiceDto;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@AllArgsConstructor
+@Data
+@Builder
 @NoArgsConstructor
-@Setter
-public class CreateVoteRequest {
+@AllArgsConstructor
+public class CreateVoteCommand implements Command<VoteResult> {
 
     private String question;
-
     private String groupId;
-
     private String creatorId;
-
     private LocalDateTime timeEnd;
-
     private List<ChoiceDto> choices;
-
     private Boolean isMultipleChoice = false;
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,18 +17,13 @@ import java.util.List;
 @Table(name = "votes")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Vote extends BaseDomain{
-
-//    @Id
-//    @Column(name = "id")
-//    @GeneratedValue(strategy = GenerationType.UUID)
-//    private String id;
+public class Vote extends BaseDomain {
 
     @Column(name = "question")
     private String question;
 
     @Column(name = "time_end")
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     @Column(name = "closed_date")
     private Date closedDate;
