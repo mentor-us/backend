@@ -92,12 +92,11 @@ public class VoteServiceImpl implements VoteService {
     @Transactional
     public VoteResult createNewVote(String userId, CreateVoteRequest request) {
         var sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found."));
-        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-        var group = channel.getGroup();
-
-        if (!group.isMember(userId)) {
-            throw new ForbiddenException("Người dùng không có trong channel!");
+        if(!permissionService.isMemberInChannel(userId, request.getGroupId())) {
+            throw new ForbiddenException("user not in channel");
         }
+
+        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
         Vote newVote = voteRepository.save(Vote.builder()
                 .question(request.getQuestion())
@@ -198,10 +197,6 @@ public class VoteServiceImpl implements VoteService {
         if (vote.getStatus().equals(Vote.Status.CLOSED)) {
             throw new DomainException("Bình chọn đang đóng");
         }
-
-//        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
-//            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
-//        }
 
         List<Choice> doChoices = request.getChoices().stream()
                 .map(newChoiceDto -> {

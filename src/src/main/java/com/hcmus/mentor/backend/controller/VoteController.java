@@ -88,7 +88,6 @@ public class VoteController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody CreateVoteRequest request) {
         var vote = voteService.createNewVote(loggedUser.getId(), request);
-
         return ResponseEntity.ok(vote);
     }
 
