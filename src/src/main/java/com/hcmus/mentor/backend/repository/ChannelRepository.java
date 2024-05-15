@@ -23,8 +23,8 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
 
     List<Channel> findByIdInAndStatusEquals(List<String> channelIds, ChannelStatus status);
 
-    @Query("select c from Channel c join c.users cu where c.id = ?1 and cu.id = ?2")
-    Boolean existsByIdAndUserId(String channelId, String userId);
+    @Query(nativeQuery = true, value = "select case when (count(*) > 0) then true else false end from (select 1 from rel_user_channel where channel_id = ?1 and user_id = ?2)")
+    boolean existsByIdAndUserId(String channelId, String userId);
 
     @Query("SELECT c " +
             "from Channel c " +

@@ -131,7 +131,7 @@ public class SocketController {
 
     private DataListener<DoVotingRequest> onVotingReceived() {
         return (socketIOClient, doVoting, ackRequest) -> {
-            Vote updatedVote = voteService.doVoting(doVoting, socketIOClient.get);
+            Vote updatedVote = voteService.doVoting(doVoting, "dummy");
             VoteDetailResponse response = modelMapper.map(updatedVote, VoteDetailResponse.class);
             socketIOService.sendUpdatedVote(socketIOClient, response);
         };

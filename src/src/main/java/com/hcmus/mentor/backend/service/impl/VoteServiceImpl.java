@@ -199,9 +199,9 @@ public class VoteServiceImpl implements VoteService {
             throw new DomainException("Bình chọn đang đóng");
         }
 
-        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
-            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
-        }
+//        if (permissionService.isMemberInChannel(vote.getGroup().getId(), user.getId())) {
+//            throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
+//        }
 
         List<Choice> doChoices = request.getChoices().stream()
                 .map(newChoiceDto -> {
@@ -209,7 +209,7 @@ public class VoteServiceImpl implements VoteService {
                     if (choice == null) {
                         choice = Choice.builder()
                                 .vote(vote)
-                                .creator(voter)
+                                .creator(userRepository.findById(userId).orElse(null))
                                 .name(newChoiceDto.getName())
                                 .build();
                         choice.setId(newChoiceDto.getId());
@@ -236,8 +236,7 @@ public class VoteServiceImpl implements VoteService {
             throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
 
-        if(vote.getChoice(choiceId) == null)
-        {
+        if (vote.getChoice(choiceId) == null) {
             throw new DomainException("Không tìm thấy lựa chọn");
         }
 
