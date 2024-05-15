@@ -41,37 +41,38 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public boolean isGroupCreator(String email, String groupId) {
+    public boolean isGroupCreatorByEmail(String email, String groupId) {
         return groupRepository.existsByCreatorEmailAndId(email, groupId);
     }
 
     @Override
     public boolean hasPermissionOnGroup(String email, String groupId) {
-        return isSuperAdmin(email) || isGroupCreator(email, groupId);
+        return isSuperAdmin(email) || isGroupCreatorByEmail(email, groupId);
     }
 
     @Override
-    public boolean isInGroup(String email, String groupId) {
+    public boolean isMemberByEmailInGroup(String email, String groupId) {
         return groupUserRepository.existsMemberByEmailAndGroupId(email, groupId);
     }
 
     @Override
-    public boolean isMentor(String email, String groupId) {
+    public boolean isMentorByEmailOfGroup(String email, String groupId) {
         return groupUserRepository.existsMentorByEmailAndGroupId(email, groupId, true);
     }
 
     @Override
-    public boolean isUserIdInGroup(String userId, String groupId) {
+    public boolean isMemberInGroup(String userId, String groupId) {
         return groupUserRepository.existsByUserIdAndGroupId(userId, groupId);
     }
 
-    /**
-     * @param channelId
-     * @param userId
-     * @return
-     */
     @Override
-    public boolean isUserInChannel(String channelId, String userId) {
+    public boolean isMemberInChannel(String channelId, String userId) {
         return channelRepository.existsByIdAndUserId(userId, channelId);
     }
+
+    @Override
+    public boolean isMentorInChannel(String channelId, String userId) {
+        return channelRepository.existsMentorInChannel(channelId, userId);
+    }
+
 }

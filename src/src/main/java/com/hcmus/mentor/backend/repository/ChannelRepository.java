@@ -23,7 +23,7 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
 
     List<Channel> findByIdInAndStatusEquals(List<String> channelIds, ChannelStatus status);
 
-    @Query(nativeQuery = true, value = "SELECT EXISTS (SELECT uc.user_id FROM channels c JOIN rel_user_channel uc ON uc.channel_id = c.id WHERE id = ?1 AND uc.user_id = ?2)")
+    @Query("select c from Channel c join c.users cu where c.id = ?1 and cu.id = ?2")
     Boolean existsByIdAndUserId(String channelId, String userId);
 
     @Query("SELECT c " +
@@ -40,4 +40,12 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
             "join fetch c.users u " +
             "where u.id = ?1 and c.group.status = 'ACTIVE' and c.status = 'ACTIVE'")
     List<Channel> findOwnChannelsByUserId(String userId);
+
+    @Query("select c " +
+            "from Channel c " +
+            "join c.group g " +
+            "join g.groupUsers gu " +
+            "join c.users cu " +
+            "where c.id = ?1 and gu.id = ?2 and gu.isMentor = true and cu.id = ?2")
+    Boolean existsMentorInChannel(String channelId, String userId);
 }

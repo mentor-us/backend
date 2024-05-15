@@ -148,6 +148,7 @@ public class VoteController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @PathVariable String choiceId) {
+
         VoteDetailResponse.ChoiceDetail choiceDetail =
                 voteService.getChoiceDetail(user, voteId, choiceId);
         if (choiceDetail == null) {
@@ -166,13 +167,12 @@ public class VoteController {
     @GetMapping("{voteId}/result")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId) {
+
         List<VoteDetailResponse.ChoiceDetail> choiceResult = voteService.getChoiceResults(user, voteId);
-        if (choiceResult == null || choiceResult.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(choiceResult);
     }
 
@@ -186,12 +186,12 @@ public class VoteController {
     @PatchMapping("{voteId}/close")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> closeVote(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
-        boolean isSuccess = voteService.closeVote(user, voteId);
-        if (!isSuccess) {
-            return ResponseEntity.badRequest().build();
-        }
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @PathVariable String voteId) {
+
+        voteService.closeVote(user, voteId);
         return ResponseEntity.ok().build();
     }
 
@@ -205,12 +205,12 @@ public class VoteController {
     @PatchMapping("{voteId}/reopen")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> reopenVote(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
-        boolean isSuccess = voteService.reopenVote(user, voteId);
-        if (!isSuccess) {
-            return ResponseEntity.badRequest().build();
-        }
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @PathVariable String voteId) {
+
+        voteService.reopenVote(user, voteId);
         return ResponseEntity.ok().build();
     }
 
@@ -225,17 +225,15 @@ public class VoteController {
     @PostMapping("{voteId}/voting")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> doVoting(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @RequestBody DoVotingRequest request) {
-        Vote vote = voteService.doVoting(request);
-        if (vote == null) {
-            return ResponseEntity.badRequest().build();
-        }
+
+        Vote vote = voteService.doVoting(request,user.getId() );
 
         messageService.updateCreatedDateVoteMessage(voteId);
-
         socketServer.getRoomOperations(vote.getGroup().getId()).sendEvent("receive_voting", vote);
 
         return ResponseEntity.ok().build();

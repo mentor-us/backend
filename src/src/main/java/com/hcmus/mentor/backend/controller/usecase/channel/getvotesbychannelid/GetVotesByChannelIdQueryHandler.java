@@ -29,7 +29,7 @@ public class GetVotesByChannelIdQueryHandler implements Command.Handler<GetVotes
      */
     @Override
     public List<VoteDetailResponse> handle(GetVotesByChannelIdQuery query) {
-        if (!permissionService.isUserInChannel(query.getId(), loggedUserAccessor.getCurrentUserId())) {
+        if (!permissionService.isMemberInChannel(query.getId(), loggedUserAccessor.getCurrentUserId())) {
             throw new ForbiddenException("Bạn không có quyền truy cập");
         }
 
