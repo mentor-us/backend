@@ -18,6 +18,7 @@ public class GroupMapper {
         modelMapper.createTypeMap(Group.class, GroupWorkspaceDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getGroupCategory().getName(), GroupWorkspaceDto::setGroupCategory);
             mapper.map(src -> src.getGroupCategory().getPermissions(), GroupWorkspaceDto::setPermissions);
+            mapper.map(src -> src.getDefaultChannel().getId(), GroupWorkspaceDto::setDefaultChannelId);
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentees, GroupWorkspaceDto::setMentees);
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentors, GroupWorkspaceDto::setMentors);
             mapper.skip(GroupWorkspaceDto::setRole);
