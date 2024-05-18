@@ -62,14 +62,15 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
         }
 
         var channelDetail = modelMapper.map(channel, ChannelDetailDto.class);
+        var channelMember = channel.getUsers().stream().map(User::getId).toList();
 
         channelDetail.setName(channelName);
         channelDetail.setImageUrl(imageUrl);
         channelDetail.setGroupCategory(groupCategory.getName());
         channelDetail.setPermissions(groupCategory.getPermissions());
-        channelDetail.setMembers(parentGroup.getMembers().stream().map(User::getId).toList());
-        channelDetail.setMentors(parentGroup.getMentors().stream().map(User::getId).toList());
-        channelDetail.setMentees(parentGroup.getMentees().stream().map(User::getId).toList());
+        channelDetail.setMembers(channelMember);
+        channelDetail.setMentors(parentGroup.getMentors().stream().map(User::getId).filter(channelMember::contains).toList());
+        channelDetail.setMentees(parentGroup.getMentees().stream().map(User::getId).filter(channelMember::contains).toList());
         channelDetail.setRole(currentUserId);
 
         return channelDetail;

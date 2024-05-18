@@ -44,7 +44,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "join m.sender s " +
             "join m.channel c " +
             "WHERE m.channel.id = ?1 " +
-            "AND m.status != 'DELETED' " +
+//            "AND m.status != 'DELETED' " +
             "ORDER BY m.createdDate DESC ")
     List<Message> getGroupMessagesByChannelId(String groupId);
 
