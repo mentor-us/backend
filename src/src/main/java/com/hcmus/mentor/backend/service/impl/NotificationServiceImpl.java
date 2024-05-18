@@ -176,7 +176,8 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        var receiverIds = channelTemp.getUsers().stream().map(User::getId).toList();
+        var senderId = message.getSender().getId();
+        var receiverIds = channelTemp.getUsers().stream().map(User::getId).filter(id -> !Objects.equals(id, senderId)).toList();
         if (receiverIds.isEmpty()) {
             return;
         }
