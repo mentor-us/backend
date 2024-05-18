@@ -47,16 +47,14 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
     }
 
     @Override
-    public BatchResponse sendGroupNotification(
-            List<String> receiverIds,
-            String title,
-            String content,
-            Map<String, String> data)
+    public BatchResponse sendGroupNotification(List<String> receiverIds, String title, String content, Map<String, String> data)
             throws FirebaseMessagingException {
+
         List<String> tokens = getDeviceTokensFromUserIds(receiverIds);
         if (tokens == null || tokens.isEmpty()) {
             return null;
         }
+
         Notification notification = Notification.builder().setTitle(title).setBody(content).build();
         MulticastMessage message = MulticastMessage.builder()
                 .setNotification(notification)
@@ -65,7 +63,7 @@ public class FirebaseMessagingServiceImpl implements FirebaseMessagingService {
                 .build();
 
         for (String receiver : receiverIds) {
-            logger.info("Sending notification to receiver: {}", receiver);
+            logger.info("Sending notification to receiver: {}, data: {}", receiver, data);
         }
 
         return firebaseMessaging.sendEachForMulticast(message);

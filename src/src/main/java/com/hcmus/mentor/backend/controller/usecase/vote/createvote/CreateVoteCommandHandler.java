@@ -25,6 +25,7 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -44,35 +45,39 @@ public class CreateVoteCommandHandler implements Command.Handler<CreateVoteComma
     private final GroupService groupService;
 
     @Override
+    @Transactional
     public VoteResult handle(CreateVoteCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
-
-        var sender = userRepository.findById(currentUserId).orElseThrow(() -> new DomainException("User not found."));
+        var sender = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new DomainException("User not found."));
         if (!permissionService.isMemberInChannel(command.getGroupId(), currentUserId)) {
             throw new ForbiddenException("user not in channel");
         }
 
-        var channel = channelRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
+        var channel = channelRepository.findById(command.getGroupId())
+                .orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
-        Vote newVote = modelMapper.map(command, Vote.class);
-        newVote.setGroup(channel);
-        newVote.setCreator(sender);
-
-        newVote = voteRepository.save(newVote);
+        Vote vote = modelMapper.map(command, Vote.class);
+        vote.setGroup(channel);
+        vote.setCreator(sender);
 
         var choices = command.getChoices().stream()
-                .map(choice -> modelMapper.map(choice, Choice.class))
+                .map(choice -> Choice.builder()
+                        .creator(sender)
+                        .name(choice.getName())
+                        .vote(vote).build())
                 .toList();
+        vote.setChoices(choices);
 
-        choiceRepository.saveAll(choices);
+        voteRepository.save(vote);
 
-        Message message = messageService.saveVoteMessage(newVote);
-        MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
+        Message message = messageService.saveVoteMessage(vote);
+        MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), vote);
         socketServer.getRoomOperations(command.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
-        groupService.pingGroup(newVote.getGroup().getId());
+        notificationService.sendNewVoteNotification(vote.getGroup().getId(), vote);
+        groupService.pingGroup(vote.getGroup().getId());
 
-        return modelMapper.map(newVote, VoteResult.class);
+        return modelMapper.map(vote, VoteResult.class);
     }
 }

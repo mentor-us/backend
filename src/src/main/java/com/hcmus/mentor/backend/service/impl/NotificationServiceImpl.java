@@ -174,40 +174,11 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-//        var membersIds = channelTemp.getUsers().stream()
-//                .filter(u -> !u.getId().equals(message.getSender().getId()))
-//                .distinct()
-//                .toList();
-//        var channel = channelRepository.findById(message.getGroupId()).orElse(null);
-//        if (channel == null) {
-//            return;
-//        }
-
-//        var members = channel.getUsers().stream()
-//                .filter(user -> !id.equals(message.getSender().getId()))
-//                .distinct()
-//                .toList();
         String title;
-        List<String> members = new ArrayList<>();
+        List<String> members;
+        title = String.format("%s%n%s", channelTemp.getName(), message.getSender().getName());
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (groupWrapper.isEmpty()) {
-            Channel channel = channelRepository.findById(message.getGroupId()).orElse(null);
-            if (channel == null) {
-                return;
-            }
-
-            title = String.format("%s%n%s", channel.getName(), message.getSender().getName());
-        } else {
-//            title = channel.getName();
-            Group group = groupWrapper.get();
-            title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                    .filter(id -> !id.equals(message.getSender().getId()))
-                    .map(User::getId)
-                    .distinct()
-                    .toList();
-        }
+        members= channelTemp.getUsers().stream().map(User::getId).toList();
 
         if (members.isEmpty()) {
             return;
@@ -225,6 +196,7 @@ public class NotificationServiceImpl implements NotificationService {
                     : message.getSender().getImageUrl();
             data.put("imageUrl", imageUrl);
         }
+        data.put("subtitle", "The notification's subtitle");
 
         String body = senderName + ": " + Jsoup.parse(message.getContent()).text();
         try {
@@ -243,7 +215,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-//    @Async
     public void sendNewTaskNotification(MessageDetailResponse message, Task task) {
         if (message.getTask() == null || task == null) {
             logger.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
@@ -274,7 +245,7 @@ public class NotificationServiceImpl implements NotificationService {
         var assignees = task.getAssignees();
         var assigner = task.getAssigner();
 
-        Notification inAppNotification = Notification.builder()
+        Notification notification = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_TASK)
@@ -282,19 +253,21 @@ public class NotificationServiceImpl implements NotificationService {
                 .refId(task.getId())
                 .build();
 
-        List<NotificationUser> receivers = Stream.concat(assignees.stream().map(Assignee::getUser), Stream.of(assigner))
-                .distinct()
-                .map(u -> NotificationUser.builder().notification(inAppNotification).user(u).build())
+        var receivers = assignees.stream()
+                .map(Assignee::getUser)
+                .filter(user -> user != assigner)
+                .map(u -> NotificationUser.builder()
+                        .notification(notification)
+                        .user(u).build())
                 .toList();
 
-        inAppNotification.setReceivers(receivers);
-        notificationRepository.save(inAppNotification);
+        notification.setReceivers(receivers);
+        notificationRepository.save(notification);
 
-        return inAppNotification;
+        return notification;
     }
 
     @Override
-//    @Async
     public void sendNewMeetingNotification(Meeting meeting) {
         if (meeting == null) {
             logger.warn("[!] Meeting message #{}, NULL cannot send notifications", meeting.getId());
@@ -472,10 +445,6 @@ public class NotificationServiceImpl implements NotificationService {
         return notif;
     }
 
-    /**
-     * @param userId
-     * @return
-     */
     @Override
     public long getUnreadNumber(final String userId) {
         return 0;
@@ -487,14 +456,14 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Group group = vote.getGroup().getGroup();
-        String title = group.getName();
+        String groupName = Optional.ofNullable(vote.getGroup()).map(Channel::getGroup).map(Group::getName).orElse("");
         String content = "Nhóm có cuộc bình chọn mới \"" + vote.getQuestion() + "\"";
-        Notification notif = createNewVoteNotification(title, content, vote.getCreator(), group, vote);
+        Notification notif = createNewVoteNotification(groupName, content, vote);
+        var receiverIds = notif.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
         try {
             firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceivers().stream().map(nu -> nu.getUser().getId()).toList(),
-                    title,
+                    receiverIds,
+                    groupName,
                     content,
                     attachDataNotification(vote.getGroup().getId(), NEW_VOTE));
         } catch (FirebaseMessagingException e) {
@@ -503,20 +472,27 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification createNewVoteNotification(String title, String content, User sender, Group group, Vote vote) {
+    public Notification createNewVoteNotification(String title, String content, Vote vote) {
+        var creator = vote.getCreator();
         Notification notification = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_VOTE)
-                .sender(sender)
+                .sender(creator)
                 .refId(vote.getId())
                 .build();
 
-        var receiverIds = group.getGroupUsers().stream()
-                .map(gu -> NotificationUser.builder().notification(notification).user(gu.getUser()).build())
-                .toList();
-        
-        notification.setReceivers(receiverIds);
+        var receivers = Optional.ofNullable(vote.getGroup())
+                .map(Channel::getUsers)
+                .map(users -> users.stream()
+                        .filter(user -> !user.getId().equals(creator.getId()))
+                        .map(user -> NotificationUser.builder()
+                                .notification(notification)
+                                .user(user).build())
+                        .toList())
+                .orElse(null);
+
+        notification.setReceivers(receivers);
         notificationRepository.save(notification);
         return notification;
     }
