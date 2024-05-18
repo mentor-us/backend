@@ -21,6 +21,7 @@ import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
@@ -465,10 +466,10 @@ public class MessageServiceImpl implements MessageService {
             Map<String, User> reactors) {
         List<Reaction> reactions = message.getReactions().stream()
                 .map(reaction -> {
-                    User reactor = reactors.getOrDefault(reaction.getUser().getId(), null);
+                    User reactor = reactors.getOrDefault(reaction.getUser(), null);
                     return fulfillReaction(reaction, reactor);
                 })
-                .filter(reaction -> reaction.getUser()  != null)
+                .filter(reaction -> reaction.getUser() != null)
                 .toList();
         message.setReactions(reactions);
         return message;
@@ -590,6 +591,24 @@ public class MessageServiceImpl implements MessageService {
                 .map(assignee -> {
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, statuses.get(assignee.getId()), isMentor);
+                })
+                .toList();
+    }
+
+    public List<ReactionDto> mappingReaction(List<Reaction> reactions) {
+        return reactions.stream()
+                .collect(Collectors.groupingBy(reaction -> reaction.getUser().getId()))
+                .values()
+                .stream()
+                .map(reactionList -> {
+                    User user = reactionList.getFirst().getUser();
+                    ReactionDto reactionDto = ReactionDto.builder()
+                            .userId(user.getId())
+                            .name(user.getName())
+                            .imageUrl(user.getImageUrl())
+                            .build();
+                    reactionList.forEach(reaction -> reactionDto.react(reaction.getEmojiType(), reaction.getTotal()));
+                    return reactionDto;
                 })
                 .toList();
     }

@@ -44,8 +44,7 @@ public class ReactionDto implements Serializable {
         this.name = reactor.getName();
 
         String imageUrl = reactor.getImageUrl();
-        if (reactor.getImageUrl() != null
-                && "https://graph.microsoft.com/v1.0/me/photo/$value".equals(reactor.getImageUrl())) {
+        if (reactor.getImageUrl() != null && "https://graph.microsoft.com/v1.0/me/photo/$value".equals(reactor.getImageUrl())) {
             imageUrl = null;
         }
         this.imageUrl = imageUrl;

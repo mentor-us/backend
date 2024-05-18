@@ -15,7 +15,6 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.MeetingRepository;
@@ -289,25 +288,5 @@ public class MeetingService implements IRemindableService {
         reminder.setSubject("Bạn có 1 lịch hẹn sắp diễn ra");
 
         reminderRepository.save(reminder);
-    }
-
-    public List<ReactionDto> mappingReaction(List<Reaction> reactions) {
-        return reactions.stream()
-                .collect(Collectors.groupingBy(reaction -> reaction.getUser().getId()))
-                .entrySet()
-                .stream()
-                .map(entry -> {
-                    User user = entry.getValue().getFirst().getUser();
-                    ReactionDto reactionDto = ReactionDto.builder()
-                            .userId(user.getId())
-                            .name(user.getName())
-                            .imageUrl(user.getImageUrl())
-                            .build();
-                    entry.getValue().forEach(reaction -> {
-                        reactionDto.react(reaction.getEmojiType(), reaction.getTotal());
-                    });
-                    return reactionDto;
-                })
-                .toList();
     }
 }
