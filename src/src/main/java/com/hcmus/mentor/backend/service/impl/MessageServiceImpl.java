@@ -467,7 +467,7 @@ public class MessageServiceImpl implements MessageService {
                     User reactor = reactors.getOrDefault(reaction.getUser(), null);
                     return fulfillReaction(reaction, reactor);
                 })
-                .filter(reaction -> reaction.getUser().getId() != null)
+                .filter(reaction -> reaction.getUser()  != null)
                 .toList();
         message.setReactions(reactions);
         return message;

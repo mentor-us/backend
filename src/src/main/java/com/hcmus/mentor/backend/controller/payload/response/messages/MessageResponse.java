@@ -2,13 +2,13 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.Reaction;
+import com.hcmus.mentor.backend.domain.*;
 import lombok.*;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
@@ -59,10 +59,10 @@ public class MessageResponse implements Serializable {
                 .content(message.getContent())
                 .createdDate(message.getCreatedDate())
                 .type(message.getType())
-                .groupId(message.getChannel().getGroup().getId())
-                .voteId(message.getVote() == null ? null : message.getVote().getId())
-                .meetingId(message.getMeeting() == null ? null : message.getMeeting().getId())
-                .taskId(message.getTask() == null ? null : message.getTask().getId())
+                .groupId(Optional.ofNullable(message.getChannel()).map(Channel::getGroup).map(Group::getId).orElse(null))
+                .voteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null))
+                .meetingId(Optional.ofNullable(message.getMeeting()).map(Meeting::getId).orElse(null))
+                .taskId(Optional.ofNullable(message.getTask()).map(Task::getId).orElse(null))
                 .reactions(message.getReactions())
                 .images(message.getImages())
                 .file(new FileModel(message.getFile()))

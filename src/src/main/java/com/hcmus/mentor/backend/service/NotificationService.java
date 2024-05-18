@@ -56,7 +56,7 @@ public interface NotificationService {
     void sendNewVoteNotification(String creatorId, Vote vote);
 
     Notification createNewVoteNotification(
-            String title, String content, User sender, Group group, Vote vote);
+            String title, String content, Vote vote);
 
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 

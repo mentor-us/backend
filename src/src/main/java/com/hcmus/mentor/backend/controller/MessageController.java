@@ -75,7 +75,7 @@ public class MessageController {
             @RequestParam int size) {
         String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         var response = messageService.getGroupMessages(userId, groupId, page, size);
         return ResponseEntity.ok(response);
@@ -117,7 +117,7 @@ public class MessageController {
         }
 
         if (!customerUserDetails.getId().equals(message.getSender().getId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         if (message.isDeleted()) {
             return ResponseEntity.accepted().build();
@@ -153,10 +153,10 @@ public class MessageController {
         }
         Message message = messageWrapper.get();
         if (!groupService.isGroupMember(message.getChannel().getGroup().getId(), customerUserDetails.getId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         if (!customerUserDetails.getId().equals(message.getSender().getId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         message.edit(request);
@@ -227,7 +227,7 @@ public class MessageController {
             @RequestParam int size) {
         String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(messageService.findGroupMessagesByText(groupId, query, page, size));
     }
