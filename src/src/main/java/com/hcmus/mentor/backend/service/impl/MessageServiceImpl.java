@@ -175,6 +175,7 @@ public class MessageServiceImpl implements MessageService {
      * {@inheritDoc}
      */
     @Override
+    @Transactional
     public void reactMessage(ReactMessageRequest request) {
         var message = messageRepository.findById(request.getMessageId()).orElse(null);
         if (message == null) {
@@ -464,7 +465,7 @@ public class MessageServiceImpl implements MessageService {
             Map<String, User> reactors) {
         List<Reaction> reactions = message.getReactions().stream()
                 .map(reaction -> {
-                    User reactor = reactors.getOrDefault(reaction.getUser(), null);
+                    User reactor = reactors.getOrDefault(reaction.getUser().getId(), null);
                     return fulfillReaction(reaction, reactor);
                 })
                 .filter(reaction -> reaction.getUser()  != null)
@@ -509,13 +510,6 @@ public class MessageServiceImpl implements MessageService {
             channelRepository.save(channel);
         }
     }
-
-//    private pingChannel(Channel channel) {
-//        channel.ping();
-//        channelRepository.save(channel);
-//
-//    }
-
 
     /**
      * Only forward message type TEXT

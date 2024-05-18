@@ -56,7 +56,7 @@ public class MessageDto {
     private Boolean isForward = false;
 
     public static MessageDto from(Message message) {
-        var messageDto = MessageDto.builder()
+        return MessageDto.builder()
                 .id(message.getId())
                 .senderId(message.getSender().getId())
                 .content(message.getContent())
@@ -74,8 +74,5 @@ public class MessageDto {
                 .reply(message.getReply())
                 .isForward(message.getIsForward())
                 .build();
-//        messageDto.reactions =
-
-        return messageDto;
     }
 }
