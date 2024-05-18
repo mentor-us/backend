@@ -1,7 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Reminder;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
@@ -25,7 +23,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ReminderServiceImpl implements ReminderService {
     private static final Logger logger = LogManager.getLogger(ReminderServiceImpl.class);
-    private final FirebaseMessagingServiceImpl firebaseMessagingManager;
+    private final FirebaseServiceImpl firebaseMessagingManager;
     private final ReminderRepository reminderRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -34,21 +32,21 @@ public class ReminderServiceImpl implements ReminderService {
     private String frontendUrl;
 
     @Override
-    public void sendReminders() throws FirebaseMessagingException {
+    public void sendReminders() {
         List<Reminder> reminders = reminderRepository.findByReminderDateBefore(new Date());
 
         for (Reminder reminder : reminders) {
-            String template = reminder.getType().toString() + "_REMINDER";
-            List<String> receiverIds = getStrings(reminder, template);
-            Group group = reminder.getGroup().getGroup();
-            String title = group != null ? group.getName() : "MentorUS";
-            String body = "";
+            var receiverIds = getStrings(reminder, reminder.getType().toString() + "_REMINDER");
+            var group = reminder.getGroup().getGroup();
+            var title = group != null ? group.getName() : "MentorUS";
+            var body = "";
             if (reminder.getType() == ReminderType.MEETING) {
                 body = String.format("Lịch hẹn %s sẽ diễn ra lúc %s", reminder.getName(), reminder.getProperties().get("dueDate"));
             } else if (reminder.getType() == ReminderType.TASK) {
                 body = String.format("Công việc %s sẽ tới hạn lúc %s", reminder.getName(), reminder.getProperties().get("dueDate"));
             }
-            firebaseMessagingManager.sendGroupNotification(receiverIds, title, body);
+
+            firebaseMessagingManager.sendNotificationMulticast(receiverIds, title, body, Collections.emptyMap());
         }
 
         if (!reminders.isEmpty()) {
