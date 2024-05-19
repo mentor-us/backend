@@ -63,7 +63,7 @@ public class ReminderServiceImpl implements ReminderService {
         List<String> receiverIds = new ArrayList<>();
         recipients.forEach(recipient -> {
             mailService.sendEmailTemplate(template, properties, subject, Collections.singletonList(recipient));
-            logger.info("Send reminder {} to {}", reminder.getType(), recipient);
+            logger.info("Send email reminder {} to {}", reminder.getType(), recipient);
 
             Optional<User> userOptional = userRepository.findByEmail(recipient);
             userOptional.ifPresent(user -> receiverIds.add(user.getId()));

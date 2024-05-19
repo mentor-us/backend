@@ -29,11 +29,15 @@ public class FirebaseServiceImpl implements FirebaseService {
                 .distinct()
                 .toList();
 
+        logger.info("Send multicast notification to receiverIds {}, token {}", receiverIds, tokens);
+        logger.debug("Title: {}, body: {}, data: {}", title, body, data);
+
         var event = new SendFirebaseNotificationEvent(this, tokens, title, body, data);
 
         applicationEventPublisher.publishEvent(event);
     }
 
+    @Override
     public void sendNotification(String receiverId, String title, String body, Map<String, String> data) {
         var subscriber = notificationSubscriberRepository.findByUserId(receiverId).orElse(null);
         if (subscriber == null) {
@@ -43,6 +47,10 @@ public class FirebaseServiceImpl implements FirebaseService {
         }
 
         var token = subscriber.getToken();
+
+        logger.info("Send notification to receiverIds {}, token {}", receiverId, token);
+        logger.debug("Title: {}, body: {}, data: {}", title, body, data);
+
         var event = new SendFirebaseNotificationEvent(this, List.of(token), title, body, data);
 
         applicationEventPublisher.publishEvent(event);

@@ -177,7 +177,10 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         var senderId = message.getSender().getId();
-        var receiverIds = channelTemp.getUsers().stream().map(User::getId).filter(id -> !Objects.equals(id, senderId)).toList();
+        var receiverIds = channelTemp.getUsers().stream()
+                .map(User::getId)
+                .filter(id -> !Objects.equals(id, senderId))
+                .toList();
         if (receiverIds.isEmpty()) {
             return;
         }
@@ -270,13 +273,18 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public Notification createNewMeetingNotification(String title, String content, String senderId, Meeting meeting) {
-        return notificationRepository.save(Notification.builder()
+        var notification = Notification.builder()
                 .title(title)
                 .content(content)
                 .type(NEW_MEETING)
                 .sender(userRepository.findById(senderId).orElse(null))
                 .refId(meeting.getId())
-                .build());
+                .build();
+
+        var receiver = meeting.getAttendees().stream().map(user -> NotificationUser.builder().notification(notification).user(user).build()).toList();
+        notification.setReceivers(receiver);
+
+        return notificationRepository.save(notification);
     }
 
     @Override
