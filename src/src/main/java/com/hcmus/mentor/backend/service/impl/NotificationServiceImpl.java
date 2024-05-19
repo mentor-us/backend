@@ -176,7 +176,12 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        var senderId = message.getSender().getId();
+        var sender = message.getSender();
+        if (sender == null) {
+            return;
+        }
+
+        var senderId = sender.getId();
         var receiverIds = channelTemp.getUsers().stream()
                 .map(User::getId)
                 .filter(id -> !Objects.equals(id, senderId))
@@ -187,12 +192,10 @@ public class NotificationServiceImpl implements NotificationService {
 
         var title = String.format("%s%n%s", channelTemp.getName(), message.getSender().getName());
         var data = attachDataNotification(message.getGroupId(), NEW_MESSAGE);
-        var senderName = "";
-        if (message.getSender() != null) {
-            data.put("sender", message.getSender().getName());
-            data.put("imageUrl", message.getSender().getImageUrl());
-        }
-        var body = senderName + ": " + Jsoup.parse(message.getContent()).text();
+        var senderName = sender.getName();
+        data.put("sender", senderName);
+        data.put("imageUrl", message.getSender().getImageUrl());
+        var body = String.format("%s: %s", senderName, Jsoup.parse(message.getContent()).text());
 
         firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
