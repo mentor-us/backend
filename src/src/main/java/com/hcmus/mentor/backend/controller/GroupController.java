@@ -5,11 +5,9 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
-import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
@@ -24,6 +22,8 @@ import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgrou
 import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.gethomepage.GetHomePageQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.gethomepage.HomePageDto;
 import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
@@ -32,14 +32,12 @@ import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGrou
 import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.dto.EventDto;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -52,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Slice;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -448,23 +445,16 @@ public class GroupController {
     /**
      * Retrieves data for the homepage of the mobile app.
      *
-     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing data for the homepage.
      */
     @GetMapping("home")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<HomePageResponse> getHomePage(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
-        String userId = customerUserDetails.getId();
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ApiResponseDto.notFound(404);
-        }
-        List<EventDto> events = eventService.getMostRecentEvents(userId);
-        List<GroupHomepageResponse> pinnedGroups = groupService.getUserPinnedGroups(userId);
-        Slice<GroupHomepageResponse> groups = groupService.getHomePageRecentGroupsOfUser(userId, 0, 25);
-        return ApiResponseDto.success(new HomePageResponse(events, pinnedGroups, groups));
+    public ApiResponseDto<HomePageDto> getHomePage() {
+        var query = GetHomePageQuery.builder().build();
+        var response = pipeline.send(query);
+
+        return ApiResponseDto.success(response);
     }
 
     /**

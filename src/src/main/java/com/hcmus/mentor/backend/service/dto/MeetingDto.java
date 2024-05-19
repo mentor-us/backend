@@ -41,23 +41,6 @@ public class MeetingDto {
     @Builder.Default
     private List<MeetingHistoryDto> histories = new ArrayList<>();
 
-    public static MeetingDto from(com.hcmus.mentor.backend.domain.Meeting meeting) {
-        return MeetingDto.builder()
-                .id(meeting.getId())
-                .title(meeting.getTitle())
-                .description(meeting.getDescription())
-                .timeStart(meeting.getTimeStart())
-                .timeEnd(meeting.getTimeEnd())
-                .repeated(meeting.getRepeated())
-                .place(meeting.getPlace())
-                .organizerId(meeting.getOrganizer() != null ? meeting.getOrganizer().getId() : null)
-                .attendees(meeting.getAttendees().stream().map(com.hcmus.mentor.backend.domain.User::getId).toList())
-                .groupId(meeting.getGroup().getId())
-                .createdDate(meeting.getCreatedDate())
-                .histories(meeting.getHistories().stream().map(MeetingHistoryDto::from).toList())
-                .build();
-    }
-
     @Getter
     @Setter
     @AllArgsConstructor

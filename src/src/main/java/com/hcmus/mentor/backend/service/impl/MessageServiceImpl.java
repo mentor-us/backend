@@ -11,14 +11,11 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReactionResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.repository.*;
@@ -416,30 +413,6 @@ public class MessageServiceImpl implements MessageService {
         message.setCreatedDate(new Date());
         messageRepository.save(message);
 
-    }
-
-    private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
-        var task = taskRepository.findById(taskId).orElse(null);
-        if (task == null) {
-            return Collections.emptyList();
-        }
-
-        var group = task.getGroup().getGroup();
-
-        List<ProfileResponse> assignees = task.getAssignees().stream()
-                .map(Assignee::getUser)
-                .map(ProfileResponse::from)
-                .toList();
-
-        Map<String, TaskStatus> statuses = task.getAssignees().stream()
-                .collect(Collectors.toMap(a -> a.getUser().getId(), Assignee::getStatus, (s1, s2) -> s2));
-
-        return assignees.stream()
-                .map(assignee -> {
-                    boolean isMentor = group.isMentor(assignee.getId());
-                    return TaskAssigneeResponse.from(assignee, statuses.get(assignee.getId()), isMentor);
-                })
-                .toList();
     }
 
     @Override

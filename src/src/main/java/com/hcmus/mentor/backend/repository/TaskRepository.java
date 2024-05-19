@@ -2,12 +2,11 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -73,9 +72,9 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             "INNER JOIN t.assignees a " +
             "INNER JOIN a.user u " +
             "INNER JOIN t.assigner assigner " +
-            "WHERE t.group.id IN :groupIds " +
-            "AND t.deadline > :currentDate " +
-            "AND (u.id = :userId OR assigner.id = :userId) " +
-            "ORDER BY t.deadline DESC")
-    Page<Task> findTasksByCriteria(String userId, List<String> groupIds, Date currentDate, Pageable pageable);
+            "WHERE t.group.id IN ?1 " +
+            "AND (u.id = ?2 OR assigner.id = ?2) " +
+            "AND t.deadline > ?3 " +
+            "ORDER BY t.deadline ASC")
+    List<Task> findAllAndHasUserAndDeadlineAfter(List<String> channelIds, String userId, LocalDateTime current);
 }

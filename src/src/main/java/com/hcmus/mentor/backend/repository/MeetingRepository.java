@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -35,15 +36,12 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     long countByGroupIdIdInAndIsMember(List<String> channelIds, String userId);
 
     @Query("SELECT m " +
-            "from Meeting m " +
-            "inner join m.group ch " +
-            "inner join m.attendees attendees " +
-            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 ")
-    Page<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
-            List<String> groupId,
-            String userId,
-            Date startDate,
-            Pageable pageRequest);
+            "FROM Meeting m " +
+            "INNER JOIN m.group ch " +
+            "INNER JOIN m.attendees att " +
+            "WHERE ch.id in ?1 and (att.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 " +
+            "ORDER BY m.timeStart DESC")
+    List<Meeting> findAllAndHasUserAndStartBefore(List<String> groupId, String userId, LocalDateTime startDate);
 
     @Query("SELECT m " +
             "from Meeting m " +
