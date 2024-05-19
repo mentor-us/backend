@@ -26,7 +26,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,26 +48,6 @@ public class MeetingService implements IRemindableService {
     private final ChannelRepository channelRepository;
     private final Pipeline pipeline;
     private final ModelMapper modelMapper;
-
-    @Transactional(readOnly = true)
-    public List<MeetingResponse> getMostRecentMeetings(String userId) {
-        List<String> groupIds = groupService.getAllActiveOwnGroups(userId).stream().map(Group::getId).toList();
-        Date now = new Date();
-        List<Meeting> meetings = meetingRepository
-                .findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
-                        groupIds,
-                        userId,
-                        now,
-                        PageRequest.of(0, 5, Sort.by("timeStart").descending()))
-                .getContent();
-        return meetings.stream()
-                .map(meeting -> {
-                    Group group = meeting.getGroup().getGroup();
-                    User organizer = meeting.getOrganizer();
-                    return MeetingResponse.from(meeting, organizer, group);
-                })
-                .toList();
-    }
 
     @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {

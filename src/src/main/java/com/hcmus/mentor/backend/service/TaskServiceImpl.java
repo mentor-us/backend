@@ -21,8 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -391,29 +389,6 @@ public class TaskServiceImpl implements IRemindableService {
         groupService.pingGroup(task.getGroup().getGroup().getId());
 
         return new TaskReturnService(SUCCESS, "", task);
-    }
-
-    public List<TaskResponse> getMostRecentTasks(String userId) {
-        var groups = groupService.getAllActiveOwnGroups(userId);
-        List<String> groupIds = groups.stream()
-                .map(Group::getChannels)
-                .flatMap(Collection::stream)
-                .map(Channel::getId)
-                .toList();
-        List<Task> tasks = taskRepository
-                .findTasksByCriteria(userId, groupIds, DateUtils.atStartOfDay(new Date()), PageRequest.of(0, 5, Sort.by(Sort.Order.desc("createdDate"))))
-                .getContent();
-
-        return tasks.stream()
-                .map(task -> {
-                    AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUser().getId().equals(userId))
-                            .findFirst()
-                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
-                            .orElse(null);
-                    return TaskResponse.from(task, assignee, task.getGroup().getGroup());
-                })
-                .toList();
     }
 
     public List<Task> getAllOwnTasks(String userId, List<String> channelIds) {

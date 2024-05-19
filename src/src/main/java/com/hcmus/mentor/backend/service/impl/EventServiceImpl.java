@@ -1,7 +1,5 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.Task;
@@ -30,18 +28,6 @@ public class EventServiceImpl implements EventService {
     private final MeetingService meetingService;
     private final TaskServiceImpl taskService;
     private final ChannelRepository channelRepository;
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<EventDto> getMostRecentEvents(String userId) {
-        List<MeetingResponse> meetings = meetingService.getMostRecentMeetings(userId);
-        List<TaskResponse> tasks = taskService.getMostRecentTasks(userId);
-        return Stream.concat(meetings.stream().map(EventDto::from), tasks.stream().map(EventDto::from))
-                .filter(event -> event.getUpcomingTime() != null)
-                .sorted(Comparator.comparing(EventDto::getUpcomingTime))
-                .limit(5)
-                .toList();
-    }
 
     @Override
     @Transactional(readOnly = true)
