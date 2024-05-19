@@ -72,7 +72,8 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             "INNER JOIN t.assignees a " +
             "INNER JOIN a.user u " +
             "INNER JOIN t.assigner assigner " +
-            "WHERE t.group.id IN ?1 " +
+            "WHERE t.isDeleted = false " +
+            "AND t.group.id IN ?1 " +
             "AND (u.id = ?2 OR assigner.id = ?2) " +
             "AND t.deadline > ?3 " +
             "ORDER BY t.deadline ASC")

@@ -46,6 +46,7 @@ public class TaskServiceImpl implements IRemindableService {
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
     private final Pipeline pipeline;
+    private final MessageRepository messageRepository;
 
     @Transactional
     public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
@@ -158,7 +159,15 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        taskRepository.delete(task);
+        task.setIsDeleted(true);
+        taskRepository.save(task);
+
+        var message = messageRepository.findByTaskId(task.getId()).orElse(null);
+        if (message != null) {
+            message.setStatus(Message.Status.DELETED);
+            messageRepository.save(message);
+        }
+
         reminderRepository.deleteByRemindableId(task.getId());
 
         List<Task> childrenTasks = taskRepository.findAllByParentTaskId(id);

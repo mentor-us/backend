@@ -33,6 +33,10 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 
     Optional<Message> findByVoteId(String voteId);
 
+    Optional<Message> findByTaskId(String taskId);
+
+    Optional<Message> findByMeetingId(String meetingId);
+
     Optional<Message> findTopByChannelIdOrderByCreatedDateDesc(String groupId);
 
     Message findFirstByChannelIdInOrderByCreatedDateDesc(List<String> channelIds);
@@ -76,5 +80,4 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     void deleteAllByChannelId(@Param(value = "channelId") String channelId, @Param(value = "status") Message.Status status);
 
     List<Message> findByIdIn(List<String> ids);
-
 }

@@ -39,7 +39,10 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
             "FROM Meeting m " +
             "INNER JOIN m.group ch " +
             "INNER JOIN m.attendees att " +
-            "WHERE ch.id in ?1 and (att.id = ?2 or m.organizer.id = ?2) AND m.timeStart > ?3 " +
+            "WHERE m.isDeleted = false " +
+            "AND ch.id IN ?1 " +
+            "AND (att.id = ?2 OR m.organizer.id = ?2) " +
+            "AND m.timeStart > ?3 " +
             "ORDER BY m.timeStart DESC")
     List<Meeting> findAllAndHasUserAndStartBefore(List<String> groupId, String userId, LocalDateTime startDate);
 

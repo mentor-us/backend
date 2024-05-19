@@ -14,10 +14,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.MeetingRepository;
-import com.hcmus.mentor.backend.repository.ReminderRepository;
-import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.dto.GroupDto;
 import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.util.DateUtils;
@@ -48,6 +45,7 @@ public class MeetingService implements IRemindableService {
     private final ChannelRepository channelRepository;
     private final Pipeline pipeline;
     private final ModelMapper modelMapper;
+    private final MessageRepository messageRepository;
 
     @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {
@@ -150,7 +148,17 @@ public class MeetingService implements IRemindableService {
     }
 
     public void deleteMeeting(String meetingId) {
-        meetingRepository.deleteById(meetingId);
+        var meeting = meetingRepository.findById(meetingId).orElseThrow(() -> new DomainException("Không tìm thấy cuộc họp"));
+
+        meeting.setIsDeleted(true);
+        meetingRepository.save(meeting);
+
+        var message = messageRepository.findByMeetingId(meetingId).orElse(null);
+        if (message != null) {
+            message.setStatus(Message.Status.DELETED);
+            messageRepository.save(message);
+        }
+
         reminderRepository.deleteByRemindableId(meetingId);
     }
 
