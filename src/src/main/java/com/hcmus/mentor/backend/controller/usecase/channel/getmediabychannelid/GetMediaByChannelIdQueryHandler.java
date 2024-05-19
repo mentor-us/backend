@@ -43,7 +43,7 @@ public class GetMediaByChannelIdQueryHandler implements Command.Handler<GetMedia
 
         var channel = channelRepository.findById(query.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
-        if (Boolean.TRUE.equals(channelRepository.existsByIdAndUserId(query.getId(), userId))) {
+        if (Boolean.FALSE.equals(channelRepository.existsByIdAndUserId(query.getId(), userId))) {
             throw new ForbiddenException("Không thể xem media trong kênh này");
         }
 
