@@ -62,7 +62,7 @@ public interface TaskRepository extends JpaRepository<Task, String> {
             "WHERE t.group.id IN ?1 AND assignees.id = ?2 AND assignees.status = ?3")
     long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
 
-    @Query("SELECT t, assignees " +
+    @Query("SELECT t " +
             "FROM Task t " +
             "INNER JOIN t.assignees assignees " +
             "WHERE (t.assigner.id = ?2 or assignees.id = ?2)" +
