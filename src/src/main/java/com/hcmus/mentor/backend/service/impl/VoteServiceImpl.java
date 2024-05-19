@@ -187,7 +187,7 @@ public class VoteServiceImpl implements VoteService {
     }
 
     @Override
-    public Vote doVoting(DoVotingRequest request, String userId) {
+    public Vote   doVoting(DoVotingRequest request, String userId) {
         var vote = voteRepository.findById(request.getVoteId()).orElse(null);
         if (vote == null) {
             throw new DomainException("Không tìm thấy bình chọn!");

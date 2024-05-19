@@ -35,6 +35,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
 import org.jsoup.Jsoup;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -83,7 +85,9 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional(readOnly = true)
     public List<MessageDetailResponse> getGroupMessages(String viewerId, String groupId, int page, int size) {
-        return mappingToMessageDetailResponse(messageRepository.getGroupMessagesByChannelId(groupId), viewerId);
+        Pageable pageable = PageRequest.of(page, size);
+        var messages = messageRepository.getGroupMessagesByChannelId( pageable, groupId).getContent();
+        return mappingToMessageDetailResponse(messages, viewerId);
     }
 
 
@@ -441,11 +445,10 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<MessageDetailResponse> mappingToMessageDetailResponse(List<Message> messages, String viewerId) {
-        List<MessageDetailResponse> responses = messages.stream()
+
+        return messages.stream()
                 .map(message -> mappingToMessageDetailResponse(message, viewerId))
                 .toList();
-
-        return responses;
     }
 
     @Override
@@ -466,7 +469,7 @@ public class MessageServiceImpl implements MessageService {
             var ownerReaction = reactions.stream().filter(re -> Objects.equals(re.getUserId(), viewerId)).findFirst().orElse(null);
             messageDetailResponse.setTotalReaction(MessageDetailResponse.TotalReaction.builder()
                     .data(reactionDtos)
-                    .ownerReacted(ownerReaction != null ? mappingEmojiFromDto(Collections.singletonList(ownerReaction)) : generateEmojiDtos())
+                    .ownerReacted(ownerReaction != null ? mappingEmojiFromDto(Collections.singletonList(ownerReaction)) : Collections.emptyList())
                     .total(sumEmojis(reactionDtos))
                     .build());
         }
@@ -515,7 +518,7 @@ public class MessageServiceImpl implements MessageService {
     private List<EmojiDto> mappingEmoji(List<Reaction> reactions) {
 
         if (reactions == null || reactions.isEmpty())
-            return generateEmojiDtos();
+            return Collections.emptyList();
 
         return reactions.stream()
                 .collect(Collectors.groupingBy(Reaction::getEmojiType))
@@ -530,7 +533,7 @@ public class MessageServiceImpl implements MessageService {
     private List<EmojiDto> mappingEmojiFromDto(List<ReactionDto> reactionDtos) {
 
         if (reactionDtos == null || reactionDtos.isEmpty())
-            return generateEmojiDtos();
+            return Collections.emptyList();
 
         var reactions = reactionDtos.stream().flatMap(r -> r.getData().stream()).toList();
 

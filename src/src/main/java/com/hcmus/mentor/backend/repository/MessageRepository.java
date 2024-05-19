@@ -2,6 +2,8 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Message;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -39,14 +41,14 @@ public interface MessageRepository extends JpaRepository<Message, String> {
 
     List<Message> getAllGroupMessagesByChannelId(String groupId);
 
-    @Query("SELECT m, s, c " +
+    @Query("SELECT m " +
             "FROM Message m " +
-            "join m.sender s " +
-            "join m.channel c " +
+            "join fetch m.sender s " +
+            "join fetch m.channel c " +
             "WHERE m.channel.id = ?1 " +
 //            "AND m.status != 'DELETED' " +
             "ORDER BY m.createdDate DESC ")
-    List<Message> getGroupMessagesByChannelId(String groupId);
+    Page<Message> getGroupMessagesByChannelId(Pageable pageable, String groupId);
 
     @Query("SELECT m, s, c " +
             "FROM Message m " +
