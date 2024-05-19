@@ -1,10 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.group;
 
 import com.hcmus.mentor.backend.controller.usecase.common.mapper.MapperConverter;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
-import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannelDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.*;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import org.modelmapper.ModelMapper;
@@ -45,5 +42,7 @@ public class GroupMapper {
             mapper.skip(GroupHomepageDto::setRole);
             mapper.skip(GroupHomepageDto::setPinned);
         });
+
+        modelMapper.createTypeMap(Group.class, GroupForwardDto.class);
     }
 }

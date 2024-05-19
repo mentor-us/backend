@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.channel.common;
 
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupForwardResponse;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupForwardDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,17 +14,7 @@ public class ChannelForwardDto {
 
     private String id;
     private String name;
-    private GroupForwardResponse group;
-
-    public ChannelForwardDto(String id, String name, String groupId, String groupName, String imageUrl) {
-        this.id = id;
-        this.name = name;
-        this.group = GroupForwardResponse.builder()
-                .id(groupId)
-                .name(groupName)
-                .imageUrl(imageUrl)
-                .build();
-    }
+    private GroupForwardDto group;
 
     public String getGroupName() {
         return group.getName();

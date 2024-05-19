@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.channel;
 
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelDetailDto;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Message;
 import org.modelmapper.ModelMapper;
@@ -20,6 +21,10 @@ public class ChannelMapper {
             mapper.skip(ChannelDetailDto::setRole);
         });
         modelMapper.createTypeMap(Message.class, ShortMediaMessage.class).addMappings(mapper -> {
+        });
+
+        modelMapper.createTypeMap(Channel.class, ChannelForwardDto.class).addMappings(mapper -> {
+            mapper.skip(ChannelForwardDto::setName);
         });
     }
 }

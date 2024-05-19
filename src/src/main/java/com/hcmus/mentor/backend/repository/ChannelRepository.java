@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import org.springframework.data.jpa.repository.Query;
@@ -26,14 +25,14 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
     @Query("select exists (select c from Channel c inner join c.users cu where cu.id = ?2 and c.id = ?1)")
     boolean existsByIdAndUserId(String channelId, String userId);
 
-    @Query("SELECT new com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto(c.id, c.name, c.group.id, c.group.name, c.group.imageUrl) " +
+    @Query("SELECT c " +
             "FROM Channel c " +
             "INNER JOIN c.users u " +
             "WHERE u.id = ?1 " +
             "AND c.name like %?2% " +
             "AND c.group.status = 'ACTIVE' and c.status = 'ACTIVE' " +
             "ORDER BY c.group.name, c.name")
-    List<ChannelForwardDto> getListChannelForward(String userId, String name);
+    List<Channel> getListChannelForward(String userId, String name);
 
     @Query("select c,u " +
             "from Channel c " +
