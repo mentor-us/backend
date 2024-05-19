@@ -129,17 +129,6 @@ public class Group extends BaseDomain implements Serializable {
     private User creator;
 
     /**
-     * List of pinned message identifiers
-     */
-    @Builder.Default
-    @BatchSize(size = 10)
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "message_pinned_id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions", "hibernateLazyInitializer", "handler"}, allowSetters = true)
-    private List<Message> messagesPinned = new ArrayList<>();
-
-    /**
      * List of channel identifiers
      */
     @Builder.Default

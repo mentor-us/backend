@@ -83,7 +83,7 @@ public class Channel implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "messagesPinned", "channels", "faqs", "groupUsers"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private Group group;
 
     @JsonIgnore
@@ -107,8 +107,8 @@ public class Channel implements Serializable {
     @Builder.Default
     @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "channel_pinned_id")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name="channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
     @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
@@ -119,6 +119,8 @@ public class Channel implements Serializable {
     @JoinTable(name = "rel_user_channel", joinColumns = @JoinColumn(name = "channel_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private List<User> users = new ArrayList<>();
+
+
 
     public boolean isMember(String userId) {
         return users.stream().anyMatch(user -> user.getId().equals(userId));

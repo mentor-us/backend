@@ -3,7 +3,6 @@ package com.hcmus.mentor.backend.controller.payload.response.groups;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
@@ -85,7 +84,6 @@ public class GroupDetailResponse {
         this.duration = group.getDuration();
         this.imageUrl = group.getImageUrl();
         this.permissions = group.getGroupCategory().getPermissions();
-        this.pinnedMessageIds = group.getMessagesPinned().stream().map(Message::getId).toList();
         this.defaultChannelId = group.getDefaultChannel().getId();
     }
 

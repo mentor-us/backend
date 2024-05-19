@@ -54,7 +54,7 @@ public class GroupCategory {
     @Builder.Default
     @JsonIgnore
     @OneToMany(mappedBy = "groupCategory", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "messagesPinned", "channels", "faqs", "groupUsers"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private List<Group> groups = new ArrayList<>();
 
     public void update(

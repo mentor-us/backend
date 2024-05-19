@@ -43,7 +43,7 @@ public class Faq {
 
     @ManyToOne
     @JoinColumn(name = "group_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "messagesPinned", "channels", "faqs", "groupUsers"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private Group group;
 
     @Builder.Default

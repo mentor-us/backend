@@ -775,8 +775,6 @@ public class GroupServiceImpl implements GroupService {
         }
 
         Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
-//        User sender = message.getSender();
-
         if (!channel.getMessagesPinned().contains(message)) {
             channel.getMessagesPinned().add(message);
 
@@ -786,9 +784,7 @@ public class GroupServiceImpl implements GroupService {
 
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
-
-        var pinnerWrapper = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
-        notificationService.sendNewPinNotification(messageDetail, pinnerWrapper);
+//        notificationService.sendNewPinNotification(messageDetail, );
     }
 
     @Override
