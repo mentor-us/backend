@@ -86,7 +86,7 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public List<MessageDetailResponse> getGroupMessages(String viewerId, String groupId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        var messages = messageRepository.getGroupMessagesByChannelId( pageable, groupId).getContent();
+        var messages = messageRepository.getGroupMessagesByChannelId(pageable, groupId).getContent();
         return mappingToMessageDetailResponse(messages, viewerId);
     }
 
@@ -98,8 +98,7 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public List<MessageResponse> findGroupMessagesByText(String groupId, String query, int page, int size) {
         return messageRepository.findGroupMessages(groupId, query).stream()
-                .map(message ->
-                        mappingToMessageResponse(message, Optional.ofNullable(message.getSender()).map(User::getId).orElse(null)))
+                .map(message -> mappingToMessageResponse(message, Optional.ofNullable(message.getSender()).map(User::getId).orElse(null)))
                 .toList();
     }
 
@@ -445,7 +444,6 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<MessageDetailResponse> mappingToMessageDetailResponse(List<Message> messages, String viewerId) {
-
         return messages.stream()
                 .map(message -> mappingToMessageDetailResponse(message, viewerId))
                 .toList();
@@ -459,6 +457,8 @@ public class MessageServiceImpl implements MessageService {
             case TASK -> messageDetailResponse.setTask(modelMapper.map(message.getTask(), TaskMessageResponse.class));
             case MEETING -> messageDetailResponse.setMeeting(modelMapper.map(message.getMeeting(), MeetingDto.class));
             case FILE -> messageDetailResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
+            case IMAGE ->
+                    messageDetailResponse.setImages(message.getImages().stream().map(url -> MessageDetailResponse.Image.builder().url(url).build()).toList());
         }
 
         if (!List.of(VOTE, TASK, MEETING).contains(message.getType())) {
@@ -480,8 +480,10 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageResponse mappingToMessageResponse(Message message, String viewerId) {
         var messageResponse = modelMapper.map(message, MessageResponse.class);
+
         switch (message.getType()) {
             case FILE -> messageResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
+            case IMAGE -> messageResponse.setImages(message.getImages());
             case TASK ->
                     messageResponse.setTaskId(Optional.ofNullable(message.getTask()).map(Task::getId).orElse(null));
             case MEETING ->
@@ -490,6 +492,7 @@ public class MessageServiceImpl implements MessageService {
                     messageResponse.setVoteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null));
         }
         messageResponse.setReactions(mappingReaction(message.getReactions()));
+
         return messageResponse;
     }
 
