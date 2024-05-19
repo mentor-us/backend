@@ -188,7 +188,7 @@ public class MessageServiceImpl implements MessageService {
 
         ReactMessageResponse response = ReactMessageResponse.from(request, reactor);
         socketIOService.sendReact(response, channel.getId());
-        notificationService.sendNewReactNotification(message, response, request.getSenderId());
+//        notificationService.sendNewReactNotification(message, response, request.getSenderId());
     }
 
     /**
