@@ -16,6 +16,8 @@ public class MessageMapper {
 
     public MessageMapper(ModelMapper modelMapper) {
 
+        modelMapper.createTypeMap(File.class, FileModel.class);
+
         modelMapper.emptyTypeMap(Message.class, MessageDetailResponse.class).addMappings(mapper -> {
                     mapper.skip(MessageDetailResponse::setVote);
                     mapper.skip(MessageDetailResponse::setFile);
@@ -27,11 +29,11 @@ public class MessageMapper {
                 })
                 .implicitMappings();
 
-        modelMapper.createTypeMap(Message.class, MessageResponse.class).addMappings(mapper -> {
+        modelMapper.emptyTypeMap(Message.class, MessageResponse.class).addMappings(mapper -> {
             mapper.map(src -> Optional.ofNullable(src.getChannel()).map(Channel::getId).orElse(null), MessageResponse::setGroupId);
             mapper.skip(MessageResponse::setFile);
-        });
+        })
+                .implicitMappings();
 
-        modelMapper.createTypeMap(File.class, FileModel.class);
     }
 }

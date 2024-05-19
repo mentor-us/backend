@@ -82,6 +82,7 @@ public class Message implements Serializable {
     private Vote vote = null;
 
     @Builder.Default
+    @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "file_id")
     private File file = null;
