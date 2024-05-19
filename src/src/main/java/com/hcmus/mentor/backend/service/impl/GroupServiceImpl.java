@@ -9,7 +9,6 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepage
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
@@ -456,15 +455,13 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(NOT_FOUND, "Group not found", null);
         }
 
-        channelDetail.setPinnedMessages(fullFillPinMessages(userId, channelDetail.getPinnedMessageIds()));
+        channelDetail.setPinnedMessages(messageService.mappingToMessageDetailResponse(messageRepository.findByIdIn(channelDetail.getPinnedMessageIds()), userId));
 
         return new GroupServiceDto(SUCCESS, null, channelDetail);
     }
 
-    private GroupDetailResponse fulfillChannelDetail(
-            String userId,
-            Channel channel,
-            Group parentGroup) {
+    private GroupDetailResponse fulfillChannelDetail(String userId, Channel channel, Group parentGroup) {
+
         String channelName = channel.getName();
         String imageUrl = null;
 
@@ -501,57 +498,25 @@ public class GroupServiceImpl implements GroupService {
             response.setGroupCategory(groupCategory.getName());
         }
 
-        List<MessageResponse> messages = new ArrayList<>();
-
-        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
-            messages = response.getPinnedMessageIds().stream()
-                    .map(messageRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .filter(message -> !message.isDeleted())
-                    .map(message -> {
-                        User user = message.getSender();
-                        return MessageResponse.from(message, ProfileResponse.from(user));
-                    })
-                    .toList();
-        }
-        response.setPinnedMessages(messageService.fulfillMessages(messages, userId));
+//        List<MessageResponse> messages = new ArrayList<>();
+//
+//        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
+//            messages = response.getPinnedMessageIds().stream()
+//                    .map(messageRepository::findById)
+//                    .filter(Optional::isPresent)
+//                    .map(Optional::get)
+//                    .filter(message -> !message.isDeleted())
+//                    .map(message -> {
+//                        User user = message.getSender();
+//                        return MessageResponse.from(message, ProfileResponse.from(user));
+//                    })
+//                    .toList();
+//        }
+        response.setPinnedMessages(messageService.mappingToMessageDetailResponse(
+                messageRepository.findByIdIn(response.getPinnedMessageIds()), userId));
         response.setTotalMember(channel.getUsers().size());
         return response;
     }
-
-
-    private List<MessageDetailResponse> fullFillPinMessages(String userId, List<String> pinMessageIds) {
-        List<MessageResponse> messageResponses = new ArrayList<>();
-        if (pinMessageIds != null && !pinMessageIds.isEmpty()) {
-            messageResponses = pinMessageIds.stream()
-                    .map(messageRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .filter(message -> !message.isDeleted())
-                    .map(message -> {
-                        User user = message.getSender();
-                        return MessageResponse.from(message, ProfileResponse.from(user));
-                    })
-                    .toList();
-        }
-        return messageService.fulfillMessages(messageResponses, userId);
-    }
-
-//    @Override
-//    @Transactional(readOnly = true)
-//    public List<String> findAllMenteeIdsGroup(String groupId) {
-//        Optional<Group> wrapper = groupRepository.findById(groupId);
-//        if (wrapper.isEmpty()) {
-//            return Collections.emptyList();
-//        }
-//        Group group = wrapper.get();
-//        return group.getGroupUsers().stream()
-//                .filter(gu -> !gu.isMentor())
-//                .map(gu -> gu.getUser().getId())
-//                .distinct()
-//                .toList();
-//    }
 
     @Override
     public void pingGroup(String groupId) {
@@ -810,7 +775,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
-        User sender = message.getSender();
+//        User sender = message.getSender();
 
         if (!channel.getMessagesPinned().contains(message)) {
             channel.getMessagesPinned().add(message);
@@ -819,7 +784,7 @@ public class GroupServiceImpl implements GroupService {
             channelRepository.save(channel);
         }
 
-        MessageDetailResponse messageDetail = MessageDetailResponse.from(message, sender);
+        MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
 
         var pinnerWrapper = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
@@ -843,7 +808,7 @@ public class GroupServiceImpl implements GroupService {
         socketIOService.sendNewUnpinMessage(channelId, messageId);
 
         User pinnerMessage = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
-        notificationService.sendNewUnpinNotification(MessageDetailResponse.from(message, sender), pinnerMessage);
+        notificationService.sendNewUnpinNotification(messageService.mappingToMessageDetailResponse(message,null), pinnerMessage);
     }
 
 //    @Override

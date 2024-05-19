@@ -11,7 +11,6 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -31,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
+import org.modelmapper.ModelMapper;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -76,6 +76,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final PermissionService permissionService;
     private final GroupCategoryRepository groupCategoryRepository;
     private final SpringTemplateEngine templateEngine;
+    private final ModelMapper modelMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -1244,10 +1245,10 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
             Sheet messagesSheet = workbook.createSheet("Tin nhắn");
-            List<MessageResponse> messages = messageRepository.getAllGroupMessagesByChannelId(groupId).stream().map(message -> {
-                var sender = ProfileResponse.from(message.getSender());
-                return MessageResponse.from(message, sender);
-            }).toList();
+            List<MessageResponse> messages = messageRepository
+                    .getAllGroupMessagesByChannelId(groupId).stream()
+                    .map(message -> modelMapper.map(message, MessageResponse.class))
+                    .toList();
             addMessagesData(messagesSheet, messages);
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

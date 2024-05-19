@@ -54,6 +54,7 @@ public class Message implements Serializable {
 
     @Column(name = "reply")
     private String reply;
+
     @Builder.Default
     @Column(name = "is_forward", nullable = false)
     private Boolean isForward = false;

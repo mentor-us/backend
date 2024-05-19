@@ -5,10 +5,8 @@ import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
@@ -108,18 +106,10 @@ public class TaskServiceImpl implements IRemindableService {
         task.setAssignees(assignee);
         taskRepository.save(task);
 
-        Message message = Message.builder()
-                .sender(task.getAssigner())
-                .channel(task.getGroup())
-                .createdDate(task.getCreatedDate())
-                .type(Message.Type.TASK)
-                .task(task)
-                .build();
-        messageService.saveMessage(message);
+        Message message = messageService.saveTaskMessage(task);
         groupService.pingGroup(request.getGroupId());
-        pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
 
-        MessageDetailResponse response = messageService.fulfillTaskMessage(MessageResponse.from(message, ProfileResponse.from(assigner)));
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, assigner.getId());
         socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
         saveToReminder(task);
         notificationService.sendNewTaskNotification(response, task);

@@ -2,13 +2,13 @@ package com.hcmus.mentor.backend.controller.payload.response.messages;
 
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
@@ -39,7 +39,7 @@ public class MessageResponse implements Serializable {
 
     private String taskId;
 
-    private List<Reaction> reactions;
+    private List<ReactionDto> reactions;
 
     private List<String> images;
 
@@ -52,27 +52,26 @@ public class MessageResponse implements Serializable {
     @Builder.Default
     private Boolean isForward = false;
 
-    public static MessageResponse from(Message message, ProfileResponse sender) {
-        return MessageResponse.builder()
-                .id(message.getId())
-                .sender(sender)
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(Optional.ofNullable(message.getChannel()).map(Channel::getGroup).map(Group::getId).orElse(null))
-                .voteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null))
-                .meetingId(Optional.ofNullable(message.getMeeting()).map(Meeting::getId).orElse(null))
-                .taskId(Optional.ofNullable(message.getTask()).map(Task::getId).orElse(null))
-                .reactions(message.getReactions())
-                .images(message.getImages())
-                .file(new FileModel(message.getFile()))
-                .status(message.getStatus())
-                .reply(message.getReply())
-                .isEdited(message.getIsEdited())
-                .editedAt(message.getEditedAt())
-                .isForward(message.getIsForward())
-                .build();
-    }
+//    public static MessageResponse from(Message message, ProfileResponse sender) {
+//        return MessageResponse.builder()
+//                .id(message.getId())
+//                .sender(sender)
+//                .content(message.getContent())
+//                .createdDate(message.getCreatedDate())
+//                .type(message.getType())
+//                .groupId(Optional.ofNullable(message.getChannel()).map(Channel::getGroup).map(Group::getId).orElse(null))
+//                .voteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null))
+//                .meetingId(Optional.ofNullable(message.getMeeting()).map(Meeting::getId).orElse(null))
+//                .taskId(Optional.ofNullable(message.getTask()).map(Task::getId).orElse(null))
+//                .images(message.getImages())
+//                .file(new FileModel(message.getFile()))
+//                .status(message.getStatus())
+//                .reply(message.getReply())
+//                .isEdited(message.getIsEdited())
+//                .editedAt(message.getEditedAt())
+//                .isForward(message.getIsForward())
+//                .build();
+//    }
 
     @Override
     public String toString() {

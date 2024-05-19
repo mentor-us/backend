@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
+import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import lombok.*;
 
@@ -42,7 +43,7 @@ public class MessageDetailResponse implements Serializable {
 
     private TaskMessageResponse task;
 
-    private List<Reaction> reactions;
+    private List<ReactionDto> reactions;
 
     private TotalReaction totalReaction;
 
@@ -57,27 +58,6 @@ public class MessageDetailResponse implements Serializable {
     @Builder.Default
     private Boolean isForward = false;
 
-    public static MessageDetailResponse from(Message message, User user) {
-        if (message == null || user == null) {
-            return null;
-        }
-
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(ProfileResponse.from(user))
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getChannel() != null ? message.getChannel().getId() : null)
-                .reactions(message.getReactions())
-                .images(transformImageResponse(message.getImages()))
-                .file(new FileModel(message.getFile()))
-                .status(message.getStatus())
-                .editedAt(message.getEditedAt())
-                .isEdited(message.getIsEdited())
-                .isForward(message.getIsForward())
-                .build();
-    }
 
     private static List<Image> transformImageResponse(List<String> imageUrls) {
         if (imageUrls == null) {
@@ -86,161 +66,20 @@ public class MessageDetailResponse implements Serializable {
         return imageUrls.stream().map(Image::new).toList();
     }
 
-    public static MessageDetailResponse from(MessageResponse message) {
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(message.getSender())
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getGroupId())
-                .reactions(message.getReactions())
-                .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
-                .status(message.getStatus())
-                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
-                        .id(message.getReply())
-                        .build() : null)
-                .editedAt(message.getEditedAt())
-                .isEdited(message.getIsEdited())
-                .isForward(message.getIsForward())
-                .build();
-    }
-
-    public static MessageDetailResponse from(MessageResponse message, Vote vote) {
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(message.getSender())
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getGroupId())
-//                .vote(vote)
-                .reactions(message.getReactions())
-                .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
-                .status(message.getStatus())
-                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
-                        .id(message.getReply())
-                        .build() : null)
-                .isForward(message.getIsForward())
-                .build();
-    }
-
-    public static MessageDetailResponse from(MessageResponse message, Meeting meeting) {
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(message.getSender())
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getGroupId())
-                .meeting(MeetingDto.from(meeting))
-                .reactions(message.getReactions())
-                .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
-                .status(message.getStatus())
-                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
-                        .id(message.getReply())
-                        .build() : null)
-                .isForward(message.getIsForward())
-                .build();
-    }
-
-    public static MessageDetailResponse from(MessageResponse message, TaskMessageResponse task) {
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(message.getSender())
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getGroupId())
-                .task(task)
-                .reactions(message.getReactions())
-                .images(transformImageResponse(message.getImages()))
-                .file(message.getFile())
-                .status(message.getStatus())
-                .reply(message.getReply() != null ? MessageDetailResponse.ReplyMessage.builder()
-                        .id(message.getReply())
-                        .build() : null)
-                .isForward(message.getIsForward())
-                .build();
-    }
-
-    public static MessageDetailResponse normalize(MessageDetailResponse message) {
-        ProfileResponse profile = message.getSender();
-        if (profile != null
-                && profile.getImageUrl() != null
-                && ("https://graph.microsoft.com/v1.0/me/photo/$value").equals(profile.getImageUrl())) {
-            profile.setImageUrl(null);
-        }
-        List<Reaction> reactions = message.getReactions();
-        if (reactions == null) {
-            reactions = new ArrayList<>();
-        }
-        List<Image> images = message.getImages();
-        if (images == null) {
-            images = new ArrayList<>();
-        }
-        return MessageDetailResponse.builder()
-                .id(message.getId())
-                .sender(profile)
-                .content(message.getContent())
-                .createdDate(message.getCreatedDate())
-                .type(message.getType())
-                .groupId(message.getGroupId())
-                .vote(message.getVote())
-                .meeting(message.getMeeting())
-                .task(message.getTask())
-                .reactions(reactions)
-                .images(images)
-                .file(message.getFile())
-                .status(message.getStatus())
-                .reply(message.getReply())
-                .isForward(message.getIsForward())
-                .build();
-    }
-
-    public static MessageDetailResponse totalReaction(
-            MessageDetailResponse message, String viewerId) {
-        MessageDetailResponse response = normalize(message);
-        TotalReaction totalReaction = TotalReaction.builder()
-                .data(generateTotalReactionData(message.getReactions()))
-                .ownerReacted(generateOwnerReacted(message.getReactions(), viewerId))
-                .total(calculateTotalReactionAmount(message.getReactions()))
-                .build();
-        response.setTotalReaction(totalReaction);
-        return response;
-    }
-
-    public static List<EmojiDto> generateTotalReactionData(List<Reaction> reactions) {
+    public static List<EmojiDto> generateTotalReactionData(List<ReactionDto> reactions) {
         return Arrays.stream(EmojiType.values())
                 .map(et -> new EmojiDto(EmojiType.valueOf(
                         et.name()),
                         reactions.stream()
-                                .filter(r -> r.getEmojiType().equals(et)).map(Reaction::getTotal)
+                                .map(ReactionDto::getData)
+                                .flatMap(Collection::stream)
+                                .filter(r -> r.getId().equals(et)).map(EmojiDto::getTotal)
                                 .reduce(0, Integer::sum)))
                 .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
     }
 
-    public static List<EmojiDto> generateOwnerReacted(List<Reaction> reactions, String viewerId) {
-//        return reactions.stream()
-//                .filter(reaction -> reaction.getUser().getId().equals(viewerId))
-//                .flatMap(reaction -> reaction.getData().stream())
-//                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed())
-//                .toList();
-        return Arrays.stream(EmojiType.values())
-                .map(et -> new EmojiDto(EmojiType.valueOf(
-                        et.name()),
-                        reactions.stream()
-                                .filter(r -> r.getEmojiType().equals(et) && r.getUser().getId().equals(viewerId))
-                                .map(Reaction::getTotal)
-                                .reduce(0, Integer::sum)))
-                .sorted(Comparator.comparing(EmojiDto::getTotal).reversed()).toList();
-    }
-
-    public static Integer calculateTotalReactionAmount(List<Reaction> reactions) {
-        return reactions.stream().map(Reaction::getTotal).reduce(0, Integer::sum);
+    public static Integer calculateTotalReactionAmount(List<ReactionDto> reactions) {
+        return reactions.stream().map(ReactionDto::getTotal).reduce(0, Integer::sum);
     }
 
     public boolean isDeletedAttach() {

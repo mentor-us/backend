@@ -6,7 +6,9 @@ import com.hcmus.mentor.backend.controller.payload.request.SendImagesRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.Task;
+import com.hcmus.mentor.backend.domain.Vote;
 
 import java.util.List;
 
@@ -119,49 +121,52 @@ public interface MessageService {
      */
     Message saveFileMessage(SendFileRequest request);
 
-    /**
-     * Fulfill messages by populating additional details based on the viewer.
-     *
-     * @param messages The list of messages to fulfill.
-     * @param viewerId The ID of the viewer.
-     * @return The list of detailed responses for fulfilled messages.
-     */
-    List<MessageDetailResponse> fulfillMessages(List<MessageResponse> messages, String viewerId);
+//    /**
+//     * Fulfill messages by populating additional details based on the viewer.
+//     *
+//     * @param messages The list of messages to fulfill.
+//     * @param viewerId The ID of the viewer.
+//     * @return The list of detailed responses for fulfilled messages.
+//     */
+////    List<MessageDetailResponse> fulfillMessages(List<MessageResponse> messages, String viewerId);
+//
+//    /**
+//     * Fulfill a text message by populating additional details.
+//     *
+//     * @param message The text message to fulfill.
+//     * @return The detailed response for the fulfilled text message.
+//     */
+////    MessageDetailResponse fulfillTextMessage(MessageResponse message);
+//
+//    /**
+//     * Fulfill a meeting message by populating additional details.
+//     *
+//     * @param message The meeting message to fulfill.
+//     * @return The detailed response for the fulfilled meeting message.
+//     */
+////    MessageDetailResponse fulfillMeetingMessage(MessageResponse message);
+//
+//    /**
+//     * Fulfill a task message by populating additional details.
+//     *
+//     * @param message The task message to fulfill.
+//     * @return The detailed response for the fulfilled task message.
+//     */
+////    MessageDetailResponse fulfillTaskMessage(MessageResponse message);
+//
+//    /**
+//     * Fulfill a reaction by populating additional details.
+//     *
+//     * @param reaction The reaction to fulfill.
+//     * @param reactor  The user who reacted.
+//     */
+//    ReactionDto fulfillReaction(ReactionDto reaction, User reactor);
 
-    /**
-     * Fulfill a text message by populating additional details.
-     *
-     * @param message The text message to fulfill.
-     * @return The detailed response for the fulfilled text message.
-     */
-    MessageDetailResponse fulfillTextMessage(MessageResponse message);
+    void saveForwardMessage(String userId, ForwardRequest request);
 
-    /**
-     * Fulfill a meeting message by populating additional details.
-     *
-     * @param message The meeting message to fulfill.
-     * @return The detailed response for the fulfilled meeting message.
-     */
-    MessageDetailResponse fulfillMeetingMessage(MessageResponse message);
+    void updateCreatedDateVoteMessage(String voteId);
 
-    /**
-     * Fulfill a task message by populating additional details.
-     *
-     * @param message The task message to fulfill.
-     * @return The detailed response for the fulfilled task message.
-     */
-    MessageDetailResponse fulfillTaskMessage(MessageResponse message);
-
-    /**
-     * Fulfill a reaction by populating additional details.
-     *
-     * @param reaction The reaction to fulfill.
-     * @param reactor  The user who reacted.
-     * @return The fulfilled reaction.
-     */
-    Reaction fulfillReaction(Reaction reaction, User reactor);
-
-    List<Message> saveForwardMessage(String userId, ForwardRequest request);
-
-    boolean updateCreatedDateVoteMessage(String voteId);
+    MessageDetailResponse mappingToMessageDetailResponse(Message message, String viewerId);
+    List<MessageDetailResponse> mappingToMessageDetailResponse(List<Message> messages, String viewerId);
+    MessageResponse mappingToMessageResponse(Message message, String viewerId);
 }
