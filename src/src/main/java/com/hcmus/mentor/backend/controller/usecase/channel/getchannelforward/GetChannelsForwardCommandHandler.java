@@ -1,34 +1,35 @@
 package com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
-import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
-import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
- * Handler for {@link GetChannelsForwardCommand}.
+ * Handler for {@link GetChannelsForwardQuery}.
  */
 @Component
 @RequiredArgsConstructor
-public class GetChannelsForwardCommandHandler implements Command.Handler<GetChannelsForwardCommand, List<ChannelForwardResponse>> {
-    private final GroupRepository groupRepository;
+public class GetChannelsForwardCommandHandler implements Command.Handler<GetChannelsForwardQuery, List<ChannelForwardDto>> {
+
+    private final Logger logger = LoggerFactory.getLogger(GetChannelsForwardCommandHandler.class);
+    private final LoggedUserAccessor loggedUserAccessor;
+    private final ChannelRepository channelRepository;
 
     /**
-     * @param command command to get channels forward.
+     * @param query command to get channels forward.
      * @return list of channels forward.
      */
     @Override
-    public List<ChannelForwardResponse> handle(GetChannelsForwardCommand command) {
-        var groups = groupRepository.fetchWithUsersAndChannels(command.getUserId(), GroupStatus.ACTIVE);
-        return groups.stream()
-                .flatMap(group -> group.getChannels().stream())
-                .filter(c -> c.getStatus() == ChannelStatus.ACTIVE)
-                .map(ChannelForwardResponse::from)
-                .toList();
+    public List<ChannelForwardDto> handle(GetChannelsForwardQuery query) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        return channelRepository.getListChannelForward(currentUserId, query.getName());
     }
 }

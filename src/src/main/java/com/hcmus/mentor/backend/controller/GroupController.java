@@ -6,12 +6,12 @@ import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
-import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardCommand;
+import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
@@ -895,18 +895,18 @@ public class GroupController {
     /**
      * Get the list of group forwards for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param name                Optional name parameter for filtering the list.
+     * @param name Optional name parameter for filtering the list.
      * @return ResponseEntity containing the list of group forwards.
      */
     @GetMapping("forward")
     @SneakyThrows
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) {
+    public ResponseEntity<List<ChannelForwardDto>> getListGroupForward(
+            @RequestParam Optional<String> name) {
+        var query = new GetChannelsForwardQuery(name.orElse(""));
 
-        return ResponseEntity.ok(pipeline.send(new GetChannelsForwardCommand(customerUserDetails.getId(), name.orElse(""))));
+        return ResponseEntity.ok(pipeline.send(query));
     }
 
     private Map<String, Object> pagingResponse(Page<?> groups) {

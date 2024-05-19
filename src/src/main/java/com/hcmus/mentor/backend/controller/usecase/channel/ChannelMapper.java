@@ -20,7 +20,6 @@ public class ChannelMapper {
             mapper.skip(ChannelDetailDto::setRole);
         });
         modelMapper.createTypeMap(Message.class, ShortMediaMessage.class).addMappings(mapper -> {
-//            mapper.skip(ShortMediaMessage::setSender);
         });
     }
 }

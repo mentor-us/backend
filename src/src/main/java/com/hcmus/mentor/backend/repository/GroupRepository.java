@@ -116,18 +116,10 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     @Query("SELECT g " +
             "FROM Group g " +
-            "INNER JOIN FETCH g.groupUsers " +
+            "INNER JOIN FETCH g.groupUsers gu " +
             "WHERE g.status = :status " +
             "ORDER BY g.createdDate DESC")
     List<Group> findAllByStatusAnd(@Param("status") GroupStatus status);
-
-    @Query("SELECT g, gu, c " +
-            "FROM Group g  " +
-            "INNER JOIN FETCH g.groupUsers gu  " +
-            "INNER JOIN FETCH g.channels c  " +
-            "WHERE g.status = :status " +
-            "AND gu.user.id = :userId")
-    List<Group> fetchWithUsersAndChannels(@Param("userId") String userId, @Param("status") GroupStatus status);
 
     @Query("SELECT g, gu, u " +
             "from Group g " +

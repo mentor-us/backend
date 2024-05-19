@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,10 +14,9 @@ import java.util.List;
  */
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class GetChannelsForwardCommand implements Command<List<ChannelForwardResponse>> {
-    private String userId;
+@AllArgsConstructor
+public class GetChannelsForwardQuery implements Command<List<ChannelForwardDto>> {
 
     private String name;
 }
