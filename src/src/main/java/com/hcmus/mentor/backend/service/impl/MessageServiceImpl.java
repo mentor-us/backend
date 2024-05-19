@@ -14,7 +14,6 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.RemoveReact
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.*;
@@ -26,6 +25,7 @@ import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
+import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -56,15 +56,11 @@ public class MessageServiceImpl implements MessageService {
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
-    private final MeetingRepository meetingRepository;
     private final TaskRepository taskRepository;
-    private final VoteRepository voteRepository;
     private final UserRepository userRepository;
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
-    private final NotificationRepository notificationRepository;
-    private final GroupUserRepository groupUserRepository;
     private final Pipeline pipeline;
 
     private final ModelMapper modelMapper;
@@ -86,19 +82,10 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<MessageDetailResponse> getGroupMessages(
-            String viewerId,
-            String groupId,
-            int page,
-            int size) {
-        List<MessageResponse> responses = messageRepository.getGroupMessagesByChannelId(groupId).stream()
-                .map(message -> {
-                    var sender = ProfileResponse.from(message.getSender());
-                    return MessageResponse.from(message, sender);
-                }).toList();
-
-        return fulfillMessages(responses, viewerId);
+    public List<MessageDetailResponse> getGroupMessages(String viewerId, String groupId, int page, int size) {
+        return mappingToMessageDetailResponse(messageRepository.getGroupMessagesByChannelId(groupId), viewerId);
     }
+
 
     /**
      * {@inheritDoc}
@@ -107,10 +94,9 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public List<MessageResponse> findGroupMessagesByText(String groupId, String query, int page, int size) {
         return messageRepository.findGroupMessages(groupId, query).stream()
-                .map(message -> {
-                    var sender = ProfileResponse.from(message.getSender());
-                    return MessageResponse.from(message, sender);
-                }).toList();
+                .map(message ->
+                        mappingToMessageResponse(message, Optional.ofNullable(message.getSender()).map(User::getId).orElse(null)))
+                .toList();
     }
 
     /**
@@ -119,8 +105,8 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional(readOnly = true)
     public String getLastGroupMessage(String groupId) {
-        Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
 
+        Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
         return getMessageContent(lastMessage);
     }
 
@@ -234,8 +220,9 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public MessageDetailResponse.TotalReaction calculateTotalReactionMessage(Message message) {
-        List<EmojiDto> data = MessageDetailResponse.generateTotalReactionData(message.getReactions());
-        int total = MessageDetailResponse.calculateTotalReactionAmount(message.getReactions());
+        var reactionDtos = mappingReaction(message.getReactions());
+        List<EmojiDto> data = MessageDetailResponse.generateTotalReactionData(reactionDtos);
+        int total = MessageDetailResponse.calculateTotalReactionAmount(reactionDtos);
 
         return MessageDetailResponse.TotalReaction.builder()
                 .data(data)
@@ -348,154 +335,6 @@ public class MessageServiceImpl implements MessageService {
         return message;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<MessageDetailResponse> fulfillMessages(List<MessageResponse> messages, String viewerId) {
-        List<User> users = messages.stream()
-                .flatMap(response -> response.getReactions().stream())
-                .map(Reaction::getUser)
-                .toList();
-        Map<String, User> reactors = users.stream().collect(Collectors.toMap(User::getId, user -> user, (u1, u2) -> u2));
-
-        return messages.stream()
-                .map(this::fulfillMessage)
-                .filter(Objects::nonNull)
-                .filter(message -> !message.isDeletedAttach())
-                .map(this::processSpecialMessage)
-                .map(message -> fulfillReactions(message, reactors))
-                .map(message -> MessageDetailResponse.totalReaction(message, viewerId))
-                .toList();
-    }
-
-    private MessageDetailResponse processSpecialMessage(MessageDetailResponse message) {
-        if (Message.Status.DELETED.equals(message.getStatus())) {
-            message.setContent("Tin nhắn đã được xoá");
-        }
-
-        if (message.getReply() != null) {
-            var messageReply = messageRepository.findById(message.getReply().getId()).orElse(null);
-            if (messageReply == null) {
-                return message;
-            }
-            // Todo: vrify user is member of group
-            var sender = messageReply.getSender();
-//            var senderProfile = sender.isStatus() ? modelMapper.map(sender, ShortProfile.class) : null;
-            message.setReply(MessageDetailResponse.ReplyMessage.builder()
-                    .id(messageReply.getId())
-                    .senderName(sender != null ? sender.getName() : "Người dùng không tồn tại")
-                    .content(messageReply.isDeleted() ? "Tin nhắn đã được xoá" : messageReply.getContent())
-                    .build());
-        }
-
-        return message;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public MessageDetailResponse fulfillTextMessage(MessageResponse message) {
-        MessageDetailResponse response = MessageDetailResponse.from(message);
-        if (message.getReply() != null) {
-            var messageReply = messageRepository.findById(message.getReply()).orElse(null);
-            if (messageReply == null) {
-                return response;
-            }
-            String content = messageReply.getContent();
-            if (messageReply.isDeleted()) {
-                content = "Tin nhắn đã được xoá";
-            }
-            ShortProfile sender = modelMapper.map(messageReply.getSender(), ShortProfile.class);
-            String senderName = "Người dùng không tồn tại";
-            if (groupUserRepository.existsByUserIdAndGroupId(sender.getId(), messageReply.getChannel().getGroup().getId())) {
-                senderName = sender.getName();
-            }
-            MessageDetailResponse.ReplyMessage replyMessage =
-                    MessageDetailResponse.ReplyMessage.builder()
-                            .id(messageReply.getId())
-                            .senderName(senderName)
-                            .content(content)
-                            .build();
-            response.setReply(replyMessage);
-        }
-
-        return response;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public MessageDetailResponse fulfillMeetingMessage(MessageResponse message) {
-        Optional<Meeting> meeting = meetingRepository.findById(message.getMeetingId());
-        return MessageDetailResponse.from(message, meeting.orElse(null));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public MessageDetailResponse fulfillTaskMessage(MessageResponse message) {
-        Optional<Task> taskWrapper = taskRepository.findById(message.getTaskId());
-        if (taskWrapper.isEmpty()) {
-            return null;
-        }
-        TaskMessageResponse taskDetail = TaskMessageResponse.from(taskWrapper.get());
-
-        List<TaskAssigneeResponse> assignees = getTaskAssignees(message.getTaskId());
-        taskDetail.setAssignees(assignees);
-        return MessageDetailResponse.from(message, taskDetail);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Reaction fulfillReaction(Reaction reaction, User reactor) {
-        if (reactor == null) {
-            return new Reaction();
-        }
-        reaction.update(reactor);
-        return reaction;
-    }
-
-    private MessageDetailResponse fulfillReactions(
-            MessageDetailResponse message,
-            Map<String, User> reactors) {
-        List<Reaction> reactions = message.getReactions().stream()
-                .map(reaction -> {
-                    User reactor = reactors.getOrDefault(reaction.getUser(), null);
-                    return fulfillReaction(reaction, reactor);
-                })
-                .filter(reaction -> reaction.getUser() != null)
-                .toList();
-        message.setReactions(reactions);
-        return message;
-    }
-
-    private MessageDetailResponse fulfillMessage(MessageResponse message) {
-        return switch (message.getType()) {
-            case MEETING -> fulfillMeetingMessage(message);
-            case TASK -> fulfillTaskMessage(message);
-            case VOTE -> fulfillVotingMessage(message);
-            default -> MessageDetailResponse.from(message);
-        };
-    }
-
-    private MessageDetailResponse fulfillVotingMessage(MessageResponse message) {
-        Vote vote = voteRepository.findById(message.getVoteId()).orElse(null);
-        if (vote != null) {
-            vote.sortChoicesDesc();
-        } else
-            return null;
-        var messageDetail = MessageDetailResponse.from(message);
-        var voteResult = modelMapper.map(vote, VoteResult.class);
-        messageDetail.setVote(voteResult);
-        return messageDetail;
-    }
-
     private void pingGroup(String groupId) {
         var groupOpt = groupRepository.findById(groupId);
         if (groupOpt.isPresent()) {
@@ -519,8 +358,9 @@ public class MessageServiceImpl implements MessageService {
      * @param request ForwardRequest
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public List<Message> saveForwardMessage(String userId, ForwardRequest request) {
+    @Transactional()
+    public void saveForwardMessage(String userId, ForwardRequest request) {
+
         List<String> typeAllow = List.of(TEXT.name(), IMAGE.name(), FILE.name(), Message.Type.VIDEO.name());
         User sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
         Message message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
@@ -543,15 +383,20 @@ public class MessageServiceImpl implements MessageService {
                         .file(message.getFile())
                         .isForward(true)
                         .build());
-                pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
+
+                pipeline.send(UpdateLastMessageCommand.builder()
+                        .message(message)
+                        .channel(message.getChannel())
+                        .build());
+
                 messages.add(m);
                 pingGroup(channel.getGroup().getId());
             });
             messages.forEach(m -> {
-                notificationService.sendForwardNotification(MessageDetailResponse.from(m, sender), m.getChannel().getGroup().getId());
-                socketIOService.sendBroadcastMessage(MessageDetailResponse.from(m, sender), m.getChannel().getGroup().getId());
+                var response = mappingToMessageDetailResponse(m, sender.getId());
+                notificationService.sendForwardNotification(response, m.getChannel().getGroup().getId());
+                socketIOService.sendBroadcastMessage(response, m.getChannel().getGroup().getId());
             });
-            return messages;
         } catch (Exception e) {
             logger.log(Level.INFO, "Forward message failed", e);
             throw new DomainException("Forward message failed");
@@ -559,16 +404,15 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public boolean updateCreatedDateVoteMessage(String voteId) {
+    public void updateCreatedDateVoteMessage(String voteId) {
         var message = messageRepository.findByVoteId(voteId).orElse(null);
         if (message == null) {
-            return false;
+            return;
         }
 
         message.setCreatedDate(new Date());
         messageRepository.save(message);
 
-        return true;
     }
 
     private List<TaskAssigneeResponse> getTaskAssignees(String taskId) {
@@ -595,7 +439,58 @@ public class MessageServiceImpl implements MessageService {
                 .toList();
     }
 
-    public List<ReactionDto> mappingReaction(List<Reaction> reactions) {
+    @Override
+    public List<MessageDetailResponse> mappingToMessageDetailResponse(List<Message> messages, String viewerId) {
+        List<MessageDetailResponse> responses = messages.stream()
+                .map(message -> mappingToMessageDetailResponse(message, viewerId))
+                .toList();
+
+        return responses;
+    }
+
+    @Override
+    public MessageDetailResponse mappingToMessageDetailResponse(Message message, String viewerId) {
+        var messageDetailResponse = modelMapper.map(message, MessageDetailResponse.class);
+        switch (message.getType()) {
+            case VOTE -> messageDetailResponse.setVote(modelMapper.map(message.getVote(), VoteResult.class));
+            case TASK -> messageDetailResponse.setTask(modelMapper.map(message.getTask(), TaskMessageResponse.class));
+            case MEETING -> messageDetailResponse.setMeeting(modelMapper.map(message.getMeeting(), MeetingDto.class));
+            case FILE -> messageDetailResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
+        }
+
+        if (!List.of(VOTE, TASK, MEETING).contains(message.getType())) {
+            var reactions = mappingReaction(message.getReactions());
+            messageDetailResponse.setReactions(reactions);
+
+            var reactionDtos = mappingEmojiFromDto(reactions);
+            var ownerReaction = reactions.stream().filter(re -> Objects.equals(re.getUserId(), viewerId)).findFirst().orElse(null);
+            messageDetailResponse.setTotalReaction(MessageDetailResponse.TotalReaction.builder()
+                    .data(reactionDtos)
+                    .ownerReacted(ownerReaction != null ? mappingEmojiFromDto(Collections.singletonList(ownerReaction)) : generateEmojiDtos())
+                    .total(sumEmojis(reactionDtos))
+                    .build());
+        }
+        return messageDetailResponse;
+
+    }
+
+    @Override
+    public MessageResponse mappingToMessageResponse(Message message, String viewerId) {
+        var messageResponse = modelMapper.map(message, MessageResponse.class);
+        switch (message.getType()) {
+            case FILE -> messageResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
+            case TASK ->
+                    messageResponse.setTaskId(Optional.ofNullable(message.getTask()).map(Task::getId).orElse(null));
+            case MEETING ->
+                    messageResponse.setMeetingId(Optional.ofNullable(message.getMeeting()).map(Meeting::getId).orElse(null));
+            case VOTE ->
+                    messageResponse.setVoteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null));
+        }
+        messageResponse.setReactions(mappingReaction(message.getReactions()));
+        return messageResponse;
+    }
+
+    private List<ReactionDto> mappingReaction(List<Reaction> reactions) {
         return reactions.stream()
                 .collect(Collectors.groupingBy(reaction -> reaction.getUser().getId()))
                 .values()
@@ -607,9 +502,53 @@ public class MessageServiceImpl implements MessageService {
                             .name(user.getName())
                             .imageUrl(user.getImageUrl())
                             .build();
-                    reactionList.forEach(reaction -> reactionDto.react(reaction.getEmojiType(), reaction.getTotal()));
+
+                    var emojiDtos = mappingEmoji(reactionList);
+                    reactionDto.setData(emojiDtos);
+                    reactionDto.setTotal(sumEmojis(emojiDtos));
+
                     return reactionDto;
                 })
                 .toList();
+    }
+
+    private List<EmojiDto> mappingEmoji(List<Reaction> reactions) {
+
+        if (reactions == null || reactions.isEmpty())
+            return generateEmojiDtos();
+
+        return reactions.stream()
+                .collect(Collectors.groupingBy(Reaction::getEmojiType))
+                .values()
+                .stream()
+                .map(reactions1 -> EmojiDto.builder()
+                        .id(reactions1.stream().findFirst().get().getEmojiType())
+                        .total(reactions1.stream().map(Reaction::getTotal).reduce(0, Integer::sum)).build())
+                .toList();
+    }
+
+    private List<EmojiDto> mappingEmojiFromDto(List<ReactionDto> reactionDtos) {
+
+        if (reactionDtos == null || reactionDtos.isEmpty())
+            return generateEmojiDtos();
+
+        var reactions = reactionDtos.stream().flatMap(r -> r.getData().stream()).toList();
+
+        return Arrays.stream(EmojiType.values()).map(
+                emojiType -> EmojiDto.builder()
+                        .id(emojiType)
+                        .total(sumEmojis(reactions.stream().filter(m -> m.getId() == emojiType).toList()))
+                        .build()
+        ).toList();
+    }
+
+    private List<EmojiDto> generateEmojiDtos() {
+        return Arrays.stream(EmojiType.values()).map(
+                emojiType -> EmojiDto.builder().id(emojiType).total(0).build()
+        ).toList();
+    }
+
+    private Integer sumEmojis(List<EmojiDto> emojis) {
+        return emojis.stream().map(EmojiDto::getTotal).reduce(0, Integer::sum);
     }
 }

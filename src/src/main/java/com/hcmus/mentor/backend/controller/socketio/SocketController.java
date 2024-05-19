@@ -7,8 +7,6 @@ import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.JoinOutRoomRequest;
 import com.hcmus.mentor.backend.controller.payload.request.ReceivedMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.Message;
@@ -111,12 +109,7 @@ public class SocketController {
                     .build();
             Message newMessage = messageService.saveMessage(receivedMessageRequest);
 
-            MessageDetailResponse response = MessageDetailResponse.from(receivedMessageRequest, user);
-            MessageResponse buffer = MessageResponse.from(receivedMessageRequest, ProfileResponse.from(user));
-
-            if (message.getReply() != null) {
-                response = messageService.fulfillTextMessage(buffer);
-            }
+            MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 
             socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getGroup().getId());
             notificationService.sendNewMessageNotification(response);

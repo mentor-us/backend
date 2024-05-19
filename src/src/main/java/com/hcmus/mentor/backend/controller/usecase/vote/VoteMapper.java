@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 public class VoteMapper {
 
     public VoteMapper(ModelMapper modelMapper) {
+
         modelMapper.createTypeMap(Vote.class, VoteResult.class).addMappings(mapping -> {
             mapping.map(src -> src.getGroup().getId(), VoteResult::setGroupId);
             mapping.map(src -> src.getCreator().getId(), VoteResult::setCreatorId);

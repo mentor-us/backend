@@ -7,8 +7,6 @@ import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
@@ -118,7 +116,7 @@ public class VoteServiceImpl implements VoteService {
 
 
         Message message = messageService.saveVoteMessage(newVote);
-        MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), newVote);
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, userId);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
         notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);

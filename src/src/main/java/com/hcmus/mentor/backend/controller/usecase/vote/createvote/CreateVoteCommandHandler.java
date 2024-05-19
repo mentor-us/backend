@@ -5,8 +5,6 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Message;
@@ -72,7 +70,7 @@ public class CreateVoteCommandHandler implements Command.Handler<CreateVoteComma
         voteRepository.save(vote);
 
         Message message = messageService.saveVoteMessage(vote);
-        MessageDetailResponse response = MessageDetailResponse.from(MessageResponse.from(message, ProfileResponse.from(sender)), vote);
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, currentUserId);
         socketServer.getRoomOperations(command.getGroupId()).sendEvent("receive_message", response);
 
         notificationService.sendNewVoteNotification(vote.getGroup().getId(), vote);

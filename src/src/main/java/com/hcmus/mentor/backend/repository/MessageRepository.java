@@ -73,4 +73,6 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "WHERE m.channel.id = :channelId")
     void deleteAllByChannelId(@Param(value = "channelId") String channelId, @Param(value = "status") Message.Status status);
 
+    List<Message> findByIdIn(List<String> ids);
+
 }

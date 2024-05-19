@@ -10,8 +10,6 @@ import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingDeta
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingHistoryDetail;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.*;
@@ -123,7 +121,7 @@ public class MeetingService implements IRemindableService {
         groupService.pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(newMessage).channel(newMessage.getChannel()).build());
 
-        MessageDetailResponse response = messageService.fulfillMeetingMessage(MessageResponse.from(newMessage, ProfileResponse.from(organizer)));
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, request.getOrganizerId());
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
         notificationService.sendNewMeetingNotification(meeting);
         saveToReminder(meeting);

@@ -25,7 +25,8 @@ public class ReactionDto implements Serializable {
     @Builder.Default
     private List<EmojiDto> data = new ArrayList<>();
 
-    private Integer total;
+    @Builder.Default
+    private Integer total = 0;
 
     public void react(EmojiType type, Integer totalEmoji) {
         Optional<EmojiDto> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
