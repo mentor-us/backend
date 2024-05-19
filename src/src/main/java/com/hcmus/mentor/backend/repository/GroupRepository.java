@@ -62,20 +62,23 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
             "FROM Group g " +
             "INNER JOIN FETCH g.groupUsers gu " +
             "WHERE gu.user.id = ?1 " +
-            "AND gu.isMentor = false")
+            "AND gu.isMentor = false " +
+            "AND g.status = 'ACTIVE'")
     List<Group> findAllByMenteesIn(String menteeId);
 
     @Query("SELECT g, gu " +
             "FROM Group g " +
             "INNER JOIN FETCH g.groupUsers gu  " +
             "WHERE gu.user.id = ?1 " +
-            "AND gu.isMentor = true")
+            "AND gu.isMentor = true " +
+            "AND g.status = 'ACTIVE'")
     List<Group> findAllByMentorsIn(String mentorId);
 
     @Query("SELECT g " +
             "FROM Group g " +
             "JOIN FETCH g.groupUsers gu  " +
-            "WHERE gu.user.id = ?1")
+            "WHERE gu.user.id = ?1 " +
+            "AND g.status = 'ACTIVE'")
     Page<Group> findAllByIsMember(String memberId, Pageable pageable);
 
     @Query("SELECT g " +
