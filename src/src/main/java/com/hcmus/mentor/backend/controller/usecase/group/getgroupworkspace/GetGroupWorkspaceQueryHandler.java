@@ -56,20 +56,21 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
 
         var allChannels = group.getChannels();
         var publicChannel = allChannels.stream()
-                .filter(c -> c.getType() == ChannelType.PUBLIC)
                 .filter(c -> !Objects.equals(c.getId(), group.getDefaultChannel().getId()))
+                .filter(c -> c.getType() == ChannelType.PUBLIC || c.getType() == ChannelType.PRIVATE)
+                .filter(c -> c.isMember(currentUserId))
                 .map(channel -> modelMapper.map(channel, WorkspaceChannelDto.class))
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
+                .sorted(Comparator.comparing(WorkspaceChannelDto::getMarked).reversed())
                 .toList();
         groupWorkspace.setChannels(publicChannel);
 
         var groupUsers = group.getGroupUsers();
         var privateChannel = allChannels.stream()
-                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE &&
-                        allChannels.stream().anyMatch(ch -> ch.getUsers().stream()
-                                .anyMatch(u -> Objects.equals(u.getId(), currentUserId))
-                        )
-                )
+                .filter(c -> !Objects.equals(c.getId(), group.getDefaultChannel().getId()))
+                .filter(c -> c.getType() == ChannelType.PRIVATE_MESSAGE)
+                .filter(c -> c.isMember(currentUserId))
                 .map(mapToWorkspaceChannelDto(currentUserId, groupUsers))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
@@ -84,7 +85,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         return channel -> {
             ShortProfile friendId = channel.getUsers().stream()
                     .filter(u -> !Objects.equals(u.getId(), currentUserId))
-                    .map(u->modelMapper.map(u, ShortProfile.class))
+                    .map(u -> modelMapper.map(u, ShortProfile.class))
                     .findFirst()
                     .orElse(null);
 
