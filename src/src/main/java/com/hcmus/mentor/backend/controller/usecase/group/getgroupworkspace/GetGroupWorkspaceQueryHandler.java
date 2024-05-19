@@ -62,7 +62,6 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
                 .map(channel -> modelMapper.map(channel, WorkspaceChannelDto.class))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(WorkspaceChannelDto::getUpdatedDate).reversed())
-                .sorted(Comparator.comparing(WorkspaceChannelDto::getMarked).reversed())
                 .toList();
         groupWorkspace.setChannels(publicChannel);
 
