@@ -238,7 +238,7 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        return new TaskReturnService(SUCCESS, "", getTaskAssignees(task.getId()));
+        return getTaskAssignees(task.getId());
     }
 
     public TaskReturnService getTaskAssignees(String taskId) {
