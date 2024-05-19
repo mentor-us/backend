@@ -45,9 +45,8 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "FROM Message m " +
             "join fetch m.sender s " +
             "join fetch m.channel c " +
-            "join fetch m.file " +
+            "left join fetch m.file " +
             "WHERE m.channel.id = ?1 " +
-//            "AND m.status != 'DELETED' " +
             "ORDER BY m.createdDate DESC ")
     Page<Message> getGroupMessagesByChannelId(Pageable pageable, String groupId);
 
