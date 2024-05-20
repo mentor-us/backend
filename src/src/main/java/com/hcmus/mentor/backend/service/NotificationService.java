@@ -3,11 +3,10 @@ package com.hcmus.mentor.backend.service;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.domain.*;
-import org.springframework.scheduling.annotation.Async;
 
+import java.util.List;
 import java.util.Map;
 
 public interface NotificationService {
@@ -21,49 +20,29 @@ public interface NotificationService {
 
     void unsubscribeNotification(String userId);
 
-    @Async
-    void sendNewMessageNotification(MessageDetailResponse message);
+//    @Async
+    void sendNewMessageNotification(Message message);
 
-    //    @Async
-    void sendNewTaskNotification(MessageDetailResponse message, Task task);
+    void sendNewTaskNotification(Task task);
 
-    Notification createNewTaskNotification(
-            String title, String content, String senderId, Task task);
-
-    //    @Async
     void sendNewMeetingNotification(Meeting meeting);
 
-    Notification createNewMeetingNotification(
-            String title, String content, String senderId, Meeting meeting);
+//    @Async
+    void sendNewMediaMessageNotification(Message message);
 
-    @Async
-    void sendNewMediaMessageNotification(MessageDetailResponse message);
+//    @Async
+    void sendNewReactNotification(Message message, ReactMessageResponse reaction, User sender);
 
-    Notification createNewMediaNotification(String title, String content, String senderId, Group group);
-
-    @Async
-    void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId);
-
-    @Async
+//    @Async
     void sendRescheduleMeetingNotification(
-            String modifierId, Meeting meeting, RescheduleMeetingRequest request);
-
-    Notification createRescheduleMeetingNotification(
-            String title, String content, String senderId, Group group, Meeting meeting);
+            User modifier, Meeting meeting, RescheduleMeetingRequest request);
 
     long getUnreadNumber(String userId);
 
     void sendNewVoteNotification(String creatorId, Vote vote);
 
-    Notification createNewVoteNotification(
-            String title, String content, Vote vote);
+//    @Async
+    void sendTogglePinNotification(Message message, User pinner, Boolean isPin);
 
-    void sendNewPinNotification(MessageDetailResponse message, User pinner);
-
-    void sendNewUnpinNotification(MessageDetailResponse message, User pinner);
-
-    @Async
-    Notification createForwardNotification(String title, String content, String senderId, Group group);
-
-    void sendForwardNotification(MessageDetailResponse message, String groupIds);
+    void sendForwardMessageNotification(List<Message> messages, User sender);
 }

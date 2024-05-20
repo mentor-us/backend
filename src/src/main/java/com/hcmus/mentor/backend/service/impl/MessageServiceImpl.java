@@ -392,9 +392,10 @@ public class MessageServiceImpl implements MessageService {
                 messages.add(m);
                 pingGroup(channel.getGroup().getId());
             });
+            notificationService.sendForwardMessageNotification(messages, sender);
+
             messages.forEach(m -> {
                 var response = mappingToMessageDetailResponse(m, sender.getId());
-                notificationService.sendForwardNotification(response, m.getChannel().getGroup().getId());
                 socketIOService.sendBroadcastMessage(response, m.getChannel().getGroup().getId());
             });
         } catch (Exception e) {

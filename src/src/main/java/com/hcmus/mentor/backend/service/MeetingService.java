@@ -269,7 +269,11 @@ public class MeetingService implements IRemindableService {
         meeting.reschedule(modifier, request);
 
         groupService.pingGroup(meeting.getGroup().getGroup().getId());
-        return meetingRepository.save(meeting);
+        meetingRepository.save(meeting);
+
+        notificationService.sendRescheduleMeetingNotification(modifier, meeting, request);
+
+        return meeting;
     }
 
     @Override
