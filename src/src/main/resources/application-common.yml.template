@@ -36,7 +36,7 @@ spring:
           query:
             timeout: 20000
       hibernate:
-        show_sql: true
+        show_sql: false
         enable_lazy_load_no_trans: true
         jdbc:
           batch_size: 10
