@@ -193,7 +193,7 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         TaskStatus status = task.getAssignees().stream()
-                .filter(assignee -> assignee.equals(user))
+                .filter(assignee -> Objects.equals(assignee.getUser().getId(), user.getId()))
                 .findFirst()
                 .map(Assignee::getStatus)
                 .orElse(null);
