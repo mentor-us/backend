@@ -40,7 +40,6 @@ public class CustomHttp403UnauthorizedEntryPoint implements AuthenticationEntryP
         if (!StringUtils.startsWith(authorizationHeader, BEARER_SCHEME)) {
             handleUnauthorizedRequest(response);
 
-            return;
         }
 
 //        handleNotFoundRequest(response);

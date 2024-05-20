@@ -1,27 +1,43 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMenteesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.AddMentorsRequest;
-import com.hcmus.mentor.backend.controller.payload.request.groups.CreateGroupCommand;
-import com.hcmus.mentor.backend.controller.payload.request.groups.UpdateGroupRequest;
-import com.hcmus.mentor.backend.controller.payload.response.HomePageResponse;
+import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.payload.response.channel.ChannelForwardResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardQuery;
+import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
+import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.getallgroups.GetAllGroupsQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupbyid.GetGroupByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace.GetGroupWorkSpaceQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.gethomepage.GetHomePageQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.gethomepage.HomePageDto;
+import com.hcmus.mentor.backend.controller.usecase.group.importgroup.ImportGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.promotedemoteuser.PromoteDenoteUserByIdCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.removemembergroup.RemoveMemberToGroupCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.searchowngroups.SearchOwnGroupsQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.serachgroups.SearchGroupsQuery;
+import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.ToggleMarkMenteeCommand;
+import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.dto.EventDto;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,11 +45,11 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -43,9 +59,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
 
 /**
@@ -58,92 +74,42 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 @RequiredArgsConstructor
 public class GroupController {
 
-    private static final Logger logger = LogManager.getLogger(GroupController.class);
-    private final GroupRepository groupRepository;
+    private final Logger logger = LoggerFactory.getLogger(GroupController.class);
     private final UserRepository userRepository;
     private final GroupService groupService;
     private final EventService eventService;
-    private final PermissionService permissionService;
-    private static final String TEMPLATE_PATH = "src/main/resources/templates/import-groups.xlsx";
-    private static final String TEMP_TEMPLATE_PATH = "src/main/resources/templates/temp-import-groups.xlsx";
+    private final Pipeline pipeline;
 
     /**
      * Retrieves groups based on the user's role and group type.
      * Admins can get all groups (Paging), while users can get mentee groups or mentor groups (Paging).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param page                The page number for pagination.
-     * @param pageSize            The number of items per page.
-     * @param type                The type of groups to retrieve ("admin" for all groups).
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
      */
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> all(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int pageSize,
-            @RequestParam(defaultValue = "") String type) {
-        Page<Group> groups = new PageImpl<>(new ArrayList<>());
-        if (!type.equals("admin")) {
-            return ApiResponseDto.success(pagingResponse(groups));
-        }
+    public ApiResponseDto<Map<String, Object>> getAllGroup(
+            GetAllGroupsQuery query) {
+        var groups = pipeline.send(query);
 
-        boolean isSuperAdmin = permissionService.isSuperAdmin(customerUserDetails.getEmail());
-        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
-        if (isSuperAdmin) {
-            groups = groupRepository.findAll(pageRequest);
-        } else {
-            var user = userRepository.findByEmail(customerUserDetails.getEmail());
-            if (user.isEmpty()) {
-                return ApiResponseDto.notFound(NOT_FOUND);
-            }
-            String creatorId = user.get().getId();
-            groups = groupRepository.findAllByCreatorId(pageRequest, creatorId);
-        }
-
-        groups = new PageImpl<>(groupService.validateTimeGroups(groups.getContent()), pageRequest, groups.getTotalElements());
         return ApiResponseDto.success(pagingResponse(groups));
     }
-
 
     /**
      * Retrieves the user's own groups based on the specified type (mentor, mentee, or all).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param page                The page number for pagination.
-     * @param pageSize            The number of items per page.
-     * @param type                The type of groups to retrieve ("mentor", "mentee", or empty for all).
-     * @return APIResponse containing a Page of GroupHomepageResponse entities.
+     * @param query The query containing the user's ID and group type.
+     * @return APIResponse containing a Page of GroupHomepageDto entities.
      */
     @GetMapping("own")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<GroupHomepageResponse>> getOwnGroups(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int pageSize,
-            @RequestParam(defaultValue = "") String type) {
-        Page<GroupHomepageResponse> groups;
-        switch (type) {
-            case "mentor":
-                groups = groupService.findMentorGroups(customerUserDetails.getId(), page, pageSize);
-                break;
-            case "mentee":
-                groups = groupService.findMenteeGroups(customerUserDetails.getId(), page, pageSize);
-                break;
-            default:
-                groups = groupService.findOwnGroups(customerUserDetails.getId(), page, pageSize);
-                break;
-        }
-        var userOpt = userRepository.findById(customerUserDetails.getId());
-        var user = userOpt.orElse(null);
-        for (GroupHomepageResponse group : groups) {
-            boolean isPinned = user.isPinnedGroup(group.getId());
-            group.setPinned(isPinned);
-        }
-        return ApiResponseDto.success(pagingHomepageResponse(groups));
+    public ApiResponseDto<Page<GroupHomepageDto>> getOwnGroups(
+            SearchOwnGroupsQuery query) {
+        var groups = pipeline.send(query);
+
+        return ApiResponseDto.success(pagingResponse(groups));
     }
 
 
@@ -158,7 +124,7 @@ public class GroupController {
     @GetMapping("recent")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> recentGroups(
+    public ApiResponseDto<Page<GroupDetailDto>> recentGroups(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize) {
@@ -175,240 +141,244 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> get(
+    public ApiResponseDto<GroupDetailResponse> getGroupById(
             @PathVariable("id") String id) {
-        Optional<Group> groupWrapper = groupRepository.findById(id);
-        return groupWrapper.map(ApiResponseDto::success).orElseGet(() -> ApiResponseDto.notFound(NOT_FOUND));
+        try {
+            var query = GetGroupByIdQuery.builder().id(id).build();
+
+            var group = pipeline.send(query);
+
+            return ApiResponseDto.success(group);
+        } catch (DomainException ex) {
+            return ApiResponseDto.notFound(NOT_FOUND);
+        }
     }
 
     /**
      * Creates a new group (Only Admins).
      *
-     * @param loggedUser The current user's principal information.
-     * @param command    The request body containing information to create a new group.
+     * @param command The request body containing information to create a new group.
      * @return APIResponse containing the created Group entity or an error response.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
             @RequestBody CreateGroupCommand command) {
-        String creatorEmail = loggedUser.getEmail();
-        GroupServiceDto groupReturn = groupService.createGroup(creatorEmail, command);
+        var groupReturn = pipeline.send(command);
+
         return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
      * Imports multiple groups by a template file.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param file                The template file containing group information.
+     * @param file The template file containing group information.
      * @return APIResponse containing a list of imported Group entities or an error response.
-     * @throws IOException If an I/O error occurs during the import process.
      */
     @PostMapping(value = "import", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<Group>> importGroups(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam("file") MultipartFile file)
-            throws IOException {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.importGroups(email, file);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @RequestParam("file") MultipartFile file) {
+        var command = ImportGroupCommand.builder().file(file).build();
+
+        GroupServiceDto groupReturn = pipeline.send(command);
+
+        return new ApiResponseDto(groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
     }
 
     /**
      * Finds groups with multiple filters.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param name                The name filter for groups.
-     * @param mentorEmail         The mentor's email filter for groups.
-     * @param menteeEmail         The mentee's email filter for groups.
-     * @param groupCategory       The group category filter for groups.
-     * @param timeStart1          The start time filter for groups (first range).
-     * @param timeEnd1            The end time filter for groups (first range).
-     * @param timeStart2          The start time filter for groups (second range).
-     * @param timeEnd2            The end time filter for groups (second range).
-     * @param status              The status filter for groups.
-     * @param page                The page number for pagination.
-     * @param size                The number of items per page.
      * @return APIResponse containing a Page of Group entities based on the specified criteria.
-     * @throws InvocationTargetException If an invocation target exception occurs during the method invocation.
-     * @throws NoSuchMethodException     If a method is not found during reflection.
-     * @throws IllegalAccessException    If access to the method is not allowed.
      */
     @GetMapping("find")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> get(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam(defaultValue = "") String name,
-            @RequestParam(defaultValue = "") String mentorEmail,
-            @RequestParam(defaultValue = "") String menteeEmail,
-            @RequestParam(defaultValue = "") String groupCategory,
-            @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart1,
-            @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd1,
-            @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart2,
-            @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd2,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "25") Integer size)
-            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.findGroups(
-                email,
-                name,
-                mentorEmail,
-                menteeEmail,
-                groupCategory,
-                timeStart1,
-                timeEnd1,
-                timeStart2,
-                timeEnd2,
-                status,
-                page,
-                size);
-        return new ApiResponseDto(
-                pagingResponse((Page<Group>) groupReturn.getData()),
-                groupReturn.getReturnCode(),
-                groupReturn.getMessage());
+    public ApiResponseDto<Page<Group>> searchGroup(
+            SearchGroupsQuery query) {
+        var groups = pipeline.send(query);
+
+        return ApiResponseDto.success(pagingResponse(groups));
     }
 
     /**
      * Adds mentees to a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group to which mentees will be added.
-     * @param request             The request body containing mentee information.
+     * @param groupId The ID of the group to which mentees will be added.
+     * @param request The request body containing mentee information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentees")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> addMentees(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMenteesRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentees(email, groupId, request);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @RequestBody AddMembersRequest request) {
+        try {
+            var command = AddMemberToGroupCommand.builder()
+                    .emails(request.getEmails())
+                    .groupId(groupId)
+                    .isMentor(false)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Adds mentors to a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group to which mentors will be added.
-     * @param request             The request body containing mentor information.
+     * @param groupId The ID of the group to which mentors will be added.
+     * @param request The request body containing mentor information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PostMapping("{groupId}/mentors")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> addMentors(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
-            @RequestBody AddMentorsRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.addMentors(email, groupId, request);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @RequestBody AddMembersRequest request) {
+        try {
+            var command = AddMemberToGroupCommand.builder()
+                    .emails(request.getEmails())
+                    .groupId(groupId)
+                    .isMentor(true)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Deletes a mentee from a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group from which the mentee will be deleted.
-     * @param menteeId            The ID of the mentee to be deleted from the group.
+     * @param groupId  The ID of the group from which the mentee will be deleted.
+     * @param menteeId The ID of the mentee to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentees/{menteeId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto deleteMentee(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.deleteMentee(email, groupId, menteeId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = RemoveMemberToGroupCommand.builder()
+                    .userId(menteeId)
+                    .groupId(groupId)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Deletes a mentor from a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group from which the mentor will be deleted.
-     * @param mentorId            The ID of the mentor to be deleted from the group.
+     * @param groupId  The ID of the group from which the mentor will be deleted.
+     * @param mentorId The ID of the mentor to be deleted from the group.
      * @return APIResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("{groupId}/mentors/{mentorId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto deleteMentor(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.deleteMentor(email, groupId, mentorId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = RemoveMemberToGroupCommand.builder()
+                    .userId(mentorId)
+                    .groupId(groupId)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Promotes a mentee to a mentor within a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group in which the promotion will occur.
-     * @param menteeId            The ID of the mentee to be promoted to mentor.
+     * @param groupId  The ID of the group in which the promotion will occur.
+     * @param menteeId The ID of the mentee to be promoted to mentor.
      * @return APIResponse indicating the success or failure of the promotion.
      */
     @PatchMapping("{groupId}/mentors/{menteeId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto promoteToMentor(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("menteeId") String menteeId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.promoteToMentor(email, groupId, menteeId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = PromoteDenoteUserByIdCommand.builder()
+                    .userId(menteeId)
+                    .groupId(groupId)
+                    .toMentor(true)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * Demotes a mentor to a mentee within a group.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group in which the demotion will occur.
-     * @param mentorId            The ID of the mentor to be demoted to mentee.
+     * @param groupId  The ID of the group in which the demotion will occur.
+     * @param mentorId The ID of the mentor to be demoted to mentee.
      * @return APIResponse indicating the success or failure of the demotion.
      */
     @PatchMapping("{groupId}/mentees/{mentorId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto demoteToMentee(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable("groupId") String groupId,
             @PathVariable("mentorId") String mentorId) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.demoteToMentee(email, groupId, mentorId);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        try {
+            var command = PromoteDenoteUserByIdCommand.builder()
+                    .userId(mentorId)
+                    .groupId(groupId)
+                    .toMentor(false)
+                    .build();
+
+            var group = pipeline.send(command);
+
+            return ApiResponseDto.success(group);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
@@ -452,44 +422,39 @@ public class GroupController {
     /**
      * Updates a group's information.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param id                  The ID of the group to be updated.
-     * @param request             The request body containing the updated information.
+     * @param command The request body containing the updated information.
      * @return APIResponse containing the updated Group entity or an error response.
      */
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Group> update(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
-            @RequestBody UpdateGroupRequest request) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.updateGroup(email, id, request);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+            @RequestBody UpdateGroupByIdCommand command) {
+        command.setId(id);
+
+        try {
+            var group = pipeline.send(command);
+
+            return new ApiResponseDto(group, 200, "Success");
+        } catch (DomainException ex) {
+            return new ApiResponseDto(null, 400, ex.getMessage());
+        }
     }
 
     /**
      * Retrieves data for the homepage of the mobile app.
      *
-     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing data for the homepage.
      */
     @GetMapping("home")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<HomePageResponse> getHomePage(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
-        String userId = customerUserDetails.getId();
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ApiResponseDto.notFound(404);
-        }
-        List<EventDto> events = eventService.getMostRecentEvents(userId);
-        List<GroupHomepageResponse> pinnedGroups = groupService.getUserPinnedGroups(userId);
-        Slice<GroupHomepageResponse> groups = groupService.getHomePageRecentGroupsOfUser(userId, 0, 25);
-        return ApiResponseDto.success(new HomePageResponse(events, pinnedGroups, groups));
+    public ApiResponseDto<HomePageDto> getHomePage() {
+        var query = GetHomePageQuery.builder().build();
+        var response = pipeline.send(query);
+
+        return ApiResponseDto.success(response);
     }
 
     /**
@@ -514,39 +479,69 @@ public class GroupController {
     /**
      * Disables multiple groups.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param ids                 The list of group IDs to be disabled.
+     * @param ids The list of group IDs to be disabled.
      * @return APIResponse indicating the success or failure of disabling the groups.
      */
     @PatchMapping(value = "disable")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto disableMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.disableMultiple(email, ids);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        var groups = new ArrayList<GroupDetailDto>();
+        var notfoundGroups = new ArrayList<String>();
+
+        for (var groupId : ids) {
+            try {
+                var comamnd = EnableDisableGroupByIdCommand.builder().id(groupId).status(GroupStatus.DISABLED).build();
+
+                var group = pipeline.send(comamnd);
+
+                groups.add(group);
+            } catch (ForbiddenException ex) {
+                return new ApiResponseDto(null, INVALID_PERMISSION, "Không có quyền chỉnh sửa");
+            } catch (DomainException ex) {
+                notfoundGroups.add(groupId);
+            }
+        }
+        if (!notfoundGroups.isEmpty()) {
+            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+        }
+
+        return new ApiResponseDto(groups, 200, "Success");
     }
 
     /**
      * Enables multiple groups, checking time start and time end to generate status.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param ids                 The list of group IDs to be enabled.
+     * @param ids The list of group IDs to be enabled.
      * @return APIResponse indicating the success or failure of enabling the groups.
      */
     @PatchMapping(value = "enable")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto enableMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody List<String> ids) {
-        String email = customerUserDetails.getEmail();
-        GroupServiceDto groupReturn = groupService.enableMultiple(email, ids);
-        return new ApiResponseDto(
-                groupReturn.getData(), groupReturn.getReturnCode(), groupReturn.getMessage());
+        var groups = new ArrayList<GroupDetailDto>();
+        var notfoundGroups = new ArrayList<String>();
+
+        for (var groupId : ids) {
+            try {
+                var comamnd = EnableDisableGroupByIdCommand.builder().id(groupId).status(GroupStatus.ACTIVE).build();
+
+                var group = pipeline.send(comamnd);
+
+                groups.add(group);
+            } catch (ForbiddenException ex) {
+                return new ApiResponseDto(null, INVALID_PERMISSION, "Không có quyền chỉnh sửa");
+            } catch (DomainException ex) {
+                notfoundGroups.add(groupId);
+            }
+        }
+        if (!notfoundGroups.isEmpty()) {
+            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+        }
+
+        return new ApiResponseDto(groups, 200, "Success");
     }
 
     /**
@@ -604,28 +599,48 @@ public class GroupController {
     }
 
     /**
-     * (Use /api/channels/{id}) Get detailed information about a channel.
+     * (Use /api/channels/{id} for channel) (/api/groups/{id} for group) Get detailed information about a channel (if not found it will get the group for compatibility issue).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which details are requested.
+     * @param id The ID of the group for which details are requested.
      * @return APIResponse containing detailed information about the group.
      */
     @Deprecated(forRemoval = true)
     @GetMapping("{id}/detail")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> getGroup(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @PathVariable("id") String groupId) {
-        GroupServiceDto groupData = groupService.getGroupDetail(customerUserDetails.getId(), groupId);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+    public ApiResponseDto<GroupDetailResponse> getChannelById(
+            @PathVariable("id") String id) {
+        try {
+            var query = GetChannelByIdQuery.builder()
+                    .id(id)
+                    .build();
+
+            var channel = pipeline.send(query);
+
+            return ApiResponseDto.success(channel);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        } catch (DomainException ex) {
+            if (ex.getMessage() == "Không tìm thấy kênh") {
+                try {
+                    var query = GetGroupByIdQuery.builder().id(id).build();
+
+                    var group = pipeline.send(query);
+
+                    return ApiResponseDto.success(group);
+                } catch (DomainException groupException) {
+                    return new ApiResponseDto<>(null, NOT_FOUND, groupException.getMessage());
+                }
+            }
+
+            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+        }
     }
 
     /**
      * (Use /api/channels/{id}/media) Get media (images and files) of a group for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which media is requested.
+     * @param id The ID of the group for which media is requested.
      * @return APIResponse containing media information of the group.
      */
     @Deprecated(forRemoval = true)
@@ -633,10 +648,18 @@ public class GroupController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ShortMediaMessage> getGroupMedia(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @PathVariable("id") String groupId) {
-        GroupServiceDto groupData = groupService.getGroupMedia(customerUserDetails.getId(), groupId);
-        return new ApiResponseDto(groupData.getData(), groupData.getReturnCode(), groupData.getMessage());
+            @PathVariable("id") String id) {
+        try {
+            var query = GetMediaByChannelIdQuery.builder()
+                    .id(id)
+                    .build();
+
+            var medias = pipeline.send(query);
+
+            return ApiResponseDto.success(medias);
+        } catch (ForbiddenException ex) {
+            return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
+        }
     }
 
     /**
@@ -814,23 +837,21 @@ public class GroupController {
     /**
      * Get the central workspace of a group for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param groupId             The ID of the group for which the workspace is requested.
+     * @param groupId The ID of the group for which the workspace is requested.
      * @return ResponseEntity containing the group workspace information.
      */
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GroupDetailResponse> getWorkspace(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+    public ResponseEntity<GroupWorkspaceDto> getWorkspace(
             @PathVariable String groupId) {
-        GroupDetailResponse workspace = groupService.getGroupWorkspace(customerUserDetails, groupId);
+        var query = GetGroupWorkSpaceQuery.builder()
+                .groupId(groupId)
+                .build();
 
-        if (workspace == null) {
-            return ResponseEntity.badRequest().build();
-        }
+        var response = pipeline.send(query);
 
-        return ResponseEntity.ok(workspace);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -848,7 +869,7 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        groupService.markMentee(customerUserDetails, groupId, menteeId);
+        pipeline.send(new ToggleMarkMenteeCommand(customerUserDetails.getId(), groupId, menteeId, true));
         return ResponseEntity.ok().build();
     }
 
@@ -867,43 +888,33 @@ public class GroupController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String groupId,
             @RequestParam String menteeId) {
-        groupService.unmarkMentee(customerUserDetails, groupId, menteeId);
+        pipeline.send(new ToggleMarkMenteeCommand(customerUserDetails.getId(), groupId, menteeId, false));
         return ResponseEntity.ok().build();
     }
 
     /**
      * Get the list of group forwards for mobile users.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param name                Optional name parameter for filtering the list.
+     * @param name Optional name parameter for filtering the list.
      * @return ResponseEntity containing the list of group forwards.
      */
     @GetMapping("forward")
     @SneakyThrows
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<List<ChannelForwardResponse>> getListGroupForward(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @RequestParam Optional<String> name) {
-        List<ChannelForwardResponse> listChannelForward = groupService.getGroupForwards(customerUserDetails, name);
+    public ResponseEntity<List<ChannelForwardDto>> getListGroupForward(
+            @RequestParam Optional<String> name) {
+        var query = new GetChannelsForwardQuery(name.orElse(""));
 
-        return ResponseEntity.ok(listChannelForward);
+        return ResponseEntity.ok(pipeline.send(query));
     }
 
-    private Map<String, Object> pagingResponse(Page<Group> groups) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("groups", groups.getContent());
-        response.put("currentPage", groups.getNumber());
-        response.put("totalItems", groups.getTotalElements());
-        response.put("totalPages", groups.getTotalPages());
-        return response;
-    }
-
-    private Map<String, Object> pagingHomepageResponse(Page<GroupHomepageResponse> groups) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("groups", groups.getContent());
-        response.put("currentPage", groups.getNumber());
-        response.put("totalItems", groups.getTotalElements());
-        response.put("totalPages", groups.getTotalPages());
-        return response;
+    private Map<String, Object> pagingResponse(Page<?> groups) {
+        return Map.ofEntries(
+                Map.entry("groups", groups.getContent()),
+                Map.entry("currentPage", groups.getNumber()),
+                Map.entry("totalItems", groups.getTotalElements()),
+                Map.entry("totalPages", groups.getTotalPages())
+        );
     }
 }

@@ -3,12 +3,12 @@ package com.hcmus.mentor.backend.controller.payload.response;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.Faq;
+import com.hcmus.mentor.backend.domain.User;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter
@@ -45,7 +45,7 @@ public class FAQDetail {
                 .updatedDate(faq.getUpdatedDate())
                 .creator(creator)
                 .group(group)
-                .voters(faq.getVoters())
+                .voters(faq.getVoters().stream().map(User::getId).toList())
                 .build();
     }
 }

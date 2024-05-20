@@ -1,13 +1,12 @@
 package com.hcmus.mentor.backend.controller.payload.response.meetings;
 
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
-import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.service.dto.GroupDto;
+import com.hcmus.mentor.backend.service.dto.UserDto;
+import lombok.*;
 
 import java.util.Date;
 import java.util.List;
-
-import lombok.*;
 
 @Getter
 @Setter
@@ -29,9 +28,9 @@ public class MeetingDetailResponse {
 
     private String place;
 
-    private User organizer;
+    private UserDto organizer;
 
-    private Group group;
+    private GroupDto group;
 
     @Builder.Default
     private String type = "MEETING";

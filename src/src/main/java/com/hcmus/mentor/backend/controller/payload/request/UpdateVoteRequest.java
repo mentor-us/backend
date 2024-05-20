@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -19,5 +19,5 @@ public class UpdateVoteRequest {
 
     private List<ChoiceDto> choices;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 }

@@ -5,18 +5,21 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.JoinOutRoomRequest;
+import com.hcmus.mentor.backend.controller.payload.request.ReceivedMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
 import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.Vote;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.*;
+import com.hcmus.mentor.backend.service.MessageService;
+import com.hcmus.mentor.backend.service.NotificationService;
+import com.hcmus.mentor.backend.service.SocketIOService;
+import com.hcmus.mentor.backend.service.VoteService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,34 +35,39 @@ public class SocketController {
 
     private final MessageService messageService;
 
-    private final NotificationService notificationService;
-
     private final VoteService voteService;
 
+    private final ChannelRepository channelRepository;
+
     private final Pipeline pipeline;
+
+    private final ModelMapper modelMapper;
+
+    private final NotificationService notificationService;
 
     public SocketController(
             SocketIOServer server,
             SocketIOService socketIOService,
             UserRepository userRepository,
             MessageService messageService,
-            NotificationService notificationService,
-            VoteService voteService,
-            Pipeline pipeline) {
+            VoteService voteService, ChannelRepository channelRepository,
+            Pipeline pipeline, ModelMapper modelMapper, NotificationService notificationService) {
         this.server = server;
         this.socketIOService = socketIOService;
         this.userRepository = userRepository;
         this.messageService = messageService;
-        this.notificationService = notificationService;
         this.voteService = voteService;
+        this.channelRepository = channelRepository;
         this.pipeline = pipeline;
+        this.modelMapper = modelMapper;
+        this.notificationService = notificationService;
         configureServer(this.server);
     }
 
     private void configureServer(SocketIOServer server) {
         server.addEventListener("join_room", JoinOutRoomRequest.class, onJoinRoom());
         server.addEventListener("out_room", JoinOutRoomRequest.class, onOutRoom());
-        server.addEventListener("send_message", Message.class, onChatReceived());
+        server.addEventListener("send_message", ReceivedMessageRequest.class, onChatReceived());
         server.addEventListener("send_voting", DoVotingRequest.class, onVotingReceived());
 
         LOGGER.info("[*] Configure Socket IO Server listener.");
@@ -83,31 +91,41 @@ public class SocketController {
         };
     }
 
-    private DataListener<Message> onChatReceived() {
+    private DataListener<ReceivedMessageRequest> onChatReceived() {
         return (socketIOClient, message, ackRequest) -> {
-            User user = userRepository.findById(message.getSenderId()).orElse(null);
-            Message newMessage = messageService.saveMessage(message);
+            var user = userRepository.findById(message.getSenderId()).orElse(null);
+            var receivedMessageRequest = Message.builder()
+                    .id(message.getId())
+                    .sender(user)
+                    .content(message.getContent())
+                    .createdDate(message.getCreatedDate())
+                    .type(message.getType())
+                    .channel(channelRepository.findById(message.getGroupId()).orElse(null))
+                    .isEdited(message.getIsEdited())
+                    .editedAt(message.getEditedAt())
+                    .status(message.getStatus())
+                    .reply(message.getReply())
+                    .isForward(message.getIsForward())
+                    .build();
+            Message newMessage = messageService.saveMessage(receivedMessageRequest);
 
-            MessageDetailResponse response = MessageDetailResponse.from(message, user);
-            MessageResponse buffer = MessageResponse.from(message, ProfileResponse.from(user));
-            if (message.getReply() != null) {
-                response = messageService.fulfillTextMessage(buffer);
-            }
+            MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 
-            socketIOService.sendMessage(socketIOClient, response, newMessage.getGroupId());
+            socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getGroup().getId());
             notificationService.sendNewMessageNotification(response);
 
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
-                    .messageId(newMessage.getId())
-                    .channelId(message.getGroupId()).build();
+                    .message(receivedMessageRequest)
+                    .channel(receivedMessageRequest.getChannel()).build();
+            LOGGER.info("[*] Update last message of channel {}.", receivedMessageRequest.getChannel().getGroup().getId());
             pipeline.send(updateLastMessageCommand);
         };
     }
 
     private DataListener<DoVotingRequest> onVotingReceived() {
         return (socketIOClient, doVoting, ackRequest) -> {
-            Vote updatedVote = voteService.doVoting(doVoting);
-            VoteDetailResponse response = voteService.fulfillChoices(updatedVote);
+            Vote updatedVote = voteService.doVoting(doVoting, "dummy");
+            VoteDetailResponse response = modelMapper.map(updatedVote, VoteDetailResponse.class);
             socketIOService.sendUpdatedVote(socketIOClient, response);
         };
     }

@@ -1,13 +1,13 @@
 package com.hcmus.mentor.backend.controller.payload.response.analytic;
 
-import java.util.Date;
-import java.util.List;
-
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,6 +24,7 @@ public class GroupAnalyticResponse {
     private long totalMentees;
     private long totalMentors;
     private GroupStatus status;
+    private String imageUrl;
 
     private List<Member> members;
 

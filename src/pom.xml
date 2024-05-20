@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.4</version>
+        <version>3.2.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -31,29 +31,25 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- Dependency package version-->
+        <flyway.version>10.11.0</flyway.version>
         <jjwt.version>0.12.5</jjwt.version>
-
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
-
-        <lombok.version>1.18.30</lombok.version>
-
-        <socketio.version>1.7.7</socketio.version>
-
+        <lombok.version>1.18.32</lombok.version>
+        <socketio.version>2.0.9</socketio.version>
         <springdoc.version>2.3.0</springdoc.version>
         <api-runtime-javadoc.version>0.15.0</api-runtime-javadoc.version>
-
-        <quartz.version>2.3.2</quartz.version>
-
+        <quartz.version>2.5.0-rc1</quartz.version>
         <jsoup.version>1.17.2</jsoup.version>
-        <html2pdf.version>5.0.1</html2pdf.version>
-
-        <commonio.version>2.15.1</commonio.version>
-        <common-csv.version>1.8</common-csv.version>
+        <html2pdf.version>5.0.4</html2pdf.version>
+        <tika.version>2.9.2</tika.version>
+        <commonio.version>2.16.1</commonio.version>
+        <common-csv.version>1.10.0</common-csv.version>
         <poi.version>5.2.5</poi.version>
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <minio.version>8.5.9</minio.version>
-
-        <aws.sdk.version>2.25.0</aws.sdk.version>
+        <mapstruct.version>1.6.0.Beta1</mapstruct.version>
+        <minio.version>8.5.10</minio.version>
+        <pipelinr.version>0.8</pipelinr.version>
+        <modelmapper.version>3.2.0</modelmapper.version>
+        <guava.version>33.2.0-jre</guava.version>
     </properties>
 
     <dependencies>
@@ -84,7 +80,12 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -132,6 +133,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
         <!-- End spring boot -->
 
@@ -233,6 +244,11 @@
             <version>${common-csv.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
             <version>${poi.version}</version>
@@ -258,45 +274,31 @@
         <!-- End minio -->
 
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3-transfer-manager</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk.crt</groupId>
-            <artifactId>aws-crt</artifactId>
-            <version>0.25.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
-            <version>2.9.0</version>
+            <version>${tika.version}</version>
         </dependency>
 
         <dependency>
             <groupId>net.sizovs</groupId>
             <artifactId>pipelinr</artifactId>
-            <version>0.8</version>
+            <version>${pipelinr.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>${modelmapper.version}</version>
         </dependency>
 
     </dependencies>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>software.amazon.awssdk</groupId>
-                <artifactId>bom</artifactId>
-                <version>${aws.sdk.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -344,6 +346,18 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <configuration>
+                    <url>jdbc:postgresql://localhost:5432/mentorus</url>
+                    <user>postgres</user>
+                    <password>123</password>
+                    <schemas>
+                        <schema>public</schema>
+                    </schemas>
+                </configuration>
             </plugin>
         </plugins>
         <resources>

@@ -32,6 +32,6 @@ public class GetChannelsByGroupIdQueryHandler implements Command.Handler<GetChan
             throw new DomainException("Không tìm thấy group");
         }
 
-        return channelRepository.findByParentId(query.getGroupId());
+        return channelRepository.findByGroupId(query.getGroupId());
     }
 }

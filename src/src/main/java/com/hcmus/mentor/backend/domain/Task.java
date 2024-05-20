@@ -1,74 +1,110 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
-import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
+import jakarta.persistence.*;
 import lombok.*;
 import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
+@Entity
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@Document("task")
+@AllArgsConstructor
+@Table(name = "tasks")
 public class Task implements IRemindable, Serializable {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "description")
     private String description;
 
+    @Column(name = "deadline")
     private Date deadline;
 
-    private String assignerId;
-
     @Builder.Default
-    private List<AssigneeDto> assigneeIds = new ArrayList<>();
-
-    @Builder.Default
-    private String parentTask = "";
-
-    private String groupId;
-
-    @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    public static AssigneeDto newTask(String userId) {
-        return new AssigneeDto(userId, TaskStatus.TO_DO);
-    }
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Builder.Default
+    @Column(name = "deleted_date")
+    private Date deletedDate = null;
+
+    @BatchSize(size = 10)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigner_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private User assigner;
+
+    @Builder.Default
+    @ManyToOne
+    @JoinColumn(name = "parent_task_id")
+    @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
+    private Task parentTask = null;
+
+    @BatchSize(size = 10)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_id")
+    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    private Channel group;
+
+    @JsonIgnore
+    @Builder.Default
+    @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
+    @ToString.Exclude
+    @Fetch(FetchMode.SUBSELECT)
+    private List<Task> subTasks = new ArrayList<>();
+
+    @JsonIgnore
+    @Builder.Default
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
+    @ToString.Exclude
+    @Fetch(FetchMode.SUBSELECT)
+    private List<Assignee> assignees = new ArrayList<>();
 
     @Override
     public Reminder toReminder() {
         SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
         String formattedTime = sdf.format(DateUtils.addHours(deadline, 7));
 
-        Map<String, Object> properties = new HashMap<>();
-
-        properties.put("name", title);
-        properties.put("dueDate", formattedTime);
-        properties.put("id", id);
-
-        return Reminder.builder()
-                .groupId(groupId)
+        var reminder = Reminder.builder()
+                .group(group)
                 .name(title)
                 .type(ReminderType.TASK)
                 .reminderDate(getReminderDate())
-                .properties(properties)
                 .remindableId(id)
                 .build();
+        reminder.setProperties("name", title);
+        reminder.setProperties("dueDate", formattedTime);
+        reminder.setProperties("id", id);
+
+        return reminder;
     }
 
     public Date getReminderDate() {
@@ -95,33 +131,4 @@ public class Task implements IRemindable, Serializable {
                 + ", Ngày tạo="
                 + createdDate;
     }
-
-    public List<String> getAllAssigneeIds() {
-        return assigneeIds.stream().map(AssigneeDto::getUserId).toList();
-    }
-
-    public void update(UpdateTaskRequest request) {
-        if (request.getTitle() != null) {
-            this.setTitle(request.getTitle());
-        }
-        if (request.getDescription() != null) {
-            this.setDescription(request.getDescription());
-        }
-        if (request.getDeadline() != null) {
-            this.setDeadline(request.getDeadline());
-        }
-        if (request.getUserIds() != null) {
-            List<AssigneeDto> assignees = new ArrayList<>(assigneeIds.stream()
-                    .filter(assignee -> request.getUserIds().contains(assignee.getUserId()))
-                    .toList());
-            request.getUserIds().stream()
-                    .filter(userId -> !getAllAssigneeIds().contains(userId))
-                    .forEach(userId -> assignees.add(AssigneeDto.builder().userId(userId).build()));
-            this.setAssigneeIds(assignees);
-        }
-        if (request.getParentTask() != null) {
-            this.setParentTask(request.getParentTask());
-        }
-    }
-
 }

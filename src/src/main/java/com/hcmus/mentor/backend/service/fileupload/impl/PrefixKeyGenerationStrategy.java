@@ -1,12 +1,11 @@
 package com.hcmus.mentor.backend.service.fileupload.impl;
 
 import com.hcmus.mentor.backend.service.fileupload.KeyGenerationStrategy;
-
-import java.util.UUID;
-
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 /**
  * {@inheritDoc}

@@ -91,8 +91,7 @@ public class UserController {
             @RequestParam(defaultValue = "25") int size) {
         Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
         String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn =
-                userService.listAllPaging(emailUser, pageRequest);
+        UserServiceDto userReturn = userService.listAllPaging(emailUser, pageRequest);
         if (userReturn.getData() != null) {
             return new ApiResponseDto(
                     pagingResponse((Page<User>) userReturn.getData()),

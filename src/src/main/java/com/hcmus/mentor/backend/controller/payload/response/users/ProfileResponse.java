@@ -5,8 +5,8 @@ import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,10 +15,10 @@ import java.util.List;
 
 import static com.hcmus.mentor.backend.domain.constant.UserRole.USER;
 
-@Getter
-@Setter
-@AllArgsConstructor
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProfileResponse implements Serializable {
 
     private String id;
@@ -56,7 +56,6 @@ public class ProfileResponse implements Serializable {
                 .additionalEmails(user.getAdditionalEmails())
                 .gender(user.getGender())
                 .birthDate(user.getBirthDate())
-                .personalEmail(user.getPersonalEmail())
                 .phone(user.getPhone())
                 .imageUrl(user.getImageUrl().equals("https://graph.microsoft.com/v1.0/me/photo/$value")
                         ? null

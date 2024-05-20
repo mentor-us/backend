@@ -1,36 +1,35 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-import java.util.List;
 
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
 @Setter
+@ToString
 @Builder
-@Document("notification_subscriber")
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "notification_subscriber")
 public class NotificationSubscriber {
 
     @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    private String userId;
-
+    @Column(name = "token", nullable = false)
     private String token;
 
-    private List<String> topics;
-
     @Builder.Default
+    @Column(name = "created_date", nullable = false)
     private Date createdDate = new Date();
 
-    public void update(SubscribeNotificationRequest request) {
-        this.userId = request.getUserId();
-        this.token = request.getToken();
-        this.createdDate = new Date();
-    }
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    private User user;
 }

@@ -1,92 +1,77 @@
 package com.hcmus.mentor.backend.repository;
 
-import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
-import com.hcmus.mentor.backend.controller.usecase.meeting.common.MeetingResult;
 import com.hcmus.mentor.backend.domain.Meeting;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
 
-public interface MeetingRepository extends MongoRepository<Meeting, String> {
-
-    @Aggregation(pipeline = {
-            "{$match: {groupId: ?0}}",
-
-            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
-            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
-            "{$unwind: '$organizer'}",
-            "{$set: {organizer: '$organizer'}}",
-            "{$unset: 'organizerObjectId'}",
-
-            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
-            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
-            "{$unwind: '$group'}",
-            "{$set: {channel: '$group'}}",
-            "{$unset: 'groupObjectId'}",
-
-            "{'$sort':  {'createdDate':  -1}}"
-    })
-    List<MeetingResponse> findAllByGroupId(String groupId);
-
-    @Aggregation(pipeline = {
-            "{$match: {groupId: ?0}}",
-
-            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
-            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
-            "{$unwind: '$organizer'}",
-            "{$set: {organizer: '$organizer'}}",
-            "{$unset: 'organizerObjectId'}",
-
-            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
-            "{$lookup: {from: 'channel', localField: 'groupObjectId', foreignField: '_id', as: 'channel'}}",
-            "{$unwind: '$channel'}",
-            "{$set: {channel: '$channel'}}",
-            "{$unset: 'groupObjectId'}",
-
-            "{$sort:  {'createdDate':  -1}}"
-    })
-    List<MeetingResult> findAllByChannelId(String channelId);
-
-    Page<Meeting> findByGroupId(String groupId, PageRequest pageRequest);
-
-    Page<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanOrGroupIdInAndAttendeesInAndTimeStartGreaterThan(
-            List<String> groupIds,
-            String userId,
-            Date startDate,
-            List<String> groupId,
-            List<String> ids,
-            Date date,
-            PageRequest pageRequest);
-
-    List<Meeting> findAllByGroupIdInAndOrganizerIdOrGroupIdInAndAttendeesIn(
-            List<String> activeGroupIds, String id, List<String> groupIds, List<String> ids);
-
-    List<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-            List<String> groupIds, String userId, Date startDate, Date endDate);
-
-    List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-            List<String> groupIds, List<String> ids, Date startDate, Date endDate);
-
-    long countByCreatedDateBetween(Date start, Date end);
-
-    long countByGroupId(String groupId);
-
-    Meeting findFirstByGroupIdOrderByCreatedDateDesc(String groupId);
-
-    long countByGroupIdAndOrganizerId(String groupId, String organizerId);
-
-    long countByGroupIdAndAttendeesIn(String groupId, String attendeeId);
-
-    Meeting findFirstByGroupIdAndOrganizerIdOrderByCreatedDateDesc(
-            String groupId,
-            String organizerId);
+@Repository
+public interface MeetingRepository extends JpaRepository<Meeting, String> {
 
     long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
 
     long countByGroupIdIn(List<String> groupIds);
+
+    long countByCreatedDateBetween(Date start, Date end);
+
+    Meeting findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
+
+    Page<Meeting> findByGroupId(String groupId, Pageable pageRequest);
+
+    List<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
+            List<String> groupIds, String userId, Date startDate, Date endDate);
+
+    @Query("SELECT count(m) " +
+            "from Meeting m " +
+            "inner join m.group ch " +
+            "inner join m.attendees attendees " +
+            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2)")
+    long countByGroupIdIdInAndIsMember(List<String> channelIds, String userId);
+
+    @Query("SELECT m " +
+            "FROM Meeting m " +
+            "INNER JOIN m.group ch " +
+            "INNER JOIN m.attendees att " +
+            "WHERE m.isDeleted = false " +
+            "AND ch.id IN ?1 " +
+            "AND (att.id = ?2 OR m.organizer.id = ?2) " +
+            "AND m.timeStart > ?3 " +
+            "ORDER BY m.timeStart DESC")
+    List<Meeting> findAllAndHasUserAndStartBefore(List<String> groupId, String userId, LocalDateTime startDate);
+
+    @Query("SELECT m " +
+            "from Meeting m " +
+            "inner join m.group ch " +
+            "inner join m.attendees attendees " +
+            "WHERE m.group.id in ?1 and (attendees.id = ?2 or m.organizer.id = ?2)" +
+            "order by m.timeStart desc ")
+    List<Meeting> findAllByOwn(List<String> activeGroupIds, String id);
+
+    @Query("SELECT m " +
+            "from Meeting m " +
+            "inner join m.group ch " +
+            "inner join m.attendees attendees " +
+            "WHERE m.group.id in ?1 and (attendees.id = ?2 ) and m.timeStart >= ?3 and m.timeEnd <= ?4")
+    List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
+            List<String> groupIds, List<String> ids, Date startDate, Date endDate);
+
+    //    @Aggregation(pipeline = {
+//            "{$match: {groupId: ?0}}",
+//            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
+//            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
+//            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
+//            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
+//            "{'$unwind': '$group'}",
+//            "{'$unwind': '$organizer'}",
+//            "{'$sort':  {'createdDate':  -1}}"
+//    })
+    // TODO: Fix this
+    List<Meeting> findAllByGroupId(String groupId);
 }

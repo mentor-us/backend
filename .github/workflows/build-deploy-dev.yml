@@ -122,7 +122,7 @@ jobs:
             docker run -d \
               --restart always \
               --name ${{ env.CONTAINER_NAME }} \
-              --add-host host.docker.internal:host-gateway \
+              --network mentorus-network \
               -e SPRING_PROFILES_ACTIVE=dev \
               -p 7000:8080 \
               -p 7001:8085 \

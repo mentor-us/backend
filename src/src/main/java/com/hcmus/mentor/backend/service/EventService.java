@@ -8,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 
 public interface EventService {
-    List<EventDto> getMostRecentEvents(String userId);
 
     List<EventDto> getAllOwnEvents(String userId);
 

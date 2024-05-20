@@ -41,8 +41,8 @@ public class TaskMessageResponse {
                 .description(task.getDescription())
                 .deadline(task.getDeadline())
                 .createdDate(task.getCreatedDate())
-                .assignerId(task.getAssignerId())
-                .groupId(task.getGroupId())
+                .assignerId(task.getAssigner().getId())
+                .groupId(task.getGroup().getId())
                 .build();
     }
 }

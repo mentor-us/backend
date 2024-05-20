@@ -4,12 +4,12 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseAssigner;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponseRole;
-import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResultChannel;
 import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResult;
+import com.hcmus.mentor.backend.controller.usecase.task.common.TaskDetailResultChannel;
+import com.hcmus.mentor.backend.domain.Assignee;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -39,7 +39,7 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
     public List<TaskDetailResult> handle(GetTasksByIdQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        if (!permissionService.isUserInChannel(query.getId(), currentUserId)) {
+        if (!permissionService.isMemberInChannel(query.getId(), currentUserId)) {
             throw new ForbiddenException("Bạn không có quyền truy cập");
         }
 
@@ -52,17 +52,11 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
     }
 
     private TaskDetailResult generateTaskDetailFromTask(String userId, Task task) {
-        TaskDetailResponseAssigner assigner = userRepository
-                .findById(task.getAssignerId())
-                .map(TaskDetailResponseAssigner::from)
-                .orElse(null);
+        TaskDetailResponseAssigner assigner = TaskDetailResponseAssigner.from(task.getAssigner());
 
-        TaskDetailResultChannel groupInfo = channelRepository
-                .findById(task.getGroupId())
-                .map(TaskDetailResultChannel::from)
-                .orElse(null);
+        TaskDetailResultChannel groupInfo = TaskDetailResultChannel.from(task.getGroup());
 
-        TaskDetailResponseRole role = permissionService.isMentor(userId, task.getGroupId())
+        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(userId, task.getGroup().getGroup().getId())
                 ? TaskDetailResponseRole.MENTOR
                 : TaskDetailResponseRole.MENTEE;
 
@@ -71,10 +65,10 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
             return TaskDetailResult.from(task, assigner, groupInfo, role, null);
         }
 
-        TaskStatus status = task.getAssigneeIds().stream()
-                .filter(assignee -> assignee.getUserId().equals(userWrapper.get().getId()))
+        TaskStatus status = task.getAssignees().stream()
+                .filter(assignee -> assignee.getUser().getId().equals(userWrapper.get().getId()))
                 .findFirst()
-                .map(AssigneeDto::getStatus)
+                .map(Assignee::getStatus)
                 .orElse(null);
         return TaskDetailResult.from(task, assigner, groupInfo, role, status);
     }

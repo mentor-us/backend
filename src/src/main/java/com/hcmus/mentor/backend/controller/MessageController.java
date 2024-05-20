@@ -9,7 +9,6 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessa
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
@@ -73,11 +72,14 @@ public class MessageController {
             @RequestParam String groupId,
             @RequestParam int page,
             @RequestParam int size) {
+
         String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.ok(messageService.getGroupMessages(userId, groupId, page, size));
+        var response = messageService.getGroupMessages(userId, groupId, page, size);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -93,33 +95,31 @@ public class MessageController {
     public ResponseEntity<Void> deleteMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String messageId) {
+
         Optional<Message> messageWrapper = messageRepository.findById(messageId);
         if (messageWrapper.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
+        Optional<Group> groupWrapper = groupRepository.findById(message.getChannel().getGroup().getId());
         if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
+            Optional<Channel> channelWrapper = channelRepository.findById(message.getChannel().getId());
             if (channelWrapper.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
 
             Channel channel = channelWrapper.get();
-            channel.unpinMessage(messageId);
-            channelRepository.save(channel);
-        } else {
-            Group group = groupWrapper.get();
-            if (!group.isMember(customerUserDetails.getId())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            if (channel.getMessagesPinned().contains(message)) {
+                channel.getMessagesPinned().remove(message);
+                channel.ping();
+
+                channelRepository.save(channel);
             }
-            group.unpinMessage(message.getId());
-            groupRepository.save(group);
         }
 
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         if (message.isDeleted()) {
             return ResponseEntity.accepted().build();
@@ -132,7 +132,7 @@ public class MessageController {
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -149,16 +149,17 @@ public class MessageController {
     public ResponseEntity<Void> editMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody EditMessageRequest request) {
+
         Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
-        if (!messageWrapper.isPresent()) {
+        if (messageWrapper.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getGroupId(), customerUserDetails.getId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!groupService.isGroupMember(message.getChannel().getGroup().getId(), customerUserDetails.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (!customerUserDetails.getId().equals(message.getSenderId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         message.edit(request);
@@ -170,7 +171,7 @@ public class MessageController {
                         .newContent(message.getContent())
                         .action(UpdateMessageResponse.Action.update)
                         .build();
-        socketIOService.sendUpdateMessage(response, message.getGroupId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -193,6 +194,7 @@ public class MessageController {
             @RequestParam String groupId,
             @RequestParam String senderId,
             @RequestPart(required = false) MultipartFile file) {
+
         SendFileRequest request = SendFileRequest.builder()
                 .id(id)
                 .groupId(groupId)
@@ -200,9 +202,8 @@ public class MessageController {
                 .file(file)
                 .build();
         Message message = messageService.saveFileMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
 
-        MessageDetailResponse response = MessageDetailResponse.from(message, sender);
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
         notificationService.sendNewMediaMessageNotification(response);
 
@@ -227,10 +228,12 @@ public class MessageController {
             @RequestParam String query,
             @RequestParam int page,
             @RequestParam int size) {
+
         String userId = customerUserDetails.getId();
         if (!groupService.isGroupMember(groupId, userId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+
         return ResponseEntity.ok(messageService.findGroupMessagesByText(groupId, query, page, size));
     }
 
@@ -252,6 +255,7 @@ public class MessageController {
             @RequestParam String groupId,
             @RequestParam String senderId,
             @RequestPart(required = false) MultipartFile[] files) {
+
         SendImagesRequest request = SendImagesRequest.builder()
                 .id(id)
                 .groupId(groupId)
@@ -259,9 +263,8 @@ public class MessageController {
                 .files(files)
                 .build();
         Message message = messageService.saveImageMessage(request);
-        User sender = userRepository.findById(message.getSenderId()).orElse(null);
-
-        MessageDetailResponse response = MessageDetailResponse.from(message, sender);
+//        User sender = message.getSender();
+        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
         notificationService.sendNewMediaMessageNotification(response);
 
@@ -279,13 +282,14 @@ public class MessageController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<Void> mentionUser(
             @RequestBody MentionUserCommand command) {
+
         var message = messageService.find(command.getMessageId());
         for (var receiverId : command.getReceiverIds()) {
             var receiver = userRepository.findById(receiverId).orElse(null);
             if (receiver == null) {
                 continue;
             }
-            var messageDetail = MessageDetailResponse.from(message, receiver);
+            var messageDetail = messageService.mappingToMessageDetailResponse(message, receiverId);
 
             notificationService.sendNewMessageNotification(messageDetail);
         }
@@ -305,6 +309,7 @@ public class MessageController {
     public ResponseEntity<Void> react(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody @Valid ReactMessageRequest request) {
+
         messageService.reactMessage(request);
 
         return ResponseEntity.ok().build();
@@ -324,7 +329,9 @@ public class MessageController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam String messageId,
             @RequestParam String senderId) {
+
         messageService.removeReaction(messageId, senderId);
+
         return ResponseEntity.ok().build();
     }
 
@@ -341,7 +348,9 @@ public class MessageController {
     public ResponseEntity<Void> forwardMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody ForwardRequest request) {
+
         messageService.saveForwardMessage(customerUserDetails.getId(), request);
+
         return ResponseEntity.ok().build();
     }
 }

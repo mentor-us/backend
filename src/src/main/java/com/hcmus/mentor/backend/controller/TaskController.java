@@ -219,8 +219,7 @@ public class TaskController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
         String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTaskAssigneesWrapper(emailUser, id);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**

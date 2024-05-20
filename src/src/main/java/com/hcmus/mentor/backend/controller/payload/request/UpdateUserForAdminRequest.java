@@ -4,10 +4,9 @@ import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.*;
 
 import java.util.Date;
-
-import lombok.*;
 
 @Getter
 @Setter

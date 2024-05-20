@@ -19,6 +19,19 @@ public class GetMeetingsByChannelIdQueryHandler implements Command.Handler<GetMe
      */
     @Override
     public List<MeetingResult> handle(GetMeetingsByChannelIdQuery query) {
-        return meetingRepository.findAllByChannelId(query.getId());
+        return meetingRepository.findAllByGroupId(query.getId()).stream()
+                .map(meeting -> MeetingResult.builder()
+                        .id(meeting.getId())
+                        .title(meeting.getTitle())
+                        .description(meeting.getDescription())
+                        .timeStart(meeting.getTimeStart())
+                        .timeEnd(meeting.getTimeEnd())
+                        .repeated(meeting.getRepeated())
+                        .place(meeting.getPlace())
+                        .organizer(meeting.getOrganizer())
+                        .channel(meeting.getGroup())
+                        .histories(meeting.getHistories())
+                        .build())
+                .toList();
     }
 }

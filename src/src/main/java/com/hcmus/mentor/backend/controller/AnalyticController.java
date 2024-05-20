@@ -10,8 +10,8 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnalyticResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -68,8 +68,8 @@ public class AnalyticController {
     /**
      * Get general information of the system or a specific group category.
      *
-     * @param customerUserDetails   Current user's principal information.
-     * @param groupCategoryId Optional group category ID to filter the information.
+     * @param customerUserDetails Current user's principal information.
+     * @param groupCategoryId     Optional group category ID to filter the information.
      * @return APIResponse containing the system or group category general information.
      */
     @GetMapping("")
@@ -87,12 +87,12 @@ public class AnalyticController {
     /**
      * Get general information of the system or a specific group category for a specified time range.
      *
-     * @param customerUserDetails   Current user's principal information.
-     * @param monthStart      Start month for the time range.
-     * @param yearStart       Start year for the time range.
-     * @param monthEnd        End month for the time range.
-     * @param yearEnd         End year for the time range.
-     * @param groupCategoryId Optional group category ID to filter the information.
+     * @param customerUserDetails Current user's principal information.
+     * @param monthStart          Start month for the time range.
+     * @param yearStart           Start year for the time range.
+     * @param monthEnd            End month for the time range.
+     * @param yearEnd             End year for the time range.
+     * @param groupCategoryId     Optional group category ID to filter the information.
      * @return APIResponse containing the system or group category general information for the specified time range.
      * @throws ParseException if an error occurs while parsing date information.
      */
@@ -118,7 +118,7 @@ public class AnalyticController {
      * Get analytic information for a specific group.
      *
      * @param customerUserDetails Current user's principal information.
-     * @param groupId       ID of the group to retrieve analytic information for.
+     * @param groupId             ID of the group to retrieve analytic information for.
      * @return APIResponse containing the analytic information for the specified group.
      */
     @GetMapping("{groupId}")
@@ -135,7 +135,7 @@ public class AnalyticController {
      * Export groups' general analytic information.
      *
      * @param customerUserDetails Current user's principal information.
-     * @param remainColumns List of columns to include in the export.
+     * @param remainColumns       List of columns to include in the export.
      * @return ResponseEntity with the exported resource.
      * @throws IOException if an I/O error occurs.
      */
@@ -157,12 +157,12 @@ public class AnalyticController {
      * <p>This operation allows the export of analytic data for groups based on specified search conditions.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param groupName     The name of the group (optional).
-     * @param status        The status of the group (optional).
-     * @param groupCategory The category of the group (optional).
-     * @param timeStart     The start date and time for filtering (optional).
-     * @param timeEnd       The end date and time for filtering (optional).
-     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @param groupName           The name of the group (optional).
+     * @param status              The status of the group (optional).
+     * @param groupCategory       The category of the group (optional).
+     * @param timeStart           The start date and time for filtering (optional).
+     * @param timeEnd             The end date and time for filtering (optional).
+     * @param remainColumns       A list of columns to include in the export (default is an empty list).
      * @return ResponseEntity<Resource> containing the exported groups' analytic data.
      * @throws IOException If an I/O error occurs during the export process.
      */
@@ -191,8 +191,8 @@ public class AnalyticController {
      * <p>This operation allows the export of analytic data for a specific group identified by the provided groupId.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param groupId       The unique identifier of the group.
-     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @param groupId             The unique identifier of the group.
+     * @param remainColumns       A list of columns to include in the export (default is an empty list).
      * @return ResponseEntity<Resource> containing the exported group's analytic data.
      * @throws IOException If an I/O error occurs during the export process.
      */
@@ -215,13 +215,13 @@ public class AnalyticController {
      * considering specified search conditions like user name, email, role, and time range.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param groupId       The unique identifier of the group.
-     * @param name          The name of the user (optional).
-     * @param email         The email of the user (optional).
-     * @param role          The role of the user (optional).
-     * @param timeStart     The start date and time of the time range (optional).
-     * @param timeEnd       The end date and time of the time range (optional).
-     * @param remainColumns A list of columns to include in the export (default is an empty list).
+     * @param groupId             The unique identifier of the group.
+     * @param name                The name of the user (optional).
+     * @param email               The email of the user (optional).
+     * @param role                The role of the user (optional).
+     * @param timeStart           The start date and time of the time range (optional).
+     * @param timeEnd             The end date and time of the time range (optional).
+     * @param remainColumns       A list of columns to include in the export (default is an empty list).
      * @return ResponseEntity<Resource> containing the exported group's analytic data based on search conditions.
      * @throws IOException If an I/O error occurs during the export process.
      */
@@ -252,8 +252,8 @@ public class AnalyticController {
      * group names, categories, and statuses. The exported data is paginated based on the provided page and pageSize parameters.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param page          The page number for pagination (default is 0).
-     * @param pageSize      The number of items per page for pagination (default is 25).
+     * @param page                The page number for pagination (default is 0).
+     * @param pageSize            The number of items per page for pagination (default is 25).
      * @return APIResponse<Page < GroupGeneralResponse>> containing the exported groups' general analytic data.
      */
     @GetMapping("groups")
@@ -274,7 +274,7 @@ public class AnalyticController {
      * <p>This operation allows the import of multiple training points from the specified file.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param file          The multipart file containing the data to be imported.
+     * @param file                The multipart file containing the data to be imported.
      * @return APIResponse<Map < String, String>> containing information about the import process.
      * @throws IOException If an I/O exception occurs during the import process.
      */
@@ -295,7 +295,7 @@ public class AnalyticController {
      * <p>This operation allows the import of multiple records with English certifications from the specified file.</p>
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param file          The multipart file containing the data to be imported.
+     * @param file                The multipart file containing the data to be imported.
      * @return APIResponse containing information about the import process.
      * @throws IOException If an I/O exception occurs during the import process.
      */
@@ -316,7 +316,7 @@ public class AnalyticController {
      * <p>This operation allows the import of multiple records with English certifications from the specified file.</p>
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param file          The multipart file containing the data to be imported.
+     * @param file                The multipart file containing the data to be imported.
      * @return APIResponse containing information about the import process.
      * @throws IOException If an I/O exception occurs during the import process.
      */
@@ -338,7 +338,7 @@ public class AnalyticController {
      * from the specified file.
      *
      * @param customerUserDetails The principal information of the current user.
-     * @param file          The multipart file containing the data to be imported.
+     * @param file                The multipart file containing the data to be imported.
      * @return APIResponse containing a list of ImportGeneralInformationResponse for each imported record.
      * @throws IOException If an I/O exception occurs during the import process.
      */
@@ -357,8 +357,8 @@ public class AnalyticController {
      * Updates the training point, English certification, and studying point for a user.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param userId        The ID of the user to update.
-     * @param request       The request containing the updated student information.
+     * @param userId              The ID of the user to update.
+     * @param request             The request containing the updated student information.
      * @return An APIResponse containing the updated user information.
      * @throws IOException If an I/O exception occurs.
      */
@@ -378,13 +378,13 @@ public class AnalyticController {
      * Finds groups in analytic based on specified criteria.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param page          The page number for pagination (default is 0).
-     * @param pageSize      The size of each page (default is 25).
-     * @param groupName     The name of the group (optional).
-     * @param groupCategory The category of the group (optional).
-     * @param status        The status of the group (optional).
-     * @param timeStart     The start time for filtering (optional).
-     * @param timeEnd       The end time for filtering (optional).
+     * @param page                The page number for pagination (default is 0).
+     * @param pageSize            The size of each page (default is 25).
+     * @param groupName           The name of the group (optional).
+     * @param groupCategory       The category of the group (optional).
+     * @param status              The status of the group (optional).
+     * @param timeStart           The start time for filtering (optional).
+     * @param timeEnd             The end time for filtering (optional).
      * @return An APIResponse containing a paginated list of GroupGeneralResponse.
      * @throws IOException If an I/O exception occurs.
      */
@@ -416,12 +416,12 @@ public class AnalyticController {
      * Finds users in analytic within a specific group based on specified criteria.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to search within.
-     * @param name          The name of the user (optional).
-     * @param email         The email of the user (optional).
-     * @param role          The role of the user (optional).
-     * @param timeStart     The start time for filtering (optional).
-     * @param timeEnd       The end time for filtering (optional).
+     * @param groupId             The ID of the group to search within.
+     * @param name                The name of the user (optional).
+     * @param email               The email of the user (optional).
+     * @param role                The role of the user (optional).
+     * @param timeStart           The start time for filtering (optional).
+     * @param timeEnd             The end time for filtering (optional).
      * @return An APIResponse containing a list of GroupAnalyticResponse.Member.
      * @throws IOException If an I/O exception occurs.
      */
@@ -449,9 +449,9 @@ public class AnalyticController {
      * Exports a group report in PDF format.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to export the report for.
-     * @param request       The HTTP servlet request.
-     * @param response      The HTTP servlet response.
+     * @param groupId             The ID of the group to export the report for.
+     * @param request             The HTTP servlet request.
+     * @param response            The HTTP servlet response.
      * @return ResponseEntity containing the exported group report in PDF format.
      */
     @GetMapping("report")
@@ -484,8 +484,8 @@ public class AnalyticController {
      * Exports a group log in Excel format.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param groupId       The ID of the group to export the log for.
-     * @param query         The array of query parameters for log attributes.
+     * @param groupId             The ID of the group to export the log for.
+     * @param query               The array of query parameters for log attributes.
      * @return ResponseEntity containing the exported group log in Excel format.
      * @throws IOException If an I/O exception occurs.
      */

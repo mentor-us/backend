@@ -1,10 +1,12 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
+import com.hcmus.mentor.backend.controller.usecase.vote.createvote.CreateVoteCommand;
 import com.hcmus.mentor.backend.domain.Vote;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -33,6 +35,7 @@ public class VoteController {
     private final VoteService voteService;
     private final SocketIOServer socketServer;
     private final MessageService messageService;
+    private final Pipeline pipeline;
 
     /**
      * (Use api /api/channels/votes) Get all votes on group.
@@ -73,20 +76,19 @@ public class VoteController {
         return ResponseEntity.ok(vote);
     }
 
+
     /**
-     * Create new vote.
+     * Create vote.
      *
-     * @param loggedUser Current authenticated user's principal.
-     * @param request    CreateVoteRequest containing details to create a new vote.
+     * @param command CreateVoteCommand containing details for creating the vote.
      * @return ResponseEntity<Vote> - Response containing the created vote.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<Vote> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody CreateVoteRequest request) {
-        Vote vote = voteService.createNewVote(loggedUser.getId(), request);
+    public ResponseEntity<VoteResult> create(
+            @RequestBody CreateVoteCommand command) {
+        var vote = pipeline.send(command);
 
         return ResponseEntity.ok(vote);
     }
@@ -147,6 +149,7 @@ public class VoteController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @PathVariable String choiceId) {
+
         VoteDetailResponse.ChoiceDetail choiceDetail =
                 voteService.getChoiceDetail(user, voteId, choiceId);
         if (choiceDetail == null) {
@@ -165,13 +168,12 @@ public class VoteController {
     @GetMapping("{voteId}/result")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<List<VoteDetailResponse.ChoiceDetail>> getChoiceResult(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId) {
+
         List<VoteDetailResponse.ChoiceDetail> choiceResult = voteService.getChoiceResults(user, voteId);
-        if (choiceResult == null || choiceResult.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(choiceResult);
     }
 
@@ -185,12 +187,12 @@ public class VoteController {
     @PatchMapping("{voteId}/close")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> closeVote(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
-        boolean isSuccess = voteService.closeVote(user, voteId);
-        if (!isSuccess) {
-            return ResponseEntity.badRequest().build();
-        }
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @PathVariable String voteId) {
+
+        voteService.closeVote(user, voteId);
         return ResponseEntity.ok().build();
     }
 
@@ -204,12 +206,12 @@ public class VoteController {
     @PatchMapping("{voteId}/reopen")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> reopenVote(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user, @PathVariable String voteId) {
-        boolean isSuccess = voteService.reopenVote(user, voteId);
-        if (!isSuccess) {
-            return ResponseEntity.badRequest().build();
-        }
+            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
+            @PathVariable String voteId) {
+
+        voteService.reopenVote(user, voteId);
         return ResponseEntity.ok().build();
     }
 
@@ -224,18 +226,16 @@ public class VoteController {
     @PostMapping("{voteId}/voting")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> doVoting(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
             @PathVariable String voteId,
             @RequestBody DoVotingRequest request) {
-        Vote vote = voteService.doVoting(request);
-        if (vote == null) {
-            return ResponseEntity.badRequest().build();
-        }
+
+        Vote vote = voteService.doVoting(request, user.getId());
 
         messageService.updateCreatedDateVoteMessage(voteId);
-
-        socketServer.getRoomOperations(vote.getGroupId()).sendEvent("receive_voting", vote);
+        socketServer.getRoomOperations(vote.getGroup().getId()).sendEvent("receive_voting", vote);
 
         return ResponseEntity.ok().build();
     }

@@ -49,7 +49,7 @@ public class EventController {
      * Retrieves all events owned by the user on a specific date.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param date          The date for which to retrieve events.
+     * @param date                The date for which to retrieve events.
      * @return APIResponse containing a list of own events on the specified date.
      */
     @GetMapping("own/date")
@@ -65,7 +65,7 @@ public class EventController {
      * Retrieves all events owned by the user in a specific month.
      *
      * @param customerUserDetails The current user's principal information.
-     * @param date          The date within the desired month.
+     * @param date                The date within the desired month.
      * @return APIResponse containing a list of own events in the specified month.
      */
     @GetMapping("own/month")

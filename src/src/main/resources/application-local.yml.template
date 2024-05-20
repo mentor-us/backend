@@ -26,9 +26,19 @@ app:
     authorizedRedirectUris: "op://mentorus/backend-local/jwt/authorized-redirect-uris"
 
 spring:
-  data:
-    mongodb:
-      uri: "op://mentorus/backend-local/mongodb/uri"
+  datasource:
+    url: "op://mentorus/backend-local/jpa/datasource.url"
+    username: "op://mentorus/backend-local/jpa/datasource.username"
+    password: "op://mentorus/backend-local/jpa/datasource.password"
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    enabled: true
+    schemas: public
+    user: "op://mentorus/backend-local/jpa/datasource.username"
+    password: "op://mentorus/backend-local/jpa/datasource.password"
+    locations: classpath:db/migration
   security:
     oauth2:
       client:

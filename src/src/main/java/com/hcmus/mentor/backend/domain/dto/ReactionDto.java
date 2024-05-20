@@ -25,27 +25,27 @@ public class ReactionDto implements Serializable {
     @Builder.Default
     private List<EmojiDto> data = new ArrayList<>();
 
-    private Integer total;
+    @Builder.Default
+    private Integer total = 0;
 
-    public void react(EmojiType type) {
+    public void react(EmojiType type, Integer totalEmoji) {
         Optional<EmojiDto> emojiWrapper = data.stream().filter(e -> type.equals(e.getId())).findFirst();
-        if (!emojiWrapper.isPresent()) {
-            EmojiDto newEmoji = EmojiDto.builder().id(type).total(1).build();
+        if (emojiWrapper.isEmpty()) {
+            EmojiDto newEmoji = EmojiDto.builder().id(type).total(totalEmoji).build();
             data.add(newEmoji);
-            total = total + 1;
+            total = total + totalEmoji;
             return;
         }
         EmojiDto emoji = emojiWrapper.get();
         emoji.react();
-        total = total + 1;
+        total = total + totalEmoji;
     }
 
     public void update(User reactor) {
         this.name = reactor.getName();
 
         String imageUrl = reactor.getImageUrl();
-        if (reactor.getImageUrl() != null
-                && "https://graph.microsoft.com/v1.0/me/photo/$value".equals(reactor.getImageUrl())) {
+        if (reactor.getImageUrl() != null && "https://graph.microsoft.com/v1.0/me/photo/$value".equals(reactor.getImageUrl())) {
             imageUrl = null;
         }
         this.imageUrl = imageUrl;

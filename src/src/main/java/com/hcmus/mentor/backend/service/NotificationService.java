@@ -5,7 +5,6 @@ import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequ
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
 import com.hcmus.mentor.backend.domain.*;
 import org.springframework.scheduling.annotation.Async;
 
@@ -25,14 +24,14 @@ public interface NotificationService {
     @Async
     void sendNewMessageNotification(MessageDetailResponse message);
 
-    @Async
-    void sendNewTaskNotification(MessageDetailResponse message);
+    //    @Async
+    void sendNewTaskNotification(MessageDetailResponse message, Task task);
 
     Notification createNewTaskNotification(
-            String title, String content, String senderId, TaskMessageResponse task);
+            String title, String content, String senderId, Task task);
 
-    @Async
-    void sendNewMeetingNotification(MessageDetailResponse message);
+    //    @Async
+    void sendNewMeetingNotification(Meeting meeting);
 
     Notification createNewMeetingNotification(
             String title, String content, String senderId, Meeting meeting);
@@ -54,11 +53,10 @@ public interface NotificationService {
 
     long getUnreadNumber(String userId);
 
-    @Async
     void sendNewVoteNotification(String creatorId, Vote vote);
 
     Notification createNewVoteNotification(
-            String title, String content, String senderId, Group group, Vote vote);
+            String title, String content, Vote vote);
 
     void sendNewPinNotification(MessageDetailResponse message, User pinner);
 

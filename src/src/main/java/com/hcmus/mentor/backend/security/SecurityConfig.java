@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,14 +31,6 @@ import java.util.List;
 @EnableMethodSecurity(jsr250Enabled = true, securedEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final GlobalControllerExceptionHandler exceptionHandler;
-    private final CustomOidcUserService customOidcUserService;
-    private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
-    private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
-    private final OAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
-    private final FirebaseClearingLogoutHandler firebaseClearingLogoutHandler;
-    private final JwtAuthFilter jwtAuthFilter;
 
     private static final String[] AUTH_WHITELIST = {
             "/api/auth/**",
@@ -49,6 +42,23 @@ public class SecurityConfig {
             "**/oauth2/**",
             "/actuator/**",
     };
+    private final GlobalControllerExceptionHandler exceptionHandler;
+    private final CustomOidcUserService customOidcUserService;
+    private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
+    private final OAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+    private final FirebaseClearingLogoutHandler firebaseClearingLogoutHandler;
+    private final JwtAuthFilter jwtAuthFilter;
+
+    @Bean
+    public CommonsRequestLoggingFilter requestLoggingFilter() {
+        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
+        loggingFilter.setIncludeClientInfo(true);
+        loggingFilter.setIncludeQueryString(true);
+        loggingFilter.setIncludePayload(true);
+        loggingFilter.setMaxPayloadLength(64000);
+        return loggingFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

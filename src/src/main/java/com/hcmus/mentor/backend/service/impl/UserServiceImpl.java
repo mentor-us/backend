@@ -12,6 +12,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.GroupUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
@@ -21,7 +22,10 @@ import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
@@ -31,10 +35,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.*;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -56,6 +61,7 @@ import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
@@ -63,19 +69,19 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
-    private final MongoTemplate mongoTemplate;
     private final GroupCategoryRepository groupCategoryRepository;
     private final BlobStorage blobStorage;
     private final ShareService shareService;
+    private final GroupUserRepository groupUserRepository;
 
     @Override
-    public String getOrCreateUserByEmail(String emailAddress, String groupName) {
+    public User getOrCreateUserByEmail(String emailAddress, String groupName) {
         if (!userRepository.existsByEmail(emailAddress)) {
             addNewAccount(emailAddress);
         }
         Optional<User> menteeWrapper = userRepository.findByEmail(emailAddress);
 //        mailService.sendInvitationMail(emailAddress, groupName);
-        return menteeWrapper.map(User::getId).orElse(null);
+        return menteeWrapper.orElse(null);
     }
 
     @Override
@@ -97,13 +103,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String importUser(String emailAddress, String groupName) {
-        if (!userRepository.existsByEmail(emailAddress)) {
+    public User importUser(String emailAddress, String groupName) {
+        if (Boolean.FALSE.equals(userRepository.existsByEmail(emailAddress))) {
             addNewAccount(emailAddress);
         }
-        Optional<User> menteeWrapper = userRepository.findByEmail(emailAddress);
-        // mailService.sendInvitationMail(emailAddress, group);
-        return menteeWrapper.map(User::getId).orElse(null);
+        return userRepository.findByEmail(emailAddress).orElse(null);
     }
 
     @Override
@@ -121,13 +125,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto listAllPaging(String emailUser, Pageable pageable) {
-        return findUsers(
-                emailUser, new FindUserRequest(), pageable.getPageNumber(), pageable.getPageSize());
+        return findUsers(emailUser, new FindUserRequest(), pageable.getPageNumber(), pageable.getPageSize());
     }
 
     @Override
     public UserServiceDto listAll() {
-        List<User> users = userRepository.findAll();
+        List<User> users = IteratorUtils.toList(userRepository.findAll().iterator());
         List<UserDataResponse> userDataResponses = getUsersData(users);
         return new UserServiceDto(SUCCESS, null, userDataResponses);
     }
@@ -137,7 +140,14 @@ public class UserServiceImpl implements UserService {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<User> users = userRepository.findByEmailLikeIgnoreCase(email);
+        List<User> users;
+
+        if (email.isEmpty()) {
+            users = userRepository.findAll();
+        } else {
+            users = userRepository.findByEmailLikeIgnoreCase(email);
+        }
+
         return new UserServiceDto(SUCCESS, null, users);
     }
 
@@ -178,8 +188,8 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        groupRepository.findAllByMenteesIn(id).forEach(group -> deleteMenteeInGroup(group, id));
-        groupRepository.findAllByMentorsIn(id).forEach(group -> deleteMentorInGroup(group, id));
+        groupUserRepository.deleteByUserId(id);
+
         UserDataResponse userDataResponse = getUserData(user);
 
         userRepository.delete(user);
@@ -187,19 +197,6 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    private void deleteMenteeInGroup(Group group, String menteeId) {
-        if (group.getMentees().remove(menteeId)) {
-            group.setMentees(group.getMentees());
-            groupRepository.save(group);
-        }
-    }
-
-    private void deleteMentorInGroup(Group group, String mentorId) {
-        if (group.getMentors().remove(mentorId)) {
-            group.setMentors(group.getMentors());
-            groupRepository.save(group);
-        }
-    }
 
     @Override
     public UserServiceDto addUser(String emailUser, AddUserRequest request) {
@@ -237,6 +234,69 @@ public class UserServiceImpl implements UserService {
                 .build();
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
+
+    @Override
+    public UserServiceDto addUser(AddUserRequest request) {
+        if (request.getName() == null
+                || request.getName().isEmpty()
+                || request.getEmailAddress() == null
+                || request.getEmailAddress().isEmpty()
+                || request.getRole() == null) {
+            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+        }
+
+        String email = request.getEmailAddress();
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+        }
+
+        UserRole role = request.getRole();
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
+        userRepository.save(user);
+        mailService.sendWelcomeMail(email);
+
+        UserDataResponse userDataResponse = UserDataResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .status(user.isStatus())
+                .role(role)
+                .build();
+        return new UserServiceDto(SUCCESS, "", userDataResponse);
+    }
+
+//    @Override
+//    public UserServiceDto addUser( AddUserRequest request) {
+//        if (request.getName() == null
+//                || request.getName().isEmpty()
+//                || request.getEmailAddress() == null
+//                || request.getEmailAddress().isEmpty()
+//                || request.getRole() == null) {
+//            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+//        }
+//
+//        String email = request.getEmailAddress();
+//        Optional<User> userOptional = userRepository.findByEmail(email);
+//        if (userOptional.isPresent()) {
+//            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+//        }
+//
+//        UserRole role = request.getRole();
+//        User user = User.builder().name(request.getName()).email(email).build();
+//        user.assignRole(role);
+//        userRepository.save(user);
+//        mailService.sendWelcomeMail(email);
+//
+//        UserDataResponse userDataResponse = UserDataResponse.builder()
+//                .id(user.getId())
+//                .name(user.getName())
+//                .email(user.getEmail())
+//                .status(user.isStatus())
+//                .role(role)
+//                .build();
+//        return new UserServiceDto(SUCCESS, "", userDataResponse);
+//    }
 
     private List<AddUserRequest> getImportData(Workbook workbook) throws IOException {
         Sheet sheet = workbook.getSheet("Data");
@@ -345,34 +405,37 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    List<User> getUsersByConditions(
-            String emailUser, FindUserRequest request, int page, int pageSize) {
-        Query query = new Query();
+    // TODO: Implement this method
+    List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (request.getName() != null && !request.getName().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
+            }
+            if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
+            }
+            if (request.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), request.getStatus()));
+            }
+//            if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
+//                predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
+//            }
+            if (request.getRole() != null) {
+                predicates.add(root.get("roles").in(request.getRole()));
+            }
 
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            query.addCriteria(Criteria.where("name").regex(request.getName(), "i"));
-        }
-        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            query.addCriteria(Criteria.where("email").regex(request.getEmail(), "i"));
-        }
-        if (request.getStatus() != null) {
-            query.addCriteria(Criteria.where("status").is(request.getStatus()));
-        }
-        if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-            query.addCriteria(Criteria.where("roles").nin(SUPER_ADMIN));
-        }
-        if (request.getRole() != null) {
-            query.addCriteria(Criteria.where("roles").in(request.getRole()));
-        }
-        query.with(Sort.by(Sort.Direction.DESC, "createdDate"));
+            // Apply sorting by createdDate (assuming it's a field in the User entity)
+            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
-        List<User> users = mongoTemplate.find(query, User.class);
-        return users;
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return userRepository.findAll(spec, pageable).getContent();
     }
 
     @Override
-    public UserServiceDto findUsers(
-            String emailUser, FindUserRequest request, int page, int pageSize) {
+    public UserServiceDto findUsers(String emailUser, FindUserRequest request, int page, int pageSize) {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
@@ -380,14 +443,12 @@ public class UserServiceImpl implements UserService {
         List<UserDataResponse> findUserResponses = getUsersData(users);
         long count = users.size();
 
-        List<UserDataResponse> pagedUserResponses =
-                findUserResponses.stream()
-                        .skip((long) page * pageSize)
-                        .limit(pageSize)
-                        .toList();
+        List<UserDataResponse> pagedUserResponses = findUserResponses.stream()
+                .skip((long) page * pageSize)
+                .limit(pageSize)
+                .toList();
 
-        return new UserServiceDto(
-                SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));
+        return new UserServiceDto(SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));
     }
 
     private UserDataResponse getUserData(User user) {
@@ -410,7 +471,6 @@ public class UserServiceImpl implements UserService {
                 .emailVerified(user.getEmailVerified())
                 .gender(user.getGender())
                 .phone(user.getPhone())
-                .personalEmail(user.getPersonalEmail())
                 .build();
     }
 
@@ -452,17 +512,7 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", invalidIds);
         }
 
-        userIds.forEach(
-                userId -> {
-                    List<Group> groupMentees = groupRepository.findAllByMenteesIn(userId);
-                    List<Group> groupMentors = groupRepository.findAllByMentorsIn(userId);
-                    for (Group group : groupMentees) {
-                        deleteMenteeInGroup(group, userId);
-                    }
-                    for (Group group : groupMentors) {
-                        deleteMentorInGroup(group, userId);
-                    }
-                });
+        groupUserRepository.deleteByUserIdIn(userIds);
         userRepository.deleteAllById(userIds);
 
         return new UserServiceDto(SUCCESS, "", users);
@@ -558,8 +608,7 @@ public class UserServiceImpl implements UserService {
         List<Group> groupMentors = groupRepository.findAllByMentorsIn(id);
         List<UserDetailResponse.GroupInfo> groupInfos = new ArrayList<>();
         for (Group group : groupMentees) {
-            String groupCategoryName =
-                    groupCategoryRepository.findById(group.getGroupCategory()).get().getName();
+            String groupCategoryName = groupCategoryRepository.findById(group.getGroupCategory().getId()).get().getName();
             UserDetailResponse.GroupInfo groupInfo =
                     UserDetailResponse.GroupInfo.builder()
                             .id(group.getId())
@@ -571,7 +620,7 @@ public class UserServiceImpl implements UserService {
         }
         for (Group group : groupMentors) {
             String groupCategoryName =
-                    groupCategoryRepository.findById(group.getGroupCategory()).get().getName();
+                    groupCategoryRepository.findById(group.getGroupCategory().getId()).get().getName();
             UserDetailResponse.GroupInfo groupInfo =
                     UserDetailResponse.GroupInfo.builder()
                             .id(group.getId())
@@ -706,14 +755,11 @@ public class UserServiceImpl implements UserService {
                 });
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     @Override
@@ -744,7 +790,7 @@ public class UserServiceImpl implements UserService {
         int index = 1;
         for (Group group : groups) {
             Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(group.getGroupCategory());
+                    groupCategoryRepository.findById(group.getGroupCategory().getId());
             String groupCategoryName =
                     groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
             List<String> row = new ArrayList<>();
@@ -780,14 +826,11 @@ public class UserServiceImpl implements UserService {
 
         java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
         Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        ResponseEntity<Resource> response =
-                ResponseEntity.ok()
-                        .header(
-                                HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                        .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                        .contentLength(resource.getFile().length())
-                        .body(resource);
-        return response;
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
     }
 
     /**

@@ -1,17 +1,15 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.google.firebase.messaging.FirebaseMessagingException;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
-import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
-import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
+import com.hcmus.mentor.backend.event.SendFirebaseNotificationEvent;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -19,20 +17,24 @@ import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
+import org.modelmapper.ModelMapper;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.domain.constant.ChannelType.PRIVATE_MESSAGE;
 import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
@@ -40,72 +42,85 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationSubscriberRepository notificationSubscriberRepository;
     private final GroupRepository groupRepository;
-    private final FirebaseMessagingServiceImpl firebaseMessagingManager;
+    private final FirebaseServiceImpl firebaseService;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final NotificationUserRepository notificationUserRepository;
+    private final ModelMapper modelMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Slice<Notification> slice = notificationRepository.findByReceiverIdsIn(Collections.singletonList(userId), paging);
-        List<String> senderIds = slice.get().map(Notification::getSenderId).toList();
-        Map<String, ShortProfile> senders = userRepository.findByIds(senderIds).stream()
-                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
-        List<NotificationResponse> notifications = slice.getContent().stream()
-                .map(notification -> NotificationResponse.from(notification, senders.getOrDefault(notification.getSenderId(), null)))
-                .toList();
-        return pagingResponse(slice, notifications);
+        Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
+        List<NotificationResponse> notificationsResponse = notifications.stream()
+                .map(notification -> modelMapper.map(notification, NotificationResponse.class)).toList();
+        return pagingResponse(notifications, notificationsResponse);
     }
 
-    private Map<String, Object> pagingResponse(
-            Slice<Notification> slice, List<NotificationResponse> notifications) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("notifications", notifications);
-        response.put("hasMore", slice.hasNext());
-        return response;
-    }
-
+    /**
+     * @param senderId
+     * @param request
+     * @return
+     */
     @Override
     public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notification notif = Notification.builder()
+        Notification notif = notificationRepository.save(Notification.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
                 .type(NotificationType.NEED_RESPONSE)
-                .senderId(senderId)
-                .receiverIds(Collections.singletonList(request.getReceiverId()))
+                .sender(userRepository.findById(senderId).orElse(null))
                 .createdDate(request.getCreatedDate())
-                .build();
-        return notificationRepository.save(notif);
+                .build());
+        var receivers = NotificationUser.builder().notification(notif).user(userRepository.findById(request.getReceiverId()).orElse(null)).build();
+        notif.setReceivers(Collections.singletonList(receivers));
+        return notif;
     }
 
+
+    /**
+     * @param userId
+     * @param notificationId
+     * @param action
+     * @return Notification
+     */
     @Override
     public Notification responseNotification(String userId, String notificationId, String action) {
-        Optional<Notification> notificationWrapper = notificationRepository.findById(notificationId);
-        if (!notificationWrapper.isPresent()) {
-            return null;
+        Notification notif = notificationRepository.findById(notificationId).orElseThrow(() -> new NoSuchElementException("Notification not found"));
+
+        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
+            throw new DomainException("Notification is not a response type");
         }
 
-        Notification notif = notificationWrapper.get();
-        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
-            return null;
-        }
+        NotificationUser notificationUser = notif.getReceivers().stream()
+                .filter(nu -> nu.getUser().getId().equals(userId))
+                .findFirst()
+                .orElseThrow(() -> new DomainException("User is not a receiver of this notification"));
 
         switch (action) {
             case "seen":
-                notif.seen(userId);
+                notificationUser.setIsReaded(true);
                 break;
             case "accept":
-                notif.accept(userId);
+                notificationUser.setIsReaded(true);
+                notificationUser.setIsAgreed(true);
                 break;
             case "refuse":
-                notif.refuse(userId);
+                notificationUser.setIsReaded(true);
+                notificationUser.setIsAgreed(false);
                 break;
             default:
                 break;
         }
-        return notificationRepository.save(notif);
+        notificationUserRepository.save(notificationUser);
+
+        return notif;
     }
 
+
+    /**
+     * @param request
+     */
     @Override
     public void subscribeNotification(SubscribeNotificationRequest request) {
         if (request == null) {
@@ -126,15 +141,25 @@ public class NotificationServiceImpl implements NotificationService {
         if (subscribes.isEmpty()) {
             NotificationSubscriber subscriber =
                     NotificationSubscriber.builder()
-                            .userId(request.getUserId())
+                            .user(userRepository.findById(request.getUserId()).orElse(null))
                             .token(request.getToken())
                             .build();
             notificationSubscriberRepository.save(subscriber);
             return;
         }
 
-        subscribes.forEach(subscriber -> subscriber.update(request));
+        subscribes.forEach(subscriber -> {
+            subscriber.setToken(request.getToken());
+            subscriber.setUser(userRepository.findById(request.getUserId()).orElse(null));
+        });
         notificationSubscriberRepository.saveAll(subscribes);
+    }
+
+    private Map<String, Object> pagingResponse(Slice<Notification> slice, List<NotificationResponse> notifications) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("notifications", notifications);
+        response.put("hasMore", slice.hasNext());
+        return response;
     }
 
     @Override
@@ -144,47 +169,35 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Async
+    @Transactional(readOnly = true)
     public void sendNewMessageNotification(MessageDetailResponse message) {
-        var channel = channelRepository.findById(message.getGroupId()).orElse(null);
-        if (channel == null) {
+        var channelTemp = channelRepository.findById(message.getGroupId()).orElse(null);
+        if (channelTemp == null) {
             return;
         }
 
-        var members = channel.getUserIds().stream()
-                .filter(id -> !id.equals(message.getSender().getId()))
-                .distinct()
+        var sender = message.getSender();
+        if (sender == null) {
+            return;
+        }
+
+        var senderId = sender.getId();
+        var receiverIds = channelTemp.getUsers().stream()
+                .map(User::getId)
+                .filter(id -> !Objects.equals(id, senderId))
                 .toList();
-        String title;
-        if (channel.getType() == PRIVATE_MESSAGE) {
-            var group = groupRepository.findById(channel.getParentId()).orElse(null);
-            if (group == null) {
-                return;
-            }
-
-            title = String.format("%s%n%s", group.getName(), message.getSender().getName());
-        } else {
-            title = channel.getName();
+        if (receiverIds.isEmpty()) {
+            return;
         }
 
-        Map<String, String> data = attachDataNotification(message.getGroupId(), NEW_MESSAGE);
-        String senderName = "";
-        if (message.getSender() != null) {
-            senderName = message.getSender().getName();
-            data.put("sender", senderName);
-            String imageUrl = message.getSender().getImageUrl() == null
-                    || ("https://graph.microsoft.com/v1.0/me/photo/$value")
-                    .equals(message.getSender().getImageUrl())
-                    ? ""
-                    : message.getSender().getImageUrl();
-            data.put("imageUrl", imageUrl);
-        }
+        var title = String.format("%s%n%s", channelTemp.getName(), message.getSender().getName());
+        var data = attachDataNotification(message.getGroupId(), NEW_MESSAGE);
+        var senderName = sender.getName();
+        data.put("sender", senderName);
+        data.put("imageUrl", message.getSender().getImageUrl());
+        var body = String.format("%s: %s", senderName, Jsoup.parse(message.getContent()).text());
 
-        String body = senderName + ": " + Jsoup.parse(message.getContent()).text();
-        try {
-            firebaseMessagingManager.sendGroupNotification(members, title, body, data);
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
 
     private Map<String, String> attachDataNotification(String groupId, NotificationType type) {
@@ -196,116 +209,96 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Async
-    public void sendNewTaskNotification(MessageDetailResponse message) {
-        if (message.getTask() == null) {
+    public void sendNewTaskNotification(MessageDetailResponse message, Task task) {
+        if (message.getTask() == null || task == null) {
             logger.warn("[!] Task message #{}, NULL cannot send notifications", message.getId());
             return;
         }
-        TaskMessageResponse task = message.getTask();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        Group group = task.getGroup().getGroup();
+        if (group == null) {
             return;
         }
-        Group group = groupWrapper.get();
 
-        String title = group.getName();
-        String content = "Nhóm có công việc mới \"" + task.getTitle() + "\"";
-        Notification notif = createNewTaskNotification(title, content, message.getSender().getId(), task);
-        try {
-            firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
-                    title,
-                    content,
-                    attachDataNotification(message.getGroupId(), NEW_TASK));
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+
+        var title = group.getName();
+        var body = "Nhóm có công việc mới \"" + task.getTitle() + "\"";
+        var notification = createNewTaskNotification(title, body, message.getSender().getId(), task);
+        var receivers = notification.getReceivers().stream().map(n -> n.getUser().getId()).toList();
+        var data = attachDataNotification(message.getGroupId(), NEW_TASK);
+
+        firebaseService.sendNotificationMulticast(receivers, title, body, data);
     }
 
     @Override
-    public Notification createNewTaskNotification(
-            String title, String content, String senderId, TaskMessageResponse task) {
-        List<String> assigneeIds =
-                task.getAssignees().stream().map(TaskAssigneeResponse::getId).toList();
-        List<String> receiverIds =
-                Stream.concat(assigneeIds.stream(), Stream.of(task.getAssignerId()))
-                        .distinct()
-                        .toList();
-        Notification inAppNotification =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_TASK)
-                        .senderId(senderId)
-                        .refId(task.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(inAppNotification);
+    public Notification createNewTaskNotification(String title, String content, String senderId, Task task) {
+        var assignees = task.getAssignees();
+        var assigner = task.getAssigner();
+
+        Notification notification = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(NEW_TASK)
+                .sender(assigner)
+                .refId(task.getId())
+                .build();
+
+        var receivers = assignees.stream()
+                .map(Assignee::getUser)
+                .filter(user -> user != assigner)
+                .map(u -> NotificationUser.builder()
+                        .notification(notification)
+                        .user(u).build())
+                .toList();
+
+        notification.setReceivers(receivers);
+        notificationRepository.save(notification);
+
+        return notification;
     }
 
     @Override
-    @Async
-    public void sendNewMeetingNotification(MessageDetailResponse message) {
-        if (message.getMeeting() == null) {
-            logger.warn("[!] Meeting message #{}, NULL cannot send notifications", message.getId());
+    public void sendNewMeetingNotification(Meeting meeting) {
+        if (meeting == null) {
+            logger.warn("[!] Meeting message #{}, NULL cannot send notifications", meeting.getId());
             return;
         }
-        Meeting meeting = message.getMeeting();
+        Group group = meeting.getGroup().getGroup();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return;
-        }
-        Group group = groupWrapper.get();
+        var title = group == null ? "" : group.getName();
+        var body = String.format("Nhóm có lịch hẹn mới \"%s\"", meeting.getTitle());
+        var notification = createNewMeetingNotification(title, body, meeting.getOrganizer().getId(), meeting);
+        var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
+        var data = attachDataNotification(meeting.getGroup().getId(), NEW_MEETING);
 
-        String title = group.getName();
-        String content = "Nhóm có lịch hẹn mới \"" + meeting.getTitle() + "\"";
-        Notification notif =
-                createNewMeetingNotification(title, content, message.getSender().getId(), meeting);
-        try {
-            firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
-                    title,
-                    content,
-                    attachDataNotification(message.getGroupId(), NEW_MEETING));
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
 
     @Override
-    public Notification createNewMeetingNotification(
-            String title, String content, String senderId, Meeting meeting) {
-        List<String> receiverIds =
-                Stream.concat(meeting.getAttendees().stream(), Stream.of(meeting.getOrganizerId()))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_MEETING)
-                        .senderId(senderId)
-                        .refId(meeting.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(notif);
+    public Notification createNewMeetingNotification(String title, String content, String senderId, Meeting meeting) {
+        var notification = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(NEW_MEETING)
+                .sender(userRepository.findById(senderId).orElse(null))
+                .refId(meeting.getId())
+                .build();
+
+        var receiver = meeting.getAttendees().stream().map(user -> NotificationUser.builder().notification(notification).user(user).build()).toList();
+        notification.setReceivers(receiver);
+
+        return notificationRepository.save(notification);
     }
 
     @Override
     @Async
     public void sendNewMediaMessageNotification(MessageDetailResponse message) {
-        boolean isImageMessage = Message.Type.IMAGE.equals(message.getType())
-                && message.getImages() != null
-                && !message.getImages().isEmpty();
+        boolean isImageMessage = Message.Type.IMAGE.equals(message.getType()) && message.getImages() != null && !message.getImages().isEmpty();
         boolean isFileMessage = Message.Type.FILE.equals(message.getType()) && message.getFile() != null;
         if (!isImageMessage && !isFileMessage) {
             logger.warn("[!] Media message #{}, empty cannot send notifications", message.getId());
             return;
         }
-
 
         String title;
         List<String> members;
@@ -318,18 +311,18 @@ public class NotificationServiceImpl implements NotificationService {
             }
 
             Channel channel = channelWrapper.get();
-            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
+            Group parentGroup = channel.getGroup();
             title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
-            members = channel.getUserIds().stream()
+            members = channel.getUsers().stream().map(User::getId)
                     .filter(id -> !id.equals(message.getSender().getId()))
                     .distinct()
                     .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+            members = Stream.concat(group.getMentors().stream().map(User::getId), group.getMentees().stream().map(User::getId))
                     .filter(id -> !id.equals(message.getSender().getId()))
                     .distinct()
                     .toList();
@@ -340,7 +333,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         NotificationType type;
-        StringBuilder notificationBody = new StringBuilder((message.getSender() != null) ? (message.getSender().getName() + " đã gửi ") : "");
+        StringBuilder notificationBody = new StringBuilder(message.getSender().getName() + " đã gửi ");
         if (Message.Type.IMAGE.equals(message.getType())) {
             type = NEW_IMAGE_MESSAGE;
             notificationBody.append(message.getImages().size()).append(" ảnh mới.");
@@ -352,202 +345,152 @@ public class NotificationServiceImpl implements NotificationService {
             notificationBody.append(" một đa phương tiện mới.");
         }
 
-        String body = notificationBody.toString();
-        try {
-            firebaseMessagingManager.sendGroupNotification(members, title, body, attachDataNotification(message.getGroupId(), type));
-        } catch (FirebaseMessagingException e) {
-            logger.error("Error sending media message notification", e);
-        }
+        var body = notificationBody.toString();
+        var data = attachDataNotification(message.getGroupId(), type);
+        firebaseService.sendNotificationMulticast(members, title, body, data);
     }
 
+    /**
+     * @param title
+     * @param content
+     * @param senderId
+     * @param group
+     * @return
+     */
     @Override
-    public Notification createNewMediaNotification(
-            String title, String content, String senderId, Group group) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                        .filter(id -> !id.equals(senderId))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_FILE_MESSAGE)
-                        .senderId(senderId)
-                        .refId(group.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(notif);
+    public Notification createNewMediaNotification(final String title, final String content, final String senderId, final Group group) {
+        return null;
     }
 
     @Override
     @Async
-    public void sendNewReactNotification(
-            Message message, ReactMessageResponse reaction, String senderId) {
-        if (message == null || reaction == null) {
+    public void sendNewReactNotification(Message message, ReactMessageResponse reaction, String senderId) {
+        if (message == null || reaction == null || message.getSender() == null || senderId == null) {
             return;
         }
+        var group = message.getChannel().getGroup();
 
-        if (message.getSenderId() == null || senderId == null) {
+        NotificationSubscriber subscriber = notificationSubscriberRepository.findByUserId(message.getSender().getId()).orElse(null);
+        if (subscriber == null) {
             return;
         }
+        var title = group.getName();
+        var body = message.getSender().getName() + " đã thể hiện cảm xúc tin nhắn của bạn.";
+        Map<String, String> data = attachDataNotification(group.getId(), NEW_REACTION);
 
-        if (senderId.equals(message.getSenderId())) {
-            return;
-        }
+        var event = new SendFirebaseNotificationEvent(this, Collections.singletonList(subscriber.getToken()), title, body, data);
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return;
-        }
-        Group group = groupWrapper.get();
-
-        Map<String, String> data = attachDataNotification(message.getGroupId(), NEW_REACTION);
-        com.google.firebase.messaging.Notification notification =
-                com.google.firebase.messaging.Notification.builder()
-                        .setTitle(group.getName())
-                        .setBody(reaction.getName() + " đã thể hiện cảm xúc tin nhắn của bạn.")
-                        .build();
-        try {
-            Optional<NotificationSubscriber> wrapper =
-                    notificationSubscriberRepository.findByUserId(message.getSenderId());
-            if (!wrapper.isPresent()) {
-                return;
-            }
-            NotificationSubscriber subscriber = wrapper.get();
-            firebaseMessagingManager.sendNotification(subscriber.getToken(), notification, data);
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        applicationEventPublisher.publishEvent(event);
     }
 
     @Override
     @Async
-    public void sendRescheduleMeetingNotification(
-            String modifierId, Meeting meeting, RescheduleMeetingRequest request) {
+    public void sendRescheduleMeetingNotification(String modifierId, Meeting meeting, RescheduleMeetingRequest request) {
         if (meeting == null) {
             return;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(meeting.getGroupId());
-        if (!groupWrapper.isPresent()) {
+        Group group = meeting.getGroup().getGroup();
+        if (group == null) {
             return;
         }
-        Group group = groupWrapper.get();
 
-        String title = group.getName();
-        String content = "Lịch hẹn: \"" + meeting.getTitle() + "\" đã được dời thời gian.";
-        Notification notif = createRescheduleMeetingNotification(title, content, modifierId, group, meeting);
-        try {
-            firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
-                    title,
-                    content,
-                    attachDataNotification(meeting.getGroupId(), RESCHEDULE_MEETING));
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        var title = group.getName();
+        var body = "Lịch hẹn: \"" + meeting.getTitle() + "\" đã được dời thời gian.";
+        var notification = createRescheduleMeetingNotification(title, body, modifierId, group, meeting);
+        var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
+        var data = attachDataNotification(meeting.getGroup().getGroup().getId(), RESCHEDULE_MEETING);
+
+        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
 
     @Override
-    public Notification createRescheduleMeetingNotification(
-            String title, String content, String senderId, Group group, Meeting meeting) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                        .filter(id -> !id.equals(senderId))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(RESCHEDULE_MEETING)
-                        .senderId(senderId)
-                        .refId(meeting.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(notif);
+    public Notification createRescheduleMeetingNotification(String title, String content, String senderId, Group group, Meeting meeting) {
+        Notification notif = notificationRepository.save(Notification.builder()
+                .title(title)
+                .content(content)
+                .type(RESCHEDULE_MEETING)
+                .sender(userRepository.findById(senderId).orElse(null))
+                .refId(meeting.getId())
+                .build());
+        var receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                .filter(id -> !id.equals(senderId))
+                .distinct()
+                .map(user -> NotificationUser.builder().notification(notif).user(user).build())
+                .toList();
+        notif.setReceivers(receiverIds);
+        notificationRepository.save(notif);
+        return notif;
     }
 
     @Override
-    public long getUnreadNumber(String userId) {
-        return notificationRepository.countDistinctByReceiverIdsIn(Collections.singletonList(userId));
+    public long getUnreadNumber(final String userId) {
+        return 0;
     }
 
     @Override
-    @Async
     public void sendNewVoteNotification(String creatorId, Vote vote) {
         if (vote == null) {
             return;
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(vote.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            return;
-        }
-        Group group = groupWrapper.get();
+        var title = Optional.ofNullable(vote.getGroup()).map(Channel::getGroup).map(Group::getName).orElse("");
+        var body = String.format("Nhóm có cuộc bình chọn mới \"%s\"", vote.getQuestion());
+        var notification = createNewVoteNotification(title, body, vote);
+        var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
+        var data = attachDataNotification(vote.getGroup().getId(), NEW_VOTE);
 
-        String title = group.getName();
-        String content = "Nhóm có cuộc bình chọn mới \"" + vote.getQuestion() + "\"";
-        Notification notif = createNewVoteNotification(title, content, creatorId, group, vote);
-        try {
-            firebaseMessagingManager.sendGroupNotification(
-                    notif.getReceiverIds(),
-                    title,
-                    content,
-                    attachDataNotification(vote.getGroupId(), NEW_VOTE));
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
 
     @Override
-    public Notification createNewVoteNotification(
-            String title, String content, String senderId, Group group, Vote vote) {
-        List<String> receiverIds =
-                Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                        .filter(id -> !id.equals(senderId))
-                        .distinct()
-                        .toList();
-        Notification notif =
-                Notification.builder()
-                        .title(title)
-                        .content(content)
-                        .type(NEW_VOTE)
-                        .senderId(senderId)
-                        .refId(vote.getId())
-                        .receiverIds(receiverIds)
-                        .build();
-        return notificationRepository.save(notif);
+    public Notification createNewVoteNotification(String title, String content, Vote vote) {
+        var creator = vote.getCreator();
+        Notification notification = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(NEW_VOTE)
+                .sender(creator)
+                .refId(vote.getId())
+                .build();
+
+        var receivers = Optional.ofNullable(vote.getGroup())
+                .map(Channel::getUsers)
+                .map(users -> users.stream()
+                        .filter(user -> !user.getId().equals(creator.getId()))
+                        .map(user -> NotificationUser.builder()
+                                .notification(notification)
+                                .user(user).build())
+                        .toList())
+                .orElse(null);
+
+        notification.setReceivers(receivers);
+        notificationRepository.save(notification);
+        return notification;
     }
 
     @Override
     public void sendNewPinNotification(MessageDetailResponse message, User pinner) {
-        if (message == null) {
+        if (message == null || pinner == null) {
             return;
         }
-
-        if (pinner == null) {
-            return;
-        }
-
         String title;
         List<String> members;
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
         if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (channelWrapper.isEmpty()) {
+            var channel = channelRepository.findById(message.getGroupId()).orElse(null);
+            if (channel == null) {
                 return;
             }
 
-            Channel channel = channelWrapper.get();
-            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
+            Group parentGroup = channel.getGroup();
             title = PRIVATE_MESSAGE.equals(channel.getType())
                     ? parentGroup.getName() + "\n" + message.getSender().getName()
                     : channel.getName();
-            members = channel.getUserIds().stream()
+            members = channel.getUsers().stream()
                     .filter(id -> !id.equals(message.getSender().getId()))
+                    .map(User::getId)
                     .distinct()
                     .toList();
         } else {
@@ -556,6 +499,7 @@ public class NotificationServiceImpl implements NotificationService {
             members =
                     Stream.concat(group.getMentors().stream(), group.getMentees().stream())
                             .filter(id -> !id.equals(message.getSender().getId()))
+                            .map(User::getId)
                             .distinct()
                             .toList();
         }
@@ -564,60 +508,48 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        Map<String, String> data = attachDataNotification(message.getGroupId(), PIN_MESSAGE);
-        String shortMessage =
-                Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
-                        .text();
-        String content = pinner.getName() + " đã ghim tin nhắn \"" + shortMessage + "\"";
-        try {
-            firebaseMessagingManager.sendGroupNotification(members, title, content, data);
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        var data = attachDataNotification(message.getGroupId(), PIN_MESSAGE);
+        var shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25))).text();
+        var content = pinner.getName() + " đã ghim tin nhắn \"" + shortMessage + "\"";
+        firebaseService.sendNotificationMulticast(members, title, content, data);
     }
 
     @Override
     public void sendNewUnpinNotification(MessageDetailResponse message, User pinner) {
-        if (message == null) {
-            return;
-        }
-
-        if (pinner == null) {
+        if (message == null || pinner == null) {
             return;
         }
 
         String title;
-        List<String> members;
+        List<String> receiverIds;
 
         Optional<Group> groupWrapper = groupRepository.findById(message.getGroupId());
-        if (!groupWrapper.isPresent()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getGroupId());
-            if (!channelWrapper.isPresent()) {
+        if (groupWrapper.isEmpty()) {
+            Channel channel = channelRepository.findById(message.getGroupId()).orElse(null);
+            if (channel == null) {
                 return;
             }
 
-            Channel channel = channelWrapper.get();
-            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
-            title =
-                    PRIVATE_MESSAGE.equals(channel.getType())
-                            ? parentGroup.getName() + "\n" + message.getSender().getName()
-                            : channel.getName();
-            members =
-                    channel.getUserIds().stream()
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .toList();
+            Group parentGroup = channel.getGroup();
+            title = PRIVATE_MESSAGE.equals(channel.getType())
+                    ? parentGroup.getName() + "\n" + message.getSender().getName()
+                    : channel.getName();
+            receiverIds = channel.getUsers().stream()
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .map(User::getId)
+                    .distinct()
+                    .toList();
         } else {
             Group group = groupWrapper.get();
             title = group.getName();
-            members =
-                    Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                            .filter(id -> !id.equals(message.getSender().getId()))
-                            .distinct()
-                            .toList();
+            receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
+                    .map(User::getId)
+                    .filter(id -> !id.equals(message.getSender().getId()))
+                    .distinct()
+                    .toList();
         }
 
-        if (members.isEmpty()) {
+        if (receiverIds.isEmpty()) {
             return;
         }
 
@@ -653,37 +585,21 @@ public class NotificationServiceImpl implements NotificationService {
                     break;
             }
         }
-        String content = pinner.getName() + " đã bỏ ghim tin nhắn \"" + shortMessage + "\"";
-        try {
-            firebaseMessagingManager.sendGroupNotification(members, title, content, data);
-        } catch (FirebaseMessagingException e) {
-            e.printStackTrace();
-        }
+        String body = pinner.getName() + " đã bỏ ghim tin nhắn \"" + shortMessage + "\"";
+
+        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
     }
 
     /**
-     * @param title    Title of notification
-     * @param content  Content of notification
-     * @param senderId Sender
-     * @param group    Group
-     * @return A notification
+     * @param title
+     * @param content
+     * @param senderId
+     * @param group
+     * @return
      */
     @Override
-    public Notification createForwardNotification(String title, String content, String senderId, Group group) {
-        List<String> receiverIds = Stream.concat(group.getMentors().stream(), group.getMentees().stream())
-                .filter(id -> !id.equals(senderId))
-                .distinct()
-                .toList();
-
-        Notification notif = Notification.builder()
-                .title(title)
-                .content(content)
-                .type(FORWARD)
-                .senderId(senderId)
-                .refId(group.getId())
-                .receiverIds(receiverIds)
-                .build();
-        return notificationRepository.save(notif);
+    public Notification createForwardNotification(final String title, final String content, final String senderId, final Group group) {
+        return null;
     }
 
     /**
@@ -697,25 +613,22 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-
         String title;
         List<String> members;
 
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(groupId);
-            if (channelWrapper.isEmpty()) {
+        Group group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
+            Channel channel = channelRepository.findById(groupId).orElse(null);
+            if (channel == null) {
                 return;
             }
 
-            Channel channel = channelWrapper.get();
-            Group parentGroup = groupRepository.findById(channel.getParentId()).orElse(null);
+            Group parentGroup = channel.getGroup();
             title = PRIVATE_MESSAGE.equals(channel.getType()) ? parentGroup.getName() + "\n" + message.getSender().getName() : channel.getName();
-            members = channel.getUserIds().stream().filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+            members = channel.getUsers().stream().map(User::getId).filter(id -> !id.equals(message.getSender().getId())).distinct().toList();
         } else {
-            Group group = groupWrapper.get();
             title = group.getName();
-            members = Stream.concat(group.getMentors().stream(), group.getMentees().stream()).filter(id -> !id.equals(message.getSender().getId())).distinct().collect(Collectors.toList());
+            members = group.getMembers().stream().map(User::getId).filter(id -> !id.equals(message.getSender().getId())).toList();
         }
 
         if (members.isEmpty()) {
@@ -725,7 +638,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (message.getType() == Message.Type.FILE || message.getType() == Message.Type.IMAGE || message.getType() == Message.Type.VIDEO) {
 
             NotificationType type;
-            StringBuilder notificationBody = new StringBuilder((message.getSender() != null) ? (message.getSender().getName() + " đã chuyển tiếp ") : "");
+            StringBuilder notificationBody = new StringBuilder(message.getSender().getName() + " đã chuyển tiếp ");
             if (Message.Type.IMAGE.equals(message.getType())) {
                 type = NEW_IMAGE_MESSAGE;
                 notificationBody.append(message.getImages().size()).append(" ảnh.");
@@ -737,13 +650,13 @@ public class NotificationServiceImpl implements NotificationService {
                 notificationBody.append(" một đa phương tiện.");
             }
             String body = notificationBody.toString();
-            firebaseMessagingManager.sendGroupNotification(members, title, body, attachDataNotification(message.getGroupId(), type));
+            firebaseService.sendNotificationMulticast(members, title, body, attachDataNotification(message.getGroupId(), type));
             return;
         }
 
         Map<String, String> data = attachDataNotification(groupId, FORWARD);
         String shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25))).text();
         String content = message.getSender().getName() + " đã chuyển tiếp tin nhắn \"" + shortMessage + "\"";
-        firebaseMessagingManager.sendGroupNotification(members, title, content, data);
+        firebaseService.sendNotificationMulticast(members, title, content, data);
     }
 }

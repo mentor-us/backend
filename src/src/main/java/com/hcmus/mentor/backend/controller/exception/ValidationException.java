@@ -1,10 +1,10 @@
 package com.hcmus.mentor.backend.controller.exception;
 
-import java.util.List;
-import java.util.Map;
-
 import lombok.Getter;
 import org.springframework.validation.BindingResult;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * The validation exception. It can be mapped to 400 HTTP status codeThe validation exception.

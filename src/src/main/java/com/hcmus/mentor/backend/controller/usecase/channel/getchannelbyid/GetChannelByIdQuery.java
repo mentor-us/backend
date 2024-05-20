@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid;
 
 import an.awesome.pipelinr.Command;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelDetailDto;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,8 +13,8 @@ import org.jetbrains.annotations.NotNull;
 @Getter
 @Setter
 @Builder
-public class GetChannelByIdQuery implements Command<GroupDetailResponse> {
-    
+public class GetChannelByIdQuery implements Command<ChannelDetailDto> {
+
     /**
      * The ID of the channel to retrieve.
      */

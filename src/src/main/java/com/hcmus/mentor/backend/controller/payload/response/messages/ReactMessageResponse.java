@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.messages;
 
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
+import com.hcmus.mentor.backend.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

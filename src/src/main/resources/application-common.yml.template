@@ -2,6 +2,11 @@ server-socket:
   host: 0.0.0.0
   port: 8085
 
+management:
+  endpoint:
+    health:
+      show-details: always
+
 server:
   tomcat:
     relaxed-query-chars: [ "{", "}" ]
@@ -19,6 +24,23 @@ app:
   version: "^project.version^"
 
 spring:
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      jakarta:
+        persistence:
+          query:
+            timeout: 20000
+      hibernate:
+        show_sql: false
+        enable_lazy_load_no_trans: true
+        jdbc:
+          batch_size: 10
+    open-in-view: false
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
