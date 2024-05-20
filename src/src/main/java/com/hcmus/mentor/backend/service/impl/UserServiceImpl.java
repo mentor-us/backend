@@ -221,7 +221,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(role)).build();
         userRepository.save(user);
         mailService.sendWelcomeMail(email);
 
