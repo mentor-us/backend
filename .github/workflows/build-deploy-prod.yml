@@ -1,4 +1,4 @@
-name: deploy-dev
+name: deploy-prod
 
 on:
   push:
@@ -87,55 +87,55 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
-  deploy:
-    runs-on: ubuntu-latest
-    environment: production
-    needs: build
-    steps:
-      - name: Load secret
-        id: op-load-secret
-        uses: 1password/load-secrets-action@v1
-        with:
-          export-env: false
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          VPN_HOST: op://mentorus/backend-general/vpn/prod-server-host
-          VPN_SERVER_USERNAME: op://mentorus/backend-general/vpn/prod-server-user
-          VPN_SERVER_PASSWORD: op://mentorus/backend-general/vpn/prod-server-password
-          SERVER_HOST: op://mentorus/backend-general/server/prod-server-host
-          SERVER_USERNAME: op://mentorus/backend-general/server/prod-server-username
-          SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
-          PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
+  # deploy:
+  #   runs-on: ubuntu-20.04
+  #   environment: production
+  #   needs: build
+  #   steps:
+  #     - name: Load secret
+  #       id: op-load-secret
+  #       uses: 1password/load-secrets-action@v1
+  #       with:
+  #         export-env: false
+  #       env:
+  #         OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+  #         VPN_HOST: op://mentorus/backend-general/vpn/prod-server-host
+  #         VPN_SERVER_USERNAME: op://mentorus/backend-general/vpn/prod-server-user
+  #         VPN_SERVER_PASSWORD: op://mentorus/backend-general/vpn/prod-server-password
+  #         SERVER_HOST: op://mentorus/backend-general/server/prod-server-host
+  #         SERVER_USERNAME: op://mentorus/backend-general/server/prod-server-username
+  #         SERVER_SSHKEY: "op://mentorus/rsa-development-server/private key"
+  #         PAT_GITHUB_TOKEN: op://mentorus/github-pat-publish-package/token
 
-      - name: Connect to PPTP VPN
-        uses: mizumotok/pptp-action@v1
-        with:
-          server: ${{ steps.op-load-secret.outputs.VPN_HOST }}
-          username: ${{ steps.op-load-secret.outputs.VPN_SERVER_USERNAME }}
-          password: ${{ steps.op-load-secret.outputs.VPN_SERVER_PASSWORD }}
+  #     - name: Connect to PPTP VPN
+  #       uses: mentor-us/pptp-action@master
+  #       with:
+  #         server: ${{ steps.op-load-secret.outputs.VPN_HOST }}
+  #         username: ${{ steps.op-load-secret.outputs.VPN_SERVER_USERNAME }}
+  #         password: ${{ steps.op-load-secret.outputs.VPN_SERVER_PASSWORD }}
 
-      - name: Deploy to digital ocean droplet via ssh action
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          script_stop: true
-          host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
-          username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
-          key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
-          script: |
-            # Login to Github Packages
-            echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            # Pull the new image
-            docker pull ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
-            # Stop and remove the container if running
-            docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
-            # Run container
-            docker run -d \
-              --restart always \
-              --name ${{ env.CONTAINER_NAME }} \
-              --add-host host.docker.internal:host-gateway \
-              -e SPRING_PROFILES_ACTIVE=dev \
-              -p 7000:8080 \
-              -p 7001:8085 \
-              ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
-            # Remove the old image
-            docker image prune -f
+  #     - name: Deploy to school server via ssh action
+  #       uses: appleboy/ssh-action@v1.0.0
+  #       with:
+  #         script_stop: true
+  #         host: ${{ steps.op-load-secret.outputs.SERVER_HOST }}
+  #         username: ${{ steps.op-load-secret.outputs.SERVER_USERNAME }}
+  #         key: ${{ steps.op-load-secret.outputs.SERVER_SSHKEY }}
+  #         script: |
+  #           # Login to Github Packages
+  #           echo ${{ steps.op-load-secret.outputs.PAT_GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+  #           # Pull the new image
+  #           docker pull ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
+  #           # Stop and remove the container if running
+  #           docker stop ${{ env.CONTAINER_NAME }} || true && docker rm ${{ env.CONTAINER_NAME }} || true
+  #           # Run container
+  #           docker run -d \
+  #             --restart always \
+  #             --name ${{ env.CONTAINER_NAME }} \
+  #             --network mentorus-network \
+  #             -e SPRING_PROFILES_ACTIVE=prod \
+  #             -p 7000:8080 \
+  #             -p 7001:8085 \
+  #             ${{ env.GHCR_SLUG }}:${{ needs.build.outputs.version }}
+  #           # Remove the old image
+  #           docker image prune -f
