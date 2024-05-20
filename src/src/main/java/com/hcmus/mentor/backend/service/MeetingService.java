@@ -74,6 +74,13 @@ public class MeetingService implements IRemindableService {
             return null;
         }
 
+        var meetingHistory = MeetingHistory.builder()
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .place(request.getPlace())
+                .modifier(organizer)
+                .build();
+
         var meeting = meetingRepository.save(Meeting.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -83,6 +90,7 @@ public class MeetingService implements IRemindableService {
                 .place(request.getPlace())
                 .organizer(organizer)
                 .group(channel)
+                .histories(Collections.singletonList(meetingHistory))
                 .attendees(request.getAttendees().contains("*") ? channel.getUsers() : userRepository.findByIdIn(request.getAttendees()))
                 .build());
 
