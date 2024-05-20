@@ -784,7 +784,7 @@ public class GroupServiceImpl implements GroupService {
 
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
-//        notificationService.sendNewPinNotification(messageDetail, );
+        notificationService.sendTogglePinNotification(message,userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found")),true );
     }
 
     @Override
@@ -804,7 +804,7 @@ public class GroupServiceImpl implements GroupService {
         socketIOService.sendNewUnpinMessage(channelId, messageId);
 
         User pinnerMessage = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
-        notificationService.sendNewUnpinNotification(messageService.mappingToMessageDetailResponse(message,null), pinnerMessage);
+        notificationService.sendTogglePinNotification(message, pinnerMessage, false);
     }
 
 //    @Override

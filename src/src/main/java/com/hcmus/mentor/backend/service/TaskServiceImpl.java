@@ -111,7 +111,7 @@ public class TaskServiceImpl implements IRemindableService {
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, assigner.getId());
         socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
         saveToReminder(task);
-        notificationService.sendNewTaskNotification(response, task);
+        notificationService.sendNewTaskNotification(task);
 
         return new TaskReturnService(SUCCESS, "", task);
     }

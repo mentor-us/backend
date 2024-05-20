@@ -205,7 +205,7 @@ public class MessageController {
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(response);
+        notificationService.sendNewMediaMessageNotification(message);
 
         return ResponseEntity.ok(message.getFile().getUrl());
     }
@@ -263,10 +263,9 @@ public class MessageController {
                 .files(files)
                 .build();
         Message message = messageService.saveImageMessage(request);
-//        User sender = message.getSender();
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(response);
+        notificationService.sendNewMediaMessageNotification(message);
 
         return ResponseEntity.ok().build();
     }
@@ -289,9 +288,8 @@ public class MessageController {
             if (receiver == null) {
                 continue;
             }
-            var messageDetail = messageService.mappingToMessageDetailResponse(message, receiverId);
 
-            notificationService.sendNewMessageNotification(messageDetail);
+            notificationService.sendNewMessageNotification(message);
         }
 
         return ResponseEntity.ok().build();
