@@ -103,7 +103,7 @@ public class Message implements Serializable {
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
     @JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
     private List<Reaction> reactions = new ArrayList<>();
@@ -130,11 +130,7 @@ public class Message implements Serializable {
     }
 
     public void removeReact(User user) {
-        List<Reaction> filteredReactions =
-                reactions.stream()
-                        .filter(reaction -> !reaction.getUser().equals(user))
-                        .toList();
-        setReactions(filteredReactions);
+        getReactions().removeIf(reaction -> !reaction.getUser().getId().equals(user.getId()));
     }
 
     public void edit(EditMessageRequest request) {
