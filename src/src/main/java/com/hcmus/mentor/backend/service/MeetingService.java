@@ -235,12 +235,7 @@ public class MeetingService implements IRemindableService {
         Channel channel = meeting.getGroup();
         Group group = channel.getGroup();
 
-        List<String> attendeeIds;
-        attendeeIds = group.getGroupUsers().stream()
-                .map(GroupUser::getUser)
-                .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
-                .map(User::getId)
-                .toList();
+        List<String> attendeeIds = meeting.getAttendees().stream().map(User::getId).toList();
 
         return userRepository.findByIdIn(attendeeIds).stream()
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
