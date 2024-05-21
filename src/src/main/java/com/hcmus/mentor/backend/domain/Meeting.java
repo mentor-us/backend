@@ -2,9 +2,6 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
@@ -20,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -123,66 +119,4 @@ public class Meeting implements IRemindable, Serializable {
         LocalDateTime reminderTime = localDateTime.minusMinutes(30);
         return Date.from(reminderTime.atZone(ZoneId.systemDefault()).toInstant());
     }
-
-    public void create(CreateMeetingRequest request) {
-        title = request.getTitle();
-        description = request.getDescription();
-        timeStart = request.getTimeStart();
-        timeEnd = request.getTimeEnd();
-        repeated = request.getRepeated();
-        place = request.getPlace();
-//        organizer = request.getOrganizerId();
-//        attendees = request.getAttendees();
-//        group = request.getGroupId();
-
-        MeetingHistory creatingEvent = MeetingHistory.builder()
-                .timeStart(request.getTimeStart())
-                .timeEnd(request.getTimeEnd())
-                .place(request.getPlace())
-//                        .modifier(request.getOrganizerId())
-                .build();
-        histories = Collections.singletonList(creatingEvent);
-    }
-
-//    public void update(UpdateMeetingRequest request) {
-//        title = request.getTitle();
-//        description = request.getDescription();
-//        timeStart = request.getTimeStart();
-//        timeEnd = request.getTimeEnd();
-//        repeated = request.getRepeated();
-//        place = request.getPlace();
-//        attendees = request.getAttendees();
-//    }
-
-    public void reschedule(User modifier, RescheduleMeetingRequest request) {
-        MeetingHistory history =
-                MeetingHistory.builder()
-                        .timeStart(request.getTimeStart())
-                        .timeEnd(request.getTimeEnd())
-                        .place(request.getPlace())
-                        .modifier(modifier)
-                        .build();
-        histories.add(history);
-
-        timeStart = request.getTimeStart();
-        timeEnd = request.getTimeEnd();
-        place = request.getPlace();
-    }
-
-    public void reschedule(User modifier, UpdateMeetingRequest request) {
-        MeetingHistory history =
-                MeetingHistory.builder()
-                        .timeStart(request.getTimeStart())
-                        .timeEnd(request.getTimeEnd())
-                        .place(place)
-                        .modifier(modifier)
-                        .build();
-        histories.add(history);
-
-        timeStart = request.getTimeStart();
-        timeEnd = request.getTimeEnd();
-        place = request.getPlace();
-    }
-
-
 }
