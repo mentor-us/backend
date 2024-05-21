@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.controller.payload.response.groups;
 
 import com.hcmus.mentor.backend.domain.Group;
-import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -55,15 +55,13 @@ public class GroupHomepageResponse {
     private String defaultChannelId;
 
     public GroupHomepageResponse(Group group, String role, boolean isPinned) {
-        var users = group.getGroupUsers();
-
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
         this.createdDate = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
-        this.mentors = users.stream().filter(GroupUser::isMentor).map(GroupUser::getId).toList();
-        this.mentees = users.stream().filter(groupUser -> !groupUser.isMentor()).map(GroupUser::getId).toList();
+        this.mentors = group.getMentors().stream().map(User::getId).toList();
+        this.mentees = group.getMentees().stream().map(User::getId).toList();
         this.groupCategory = group.getGroupCategory().getId();
         this.timeStart = group.getTimeStart();
         this.timeEnd = group.getTimeEnd();
@@ -75,7 +73,6 @@ public class GroupHomepageResponse {
         this.newMessage = group.getLastMessage() != null ? group.getLastMessage().getContent() : null;
         this.newMessageId = group.getLastMessage() != null ? group.getLastMessage().getId() : null;
         this.defaultChannelId = group.getDefaultChannel() != null ? group.getDefaultChannel().getId() : null;
-
     }
 
     public Integer getTotalMember() {
