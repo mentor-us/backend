@@ -413,6 +413,23 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageDetailResponse mappingToMessageDetailResponse(Message message, String viewerId) {
         var messageDetailResponse = modelMapper.map(message, MessageDetailResponse.class);
+
+        Optional.ofNullable(message.getReply()).flatMap(messageRepository::findById).ifPresent(replyMessage -> messageDetailResponse.setReply(MessageDetailResponse.ReplyMessage.builder()
+                .id(replyMessage.getId())
+                .content(switch (replyMessage.getType()) {
+                    case TEXT -> replyMessage.getContent();
+                    case FILE -> "Tệp đính kèm";
+                    case IMAGE -> "Ảnh đính kèm";
+                    case VIDEO -> "Video đính kèm";
+                    case MEETING -> "Lịch hẹn đính kèm";
+                    case TASK -> "Công việc đính kèm";
+                    case VOTE -> "Cuộc bình chọn đính kèm";
+                    case NOTIFICATION -> "Thông báo đính kèm";
+                    case SYSTEM -> "";
+                })
+                .senderName(replyMessage.getSender().getName())
+                .build()));
+
         switch (message.getType()) {
             case VOTE -> messageDetailResponse.setVote(modelMapper.map(message.getVote(), VoteResult.class));
             case TASK -> messageDetailResponse.setTask(modelMapper.map(message.getTask(), TaskMessageResponse.class));
@@ -436,6 +453,7 @@ public class MessageServiceImpl implements MessageService {
                     .total(sumEmojis(reactionDtos))
                     .build());
         }
+
         return messageDetailResponse;
 
     }
