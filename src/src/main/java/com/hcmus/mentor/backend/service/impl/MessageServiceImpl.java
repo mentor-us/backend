@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.service.impl;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
 import com.hcmus.mentor.backend.controller.payload.request.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.SendFileRequest;
@@ -24,6 +25,8 @@ import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.logging.log4j.Level;
@@ -61,8 +64,12 @@ public class MessageServiceImpl implements MessageService {
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
     private final Pipeline pipeline;
+    private final ReactionRepository reactionRepository;
 
     private final ModelMapper modelMapper;
+
+    @PersistenceContext
+    private EntityManager em;
 
     /**
      * {@inheritDoc}
@@ -71,9 +78,7 @@ public class MessageServiceImpl implements MessageService {
     @SneakyThrows
     @Transactional(readOnly = true)
     public Message find(String id) {
-        var message = messageRepository.findById(id);
-
-        return message.orElse(null);
+        return messageRepository.findById(id).orElseThrow(() -> new DomainException("Message not found"));
     }
 
     /**
@@ -164,18 +169,11 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public void reactMessage(ReactMessageRequest request) {
-        var message = messageRepository.findById(request.getMessageId()).orElse(null);
-        if (message == null) {
-            return;
-        }
-        User reactor = userRepository.findById(request.getSenderId()).orElse(null);
-        if (reactor == null) {
-            return;
-        }
-
+        var message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
+        User reactor = userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("Reactor not found"));
         Channel channel = message.getChannel();
         if (channel != null && !channel.isMember(request.getSenderId())) {
-            return;
+            throw new ForbiddenException("Forbidden");
         }
 
         EmojiType emoji = EmojiType.valueOf(request.getEmojiId());
@@ -193,23 +191,15 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public void removeReaction(String messageId, String senderId) {
-        var message = messageRepository.findById(messageId).orElse(null);
-        if (message == null) {
-            return;
-        }
-        User reactor = userRepository.findById(senderId).orElse(null);
-        if (reactor == null) {
-            return;
-        }
-
+        var message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
+        User reactor = userRepository.findById(senderId).orElseThrow(() -> new DomainException("Reactor not found"));
         Channel channel = message.getChannel();
-
         if (channel != null && !channel.isMember(senderId)) {
-            return;
+            throw new ForbiddenException("Forbidden");
         }
 
-        message.removeReact(reactor);
-        Message updatedMessage = messageRepository.save(message);
+        message.getReactions().removeIf(reaction -> reaction.getUser().getId().equals(reactor.getId()));
+        Message updatedMessage = messageRepository.saveAndFlush(message);
 
         MessageDetailResponse.TotalReaction newTotalReaction = calculateTotalReactionMessage(updatedMessage);
         socketIOService.sendRemoveReact(new RemoveReactionResponse(messageId, senderId, newTotalReaction), channel.getId());
@@ -260,15 +250,13 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public Message saveVoteMessage(Vote vote) {
-        var message = Message.builder()
+        var message = messageRepository.save(Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
                 .createdDate(new Date())
                 .type(Message.Type.VOTE)
                 .vote(vote)
-                .build();
-
-        message = messageRepository.save(message);
+                .build());
 
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
@@ -330,6 +318,7 @@ public class MessageServiceImpl implements MessageService {
                 .type(FILE)
                 .file(new File(fileModel))
                 .build());
+
         pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
@@ -406,14 +395,10 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public void updateCreatedDateVoteMessage(String voteId) {
-        var message = messageRepository.findByVoteId(voteId).orElse(null);
-        if (message == null) {
-            return;
-        }
-
-        message.setCreatedDate(new Date());
-        messageRepository.save(message);
-
+        messageRepository.findByVoteId(voteId).ifPresent(message -> {
+            message.setCreatedDate(new Date());
+            messageRepository.save(message);
+        });
     }
 
     @Override
@@ -443,7 +428,9 @@ public class MessageServiceImpl implements MessageService {
             var ownerReaction = reactions.stream().filter(re -> Objects.equals(re.getUserId(), viewerId)).findFirst().orElse(null);
             messageDetailResponse.setTotalReaction(MessageDetailResponse.TotalReaction.builder()
                     .data(reactionDtos)
-                    .ownerReacted(ownerReaction != null ? mappingEmojiFromDto(Collections.singletonList(ownerReaction)) : Collections.emptyList())
+                    .ownerReacted(Optional.ofNullable(ownerReaction)
+                            .map(ownerReaction1 -> mappingEmojiFromDto(Collections.singletonList(ownerReaction1)))
+                            .orElse(Collections.emptyList()))
                     .total(sumEmojis(reactionDtos))
                     .build());
         }
@@ -508,18 +495,17 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private List<EmojiDto> mappingEmojiFromDto(List<ReactionDto> reactionDtos) {
-
-        if (reactionDtos == null || reactionDtos.isEmpty())
-            return Collections.emptyList();
-
-        var reactions = reactionDtos.stream().flatMap(r -> r.getData().stream()).toList();
-
-        return Arrays.stream(EmojiType.values()).map(
-                emojiType -> EmojiDto.builder()
-                        .id(emojiType)
-                        .total(sumEmojis(reactions.stream().filter(m -> m.getId() == emojiType).toList()))
-                        .build()
-        ).toList();
+        return Optional.ofNullable(reactionDtos).map(reactionDtos1 -> {
+            var reactions = reactionDtos1.stream().flatMap(r -> r.getData().stream()).toList();
+            return reactions.stream()
+                    .collect(Collectors.groupingBy(EmojiDto::getId))
+                    .entrySet()
+                    .stream()
+                    .map(entry -> EmojiDto.builder()
+                            .id(entry.getKey())
+                            .total(entry.getValue().stream().map(EmojiDto::getTotal).reduce(0, Integer::sum)).build())
+                    .toList();
+        }).orElse(Collections.emptyList());
     }
 
     private List<EmojiDto> generateEmojiDtos() {

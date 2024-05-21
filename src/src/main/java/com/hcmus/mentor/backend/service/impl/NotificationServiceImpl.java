@@ -39,10 +39,8 @@ public class NotificationServiceImpl implements NotificationService {
     private static final Logger logger = LogManager.getLogger(NotificationServiceImpl.class);
     private final NotificationRepository notificationRepository;
     private final NotificationSubscriberRepository notificationSubscriberRepository;
-    private final GroupRepository groupRepository;
     private final FirebaseServiceImpl firebaseService;
     private final UserRepository userRepository;
-    private final ChannelRepository channelRepository;
     private final NotificationUserRepository notificationUserRepository;
     private final ModelMapper modelMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -128,7 +126,7 @@ public class NotificationServiceImpl implements NotificationService {
         unsubscribeNotification(request.getUserId());
 
         if (request.getToken().isEmpty()) {
-            logger.info("[*] Unsubscribe user notification: userID({})", request.getUserId());
+            logger.error("[*] Unsubscribe user notification: userID({})", request.getUserId());
             return;
         }
         logger.info("[*] Subscribe user notification: userID({}) | Token({})", request.getUserId(), request.getToken());
@@ -166,7 +164,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-//    @Async
     public void sendNewMessageNotification(Message message) {
         var sender = message.getSender();
         var title = buildTitle(message.getChannel(), sender);
@@ -218,7 +215,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-//    @Async
     public void sendNewMediaMessageNotification(Message message) {
         boolean isImageMessage = Message.Type.IMAGE.equals(message.getType()) && message.getImages() != null && !message.getImages().isEmpty();
         boolean isFileMessage = Message.Type.FILE.equals(message.getType()) && message.getFile() != null;
@@ -243,7 +239,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-//    @Async
     public void sendNewReactNotification(Message message, ReactMessageResponse reaction, User sender) {
         if (message == null || reaction == null || message.getSender() == null || sender == null) {
             return;
@@ -263,7 +258,6 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-//    @Async
     public void sendRescheduleMeetingNotification(User modifier, Meeting meeting, RescheduleMeetingRequest request) {
         if (meeting == null || meeting.getGroup() == null || meeting.getGroup().getGroup() == null) {
             return;
