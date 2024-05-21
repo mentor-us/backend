@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +25,11 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     long countByGroupCategoryIdAndStatusAndCreatorId(String groupCategoryId, GroupStatus status, String creatorId);
 
-    long countByCreatedDateBetween(Date start, Date end);
+    long countByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
-    long countByCreatedDateBetweenAndCreatorId(Date start, Date end, String creatorId);
+    long countByCreatedDateBetweenAndCreatorId(LocalDateTime start, LocalDateTime end, String creatorId);
 
-    long countByGroupCategoryIdAndCreatedDateBetween(String groupCategoryId, Date start, Date end);
+    long countByGroupCategoryIdAndCreatedDateBetween(String groupCategoryId, LocalDateTime start, LocalDateTime end);
 
     long countByStatusAndCreatorId(GroupStatus status, String creatorId);
 

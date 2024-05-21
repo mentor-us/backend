@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -30,11 +32,11 @@ public class Faq {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  =  LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "updated_date", nullable = false)
-    private Date updatedDate = new Date();
+    private LocalDateTime updatedDate =  LocalDateTime.now(ZoneOffset.UTC);
 
     @ManyToOne
     @JoinColumn(name = "creator_id")

@@ -46,7 +46,7 @@ import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -174,10 +174,8 @@ public class AnalyticController {
             @RequestParam(required = false) String groupName,
             @RequestParam(required = false) GroupStatus status,
             @RequestParam(required = false) String groupCategory,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = customerUserDetails.getEmail();
@@ -234,10 +232,8 @@ public class AnalyticController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) FindUserAnalyticRequest.Role role,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         String emailUser = customerUserDetails.getEmail();
@@ -398,10 +394,8 @@ public class AnalyticController {
             @RequestParam(required = false) String groupName,
             @RequestParam(required = false) String groupCategory,
             @RequestParam(required = false) GroupStatus status,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd)
             throws IOException {
         String emailUser = customerUserDetails.getEmail();
         FindGroupGeneralAnalyticRequest request =
@@ -434,10 +428,8 @@ public class AnalyticController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) FindUserAnalyticRequest.Role role,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd)
             throws IOException {
         String emailUser = customerUserDetails.getEmail();
         FindUserAnalyticRequest request =

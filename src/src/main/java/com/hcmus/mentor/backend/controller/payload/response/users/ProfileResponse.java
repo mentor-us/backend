@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,7 +32,7 @@ public class ProfileResponse implements Serializable {
 
     private String phone;
 
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     private String personalEmail;
 

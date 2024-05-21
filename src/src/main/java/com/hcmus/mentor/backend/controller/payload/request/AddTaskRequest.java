@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,7 +20,7 @@ public class AddTaskRequest {
 
     private String description;
 
-    private Date deadline;
+    private LocalDateTime deadline;
 
     private List<String> userIds = new ArrayList<>();
 

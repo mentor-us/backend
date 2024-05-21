@@ -5,8 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,7 +15,7 @@ public class GroupGeneralResponse {
     private String id;
     private String name;
     private String category;
-    private Date lastTimeActive;
+    private LocalDateTime lastTimeActive;
     private long totalMessages;
     private long totalTasks;
     private long totalDoneTasks;

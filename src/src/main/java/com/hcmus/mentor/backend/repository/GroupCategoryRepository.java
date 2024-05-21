@@ -29,7 +29,7 @@ public interface GroupCategoryRepository extends JpaRepository<GroupCategory, St
             "WHERE (:name IS NULL OR gc.name LIKE CONCAT('%', :name, '%')) " +
             "AND (:description IS NULL OR gc.description LIKE CONCAT('%', :description, '%')) " +
             "AND (:status IS NULL OR gc.status = :status) " +
-            "ORDER BY gc.createdDate DESC LIMIT :pageSize OFFSET :offset")
+            "ORDER BY gc.createdDate  DESC LIMIT :pageSize OFFSET :offset")
     List<GroupCategory> findGroupCategoriesBySearchConditions(
             @Param("name") String name,
             @Param("description") String description,

@@ -10,6 +10,8 @@ import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,7 +34,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "is_edited", nullable = false)
@@ -40,7 +42,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @Column(name = "edited_at")
-    private Date editedAt = null;
+    private LocalDateTime editedAt = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "type", nullable = false)
@@ -136,7 +138,7 @@ public class Message implements Serializable {
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
-        setEditedAt(new Date());
+        setEditedAt(LocalDateTime.now(ZoneOffset.UTC));
         setIsEdited(true);
     }
 
@@ -159,7 +161,7 @@ public class Message implements Serializable {
                 "type = " + type + ", " +
                 "editedAt = " + editedAt + ", " +
                 "isEdited = " + isEdited + ", " +
-                "createdDate = " + createdDate + ", " +
+                "createdDate  = " + createdDate  + ", " +
                 "content = " + content + ")";
     }
 

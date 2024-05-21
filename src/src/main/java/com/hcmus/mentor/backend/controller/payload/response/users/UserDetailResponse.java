@@ -8,8 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -32,7 +32,7 @@ public class UserDetailResponse {
 
     private String phone;
 
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     private String personalEmail;
 

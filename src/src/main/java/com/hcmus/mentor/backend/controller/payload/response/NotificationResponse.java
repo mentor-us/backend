@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
@@ -26,7 +26,7 @@ public class NotificationResponse {
 
     private ShortProfile sender;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private String refId;
 

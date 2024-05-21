@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
@@ -34,8 +35,8 @@ public class SystemJwtTokenService implements AuthenticationTokenService {
                 .and()
                 .claims(claims)
                 .issuer(constants.issuer)
-                .issuedAt(new Date())
-                .expiration(new Date(new Date().getTime() + expirationTime.toMillis()))
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(Instant.now().plusMillis(expirationTime.toMillis())))
                 .signWith(getSigningKey(), Jwts.SIG.HS512)
                 .compact();
     }

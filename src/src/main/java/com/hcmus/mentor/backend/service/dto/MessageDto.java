@@ -8,8 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -23,7 +23,7 @@ public class MessageDto {
 
     private String content;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private Message.Type type;
 
@@ -37,7 +37,7 @@ public class MessageDto {
 
     private Boolean isEdited;
 
-    private Date editedAt;
+    private LocalDateTime editedAt;
 
     @Builder.Default
     private List<ReactionDto> reactions = new ArrayList<>();

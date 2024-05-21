@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,9 +20,9 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
 //    long countByIdInAndStatus(List<String> userIds, Boolean status);
 
-    long countByCreatedDateBetween(Date start, Date end);
+    long countByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
-//    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
+//    long countByIdInAndCreatedDateBetween(List<String> userIds, LocalDateTime start, LocalDateTime end);
 
     Boolean existsByEmail(String email);
 

@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.service.EventType;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -20,9 +21,9 @@ class EventDto {
     private String groupName;
     private String user;
     private TaskStatus status;
-    private Date timeStart;
-    private Date timeEnd;
-    private Date deadline;
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
+    private LocalDateTime deadline;
     private EventType type;
 
     public static EventDto from(Meeting meeting) {
@@ -49,7 +50,7 @@ class EventDto {
                 .build();
     }
 
-    public Date getUpcomingTime() {
+    public LocalDateTime getUpcomingTime() {
         return (EventType.TASK.equals(getType())) ? getDeadline() : getTimeStart();
     }
 }

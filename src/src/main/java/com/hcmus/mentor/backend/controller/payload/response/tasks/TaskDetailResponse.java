@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -21,7 +21,7 @@ public class TaskDetailResponse {
 
     private String description;
 
-    private Date deadline;
+    private LocalDateTime deadline;
 
     private TaskDetailResponseAssigner assigner;
 
@@ -31,7 +31,7 @@ public class TaskDetailResponse {
 
     private TaskDetailResponseGroup group;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private TaskDetailResponseRole role;
 

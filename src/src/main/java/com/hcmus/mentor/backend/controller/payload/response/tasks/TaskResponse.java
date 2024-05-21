@@ -10,7 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
@@ -20,12 +20,12 @@ public class TaskResponse {
     private String id;
     private String title;
     private String description;
-    private Date deadline;
+    private LocalDateTime deadline;
     private String parentTask;
     private Group group;
     private User assigner;
     private TaskStatus status;
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     public static TaskResponse from(Task task, AssigneeDto assignee, Group group) {
         return TaskResponse.builder()

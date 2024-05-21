@@ -30,11 +30,11 @@ public class VoteDetailResponse {
 
     private LocalDateTime timeEnd;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private Vote.Status status;
 
-    private Date closedDate;
+    private LocalDateTime closedDate;
 
     private boolean canEdit;
 

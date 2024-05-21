@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -16,6 +17,6 @@ public class FindGroupGeneralAnalyticRequest {
     private String groupName;
     private String groupCategory;
     private GroupStatus status;
-    private Date timeStart;
-    private Date timeEnd;
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
 }

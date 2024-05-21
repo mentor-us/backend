@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 @Getter
@@ -26,7 +28,7 @@ public class NotificationSubscriber {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  =  LocalDateTime.now(ZoneOffset.UTC);
 
     @ManyToOne
     @JoinColumn(name = "user_id")

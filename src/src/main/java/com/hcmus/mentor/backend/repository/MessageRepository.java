@@ -10,20 +10,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface MessageRepository extends JpaRepository<Message, String> {
 
-    long countByCreatedDateBetween(Date start, Date end);
+    long countByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
     long countByChannelIdIn(List<String> channelIds);
 
     long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
 
-    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, LocalDateTime start, LocalDateTime end);
 
     @NotNull
     Optional<Message> findById(@NotNull String id);
@@ -51,7 +51,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "join fetch m.channel c " +
             "left join fetch m.file " +
             "WHERE m.channel.id = ?1 " +
-            "ORDER BY m.createdDate DESC ")
+            "ORDER BY m.createdDate  DESC ")
     Page<Message> getGroupMessagesByChannelId(Pageable pageable, String groupId);
 
     @Query("SELECT m, s, c " +
@@ -61,7 +61,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "WHERE m.channel.id = ?1 " +
             "AND m.status != 'DELETED' " +
             "AND m.content LIKE %?2% " +
-            "ORDER BY m.createdDate DESC ")
+            "ORDER BY m.createdDate  DESC ")
     List<Message> findGroupMessages(String groupId, String query);
 
     @Query("SELECT m, s, c " +
@@ -69,7 +69,7 @@ public interface MessageRepository extends JpaRepository<Message, String> {
             "join m.sender s " +
             "join m.channel c " +
             "WHERE m.channel.id IN :channelIds AND m.sender.id = :senderId " +
-            "ORDER BY m.createdDate DESC " +
+            "ORDER BY m.createdDate  DESC " +
             "limit 1")
     Optional<Message> findLatestOwnMessageByChannel(List<String> channelIds, String senderId);
 

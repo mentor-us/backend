@@ -18,7 +18,7 @@ public class GroupDetailDto {
 
     private String id;
     private List<String> channelIds = Collections.emptyList();
-    private Date createdDate;
+    private LocalDateTime createdDate;
     private String creatorId;
     private String defaultChannelId;
     private String description;

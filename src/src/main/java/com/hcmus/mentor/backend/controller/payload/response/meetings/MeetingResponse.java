@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -24,9 +25,9 @@ public class MeetingResponse implements Serializable {
 
     private String description;
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private MeetingRepeated repeated;
 

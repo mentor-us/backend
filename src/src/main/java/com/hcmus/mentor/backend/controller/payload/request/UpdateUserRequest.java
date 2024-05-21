@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -19,7 +20,7 @@ public class UpdateUserRequest {
     private String name;
     private String imageUrl;
     private String phone;
-    private Date birthDate;
+    private LocalDateTime birthDate;
     private String personalEmail;
 
     @Size(min = 0, max = 1)

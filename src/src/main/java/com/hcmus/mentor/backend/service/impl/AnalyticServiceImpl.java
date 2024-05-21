@@ -51,7 +51,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -217,22 +216,20 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data;
         if (permissionService.isSuperAdmin(emailUser)) {
-            data = getChartByMonthForSuperAdmin(timeStart, timeEnd);
+            data = getChartByMonthForSuperAdmin(timeStart.atStartOfDay(), timeEnd.atStartOfDay());
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
-            data = getChartByMonthForAdmin(timeStart, timeEnd, adminId);
+            data = getChartByMonthForAdmin(timeStart.atStartOfDay(), timeEnd.atStartOfDay(), adminId);
         }
         SystemAnalyticChartResponse response = SystemAnalyticChartResponse.builder().data(data).build();
         return new ApiResponseDto<>(response, SUCCESS, "");
     }
 
-    private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForSuperAdmin(LocalDate timeStart, LocalDate timeEnd) {
+    private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForSuperAdmin(LocalDateTime timeStart, LocalDateTime timeEnd) {
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
-        for (LocalDate localDate = timeStart;
-             localDate.isBefore(timeEnd);
-             localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate localDate = LocalDate.from(timeStart); localDate.isBefore(LocalDate.from(timeEnd)); localDate = localDate.plusMonths(1)) {
+            LocalDateTime date = localDate.atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
+            LocalDateTime dateAfterOneMonth = localDate.plusMonths(1).atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
             long newGroups = groupRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
             long newMessages = messageRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
@@ -243,7 +240,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
+                    .month(date.getMonthValue())
                     .year(date.getYear() + 1900)
                     .newGroups(newGroups)
                     .newMessages(newMessages)
@@ -256,13 +253,13 @@ public class AnalyticServiceImpl implements AnalyticService {
         return data;
     }
 
-    private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForAdmin(LocalDate timeStart, LocalDate timeEnd, String adminId) {
+    private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForAdmin(LocalDateTime timeStart, LocalDateTime timeEnd, String adminId) {
         List<Group> groups = groupRepository.findAllByCreatorId(adminId);
         List<String> channelIds = groups.stream().flatMap(g -> g.getChannels().stream().map(Channel::getId)).toList();
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
-        for (LocalDate localDate = timeStart; localDate.isBefore(timeEnd); localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate localDate = LocalDate.from(timeStart); localDate.isBefore(LocalDate.from(timeEnd)); localDate = localDate.plusMonths(1)) {
+            LocalDateTime date = localDate.atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
+            LocalDateTime dateAfterOneMonth = localDate.plusMonths(1).atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
 
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
@@ -273,8 +270,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
-                    .year(date.getYear() + 1900)
+                    .month(date.getMonthValue())
+                    .year(date.getYear())
                     .newGroups(newGroups)
                     .newMessages(newMessages)
                     .newTasks(newTasks)
@@ -315,11 +312,9 @@ public class AnalyticServiceImpl implements AnalyticService {
         var channelIds = channels.stream().map(Channel::getId).collect(Collectors.toList());
         Set<User> users = groups.stream().flatMap(g -> g.getGroupUsers().stream().map(GroupUser::getUser)).collect(Collectors.toSet());
 
-        for (LocalDate localDate = timeStart;
-             localDate.isBefore(timeEnd);
-             localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate localDate = timeStart; localDate.isBefore(timeEnd); localDate = localDate.plusMonths(1)) {
+            LocalDateTime date = localDate.atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
+            LocalDateTime dateAfterOneMonth = localDate.plusMonths(1).atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
 
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
@@ -327,11 +322,11 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newMessages = messageRepository.countByChannelIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
             long newMeetings = meetingRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
-            long newUsers = users.stream().filter(user -> user.getCreatedDate().after(date) && user.getCreatedDate().before(dateAfterOneMonth)).count();
+            long newUsers = users.stream().filter(user -> user.getCreatedDate().isAfter(date) && user.getCreatedDate().isBefore(dateAfterOneMonth)).count();
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
-                    .year(date.getYear() + 1900)
+                    .month(date.getMonthValue())
+                    .year(date.getYear())
                     .newGroups(newGroups)
                     .newMessages(newMessages)
                     .newTasks(newTasks)
@@ -369,7 +364,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
 
         String categoryName = group.getGroupCategory().getName();
-        Date lastTimeActive = getLastTimeActive(channelIds);
+        LocalDateTime lastTimeActive = getLastTimeActive(channelIds);
         long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         long totalTasks = getTotalTasks(tasks);
         long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
@@ -495,7 +490,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             long totalTasksMember = taskRepository.countAllOwnTaskOfGroup(channelIds, user.getId());
             long totalDoneTasks = taskRepository.countAllOwnTaskOfGroupWithStatus(channelIds, user.getId(), TaskStatus.DONE);
 
-            Date lastTimeMessageMember = messageRepository.findLatestOwnMessageByChannel(channelIds, user.getId())
+            LocalDateTime lastTimeMessageMember = messageRepository.findLatestOwnMessageByChannel(channelIds, user.getId())
                     .map(Message::getCreatedDate).orElse(null);
 
             GroupAnalyticResponse.Member member = GroupAnalyticResponse.Member.builder()
@@ -516,24 +511,24 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
     }
 
-    private Date getLatestDate(Date... dates) {
-        return Arrays.stream(dates).filter(Objects::nonNull).max(Date::compareTo).orElse(null);
+    private LocalDateTime getLatestDate(LocalDateTime... dates) {
+        return Arrays.stream(dates).filter(Objects::nonNull).max(LocalDateTime::compareTo).orElse(null);
     }
 
     private long getTotalTasks(List<Task> tasks) {
         return tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
     }
 
-    private Date getLastTimeActive(List<String> channelIds) {
-        Date lastTimeMessage = Optional.ofNullable(messageRepository.findFirstByChannelIdInOrderByCreatedDateDesc(channelIds))
+    private LocalDateTime getLastTimeActive(List<String> channelIds) {
+        LocalDateTime lastTimeMessage = Optional.ofNullable(messageRepository.findFirstByChannelIdInOrderByCreatedDateDesc(channelIds))
                 .map(Message::getCreatedDate)
                 .orElse(null);
 
-        Date lastTimeTask = Optional.ofNullable(taskRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
+        LocalDateTime lastTimeTask = Optional.ofNullable(taskRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
                 .map(Task::getCreatedDate)
                 .orElse(null);
 
-        Date lastTimeMeeting = Optional.ofNullable(meetingRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
+        LocalDateTime lastTimeMeeting = Optional.ofNullable(meetingRepository.findFirstByGroupIdInOrderByCreatedDateDesc(channelIds))
                 .map(Meeting::getCreatedDate)
                 .orElse(null);
 
@@ -561,7 +556,7 @@ public class AnalyticServiceImpl implements AnalyticService {
                 .map(GroupCategory::getName)
                 .orElse(null);
 
-        Date lastTimeActive = getLastTimeActive(channelIds);
+        LocalDateTime lastTimeActive = getLastTimeActive(channelIds);
 
         long totalMessages = messageRepository.countByChannelIdIn(channelIds);
         List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
@@ -761,8 +756,8 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {
             responses = responses.stream()
                     .filter(response -> response.getLastTimeActive() != null &&
-                            response.getLastTimeActive().after(request.getTimeStart()) &&
-                            response.getLastTimeActive().before(request.getTimeEnd()))
+                            response.getLastTimeActive().isAfter(request.getTimeStart()) &&
+                            response.getLastTimeActive().isBefore(request.getTimeEnd()))
                     .toList();
         }
 
@@ -901,10 +896,9 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {
             members = members.stream()
-                    .filter(response ->
-                            response.getLastTimeActive() != null &&
-                                    response.getLastTimeActive().after(request.getTimeStart()) &&
-                                    response.getLastTimeActive().before(request.getTimeEnd()))
+                    .filter(response -> response.getLastTimeActive() != null &&
+                            response.getLastTimeActive().isAfter(request.getTimeStart()) &&
+                            response.getLastTimeActive().isBefore(request.getTimeEnd()))
                     .toList();
         }
 

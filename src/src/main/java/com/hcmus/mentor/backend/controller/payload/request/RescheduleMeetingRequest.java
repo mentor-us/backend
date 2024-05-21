@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -15,10 +16,10 @@ import java.util.Date;
 public class RescheduleMeetingRequest {
 
     @NotNull
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     @NotNull
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private String place;
 }

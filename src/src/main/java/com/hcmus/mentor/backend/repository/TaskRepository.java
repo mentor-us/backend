@@ -21,13 +21,13 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     List<Task> findAllByParentTaskId(String parentTask);
 
-    List<Task> findByCreatedDateBetween(Date start, Date end);
+    List<Task> findByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
-    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, LocalDateTime start, LocalDateTime end);
 
     List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 
-    List<Task> findAllByDeadlineBetween(Date date1, Date date2);
+    List<Task> findAllByDeadlineBetween(LocalDateTime date1, LocalDateTime date2);
 
     List<Task> findAllByGroupIdIn(List<String> groupIds);
 
@@ -36,7 +36,7 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     @Query("SELECT t FROM Task t " +
             "JOIN t.assignees assignees " +
             "WHERE assignees.id = :userId " +
-            "AND t.deadline > :currentDate " +
+            "AND t.deadline > :currentLocalDateTime " +
             "ORDER BY t.deadline DESC")
     List<Task> findByAssigneeIdsUserId(String userId);
 

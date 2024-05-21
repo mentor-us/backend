@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -75,11 +77,11 @@ public class FaqServiceImpl implements FaqService {
 
         if (request.getAnswer() != null && !request.getAnswer().isEmpty()) {
             faq.setAnswer(request.getAnswer());
-            faq.setUpdatedDate(new Date());
+            faq.setUpdatedDate(LocalDateTime.now(ZoneOffset.UTC));
         }
         if (!request.getQuestion().isEmpty()) {
             faq.setQuestion(request.getQuestion());
-            faq.setUpdatedDate(new Date());
+            faq.setUpdatedDate(LocalDateTime.now(ZoneOffset.UTC));
         }
         return faqRepository.save(faq);
     }

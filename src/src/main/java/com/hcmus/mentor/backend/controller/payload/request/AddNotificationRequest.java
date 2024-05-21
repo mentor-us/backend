@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -22,5 +23,5 @@ public class AddNotificationRequest {
 
     private String receiverId;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 }

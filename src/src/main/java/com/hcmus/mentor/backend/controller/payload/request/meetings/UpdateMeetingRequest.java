@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -25,10 +26,10 @@ public class UpdateMeetingRequest {
     private String description;
 
     @NotNull
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     @NotNull
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     @NotNull
     private MeetingRepeated repeated;

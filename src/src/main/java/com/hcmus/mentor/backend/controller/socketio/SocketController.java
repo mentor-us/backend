@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SocketController {
 
-    private static final Logger LOGGER = LogManager.getLogger(SocketController.class);
+    private static final Logger logger = LogManager.getLogger(SocketController.class);
 
     private final SocketIOServer server;
 
@@ -70,11 +70,13 @@ public class SocketController {
         server.addEventListener("send_message", ReceivedMessageRequest.class, onChatReceived());
         server.addEventListener("send_voting", DoVotingRequest.class, onVotingReceived());
 
-        LOGGER.info("[*] Configure Socket IO Server listener.");
+        logger.info("[*] Configure Socket IO Server listener.");
     }
 
     private DataListener<JoinOutRoomRequest> onJoinRoom() {
         return (client, payload, ackRequest) -> {
+            logger.info("Join room: {}", payload.getGroupId());
+
             if (payload.getGroupId() == null || payload.getGroupId().isEmpty()) {
                 return;
             }
@@ -84,6 +86,8 @@ public class SocketController {
 
     private DataListener<JoinOutRoomRequest> onOutRoom() {
         return (client, payload, ackRequest) -> {
+            logger.info("Out room: {}", payload.getGroupId());
+
             if (payload.getGroupId() == null || payload.getGroupId().isEmpty()) {
                 return;
             }
@@ -117,7 +121,7 @@ public class SocketController {
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)
                     .channel(receivedMessageRequest.getChannel()).build();
-            LOGGER.info("[*] Update last message of channel {}.", receivedMessageRequest.getChannel().getGroup().getId());
+            logger.info("[*] Update last message of channel {}.", receivedMessageRequest.getChannel().getGroup().getId());
             pipeline.send(updateLastMessageCommand);
         };
     }

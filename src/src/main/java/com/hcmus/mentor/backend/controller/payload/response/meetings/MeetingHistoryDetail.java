@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.MeetingHistory;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -15,15 +16,15 @@ public class MeetingHistoryDetail {
 
     private String id;
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private String place;
 
     private ShortProfile modifier;
 
-    private Date modifyDate;
+    private LocalDateTime modifyDate;
 
     public static MeetingHistoryDetail from(MeetingHistory history, ShortProfile modifier) {
         return MeetingHistoryDetail.builder()

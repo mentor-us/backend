@@ -12,6 +12,7 @@ import org.springframework.data.annotation.Id;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -29,9 +30,9 @@ public class GroupDetailResponse {
 
     private String description;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
-    private Date updatedDate;
+    private LocalDateTime updatedDate;
 
     private List<String> mentors;
 
@@ -74,7 +75,7 @@ public class GroupDetailResponse {
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
-        this.createdDate = group.getCreatedDate();
+        this.createdDate  = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
         this.mentors = group.getMentors().stream().map(User::getId).toList();
         this.mentees = group.getMentees().stream().map(User::getId).toList();
@@ -138,10 +139,10 @@ public class GroupDetailResponse {
         private String description;
 
         @Builder.Default
-        private Date createdDate = new Date();
+        private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
 
         @Builder.Default
-        private Date updatedDate = new Date();
+        private LocalDateTime updatedDate = LocalDateTime.now(ZoneOffset.UTC);
 
         @Builder.Default
         private List<String> userIds = new ArrayList<>();

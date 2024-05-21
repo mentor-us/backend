@@ -12,6 +12,7 @@ import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Getter
@@ -27,13 +28,13 @@ public class MessageDetailResponse implements Serializable {
 
     private String content;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private Message.Type type;
 
     private Boolean isEdited;
 
-    private Date editedAt;
+    private LocalDateTime editedAt;
 
     private String groupId;
 

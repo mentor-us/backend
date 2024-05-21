@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +22,7 @@ public class TaskMessageResponse {
 
     private String description;
 
-    private Date deadline;
+    private LocalDateTime deadline;
 
     private String assignerId;
 
@@ -30,7 +31,7 @@ public class TaskMessageResponse {
 
     private String groupId;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private TaskStatus status;
 

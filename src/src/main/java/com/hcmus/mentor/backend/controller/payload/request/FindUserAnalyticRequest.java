@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -15,8 +16,8 @@ public class FindUserAnalyticRequest {
     private String name;
     private String email;
     private Role role;
-    private Date timeStart;
-    private Date timeEnd;
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
 
     public enum Role {
         MENTOR,

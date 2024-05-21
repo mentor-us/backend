@@ -14,8 +14,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Setter
@@ -75,7 +75,7 @@ public class User extends BaseDomain implements Serializable {
     private String phone = "";
 
     @Column(name = "birth_date")
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     @Column(name = "training_point")
     private int trainingPoint;
@@ -247,7 +247,7 @@ public class User extends BaseDomain implements Serializable {
                 "status = " + status + ", " +
                 "phone = " + phone + ", " +
                 "birthDate = " + birthDate + ", " +
-                "createdDate = " + createdDate + ", " +
+                "createdDate  = " + createdDate + ", " +
                 "trainingPoint = " + trainingPoint + ", " +
                 "hasEnglishCert = " + hasEnglishCert + ", " +
                 "studyingPoint = " + studyingPoint + ", " +

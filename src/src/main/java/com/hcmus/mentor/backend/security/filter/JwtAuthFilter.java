@@ -19,7 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Component
 @RequiredArgsConstructor
@@ -93,12 +94,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isTokenValid(Claims claims) {
-        return !getTokenExpired(claims).before(new Date());
+        return !getTokenExpired(claims).isBefore(LocalDateTime.now(ZoneOffset.UTC));
     }
 
-    private Date getTokenExpired(Claims claims) {
+    private LocalDateTime getTokenExpired(Claims claims) {
         try {
-            return claims.getExpiration();
+            return claims.getExpiration().toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
         } catch (Exception ex) {
             throw new UnauthorizedException("Token expired claim cannot be found. Invalid token");
         }

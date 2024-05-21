@@ -7,8 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -20,8 +21,8 @@ public class WorkspaceChannelDto {
     private String id;
     private String name;
     private String description;
-    private Date createdDate = new Date();
-    private Date updatedDate = new Date();
+    private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
+    private LocalDateTime updatedDate = LocalDateTime.now(ZoneOffset.UTC);
     private List<String> userIds = new ArrayList<>();
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

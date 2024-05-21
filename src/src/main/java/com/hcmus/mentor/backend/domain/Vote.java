@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -26,7 +26,7 @@ public class Vote extends BaseDomain {
     private LocalDateTime timeEnd;
 
     @Column(name = "closed_date")
-    private Date closedDate;
+    private LocalDateTime closedDate;
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -34,7 +34,7 @@ public class Vote extends BaseDomain {
 
     @Builder.Default
     @Column(name = "deleted_date")
-    private Date deletedDate = null;
+    private LocalDateTime deletedDate = null;
 
     @Builder.Default
     @Column(name = "is_multiple_choice", nullable = false)
@@ -67,7 +67,7 @@ public class Vote extends BaseDomain {
 
     public void close() {
         setStatus(Status.CLOSED);
-        setClosedDate(new Date());
+        setClosedDate( LocalDateTime.now(ZoneOffset.UTC));
     }
 
     public void reopen() {
@@ -89,7 +89,7 @@ public class Vote extends BaseDomain {
                 "question = " + question + ", " +
                 "timeEnd = " + timeEnd + ", " +
                 "closedDate = " + closedDate + ", " +
-                "createdDate = " + createdDate + ", " +
+                "createdDate  = " + createdDate  + ", " +
                 "isDeleted = " + isDeleted + ", " +
                 "deletedDate = " + deletedDate + ", " +
                 "isMultipleChoice = " + isMultipleChoice + ", " +

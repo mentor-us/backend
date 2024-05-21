@@ -6,10 +6,10 @@ import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
@@ -59,7 +59,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
@@ -806,17 +810,13 @@ public class GroupController {
             @RequestParam(defaultValue = "") String menteeEmail,
             @RequestParam(defaultValue = "") String groupCategory,
             @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart1,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart1,
             @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd1,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd1,
             @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeStart2,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeStart2,
             @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-            Date timeEnd2,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timeEnd2,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {

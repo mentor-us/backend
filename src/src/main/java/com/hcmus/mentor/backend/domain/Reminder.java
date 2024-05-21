@@ -7,6 +7,8 @@ import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +39,7 @@ public class Reminder {
     private String name;
 
     @Column(name = "reminder_date")
-    private Date reminderDate;
+    private LocalDateTime reminderDate;
 
     @Column(name = "remindable_id")
     private String remindableId;

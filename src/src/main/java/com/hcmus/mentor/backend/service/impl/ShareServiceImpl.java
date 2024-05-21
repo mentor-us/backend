@@ -11,6 +11,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 
@@ -27,7 +29,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingGroup(String groupId) {
         var group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-        group.setUpdatedDate(new Date());
+        group.setUpdatedDate(LocalDateTime.now(ZoneOffset.UTC));
         groupRepository.save(group);
     }
 
@@ -37,7 +39,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingChannel(String channelId) {
         var channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        channel.setUpdatedDate(new Date());
+        channel.setUpdatedDate(LocalDateTime.now(ZoneOffset.UTC));
         channelRepository.save(channel);
 
         pingGroup(channel.getGroup().getId());

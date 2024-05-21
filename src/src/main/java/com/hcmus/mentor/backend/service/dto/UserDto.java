@@ -6,6 +6,8 @@ import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -51,7 +53,7 @@ public class UserDto {
     @Builder.Default
     private String phone = "";
 
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     @Builder.Default
     private String personalEmail = "";
@@ -69,7 +71,7 @@ public class UserDto {
     private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
 
     private int trainingPoint;
 

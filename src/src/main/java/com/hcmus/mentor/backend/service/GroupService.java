@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface GroupService {
@@ -59,10 +59,10 @@ public interface GroupService {
             String mentorEmail,
             String menteeEmail,
             String groupCategory,
-            Date timeStart1,
-            Date timeEnd1,
-            Date timeStart2,
-            Date timeEnd2,
+            LocalDateTime timeStart1,
+            LocalDateTime timeEnd1,
+            LocalDateTime timeStart2,
+            LocalDateTime timeEnd2,
             String status,
             List<String> remainColumns)
             throws IOException;

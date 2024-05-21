@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 @Service
@@ -33,7 +35,7 @@ public class ReminderServiceImpl implements ReminderService {
 
     @Override
     public void sendReminders() {
-        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(new Date());
+        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(LocalDateTime.now(ZoneOffset.UTC));
 
         for (Reminder reminder : reminders) {
             var receiverIds = getStrings(reminder, reminder.getType().toString() + "_REMINDER");

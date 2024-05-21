@@ -5,8 +5,11 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.cglib.core.Local;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 @Data
@@ -22,17 +25,17 @@ public class MeetingHistory implements Serializable {
     private String id;
 
     @Column(name = "time_start")
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     @Column(name = "time_end")
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     @Column(name = "place")
     private String place;
 
     @Builder.Default
     @Column(name = "modify_date", nullable = false)
-    private Date modifyDate = new Date();
+    private LocalDateTime modifyDate = LocalDateTime.now(ZoneOffset.UTC);
 
     @ManyToOne
     @JoinColumn(name = "modifier_id")

@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -34,9 +34,9 @@ public class CreateGroupRequest {
     private String description;
 
     /**
-     * Date when the group is created.
+     * LocalDateTime when the group is created.
      */
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     /**
      * List of mentee emails associated with the group.
@@ -57,11 +57,11 @@ public class CreateGroupRequest {
      * Start time of the group.
      */
     @NotNull
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     /**
      * End time of the group.
      */
     @NotNull
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 }

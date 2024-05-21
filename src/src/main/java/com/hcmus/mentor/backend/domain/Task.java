@@ -6,17 +6,15 @@ import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -40,11 +38,11 @@ public class Task implements IRemindable, Serializable {
     private String description;
 
     @Column(name = "deadline")
-    private Date deadline;
+    private LocalDateTime deadline;
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -52,7 +50,7 @@ public class Task implements IRemindable, Serializable {
 
     @Builder.Default
     @Column(name = "deleted_date")
-    private Date deletedDate = null;
+    private LocalDateTime deletedDate = null;
 
     @BatchSize(size = 10)
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -90,8 +88,8 @@ public class Task implements IRemindable, Serializable {
 
     @Override
     public Reminder toReminder() {
-        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
-        String formattedTime = sdf.format(DateUtils.addHours(deadline, 7));
+        var dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm dd/MM/yyyy");
+        String formattedTime = dateTimeFormatter.format(deadline.plusHours(7));
 
         var reminder = Reminder.builder()
                 .group(group)
@@ -107,11 +105,8 @@ public class Task implements IRemindable, Serializable {
         return reminder;
     }
 
-    public Date getReminderDate() {
-        LocalDateTime localDateTime =
-                LocalDateTime.ofInstant(deadline.toInstant(), ZoneId.systemDefault());
-        LocalDateTime reminderTime = localDateTime.minusDays(1);
-        return Date.from(reminderTime.atZone(ZoneId.systemDefault()).toInstant());
+    public LocalDateTime getReminderDate() {
+        return deadline.minusDays(1);
     }
 
     @Override

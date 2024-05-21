@@ -41,6 +41,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -253,7 +255,7 @@ public class MessageServiceImpl implements MessageService {
         var message = messageRepository.save(Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
-                .createdDate(new Date())
+                .createdDate(LocalDateTime.now(ZoneOffset.UTC))
                 .type(Message.Type.VOTE)
                 .vote(vote)
                 .build());
@@ -283,7 +285,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(user)
                 .channel(channel)
-                .createdDate(new Date())
+                .createdDate(LocalDateTime.now(ZoneOffset.UTC))
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
@@ -314,7 +316,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("User not found")))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
-                .createdDate(new Date())
+                .createdDate(LocalDateTime.now(ZoneOffset.UTC))
                 .type(FILE)
                 .file(new File(fileModel))
                 .build());
@@ -365,7 +367,7 @@ public class MessageServiceImpl implements MessageService {
                 Message m = messageRepository.save(Message.builder()
                         .sender(sender)
                         .channel(channel)
-                        .createdDate(new Date())
+                        .createdDate(LocalDateTime.now(ZoneOffset.UTC))
                         .content(message.getContent())
                         .type(message.getType())
                         .reply(message.getReply())
@@ -397,7 +399,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void updateCreatedDateVoteMessage(String voteId) {
         messageRepository.findByVoteId(voteId).ifPresent(message -> {
-            message.setCreatedDate(new Date());
+            message.setCreatedDate(LocalDateTime.now(ZoneOffset.UTC));
             messageRepository.save(message);
         });
     }

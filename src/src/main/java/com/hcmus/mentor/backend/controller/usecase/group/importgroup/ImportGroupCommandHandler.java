@@ -26,6 +26,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -179,7 +180,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             var command = CreateGroupCommand.builder()
                     .name(groupName)
                     .description(description)
-                    .createdDate(new Date())
+                    .createdDate(LocalDateTime.now(ZoneOffset.UTC))
                     .menteeEmails(menteeEmails)
                     .mentorEmails(mentorEmails)
                     .groupCategory(groupCategoryId)

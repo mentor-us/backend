@@ -13,7 +13,6 @@ import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -404,13 +404,13 @@ public class TaskServiceImpl implements IRemindableService {
         return taskRepository.findAllByOwn(channelIds, userId);
     }
 
-    public List<Task> getAllOwnTaskByDate(String userId, Date date) {
-        Date startTime = DateUtils.atStartOfDay(date);
-        Date endTime = DateUtils.atEndOfDay(date);
+    public List<Task> getAllOwnTaskByDate(String userId, LocalDateTime date) {
+        LocalDateTime startTime = date.toLocalDate().atStartOfDay();
+        LocalDateTime endTime = date.toLocalDate().atTime(23, 59, 59);
         return getAllOwnTasksBetween(userId, startTime, endTime);
     }
 
-    public List<Task> getAllOwnTasksBetween(String userId, Date startTime, Date endTime) {
+    public List<Task> getAllOwnTasksBetween(String userId, LocalDateTime startTime, LocalDateTime endTime) {
         var channels = channelRepository.findOwnChannelsByUserId(userId).stream()
                 .toList();
 
@@ -418,13 +418,13 @@ public class TaskServiceImpl implements IRemindableService {
                 .map(Channel::getTasks)
                 .flatMap(Collection::stream)
                 .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
-                .filter(task -> task.getDeadline().after(startTime) && task.getDeadline().before(endTime))
+                .filter(task -> task.getDeadline().isAfter(startTime) && task.getDeadline().isBefore(endTime))
                 .toList();
     }
 
-    public List<Task> getAllOwnTasksByMonth(String userId, Date date) {
-        Date startTime = DateUtils.atStartOfMonth(date);
-        Date endTime = DateUtils.atEndOfMonth(date);
+    public List<Task> getAllOwnTasksByMonth(String userId, LocalDateTime date) {
+        LocalDateTime startTime = date.toLocalDate().atStartOfDay();
+        LocalDateTime endTime = date.toLocalDate().atTime(23, 59, 59);
         return getAllOwnTasksBetween(userId, startTime, endTime);
     }
 

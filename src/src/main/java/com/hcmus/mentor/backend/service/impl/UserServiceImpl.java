@@ -425,8 +425,8 @@ public class UserServiceImpl implements UserService {
                 predicates.add(root.get("roles").in(request.getRole()));
             }
 
-            // Apply sorting by createdDate (assuming it's a field in the User entity)
-            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
+            // Apply sorting by createdDate  (assuming it's a field in the User entity)
+            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate  in descending order
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 

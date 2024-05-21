@@ -24,9 +24,9 @@ public class GroupHomepageResponse {
 
     private String description;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
-    private Date updatedDate;
+    private LocalDateTime updatedDate;
 
     private List<String> mentors;
 
@@ -58,7 +58,7 @@ public class GroupHomepageResponse {
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
-        this.createdDate = group.getCreatedDate();
+        this.createdDate  = group.getCreatedDate();
         this.updatedDate = group.getUpdatedDate();
         this.mentors = group.getMentors().stream().map(User::getId).toList();
         this.mentees = group.getMentees().stream().map(User::getId).toList();

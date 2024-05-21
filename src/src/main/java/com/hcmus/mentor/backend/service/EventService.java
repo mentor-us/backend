@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.service.dto.EventDto;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -13,8 +14,8 @@ public interface EventService {
 
     List<EventDto> mergeEvents(List<Meeting> meetings, List<Task> tasks);
 
-    List<EventDto> getAllEventsByDate(String userId, Date date);
+    List<EventDto> getAllEventsByDate(String userId, LocalDateTime date);
 
-    List<EventDto> getAllEventsByMonth(String userId, Date date);
+    List<EventDto> getAllEventsByMonth(String userId, LocalDateTime date);
 
 }

@@ -11,8 +11,9 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Setter
@@ -43,15 +44,15 @@ public class Channel implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date")
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "updated_date")
-    private Date updatedDate = new Date();
+    private LocalDateTime updatedDate = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Column(name = "deleted_date")
-    private Date deletedDate = null;
+    private LocalDateTime deletedDate = null;
 
     @Builder.Default
     @Column(name = "status", nullable = false)
@@ -108,7 +109,7 @@ public class Channel implements Serializable {
     @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name="channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
+    @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name = "channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
     @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
@@ -121,13 +122,12 @@ public class Channel implements Serializable {
     private List<User> users = new ArrayList<>();
 
 
-
     public boolean isMember(String userId) {
         return users.stream().anyMatch(user -> user.getId().equals(userId));
     }
 
     public void ping() {
-        updatedDate = new Date();
+        updatedDate = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @Override
@@ -138,7 +138,7 @@ public class Channel implements Serializable {
                 "description = " + description + ", " +
                 "imageUrl = " + imageUrl + ", " +
                 "hasNewMessage = " + hasNewMessage + ", " +
-                "createdDate = " + createdDate + ", " +
+                "createdDate  = " + createdDate  + ", " +
                 "updatedDate = " + updatedDate + ", " +
                 "deletedDate = " + deletedDate + ", " +
                 "status = " + status + ", " +

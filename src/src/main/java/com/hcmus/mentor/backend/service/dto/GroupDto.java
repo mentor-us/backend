@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -76,10 +76,10 @@ public class GroupDto {
     private Duration duration;
 
     @Builder.Default
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  = LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
-    private Date updatedDate = new Date();
+    private LocalDateTime updatedDate = LocalDateTime.now(ZoneOffset.UTC);
 
     public static GroupDto from(Group group) {
         if (group == null)

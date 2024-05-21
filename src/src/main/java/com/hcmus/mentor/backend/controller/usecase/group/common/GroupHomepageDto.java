@@ -17,8 +17,8 @@ public class GroupHomepageDto {
     private String id;
     private String name;
     private String description;
-    private Date createdDate;
-    private Date updatedDate;
+    private LocalDateTime createdDate;
+    private LocalDateTime updatedDate;
     private List<String> mentors = new ArrayList<>();
     private List<String> mentees = new ArrayList<>();
     private String groupCategory;

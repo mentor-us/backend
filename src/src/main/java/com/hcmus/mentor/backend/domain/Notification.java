@@ -6,8 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -37,7 +38,7 @@ public class Notification {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate = LocalDateTime.now(ZoneOffset.UTC);
 
     @Column(name = "ref_id")
     private String refId;

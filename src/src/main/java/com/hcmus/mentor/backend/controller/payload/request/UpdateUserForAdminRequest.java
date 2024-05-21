@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,7 +22,7 @@ public class UpdateUserForAdminRequest {
     @Pattern(regexp = "\\d{10}", message = "Invalid phone number")
     private String phone;
 
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     @Pattern(regexp = "^[A-Za-z0-9+_.-]+@(.+)$", message = "Invalid email address")
     private String personalEmail;

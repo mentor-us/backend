@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +22,7 @@ public class ReceivedMessageRequest {
 
     private String content;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private Message.Type type = Message.Type.TEXT;
 
@@ -35,7 +36,7 @@ public class ReceivedMessageRequest {
 
     private Boolean isEdited = true;
 
-    private Date editedAt = null;
+    private LocalDateTime editedAt = null;
 
     @Builder.Default
     private List<ReactionDto> reactions = new ArrayList<>();

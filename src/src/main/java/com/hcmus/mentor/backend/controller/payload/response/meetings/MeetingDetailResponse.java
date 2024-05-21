@@ -5,7 +5,7 @@ import com.hcmus.mentor.backend.service.dto.GroupDto;
 import com.hcmus.mentor.backend.service.dto.UserDto;
 import lombok.*;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -20,9 +20,9 @@ public class MeetingDetailResponse {
 
     private String description;
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private MeetingRepeated repeated;
 

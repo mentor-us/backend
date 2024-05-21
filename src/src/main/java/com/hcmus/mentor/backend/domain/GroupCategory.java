@@ -6,7 +6,10 @@ import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.cglib.core.Local;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -37,7 +40,7 @@ public class GroupCategory {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private LocalDateTime createdDate  =  LocalDateTime.now(ZoneOffset.UTC);
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

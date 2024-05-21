@@ -3,8 +3,8 @@ package com.hcmus.mentor.backend.service.dto;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
@@ -21,9 +21,9 @@ public class MeetingDto {
 
     private String description;
 
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     private MeetingRepeated repeated;
 
@@ -36,7 +36,7 @@ public class MeetingDto {
 
     private String groupId;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     @Builder.Default
     private List<MeetingHistoryDto> histories = new ArrayList<>();
@@ -50,15 +50,15 @@ public class MeetingDto {
 
         private String id;
 
-        private Date timeStart;
+        private LocalDateTime timeStart;
 
-        private Date timeEnd;
+        private LocalDateTime timeEnd;
 
         private String place;
 
         private String modifierId;
 
-        private Date modifyDate;
+        private LocalDateTime modifyDate;
 
         public static MeetingHistoryDto from(com.hcmus.mentor.backend.domain.MeetingHistory history) {
             return MeetingHistoryDto.builder()

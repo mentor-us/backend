@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.domain.dto.ReactionDto;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class MessageResponse implements Serializable {
 
     private String content;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     private Message.Type type;
 
@@ -35,7 +36,7 @@ public class MessageResponse implements Serializable {
 
     private Boolean isEdited;
 
-    private Date editedAt;
+    private LocalDateTime editedAt;
 
     private String taskId;
 

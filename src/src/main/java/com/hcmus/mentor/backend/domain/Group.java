@@ -12,6 +12,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -208,7 +209,7 @@ public class Group extends BaseDomain implements Serializable {
     }
 
     public void ping() {
-        this.updatedDate = new Date();
+        this.updatedDate = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     @Override
@@ -223,7 +224,7 @@ public class Group extends BaseDomain implements Serializable {
                 "timeStart = " + timeStart + ", " +
                 "timeEnd = " + timeEnd + ", " +
                 "duration = " + duration + ", " +
-                "createdDate = " + createdDate + ", " +
+                "createdDate  = " + createdDate  + ", " +
                 "updatedDate = " + updatedDate + ")";
     }
 }

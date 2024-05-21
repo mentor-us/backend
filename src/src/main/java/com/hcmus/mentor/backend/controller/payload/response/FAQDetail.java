@@ -6,8 +6,8 @@ import com.hcmus.mentor.backend.domain.Faq;
 import com.hcmus.mentor.backend.domain.User;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -23,9 +23,9 @@ public class FAQDetail {
 
     private String answer;
 
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
-    private Date updatedDate;
+    private LocalDateTime updatedDate;
 
     private ShortProfile creator;
 

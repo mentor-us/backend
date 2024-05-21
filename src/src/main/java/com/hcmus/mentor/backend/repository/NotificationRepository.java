@@ -12,6 +12,6 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, String> {
 
-    @Query("SELECT n FROM Notification n JOIN n.receivers receivers WHERE receivers.id IN :receiverId ORDER BY n.createdDate DESC")
+    @Query("SELECT n FROM Notification n JOIN n.receivers receivers WHERE receivers.id IN :receiverId ORDER BY n.createdDate  DESC")
     Page<Notification> findOwnNotifications(List<String> receiverId, Pageable pageable);
 }

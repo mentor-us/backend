@@ -37,9 +37,9 @@ public class CreateGroupCommand implements Command<GroupServiceDto> {
     private String description;
 
     /**
-     * Date when the group is created.
+     * LocalDateTime when the group is created.
      */
-    private Date createdDate;
+    private LocalDateTime createdDate;
 
     /**
      * List of mentee emails associated with the group.

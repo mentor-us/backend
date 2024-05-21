@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,7 +22,7 @@ public class MeetingAttendeeResponse {
 
     private String phone;
 
-    private Date birthDate;
+    private LocalDateTime birthDate;
 
     private String personalEmail;
 
