@@ -361,6 +361,7 @@ public class MessageServiceImpl implements MessageService {
         try {
             var messages = new ArrayList<Message>();
             channels.forEach(channel -> {
+                List<String> copiedImages = new ArrayList<>(message.getImages());
                 Message m = messageRepository.save(Message.builder()
                         .sender(sender)
                         .channel(channel)
@@ -368,7 +369,7 @@ public class MessageServiceImpl implements MessageService {
                         .content(message.getContent())
                         .type(message.getType())
                         .reply(message.getReply())
-                        .images(message.getImages())
+                        .images(copiedImages)
                         .file(message.getFile())
                         .isForward(true)
                         .build());
