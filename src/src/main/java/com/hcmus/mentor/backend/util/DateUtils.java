@@ -3,10 +3,15 @@ package com.hcmus.mentor.backend.util;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
 public class DateUtils {
+
+    public static Date getCurrentDateAtUTC() {
+        return Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+    }
 
     public static Date atEndOfDay(Date date) {
         Calendar calendar = Calendar.getInstance();

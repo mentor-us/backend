@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
@@ -37,7 +38,7 @@ public class Notification {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Column(name = "ref_id")
     private String refId;

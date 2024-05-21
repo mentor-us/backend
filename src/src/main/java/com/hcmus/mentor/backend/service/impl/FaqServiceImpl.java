@@ -15,13 +15,13 @@ import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.FaqService;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -75,11 +75,11 @@ public class FaqServiceImpl implements FaqService {
 
         if (request.getAnswer() != null && !request.getAnswer().isEmpty()) {
             faq.setAnswer(request.getAnswer());
-            faq.setUpdatedDate(new Date());
+            faq.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
         }
         if (!request.getQuestion().isEmpty()) {
             faq.setQuestion(request.getQuestion());
-            faq.setUpdatedDate(new Date());
+            faq.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
         }
         return faqRepository.save(faq);
     }

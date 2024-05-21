@@ -25,6 +25,7 @@ import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -253,7 +254,7 @@ public class MessageServiceImpl implements MessageService {
         var message = messageRepository.save(Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
-                .createdDate(new Date())
+                .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(Message.Type.VOTE)
                 .vote(vote)
                 .build());
@@ -283,7 +284,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(user)
                 .channel(channel)
-                .createdDate(new Date())
+                .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
@@ -314,7 +315,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("User not found")))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
-                .createdDate(new Date())
+                .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(FILE)
                 .file(new File(fileModel))
                 .build());
@@ -365,7 +366,7 @@ public class MessageServiceImpl implements MessageService {
                 Message m = messageRepository.save(Message.builder()
                         .sender(sender)
                         .channel(channel)
-                        .createdDate(new Date())
+                        .createdDate(DateUtils.getCurrentDateAtUTC())
                         .content(message.getContent())
                         .type(message.getType())
                         .reply(message.getReply())
@@ -397,7 +398,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void updateCreatedDateVoteMessage(String voteId) {
         messageRepository.findByVoteId(voteId).ifPresent(message -> {
-            message.setCreatedDate(new Date());
+            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
             messageRepository.save(message);
         });
     }

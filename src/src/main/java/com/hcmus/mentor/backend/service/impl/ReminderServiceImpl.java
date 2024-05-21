@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.repository.ReminderRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.ReminderService;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,7 @@ public class ReminderServiceImpl implements ReminderService {
 
     @Override
     public void sendReminders() {
-        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(new Date());
+        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(DateUtils.getCurrentDateAtUTC() );
 
         for (Reminder reminder : reminders) {
             var receiverIds = getStrings(reminder, reminder.getType().toString() + "_REMINDER");

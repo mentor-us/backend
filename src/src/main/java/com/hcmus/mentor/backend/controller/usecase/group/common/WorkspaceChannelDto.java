@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.common;
 
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,8 +21,8 @@ public class WorkspaceChannelDto {
     private String id;
     private String name;
     private String description;
-    private Date createdDate = new Date();
-    private Date updatedDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
     private List<String> userIds = new ArrayList<>();
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.exception.UnauthorizedException;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
 import com.hcmus.mentor.backend.security.handler.GlobalControllerExceptionHandler;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomUserDetailService;
+import com.hcmus.mentor.backend.util.DateUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -93,7 +94,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isTokenValid(Claims claims) {
-        return !getTokenExpired(claims).before(new Date());
+        return !getTokenExpired(claims).before(DateUtils.getCurrentDateAtUTC() );
     }
 
     private Date getTokenExpired(Claims claims) {

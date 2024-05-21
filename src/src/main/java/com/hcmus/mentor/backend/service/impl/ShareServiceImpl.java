@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.service.ShareService;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -11,7 +12,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -27,7 +27,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingGroup(String groupId) {
         var group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-        group.setUpdatedDate(new Date());
+        group.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
         groupRepository.save(group);
     }
 
@@ -37,7 +37,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingChannel(String channelId) {
         var channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        channel.setUpdatedDate(new Date());
+        channel.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
         channelRepository.save(channel);
 
         pingGroup(channel.getGroup().getId());

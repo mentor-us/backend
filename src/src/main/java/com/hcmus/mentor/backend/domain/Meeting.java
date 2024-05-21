@@ -55,7 +55,7 @@ public class Meeting implements IRemindable, Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private Date createdDate = com.hcmus.mentor.backend.util.DateUtils.getCurrentDateAtUTC();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)

@@ -103,7 +103,7 @@ public class MeetingService implements IRemindableService {
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
                 .content("NEW MEETING")
-                .createdDate(new Date())
+                .createdDate(DateUtils.getCurrentDateAtUTC() )
                 .type(Message.Type.MEETING)
                 .channel(meeting.getGroup())
                 .meeting(meeting)

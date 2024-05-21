@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -22,8 +23,8 @@ public class ChannelDetailDto {
     private String description;
     private String imageUrl;
     private Boolean hasNewMessage;
-    private Date createdDate = new Date();
-    private Date updatedDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
     private Date deletedDate = null;
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

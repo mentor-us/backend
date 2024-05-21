@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 
@@ -138,10 +139,10 @@ public class GroupDetailResponse {
         private String description;
 
         @Builder.Default
-        private Date createdDate = new Date();
+        private Date createdDate = DateUtils.getCurrentDateAtUTC();
 
         @Builder.Default
-        private Date updatedDate = new Date();
+        private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
 
         @Builder.Default
         private List<String> userIds = new ArrayList<>();
