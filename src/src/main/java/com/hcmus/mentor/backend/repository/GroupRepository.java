@@ -73,7 +73,7 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
 
     @Query("SELECT g " +
             "FROM Group g " +
-            "JOIN FETCH g.groupUsers gu  " +
+            "JOIN g.groupUsers gu  " +
             "WHERE gu.user.id = ?1 " +
             "AND g.status = 'ACTIVE'")
     Page<Group> findAllByIsMember(String memberId, Pageable pageable);

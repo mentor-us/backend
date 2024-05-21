@@ -48,9 +48,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
+
         Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
         List<NotificationResponse> notificationsResponse = notifications.stream()
                 .map(notification -> modelMapper.map(notification, NotificationResponse.class)).toList();
+
         return pagingResponse(notifications, notificationsResponse);
     }
 
