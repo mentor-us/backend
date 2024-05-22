@@ -6,10 +6,14 @@ import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequ
 import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.event.SendFirebaseNotificationEvent;
-import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.repository.NotificationRepository;
+import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
+import com.hcmus.mentor.backend.repository.NotificationUserRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -51,7 +55,20 @@ public class NotificationServiceImpl implements NotificationService {
 
         Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
         List<NotificationResponse> notificationsResponse = notifications.stream()
-                .map(notification -> modelMapper.map(notification, NotificationResponse.class)).toList();
+                .map(notification -> {
+                    var response = modelMapper.map(notification, NotificationResponse.class);
+                    var shortProfile = userRepository.findById(notification.getSender().getId())
+                            .map(u -> ShortProfile.builder()
+                                    .id(u.getId())
+                                    .name(u.getName())
+                                    .imageUrl(u.getImageUrl())
+                                    .build())
+                            .orElse(null);
+                    response.setSender(shortProfile);
+
+                    return response;
+                })
+                .toList();
 
         return pagingResponse(notifications, notificationsResponse);
     }
