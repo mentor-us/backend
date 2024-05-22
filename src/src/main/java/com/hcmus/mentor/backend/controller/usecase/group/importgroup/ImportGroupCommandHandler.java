@@ -11,6 +11,7 @@ import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.ShareService;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -179,7 +180,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             var command = CreateGroupCommand.builder()
                     .name(groupName)
                     .description(description)
-                    .createdDate(new Date())
+                    .createdDate(DateUtils.getCurrentDateAtUTC() )
                     .menteeEmails(menteeEmails)
                     .mentorEmails(mentorEmails)
                     .groupCategory(groupCategoryId)

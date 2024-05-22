@@ -168,7 +168,6 @@ public class MeetingController {
             @PathVariable String meetingId,
             @RequestBody RescheduleMeetingRequest request) {
         Meeting meeting = meetingService.rescheduleMeeting(user.getId(), meetingId, request);
-        notificationService.sendRescheduleMeetingNotification(user.getId(), meeting, request);
         if (meeting == null) {
             return ApiResponseDto.notFound(404);
         }

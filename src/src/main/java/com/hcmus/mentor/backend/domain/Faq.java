@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,11 +31,11 @@ public class Faq {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Builder.Default
     @Column(name = "updated_date", nullable = false)
-    private Date updatedDate = new Date();
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
 
     @ManyToOne
     @JoinColumn(name = "creator_id")

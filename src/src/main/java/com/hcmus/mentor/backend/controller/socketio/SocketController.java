@@ -108,11 +108,11 @@ public class SocketController {
                     .isForward(message.getIsForward())
                     .build();
             Message newMessage = messageService.saveMessage(receivedMessageRequest);
+            notificationService.sendNewMessageNotification(newMessage);
 
             MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 
             socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getGroup().getId());
-            notificationService.sendNewMessageNotification(response);
 
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)

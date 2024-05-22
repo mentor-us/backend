@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -13,7 +14,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -208,7 +208,7 @@ public class Group extends BaseDomain implements Serializable {
     }
 
     public void ping() {
-        this.updatedDate = new Date();
+        this.updatedDate = DateUtils.getCurrentDateAtUTC() ;
     }
 
     @Override

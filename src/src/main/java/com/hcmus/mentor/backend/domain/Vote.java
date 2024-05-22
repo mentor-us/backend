@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -67,7 +68,7 @@ public class Vote extends BaseDomain {
 
     public void close() {
         setStatus(Status.CLOSED);
-        setClosedDate(new Date());
+        setClosedDate(DateUtils.getCurrentDateAtUTC() );
     }
 
     public void reopen() {

@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,11 +27,11 @@ public class BaseDomain implements Serializable {
      * Created date
      */
     @Column(name = "created_date", nullable = false)
-    protected Date createdDate = new Date();
+    protected Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     /**
      * Updated date
      */
     @Column(name = "updated_date", nullable = false)
-    protected Date updatedDate = new Date();
+    protected Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
 }
