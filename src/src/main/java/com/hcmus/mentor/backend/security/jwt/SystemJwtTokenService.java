@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.security.jwt;
 
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticateConstant;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.AuthenticationTokenService;
+import com.hcmus.mentor.backend.util.DateUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -34,8 +35,8 @@ public class SystemJwtTokenService implements AuthenticationTokenService {
                 .and()
                 .claims(claims)
                 .issuer(constants.issuer)
-                .issuedAt(new Date())
-                .expiration(new Date(new Date().getTime() + expirationTime.toMillis()))
+                .issuedAt(DateUtils.getCurrentDateAtUTC() )
+                .expiration(new Date(DateUtils.getCurrentDateAtUTC() .getTime() + expirationTime.toMillis()))
                 .signWith(getSigningKey(), Jwts.SIG.HS512)
                 .compact();
     }

@@ -43,7 +43,7 @@ public class GetChannelsForwardCommandHandler implements Command.Handler<GetChan
             dto.setName(name);
 
             return dto;
-        }).toList();
+        }).filter(channel -> channel.getName().contains(query.getName())).toList();
     }
 
     private String getChannelName(Channel channel, String userId) {

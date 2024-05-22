@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
@@ -32,7 +33,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Builder.Default
     @Column(name = "is_edited", nullable = false)
@@ -103,7 +104,7 @@ public class Message implements Serializable {
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
     @JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
     private List<Reaction> reactions = new ArrayList<>();
@@ -130,17 +131,13 @@ public class Message implements Serializable {
     }
 
     public void removeReact(User user) {
-        List<Reaction> filteredReactions =
-                reactions.stream()
-                        .filter(reaction -> !reaction.getUser().equals(user))
-                        .toList();
-        setReactions(filteredReactions);
+        getReactions().removeIf(reaction -> !reaction.getUser().getId().equals(user.getId()));
     }
 
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
-        setEditedAt(new Date());
+        setEditedAt(DateUtils.getCurrentDateAtUTC() );
         setIsEdited(true);
     }
 

@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,7 +33,7 @@ public class MeetingHistory implements Serializable {
 
     @Builder.Default
     @Column(name = "modify_date", nullable = false)
-    private Date modifyDate = new Date();
+    private Date modifyDate = DateUtils.getCurrentDateAtUTC() ;
 
     @ManyToOne
     @JoinColumn(name = "modifier_id")

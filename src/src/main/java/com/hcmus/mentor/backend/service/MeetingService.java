@@ -46,6 +46,7 @@ public class MeetingService implements IRemindableService {
     private final Pipeline pipeline;
     private final ModelMapper modelMapper;
     private final MessageRepository messageRepository;
+    private final MeetingHistoryRepository meetingHistoryRepository;
 
     @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {
@@ -74,7 +75,15 @@ public class MeetingService implements IRemindableService {
             return null;
         }
 
-        var meeting = meetingRepository.save(Meeting.builder()
+        var meetingHistory = MeetingHistory.builder()
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .place(request.getPlace())
+                .modifier(organizer)
+                .build();
+        meetingHistory = meetingHistoryRepository.save(meetingHistory);
+
+        var meeting = Meeting.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .timeStart(request.getTimeStart())
@@ -83,19 +92,26 @@ public class MeetingService implements IRemindableService {
                 .place(request.getPlace())
                 .organizer(organizer)
                 .group(channel)
+                .histories(Collections.singletonList(meetingHistory))
                 .attendees(request.getAttendees().contains("*") ? channel.getUsers() : userRepository.findByIdIn(request.getAttendees()))
-                .build());
+                .build();
+        meeting = meetingRepository.save(meeting);
+
+        meetingHistory.setMeeting(meeting);
+        meetingHistoryRepository.save(meetingHistory);
 
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
                 .content("NEW MEETING")
-                .createdDate(new Date())
+                .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(Message.Type.MEETING)
                 .channel(meeting.getGroup())
                 .meeting(meeting)
                 .build();
         messageService.saveMessage(newMessage);
+
         groupService.pingGroup(request.getGroupId());
+
         pipeline.send(UpdateLastMessageCommand.builder().message(newMessage).channel(newMessage.getChannel()).build());
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, request.getOrganizerId());
@@ -115,7 +131,19 @@ public class MeetingService implements IRemindableService {
         if (!isEqualDate(meeting.getTimeStart(), request.getTimeStart())
                 || !isEqualDate(meeting.getTimeEnd(), request.getTimeEnd())) {
             var modifier = userRepository.findById(modifierId).orElse(null);
-            meeting.reschedule(modifier, request);
+
+            var history = MeetingHistory.builder()
+                    .timeStart(request.getTimeStart())
+                    .timeEnd(request.getTimeEnd())
+                    .place(request.getPlace())
+                    .modifier(modifier)
+                    .meeting(meeting)
+                    .build();
+            history = meetingHistoryRepository.save(history);
+
+            var histories = meeting.getHistories();
+            histories.add(history);
+            meeting.setHistories(histories);
         }
 
         meeting.setTitle(request.getTitle());
@@ -133,6 +161,11 @@ public class MeetingService implements IRemindableService {
             reminder.setReminderDate(meeting.getReminderDate());
             reminderRepository.save(reminder);
         }
+
+        messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
+            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            messageRepository.save(message);
+        });
 
         return meetingRepository.save(meeting);
     }
@@ -169,19 +202,17 @@ public class MeetingService implements IRemindableService {
         var channel = meeting.getGroup();
         var group = channel.getGroup();
 
-        Map<String, ShortProfile> modifiers =
-                meeting.getHistories().stream()
-                        .map(MeetingHistory::getModifier)
-                        .map(user -> modelMapper.map(user, ShortProfile.class))
-                        .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
+        Map<String, ShortProfile> modifiers = meeting.getHistories().stream()
+                .map(MeetingHistory::getModifier)
+                .map(user -> modelMapper.map(user, ShortProfile.class))
+                .collect(Collectors.toMap(ShortProfile::getId, profile -> profile, (p1, p2) -> p2));
 
-        List<MeetingHistoryDetail> historyDetails =
-                meeting.getHistories().stream()
-                        .map(history -> {
-                            ShortProfile user = modifiers.getOrDefault(history.getModifier().getId(), null);
-                            return MeetingHistoryDetail.from(history, user);
-                        })
-                        .toList();
+        List<MeetingHistoryDetail> historyDetails = meeting.getHistories().stream()
+                .map(history -> {
+                    ShortProfile user = modifiers.getOrDefault(history.getModifier().getId(), null);
+                    return MeetingHistoryDetail.from(history, user);
+                })
+                .toList();
 
         boolean appliedAllGroup = meeting.getAttendees().size() == channel.getUsers().size();
 
@@ -209,12 +240,7 @@ public class MeetingService implements IRemindableService {
         Channel channel = meeting.getGroup();
         Group group = channel.getGroup();
 
-        List<String> attendeeIds;
-        attendeeIds = group.getGroupUsers().stream()
-                .map(GroupUser::getUser)
-                .filter(user -> !user.getId().equals(meeting.getOrganizer().getId()))
-                .map(User::getId)
-                .toList();
+        List<String> attendeeIds = meeting.getAttendees().stream().map(User::getId).toList();
 
         return userRepository.findByIdIn(attendeeIds).stream()
                 .map(user -> MeetingAttendeeResponse.from(user, group.isMentor(user.getId())))
@@ -258,10 +284,34 @@ public class MeetingService implements IRemindableService {
             return null;
         }
         var modifier = userRepository.findById(modifierId).orElse(null);
-        meeting.reschedule(modifier, request);
+
+        var history = MeetingHistory.builder()
+                .timeStart(request.getTimeStart())
+                .timeEnd(request.getTimeEnd())
+                .place(request.getPlace())
+                .modifier(modifier)
+                .meeting(meeting)
+                .build();
+        history = meetingHistoryRepository.save(history);
+
+        var histories = meeting.getHistories();
+        histories.add(history);
+        meeting.setHistories(histories);
+        meeting.setTimeStart(request.getTimeStart());
+        meeting.setTimeEnd(request.getTimeEnd());
+        meeting.setPlace(request.getPlace());
+        meetingRepository.save(meeting);
+
+        messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
+            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            messageRepository.save(message);
+        });
 
         groupService.pingGroup(meeting.getGroup().getGroup().getId());
-        return meetingRepository.save(meeting);
+
+        notificationService.sendRescheduleMeetingNotification(modifier, meeting, request);
+
+        return meeting;
     }
 
     @Override

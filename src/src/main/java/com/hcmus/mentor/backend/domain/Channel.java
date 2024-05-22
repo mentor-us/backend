@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
@@ -43,11 +44,11 @@ public class Channel implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date")
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Builder.Default
     @Column(name = "updated_date")
-    private Date updatedDate = new Date();
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Builder.Default
     @Column(name = "deleted_date")
@@ -127,7 +128,7 @@ public class Channel implements Serializable {
     }
 
     public void ping() {
-        updatedDate = new Date();
+        updatedDate = DateUtils.getCurrentDateAtUTC() ;
     }
 
     @Override

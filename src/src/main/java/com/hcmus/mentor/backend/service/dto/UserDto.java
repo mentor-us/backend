@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -69,7 +70,7 @@ public class UserDto {
     private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     private int trainingPoint;
 

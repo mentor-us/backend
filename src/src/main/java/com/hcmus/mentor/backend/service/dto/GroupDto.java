@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.service.dto;
 
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -76,10 +77,10 @@ public class GroupDto {
     private Duration duration;
 
     @Builder.Default
-    private Date createdDate = new Date();
+    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
 
     @Builder.Default
-    private Date updatedDate = new Date();
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
 
     public static GroupDto from(Group group) {
         if (group == null)
