@@ -2,19 +2,21 @@
 
 **Prerequisites:**
 
-- JDK 17 or higher (You can choose any distribution of OpenJDK from various vendors):
+- JDK 21 or higher (You can choose any distribution of OpenJDK from various vendors):
 
   - Microsoft OpenJDK: [Installation guide](https://learn.microsoft.com/en-us/java/openjdk/install)
   - Eclipse Temurin: [Installation guide](https://adoptium.net/installation/)
   - Azul Zulu: [Package download](https://www.azul.com/downloads/?package=jdk#zulu)
 
-- MongoDB:
+- Postgres 15:
 
-  - Install MongoDB Community Edition: [Installation guide](https://www.mongodb.com/docs/manual/administration/install-community/)
+  - Install postgres database: [Installation guide](https://www.postgresql.org/download/) or [Docker](https://hub.docker.com/_/postgres)
 
 - Minio:
 
-  - Install Minio server: [Installation guide](https://min.io/download)
+  - Install Minio server: [Installation guide](https://min.io/download) or [Docker](https://min.io/docs/minio/container/index.html)
+
+- Firebase credential (Admin SDK).
 
 **Optional**
 
@@ -42,42 +44,22 @@ OpenJDK 64-Bit Server VM Zulu17.44+53-CA (build 17.0.8.1+1-LTS, mixed mode, shar
 
 ## Initial database
 
-1. Open the terminal.
-2. Run command `mongosh`
-3. Inside mongosh, run the following commands:
+- Connect to postgres, run the application (MentorUS backend) to automation apply the migration, create the database name `MentorUS` and run this query below:
 
-```shell
-use admin
-db.createUser({
-  "user": "root",
-  "pwd": "password",
-  "roles": [
-    "userAdmin"
-  ]
-})
-db.createCollection("mentordb")
-use mentordb
-db['system-config'].insertMany([
-  {
-    "_id": "650fa417608f687c69b69b71",
-    "name": "Domain hợp lệ",
-    "description": "Các domain cho phép đăng nhập trên hệ thống",
-    "type": "java.util.ArrayList",
-    "key": "valid_domain",
-    "value": "[ \"fit.hcmus.edu.vn\", \"student.hcmus.edu.vn\", \"fit.gmail.com.vn\" ]",
-    "_class": "com.hcmus.mentor.backend.entity.SystemConfig"
-  },
-  {
-    "_id": "650fa417608f687c69b69b72",
-    "name": "Thời gian học tối đa",
-    "description": "Thời gian học tối đa của sinh viên",
-    "type": "java.lang.Integer",
-    "key": "valid_max_year",
-    "value": "7",
-    "_class": "com.hcmus.mentor.backend.entity.SystemConfig"
-  }
-])
-db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","ROLE_USER"]})
+```sql
+-- System Config
+INSERT INTO "public"."system-config" ("id", "name", "description", "type", "key", "value")
+VALUES ('1', 'Domain hợp lệ', 'Các domain cho phép đăng nhập trên hệ thống', 'java.util.ArrayList', 'valid_domain', '["fit.hcmus.edu.vn","student.hcmus.edu.vn","fit.gmail.com.vn"]');
+VALUES ('2', 'Thời gian học tối đa', 'Thời gian học tối đa của sinh viên', 'java.lang.Integer', 'valid_max_year', '7');
+
+-- Admin User
+INSERT INTO "public"."users" ("id", "name", "email", "image_url", "wallpaper", "email_verified", "password", "provider", "provider_id", "status", "phone", "birth_date", "created_date", "training_point", "has_english_cert", "studying_point", "initial_name", "gender", "updated_date")
+VALUES (gen_random_uuid(), 'Admin', '<email-of-admin>', 'https://i.pravatar.cc/150?img=3', '', 't', '', 'local', '', 't', '', NULL, current_timestamp, 0, NULL, '0', NULL, 'MALE', current_timestamp);
+
+-- Role for admin
+INSERT INTO "public"."user_roles" ("user_id", "roles")
+  SELECT id, 1
+  FROM "public"."users"
 ```
 
 **Note**: Please replace `<YOUR EMAIL>` with your actual email address.
@@ -123,4 +105,3 @@ db.user.insertOne({name: "Admin",email:"<YOUR EMAIL>","roles": ["SUPER_ADMIN","R
 ## Next Steps
 
 - Developing the application locally: [Development](docs/Development.md)
-- Deploying the application to the server: [Deploy](docs/Deploy.md)
