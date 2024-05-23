@@ -1,5 +1,7 @@
 # Running the Application Locally
 
+> Note: if you are from class, please ping the developer to get the credential file (Hiếu Nguyễn (hieucckha@gmail.com))
+
 - Go to `/src/src/main/resources`
 - Run this command to initial the credential:
 ```shell
@@ -8,6 +10,8 @@ op inject -i application-local.yml.template -o application-local.yml
 ```
 
 > For more information, refer to: [Inject credentials using the 1Password CLI in different environments](https://developer.1password.com/docs/cli/secrets-config-files/#step-3-differentiate-between-environments)
+
+- Add firebase credential file in `/src/main/resources/` with name `mentorus-firebase-adminsdk-20240402.json`
 
 ## Using JetBrains IntelliJ Ultimate:
 
