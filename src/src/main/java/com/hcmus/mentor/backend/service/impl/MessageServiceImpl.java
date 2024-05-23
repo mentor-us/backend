@@ -387,7 +387,7 @@ public class MessageServiceImpl implements MessageService {
 
             messages.forEach(m -> {
                 var response = mappingToMessageDetailResponse(m, sender.getId());
-                socketIOService.sendBroadcastMessage(response, m.getChannel().getGroup().getId());
+                socketIOService.sendBroadcastMessage(response, m.getChannel().getId());
             });
         } catch (Exception e) {
             logger.log(Level.INFO, "Forward message failed", e);
