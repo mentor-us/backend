@@ -20,4 +20,12 @@ public class JoinOutRoomRequest {
     @NotNull
     @NotBlank
     private String userId;
+
+    @Override
+    public String toString() {
+        return "JoinOutRoomRequest{" +
+                "groupId='" + groupId + '\'' +
+                ", userId='" + userId + '\'' +
+                '}';
+    }
 }

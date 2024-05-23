@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
@@ -56,10 +55,10 @@ public class Vote extends BaseDomain {
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
-    @JsonIgnore
+//    @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
+    @JsonIgnoreProperties(value = {"creator", "vote"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
 
     public Choice getChoice(String id) {
