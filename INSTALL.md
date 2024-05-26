@@ -102,6 +102,15 @@ INSERT INTO "public"."user_roles" ("user_id", "roles")
 - Name of the bucket (from step 3)
 - Access key and secret key (from step 9)
 
+## Setup firebase credential
+
+1. Go to https://console.firebase.google.com/u/0/
+2. Create new firebase project
+   ![Create firebase project](docs/imgs/install-firebase/create-firebase-project.png)
+3. Go to service account and generate firebase credential
+   ![Generate adminsdk credential](docs/imgs/install-firebase/generate-adminsdk-credential.png)
+4. Rename it to `mentorus-firebase-adminsdk-20240402.json`, and place it in `src/src/main/resources/`
+
 ## Next Steps
 
 - Developing the application locally: [Development](docs/Development.md)
