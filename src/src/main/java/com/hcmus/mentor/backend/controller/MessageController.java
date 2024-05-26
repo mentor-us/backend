@@ -6,7 +6,6 @@ import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardReque
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessageResponse;
-import com.hcmus.mentor.backend.controller.usecase.message.MessageMapper;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
@@ -15,7 +14,6 @@ import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.*;
-import com.hcmus.mentor.backend.service.impl.MessageServiceImpl;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -24,7 +22,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Message controllers.
@@ -56,10 +52,7 @@ public class MessageController {
     private final SocketIOService socketIOService;
     private final ChannelRepository channelRepository;
     private final LoggedUserAccessor loggedUserAccessor;
-    private final MessageMapper messageMapper;
-    private final MessageServiceImpl messageServiceImpl;
-    private final MessageSource messageSource;
-    private final MeetingService meetingService;
+    private final PermissionService permissionService;
 
     /**
      * Get messages of group.
@@ -115,9 +108,9 @@ public class MessageController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-//        if (message.isDeleted()) {
-//            return ResponseEntity.accepted().build();
-//        }
+        if (message.isDeleted()) {
+            return ResponseEntity.accepted().build();
+        }
 
         message.delete();
         messageRepository.save(message);
@@ -151,28 +144,27 @@ public class MessageController {
     public ResponseEntity<Void> editMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody EditMessageRequest request) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
-        if (messageWrapper.isEmpty()) {
+        var message = messageRepository.findById(request.getMessageId()).orElse(null);
+        if (message == null) {
             return ResponseEntity.notFound().build();
         }
-        Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getChannel().getGroup().getId(), customerUserDetails.getId())) {
+        if (!permissionService.isMemberInChannel(message.getChannel().getId(), currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
+        if (!message.getSender().getId().equals(currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         message.edit(request);
         messageRepository.save(message);
 
-        UpdateMessageResponse response =
-                UpdateMessageResponse.builder()
-                        .messageId(message.getId())
-                        .newContent(message.getContent())
-                        .action(UpdateMessageResponse.Action.update)
-                        .build();
+        UpdateMessageResponse response = UpdateMessageResponse.builder()
+                .messageId(message.getId())
+                .newContent(message.getContent())
+                .action(UpdateMessageResponse.Action.update)
+                .build();
         socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
