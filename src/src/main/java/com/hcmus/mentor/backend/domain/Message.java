@@ -33,7 +33,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getCurrentDateAtUTC();
 
     @Builder.Default
     @Column(name = "is_edited", nullable = false)
@@ -137,7 +137,7 @@ public class Message implements Serializable {
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
-        setEditedAt(DateUtils.getCurrentDateAtUTC() );
+        setEditedAt(DateUtils.getCurrentDateAtUTC());
         setIsEdited(true);
     }
 
@@ -162,6 +162,14 @@ public class Message implements Serializable {
                 "isEdited = " + isEdited + ", " +
                 "createdDate = " + createdDate + ", " +
                 "content = " + content + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof Message other)) return false;
+        if (!this.id.equals(other.id)) return false;
+        return true;
     }
 
     public enum Type {

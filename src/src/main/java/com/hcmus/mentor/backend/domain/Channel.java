@@ -44,11 +44,11 @@ public class Channel implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date")
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getCurrentDateAtUTC();
 
     @Builder.Default
     @Column(name = "updated_date")
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
 
     @Builder.Default
     @Column(name = "deleted_date")
@@ -108,8 +108,9 @@ public class Channel implements Serializable {
     @Builder.Default
     @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
+    @BatchSize(size = 5)
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name="channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
+    @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name = "channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
     @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
@@ -122,13 +123,12 @@ public class Channel implements Serializable {
     private List<User> users = new ArrayList<>();
 
 
-
     public boolean isMember(String userId) {
         return users.stream().anyMatch(user -> user.getId().equals(userId));
     }
 
     public void ping() {
-        updatedDate = DateUtils.getCurrentDateAtUTC() ;
+        updatedDate = DateUtils.getCurrentDateAtUTC();
     }
 
     @Override
