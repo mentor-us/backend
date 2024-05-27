@@ -6,13 +6,11 @@ import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +22,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
 public class Group extends BaseDomain implements Serializable {
 
     /**
@@ -37,14 +36,6 @@ public class Group extends BaseDomain implements Serializable {
             Map.entry(GroupStatus.INACTIVE, "Chưa hoạt động"),
             Map.entry(GroupStatus.DELETED, "Đã xóa")
     );
-
-    /**
-     * Group identifier
-     */
-    @Id
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
 
     /**
      * Group name
@@ -101,7 +92,6 @@ public class Group extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private Message lastMessage = null;
 
     /**
@@ -110,7 +100,6 @@ public class Group extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "default_channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private Channel defaultChannel;
 
     /**
@@ -125,34 +114,27 @@ public class Group extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private User creator;
 
     /**
      * List of channel identifiers
      */
     @Builder.Default
-    @JsonIgnore
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users", "hibernateLazyInitializer", "handler"}, allowSetters = true)
     private List<Channel> channels = new ArrayList<>();
 
     /**
      * List of FAQ identifiers
      */
     @Builder.Default
-    @JsonIgnore
     @BatchSize(size = 10)
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<Faq> faqs = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
     @BatchSize(size = 10)
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
     public boolean isMentor(String userId) {
@@ -177,34 +159,6 @@ public class Group extends BaseDomain implements Serializable {
 
     public List<User> getMembers() {
         return groupUsers.stream().map(GroupUser::getUser).toList();
-    }
-
-    public void update(
-            String name,
-            String description,
-            GroupStatus status,
-            LocalDateTime timeStart,
-            LocalDateTime timeEnd,
-            GroupCategory groupCategory) {
-        if (name != null) {
-            this.setName(name);
-        }
-        if (description != null) {
-            this.setDescription(description);
-        }
-        if (status != null) {
-            this.setStatus(status);
-        }
-        if (timeStart != null) {
-            this.setTimeStart(timeStart.with(LocalTime.of(0, 0, 0)));
-        }
-        if (timeEnd != null) {
-            timeStart.with(LocalTime.of(23, 59, 59));
-            this.setTimeEnd(timeEnd.with(LocalTime.of(0, 0, 0)));
-        }
-        if (groupCategory != null) {
-            this.setGroupCategory(groupCategory);
-        }
     }
 
     public void ping() {

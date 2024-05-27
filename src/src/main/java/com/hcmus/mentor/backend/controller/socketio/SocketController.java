@@ -95,6 +95,7 @@ public class SocketController {
 
     private DataListener<ReceivedMessageRequest> onChatReceived() {
         return (socketIOClient, message, ackRequest) -> {
+            logger.info("[*] Receive SocketIO - event: send_message - response: {}", message.getGroupId());
             var user = userRepository.findById(message.getSenderId()).orElse(null);
             var receivedMessageRequest = Message.builder()
                     .id(message.getId())
@@ -119,7 +120,6 @@ public class SocketController {
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)
                     .channel(receivedMessageRequest.getChannel()).build();
-            logger.info("[*] Receive SocketIO - event: send_message - response: {}", response.getGroupId());
             pipeline.send(updateLastMessageCommand);
         };
     }

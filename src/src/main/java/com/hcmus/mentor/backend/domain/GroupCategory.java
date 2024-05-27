@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.util.DateUtils;
@@ -54,8 +53,8 @@ public class GroupCategory {
 
     @Builder.Default
     @JsonIgnore
+    @ToString.Exclude
     @OneToMany(mappedBy = "groupCategory", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private List<Group> groups = new ArrayList<>();
 
     public void update(
