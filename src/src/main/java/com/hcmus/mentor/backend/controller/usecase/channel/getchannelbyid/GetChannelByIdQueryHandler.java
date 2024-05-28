@@ -4,11 +4,13 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelDetailDto;
+import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,6 +29,7 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
     private final LoggedUserAccessor loggedUserAccessor;
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
+    private final MessageService messageService;
 
     /**
      * {@inheritDoc}
@@ -72,6 +75,8 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
         channelDetail.setMentors(parentGroup.getMentors().stream().map(User::getId).filter(channelMember::contains).toList());
         channelDetail.setMentees(parentGroup.getMentees().stream().map(User::getId).filter(channelMember::contains).toList());
         channelDetail.setRole(currentUserId);
+        channelDetail.setPinnedMessageIds(channel.getMessagesPinned().stream().map(Message::getId).toList());
+        channelDetail.setPinnedMessages(messageService.mappingToMessageDetailResponse(channel.getMessagesPinned(), currentUserId));
 
         return channelDetail;
     }

@@ -387,7 +387,7 @@ public class MessageServiceImpl implements MessageService {
 
             messages.forEach(m -> {
                 var response = mappingToMessageDetailResponse(m, sender.getId());
-                socketIOService.sendBroadcastMessage(response, m.getChannel().getGroup().getId());
+                socketIOService.sendBroadcastMessage(response, m.getChannel().getId());
             });
         } catch (Exception e) {
             logger.log(Level.INFO, "Forward message failed", e);
@@ -416,7 +416,7 @@ public class MessageServiceImpl implements MessageService {
 
         Optional.ofNullable(message.getReply()).flatMap(messageRepository::findById).ifPresent(replyMessage -> messageDetailResponse.setReply(MessageDetailResponse.ReplyMessage.builder()
                 .id(replyMessage.getId())
-                .content(switch (replyMessage.getType()) {
+                .content(replyMessage.getStatus() == Message.Status.DELETED ? "Tin nhắn đã được xóa" : switch (replyMessage.getType()) {
                     case TEXT -> replyMessage.getContent();
                     case FILE -> "Tệp đính kèm";
                     case IMAGE -> "Ảnh đính kèm";

@@ -17,15 +17,15 @@ import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.VoteService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SocketController {
 
-    private static final Logger LOGGER = LogManager.getLogger(SocketController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SocketController.class);
 
     private final SocketIOServer server;
 
@@ -70,7 +70,7 @@ public class SocketController {
         server.addEventListener("send_message", ReceivedMessageRequest.class, onChatReceived());
         server.addEventListener("send_voting", DoVotingRequest.class, onVotingReceived());
 
-        LOGGER.info("[*] Configure Socket IO Server listener.");
+        logger.debug("[*] Configure Socket IO Server listener.");
     }
 
     private DataListener<JoinOutRoomRequest> onJoinRoom() {
@@ -78,6 +78,7 @@ public class SocketController {
             if (payload.getGroupId() == null || payload.getGroupId().isEmpty()) {
                 return;
             }
+            logger.info("[*] Receive SocketIO - event: join_room - client: {}, payload: {},", client, payload.getGroupId());
             client.joinRoom(payload.getGroupId());
         };
     }
@@ -87,6 +88,7 @@ public class SocketController {
             if (payload.getGroupId() == null || payload.getGroupId().isEmpty()) {
                 return;
             }
+            logger.debug("[*] Receive SocketIO - event: out_room - client: {}, payload: {},", client, payload.getGroupId());
             client.leaveRoom(payload.getGroupId());
         };
     }
@@ -112,12 +114,12 @@ public class SocketController {
 
             MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 
-            socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getGroup().getId());
+            socketIOService.sendMessage(socketIOClient, response, newMessage.getChannel().getId());
 
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)
                     .channel(receivedMessageRequest.getChannel()).build();
-            LOGGER.info("[*] Update last message of channel {}.", receivedMessageRequest.getChannel().getGroup().getId());
+            logger.info("[*] Receive SocketIO - event: send_message - response: {}", response.getGroupId());
             pipeline.send(updateLastMessageCommand);
         };
     }

@@ -19,6 +19,10 @@ op inject -i application-local.yml.template -o application-local.yml
   ![Welcome screen](imgs/intellij-screen-welcome.png)
 - Open the `src` folder:
   ![Open source folder](imgs/choose-source-backend.png)
+- Add new run configuration:
+  ![](imgs/add-springboot-run.png)
+- Add the spring boot local profile:
+  ![](imgs/add-springboot-profile.png)
 - Press the start button to run the application:
   ![Run or Debug](imgs/run-or-debug-program.png)
 - The application runs successfully:
@@ -32,6 +36,6 @@ op inject -i application-local.yml.template -o application-local.yml
   ![Go to project folder](imgs/go-to-project-folder.png)
 - Go to the `src` folder:
   ![Go to src folder](imgs/go-to-src-folder.png)
-- Run the command `./mvnw spring-boot:run` (use `mvnw.cmd` for running on Windows):
+- Run the command `./mvnw spring-boot:run -Dspring.profiles.active=local` (use `mvnw.cmd` for running on Windows):
   ![Command to run the application](imgs/cli-command-run-application.png)
   ![Run successfully](imgs/cli-runs-successfully.png)

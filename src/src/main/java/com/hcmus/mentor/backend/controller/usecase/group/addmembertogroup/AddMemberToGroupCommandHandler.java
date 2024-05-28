@@ -37,28 +37,21 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
 
     @Override
     public GroupDetailDto handle(AddMemberToGroupCommand command) {
-        var curerntUserId = loggedUserAccessor.getCurrentUserId();
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        if (!permissionService.isAdmin(curerntUserId, 0)) {
+        if (!permissionService.isAdmin(currentUserId, 0)) {
             throw new ForbiddenException("Không có quyền thêm thành viên vào nhóm");
         }
 
         var group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm"));
-        var usersStream = command.getEmails().stream()
+        // Filter all emails that not members in group.
+        var users = command.getEmails().stream()
                 .filter(email -> !email.isEmpty())
                 .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
-                .filter(user -> group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(user.getId())));
+                .filter(user -> group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(user.getId())))
+                .toList();
 
-        if (command.isMentor()) {
-            // Get all mentee in list
-            usersStream = usersStream.filter(user -> !group.isMentor(user.getId()));
-        } else {
-            // Get all mentor in list
-            usersStream = usersStream.filter(user -> group.isMentor(user.getId()));
-        }
-
-        var users = usersStream.toList();
-
+        // The user is not exists in group
         if (!users.isEmpty()) {
             List<GroupUser> groupUsers = users.stream()
                     .map(user -> GroupUser.builder().user(user).group(group).isMentor(command.isMentor()).build())
@@ -70,10 +63,7 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
                 throw new DomainException("Không tìm thấy kênh mặc định của nhóm");
             }
 
-            var usersInGroup = channel.getUsers();
-            usersInGroup.addAll(users);
-            channel.setUsers(usersInGroup);
-
+            channel.getUsers().addAll(users);
             channelRepository.save(channel);
 
             for (String email : command.getEmails()) {

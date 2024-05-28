@@ -160,7 +160,15 @@ public class Group extends BaseDomain implements Serializable {
     }
 
     public boolean isMentor(User user) {
-        return groupUsers.stream().anyMatch(mentor -> mentor.getId().equals(user.getId()));
+        return groupUsers.stream().anyMatch(mentor -> mentor.getId().equals(user.getId()) && mentor.isMentor());
+    }
+
+    public boolean isMentee(String userId) {
+        return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId) && !member.isMentor());
+    }
+
+    public boolean isMentee(User user) {
+        return groupUsers.stream().anyMatch(mentee -> mentee.getId().equals(user.getId()) && !mentee.isMentor());
     }
 
     public boolean isMember(String userId) {
@@ -208,7 +216,7 @@ public class Group extends BaseDomain implements Serializable {
     }
 
     public void ping() {
-        this.updatedDate = DateUtils.getCurrentDateAtUTC() ;
+        this.updatedDate = DateUtils.getCurrentDateAtUTC();
     }
 
     @Override

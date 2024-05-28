@@ -6,25 +6,22 @@ import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardReque
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessageResponse;
-import com.hcmus.mentor.backend.domain.Channel;
-import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.Message;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import com.hcmus.mentor.backend.service.GroupService;
-import com.hcmus.mentor.backend.service.MessageService;
-import com.hcmus.mentor.backend.service.NotificationService;
-import com.hcmus.mentor.backend.service.SocketIOService;
+import com.hcmus.mentor.backend.service.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Message controllers.
@@ -46,6 +42,7 @@ import java.util.Optional;
 @Validated
 public class MessageController {
 
+    private final static Logger logger = LoggerFactory.getLogger(MessageController.class);
     private final MessageService messageService;
     private final GroupService groupService;
     private final SocketIOServer socketServer;
@@ -53,8 +50,9 @@ public class MessageController {
     private final NotificationService notificationService;
     private final MessageRepository messageRepository;
     private final SocketIOService socketIOService;
-    private final GroupRepository groupRepository;
     private final ChannelRepository channelRepository;
+    private final LoggedUserAccessor loggedUserAccessor;
+    private final PermissionService permissionService;
 
     /**
      * Get messages of group.
@@ -93,41 +91,38 @@ public class MessageController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @ApiResponse(responseCode = "404", description = "Message not found")
     public ResponseEntity<Void> deleteMessage(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String messageId) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        Optional<Message> messageWrapper = messageRepository.findById(messageId);
-        if (messageWrapper.isEmpty()) {
+        var message = messageRepository.findById(messageId).orElse(null);
+        if (message == null) {
             return ResponseEntity.notFound().build();
         }
-        Message message = messageWrapper.get();
 
-        Optional<Group> groupWrapper = groupRepository.findById(message.getChannel().getGroup().getId());
-        if (groupWrapper.isEmpty()) {
-            Optional<Channel> channelWrapper = channelRepository.findById(message.getChannel().getId());
-            if (channelWrapper.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            Channel channel = channelWrapper.get();
-            if (channel.getMessagesPinned().contains(message)) {
-                channel.getMessagesPinned().remove(message);
-                channel.ping();
-
-                channelRepository.save(channel);
-            }
+        var channel = channelRepository.findById(message.getChannel().getId()).orElse(null);
+        if (channel == null) {
+            return ResponseEntity.badRequest().build();
         }
 
-        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
+        if (!message.getSender().getId().equals(currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+
         if (message.isDeleted()) {
             return ResponseEntity.accepted().build();
         }
+
         message.delete();
         messageRepository.save(message);
 
-        UpdateMessageResponse response = UpdateMessageResponse.builder()
+        if (channel.getMessagesPinned().contains(message)) {
+            channel.getMessagesPinned().remove(message);
+            channel.ping();
+
+            channel = channelRepository.save(channel);
+            logger.info("Remove pinned message with id {}, pinned message remaining {}", message.getId(), channel.getMessagesPinned().toArray().length);
+        }
+        var response = UpdateMessageResponse.builder()
                 .messageId(message.getId())
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
@@ -149,28 +144,27 @@ public class MessageController {
     public ResponseEntity<Void> editMessage(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestBody EditMessageRequest request) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        Optional<Message> messageWrapper = messageRepository.findById(request.getMessageId());
-        if (messageWrapper.isEmpty()) {
+        var message = messageRepository.findById(request.getMessageId()).orElse(null);
+        if (message == null) {
             return ResponseEntity.notFound().build();
         }
-        Message message = messageWrapper.get();
-        if (!groupService.isGroupMember(message.getChannel().getGroup().getId(), customerUserDetails.getId())) {
+        if (!permissionService.isMemberInChannel(message.getChannel().getId(), currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (!customerUserDetails.getId().equals(message.getSender().getId())) {
+        if (!message.getSender().getId().equals(currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         message.edit(request);
         messageRepository.save(message);
 
-        UpdateMessageResponse response =
-                UpdateMessageResponse.builder()
-                        .messageId(message.getId())
-                        .newContent(message.getContent())
-                        .action(UpdateMessageResponse.Action.update)
-                        .build();
+        UpdateMessageResponse response = UpdateMessageResponse.builder()
+                .messageId(message.getId())
+                .newContent(message.getContent())
+                .action(UpdateMessageResponse.Action.update)
+                .build();
         socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
 
         return ResponseEntity.ok().build();
