@@ -22,6 +22,7 @@ import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -405,28 +406,34 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    // TODO: Implement this method
-    List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
+    public List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            // Filter by name
             if (request.getName() != null && !request.getName().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
             }
+
+            // Filter by email
             if (request.getEmail() != null && !request.getEmail().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
             }
+
+            // Filter by status
             if (request.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), request.getStatus()));
             }
-//            if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-//                predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
-//            }
+
+            // Filter by role
             if (request.getRole() != null) {
-                predicates.add(root.get("roles").in(request.getRole()));
+                Join<User, UserRole> rolesJoin = root.join("roles");
+                predicates.add(cb.equal(rolesJoin, request.getRole()));
             }
 
             // Apply sorting by createdDate (assuming it's a field in the User entity)
             query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
