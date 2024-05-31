@@ -4,6 +4,7 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -66,6 +67,17 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
             }
         }
 
-        return new PageImpl<>(groups.getContent().stream().map(group -> modelMapper.map(group, GroupDetailDto.class)).toList(), pageRequest, groups.getTotalElements());
+
+        return new PageImpl<>(
+                groups.getContent().stream()
+                        .map(group -> {
+                            var channels = group.getChannels().stream()
+                                    .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE)
+                                    .toList();
+                            group.setChannels(channels);
+                            return modelMapper.map(group, GroupDetailDto.class);
+                        }).toList(),
+                pageRequest,
+                groups.getTotalElements());
     }
 }

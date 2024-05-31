@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannel
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -54,7 +55,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         var groupWorkspace = modelMapper.map(group, GroupWorkspaceDto.class);
         groupWorkspace.setRole(currentUserId);
 
-        var allChannels = group.getChannels();
+        var allChannels = group.getChannels().stream().filter(c -> c.getStatus() == ChannelStatus.ACTIVE).toList();
         var publicChannel = allChannels.stream()
                 .filter(c -> !Objects.equals(c.getId(), group.getDefaultChannel().getId()))
                 .filter(c -> c.getType() == ChannelType.PUBLIC || c.getType() == ChannelType.PRIVATE)
