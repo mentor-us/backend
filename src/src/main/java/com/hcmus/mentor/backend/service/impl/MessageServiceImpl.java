@@ -19,18 +19,17 @@ import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.domain.dto.EmojiDto;
 import com.hcmus.mentor.backend.domain.dto.ReactionDto;
-import com.hcmus.mentor.backend.repository.*;
+import com.hcmus.mentor.backend.repository.ChannelRepository;
+import com.hcmus.mentor.backend.repository.MessageRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MessageService;
 import com.hcmus.mentor.backend.service.NotificationService;
 import com.hcmus.mentor.backend.service.SocketIOService;
 import com.hcmus.mentor.backend.service.dto.MeetingDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.DateUtils;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
@@ -40,7 +39,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,20 +55,18 @@ public class MessageServiceImpl implements MessageService {
 
     private final Logger logger = LogManager.getLogger(MessageServiceImpl.class);
     private final ChannelRepository channelRepository;
-    private final GroupRepository groupRepository;
     private final MessageRepository messageRepository;
-    private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final SocketIOService socketIOService;
     private final NotificationService notificationService;
     private final BlobStorage blobStorage;
     private final Pipeline pipeline;
-    private final ReactionRepository reactionRepository;
-
     private final ModelMapper modelMapper;
 
-    @PersistenceContext
-    private EntityManager em;
+    private static final String MESSAGE_NOT_FOUND = "Message not found";
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final List<String> ALLOWED_MESSAGE_TYPES = List.of(TEXT.name(), IMAGE.name(), FILE.name(), VIDEO.name());
+
 
     /**
      * {@inheritDoc}
@@ -79,7 +75,7 @@ public class MessageServiceImpl implements MessageService {
     @SneakyThrows
     @Transactional(readOnly = true)
     public Message find(String id) {
-        return messageRepository.findById(id).orElseThrow(() -> new DomainException("Message not found"));
+        return messageRepository.findById(id).orElseThrow(() -> new DomainException(MESSAGE_NOT_FOUND));
     }
 
     /**
@@ -111,7 +107,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional(readOnly = true)
     public String getLastGroupMessage(String groupId) {
-
         Message lastMessage = messageRepository.findTopByChannelIdOrderByCreatedDateDesc(groupId).orElse(null);
         return getMessageContent(lastMessage);
     }
@@ -120,7 +115,6 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public String getMessageContentById(String messageId) {
         var message = messageRepository.findById(messageId).orElse(null);
-
         return getMessageContent(message);
     }
 
@@ -170,7 +164,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public void reactMessage(ReactMessageRequest request) {
-        var message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
+        Message message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException(MESSAGE_NOT_FOUND));
         User reactor = userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("Reactor not found"));
         Channel channel = message.getChannel();
         if (channel != null && !channel.isMember(request.getSenderId())) {
@@ -183,8 +177,7 @@ public class MessageServiceImpl implements MessageService {
         messageRepository.save(message);
 
         ReactMessageResponse response = ReactMessageResponse.from(request, reactor);
-        socketIOService.sendReact(response, channel.getId());
-//        notificationService.sendNewReactNotification(message, response, request.getSenderId());
+        socketIOService.sendReact(response, Objects.requireNonNull(channel).getId());
     }
 
     /**
@@ -192,7 +185,7 @@ public class MessageServiceImpl implements MessageService {
      */
     @Override
     public void removeReaction(String messageId, String senderId) {
-        var message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
+        var message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException(MESSAGE_NOT_FOUND));
         User reactor = userRepository.findById(senderId).orElseThrow(() -> new DomainException("Reactor not found"));
         Channel channel = message.getChannel();
         if (channel != null && !channel.isMember(senderId)) {
@@ -203,7 +196,7 @@ public class MessageServiceImpl implements MessageService {
         Message updatedMessage = messageRepository.saveAndFlush(message);
 
         MessageDetailResponse.TotalReaction newTotalReaction = calculateTotalReactionMessage(updatedMessage);
-        socketIOService.sendRemoveReact(new RemoveReactionResponse(messageId, senderId, newTotalReaction), channel.getId());
+        socketIOService.sendRemoveReact(new RemoveReactionResponse(messageId, senderId, newTotalReaction), Objects.requireNonNull(channel).getId());
     }
 
     /**
@@ -258,7 +251,6 @@ public class MessageServiceImpl implements MessageService {
                 .type(Message.Type.VOTE)
                 .vote(vote)
                 .build());
-
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
     }
@@ -269,29 +261,27 @@ public class MessageServiceImpl implements MessageService {
     @SneakyThrows
     @Override
     public Message saveImageMessage(SendImagesRequest request) {
-        var user = userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("User not found"));
-        var channel = channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found"));
-        List<String> imageKeys = new ArrayList<>();
         var tika = new Tika();
+        List<String> imageKeys = Arrays.stream(request.getFiles()).map(file -> {
+            try {
+                return blobStorage.generateBlobKey(tika.detect(file.getBytes()));
 
-        for (MultipartFile file : request.getFiles()) {
-            String key = blobStorage.generateBlobKey(tika.detect(file.getBytes()));
-            blobStorage.post(file, key);
-            imageKeys.add(key);
-        }
-
+            } catch (Exception e) {
+                throw new DomainException("Save image message failed", e);
+            }
+        }).toList();
         Message message = messageRepository.save(Message.builder()
                 .id(request.getId())
-                .sender(user)
-                .channel(channel)
+                .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException(USER_NOT_FOUND)))
+                .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
                 .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
 
-        pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
+
     }
 
     /**
@@ -300,12 +290,13 @@ public class MessageServiceImpl implements MessageService {
     @SneakyThrows
     @Override
     public Message saveFileMessage(SendFileRequest request) {
-        var file = request.getFile();
 
-        String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
-        blobStorage.post(file, key);
+        var multipartFile = request.getFile();
 
-        FileModel fileModel = FileModel.builder()
+        String key = blobStorage.generateBlobKey(new Tika().detect(multipartFile.getBytes()));
+        blobStorage.post(multipartFile, key);
+
+        File file = File.builder()
                 .id(key)
                 .filename(request.getFile().getOriginalFilename())
                 .size(request.getFile().getSize())
@@ -313,32 +304,15 @@ public class MessageServiceImpl implements MessageService {
                 .build();
         Message message = messageRepository.save(Message.builder()
                 .id(request.getId())
-                .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException("User not found")))
+                .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException(USER_NOT_FOUND)))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
                 .createdDate(DateUtils.getCurrentDateAtUTC())
                 .type(FILE)
-                .file(new File(fileModel))
+                .file(file)
                 .build());
 
-        pingGroup(request.getGroupId());
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
-    }
-
-    private void pingGroup(String groupId) {
-        var groupOpt = groupRepository.findById(groupId);
-        if (groupOpt.isPresent()) {
-            var group = groupOpt.get();
-            group.ping();
-            groupRepository.save(group);
-        }
-
-        var channelOpt = channelRepository.findById(groupId);
-        if (channelOpt.isPresent()) {
-            var channel = channelOpt.get();
-            channel.ping();
-            channelRepository.save(channel);
-        }
     }
 
     /**
@@ -350,50 +324,53 @@ public class MessageServiceImpl implements MessageService {
     @Override
     @Transactional()
     public void saveForwardMessage(String userId, ForwardRequest request) {
-
-        List<String> typeAllow = List.of(TEXT.name(), IMAGE.name(), FILE.name(), Message.Type.VIDEO.name());
-        User sender = userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found"));
-        Message message = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException("Message not found"));
-        if (!typeAllow.contains(message.getType().name()))
+        User sender = userRepository.findById(userId).orElseThrow(() -> new DomainException(USER_NOT_FOUND));
+        Message oldMessage = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException(MESSAGE_NOT_FOUND));
+        if (!ALLOWED_MESSAGE_TYPES.contains(oldMessage.getType().name()))
             throw new DomainException("Message type not allow forward");
-
         var channels = channelRepository.findByIdIn(request.getChannelIds());
 
         try {
-            var messages = new ArrayList<Message>();
-            channels.forEach(channel -> {
-                List<String> copiedImages = new ArrayList<>(message.getImages());
-                Message m = messageRepository.save(Message.builder()
-                        .sender(sender)
-                        .channel(channel)
-                        .createdDate(DateUtils.getCurrentDateAtUTC())
-                        .content(message.getContent())
-                        .type(message.getType())
-                        .reply(message.getReply())
-                        .images(copiedImages)
-                        .file(message.getFile())
-                        .isForward(true)
-                        .build());
+            var messages = channels.stream().map(
+                    channel -> {
+                        Message message = Message.builder()
+                                .sender(sender)
+                                .channel(channel)
+                                .createdDate(DateUtils.getCurrentDateAtUTC())
+                                .content(oldMessage.getContent())
+                                .type(oldMessage.getType())
+                                .isForward(true)
+                                .build();
 
-                pipeline.send(UpdateLastMessageCommand.builder()
-                        .message(message)
-                        .channel(message.getChannel())
-                        .build());
+                        if (oldMessage.getType() == IMAGE) {
+                            var copiedImages = oldMessage.getImages().stream().map(blobStorage::copyFile).toList();
+                            message.setImages(copiedImages);
+                        } else if (oldMessage.getType() == FILE) {
+                            var newFile = File.builder()
+                                    .filename(oldMessage.getFile().getFilename())
+                                    .size(oldMessage.getFile().getSize())
+                                    .url(blobStorage.copyFile(oldMessage.getFile().getUrl()))
+                                    .build();
+                            message.setFile(newFile);
+                        }
+                        messageRepository.save(message);
 
-                messages.add(m);
-                pingGroup(channel.getGroup().getId());
-            });
+                        pipeline.send(UpdateLastMessageCommand.builder()
+                                .message(oldMessage)
+                                .channel(channel)
+                                .build());
+
+                        var response = mappingToMessageDetailResponse(message, sender.getId());
+                        socketIOService.sendBroadcastMessage(response, message.getChannel().getId());
+                        return message;
+                    }
+            ).toList();
             notificationService.sendForwardMessageNotification(messages, sender);
-
-            messages.forEach(m -> {
-                var response = mappingToMessageDetailResponse(m, sender.getId());
-                socketIOService.sendBroadcastMessage(response, m.getChannel().getId());
-            });
         } catch (Exception e) {
-            logger.log(Level.INFO, "Forward message failed", e);
-            throw new DomainException("Forward message failed");
+            throw new DomainException("Forward message failed", e);
         }
     }
+
 
     @Override
     public void updateCreatedDateVoteMessage(String voteId) {
@@ -416,7 +393,10 @@ public class MessageServiceImpl implements MessageService {
 
         Optional.ofNullable(message.getReply()).flatMap(messageRepository::findById).ifPresent(replyMessage -> messageDetailResponse.setReply(MessageDetailResponse.ReplyMessage.builder()
                 .id(replyMessage.getId())
-                .content(replyMessage.getStatus() == Message.Status.DELETED ? "Tin nhắn đã được xóa" : switch (replyMessage.getType()) {
+                .content(replyMessage.getStatus() ==
+                        Message.Status.DELETED
+                        ? "Tin nhắn đã được xóa"
+                        : switch (replyMessage.getType()) {
                     case TEXT -> replyMessage.getContent();
                     case FILE -> "Tệp đính kèm";
                     case IMAGE -> "Ảnh đính kèm";
@@ -437,6 +417,8 @@ public class MessageServiceImpl implements MessageService {
             case FILE -> messageDetailResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
             case IMAGE ->
                     messageDetailResponse.setImages(message.getImages().stream().map(url -> MessageDetailResponse.Image.builder().url(url).build()).toList());
+            default -> {
+            }
         }
 
         if (!List.of(VOTE, TASK, MEETING).contains(message.getType())) {
@@ -461,7 +443,6 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public MessageResponse mappingToMessageResponse(Message message, String viewerId) {
         var messageResponse = modelMapper.map(message, MessageResponse.class);
-
         switch (message.getType()) {
             case FILE -> messageResponse.setFile(modelMapper.map(message.getFile(), FileModel.class));
             case IMAGE -> messageResponse.setImages(message.getImages());
@@ -471,6 +452,8 @@ public class MessageServiceImpl implements MessageService {
                     messageResponse.setMeetingId(Optional.ofNullable(message.getMeeting()).map(Meeting::getId).orElse(null));
             case VOTE ->
                     messageResponse.setVoteId(Optional.ofNullable(message.getVote()).map(Vote::getId).orElse(null));
+            default -> {
+            }
         }
         messageResponse.setReactions(mappingReaction(message.getReactions()));
 
@@ -526,12 +509,6 @@ public class MessageServiceImpl implements MessageService {
                             .total(entry.getValue().stream().map(EmojiDto::getTotal).reduce(0, Integer::sum)).build())
                     .toList();
         }).orElse(Collections.emptyList());
-    }
-
-    private List<EmojiDto> generateEmojiDtos() {
-        return Arrays.stream(EmojiType.values()).map(
-                emojiType -> EmojiDto.builder().id(emojiType).total(0).build()
-        ).toList();
     }
 
     private Integer sumEmojis(List<EmojiDto> emojis) {

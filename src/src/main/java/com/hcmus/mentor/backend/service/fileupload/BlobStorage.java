@@ -57,4 +57,6 @@ public interface BlobStorage {
      * @return A string representing the URL of the file.
      */
     String getUrl(String key);
+
+    String copyFile(String sourceKey);
 }
