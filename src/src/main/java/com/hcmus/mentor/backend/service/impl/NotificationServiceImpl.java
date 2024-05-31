@@ -74,41 +74,41 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * @param senderId
-     * @param request
-     * @return
+     * @param senderId ID of the sender
+     * @param request Request to create a notification
+     * @return Notification
      */
     @Override
     public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
-        Notification notif = notificationRepository.save(Notification.builder()
+        Notification notification = notificationRepository.save(Notification.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
                 .type(NotificationType.NEED_RESPONSE)
                 .sender(userRepository.findById(senderId).orElse(null))
                 .createdDate(request.getCreatedDate())
                 .build());
-        var receivers = NotificationUser.builder().notification(notif).user(userRepository.findById(request.getReceiverId()).orElse(null)).build();
-        notif.setReceivers(Collections.singletonList(receivers));
-        return notif;
+        var receivers = NotificationUser.builder().notification(notification).user(userRepository.findById(request.getReceiverId()).orElse(null)).build();
+        notification.setReceivers(Collections.singletonList(receivers));
+        return notification;
     }
 
 
     /**
-     * @param userId
-     * @param notificationId
-     * @param action
+     * @param senderId ID of the sender
+     * @param notificationId ID of the notification
+     * @param action Action to response the notification
      * @return Notification
      */
     @Override
-    public Notification responseNotification(String userId, String notificationId, String action) {
-        Notification notif = notificationRepository.findById(notificationId).orElseThrow(() -> new NoSuchElementException("Notification not found"));
+    public Notification responseNotification(String senderId, String notificationId, String action) {
+        Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new DomainException("Notification not found"));
 
-        if (!notif.getType().equals(NotificationType.NEED_RESPONSE)) {
+        if (!notification.getType().equals(NotificationType.NEED_RESPONSE)) {
             throw new DomainException("Notification is not a response type");
         }
 
-        NotificationUser notificationUser = notif.getReceivers().stream()
-                .filter(nu -> nu.getUser().getId().equals(userId))
+        NotificationUser notificationUser = notification.getReceivers().stream()
+                .filter(nu -> nu.getUser().getId().equals(senderId))
                 .findFirst()
                 .orElseThrow(() -> new DomainException("User is not a receiver of this notification"));
 
@@ -129,7 +129,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
         notificationUserRepository.save(notificationUser);
 
-        return notif;
+        return notification;
     }
 
 
@@ -300,21 +300,19 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendNewVoteNotification(String creatorId, Vote vote) {
-        if (vote == null) {
-            return;
-        }
+        Optional.of(vote).ifPresent(v->{
+            var title = buildTitle(v.getGroup(), v.getCreator());
+            var body = String.format("Nhóm có cuộc bình chọn mới \"%s\"", v.getQuestion());
+            var notification = createNotification(title, body, NEW_VOTE, v.getCreator(), v.getGroup().getUsers(), v.getId());
+            var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
+            var data = attachDataNotification(v.getGroup().getId(), NEW_VOTE);
 
-        var title = buildTitle(vote.getGroup(), vote.getCreator());
-        var body = String.format("Nhóm có cuộc bình chọn mới \"%s\"", vote.getQuestion());
-        var notification = createNotification(title, body, NEW_VOTE, vote.getCreator(), vote.getGroup().getUsers(), vote.getId());
-        var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
-        var data = attachDataNotification(vote.getGroup().getId(), NEW_VOTE);
-
-        firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
+            firebaseService.sendNotificationMulticast(receiverIds, title, body, data);
+        });
     }
 
     @Override
-    public void sendTogglePinNotification(Message message, User pinner, Boolean isPin) {
+    public void sendTogglePinNotification(Message message, User pinner, boolean isPin) {
         if (message == null || pinner == null) {
             return;
         }
@@ -400,7 +398,7 @@ public class NotificationServiceImpl implements NotificationService {
         } else {
             title = title + " - " + channel.getName();
         }
-        ;
+
         return title;
     }
 

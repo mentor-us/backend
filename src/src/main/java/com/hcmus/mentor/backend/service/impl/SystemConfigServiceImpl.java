@@ -73,10 +73,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                         return new SystemConfigServiceDto(INVALID_DOMAIN, "Invalid domain", domain);
                     }
                 }
+                break;
             case "valid_max_year":
                 if ((int) value < 0) {
                     return new SystemConfigServiceDto(INVALID_MAX_YEAR, "Invalid max year", value);
                 }
+                break;
             default:
                 break;
         }

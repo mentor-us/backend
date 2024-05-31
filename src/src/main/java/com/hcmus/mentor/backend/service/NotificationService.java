@@ -14,26 +14,22 @@ public interface NotificationService {
 
     Notification createResponseNotification(String senderId, AddNotificationRequest request);
 
-    Notification responseNotification(String userId, String notificationId, String action);
+    Notification responseNotification(String senderId, String notificationId, String action);
 
     void subscribeNotification(SubscribeNotificationRequest request);
 
     void unsubscribeNotification(String userId);
 
-//    @Async
     void sendNewMessageNotification(Message message);
 
     void sendNewTaskNotification(Task task);
 
     void sendNewMeetingNotification(Meeting meeting);
 
-//    @Async
     void sendNewMediaMessageNotification(Message message);
 
-//    @Async
     void sendNewReactNotification(Message message, ReactMessageResponse reaction, User sender);
 
-//    @Async
     void sendRescheduleMeetingNotification(
             User modifier, Meeting meeting, RescheduleMeetingRequest request);
 
@@ -42,7 +38,7 @@ public interface NotificationService {
     void sendNewVoteNotification(String creatorId, Vote vote);
 
 //    @Async
-    void sendTogglePinNotification(Message message, User pinner, Boolean isPin);
+    void sendTogglePinNotification(Message message, User pinner, boolean isPin);
 
     void sendForwardMessageNotification(List<Message> messages, User sender);
 }
