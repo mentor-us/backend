@@ -89,13 +89,10 @@ public class UserController {
             @RequestParam(defaultValue = "25") int size) {
 
         String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn = userService.listAllPaging(emailUser, page, size );
+        UserServiceDto userReturn = userService.findUsers(emailUser, new FindUserRequest(), page, size);
 
         if (userReturn.getData() != null) {
-            return new ApiResponseDto(
-                    pagingResponse((Page<User>) userReturn.getData()),
-                    userReturn.getReturnCode(),
-                    userReturn.getMessage());
+            return new ApiResponseDto(pagingResponse((Page<User>) userReturn.getData()), userReturn.getReturnCode(), userReturn.getMessage());
         }
         return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -307,12 +304,8 @@ public class UserController {
             throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         String email = customerUserDetails.getEmail();
         FindUserRequest request = new FindUserRequest(name, emailSearch, status, role);
-        UserServiceDto userReturn =
-                userService.findUsers(email, request, page, size);
-        return new ApiResponseDto(
-                pagingResponse((Page<User>) userReturn.getData()),
-                userReturn.getReturnCode(),
-                userReturn.getMessage());
+        UserServiceDto userReturn = userService.findUsers(email, request, page, size);
+        return new ApiResponseDto(pagingResponse((Page<User>) userReturn.getData()), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**

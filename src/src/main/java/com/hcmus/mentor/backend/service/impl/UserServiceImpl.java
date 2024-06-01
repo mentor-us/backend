@@ -111,11 +111,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserServiceDto listAllPaging(String emailUser, int page, int size) {
-        return findUsers(emailUser, new FindUserRequest(), page, size);
-    }
-
-    @Override
     public UserServiceDto listAll() {
         List<User> users = IteratorUtils.toList(userRepository.findAll().iterator());
         List<UserDataResponse> userDataResponses = getUsersData(users);
@@ -340,7 +335,9 @@ public class UserServiceImpl implements UserService {
         Page<User> users = userRepository.findAll(createSpecification(request), pageable);
         List<UserDataResponse> findUserResponses = getUsersData(users.getContent());
 
-        return new UserServiceDto(SUCCESS, "", new PageImpl<>(findUserResponses, pageable, users.getContent().size()));
+        var data = new PageImpl<>(findUserResponses, pageable, users.getTotalElements());
+
+        return new UserServiceDto(SUCCESS, "", data);
     }
 
     private UserDataResponse getUserData(User user) {
@@ -368,11 +365,10 @@ public class UserServiceImpl implements UserService {
 
     private List<UserDataResponse> getUsersData(List<User> users) {
         List<UserDataResponse> userDataResponses = new ArrayList<>();
-        users.forEach(
-                user -> {
-                    UserDataResponse userDataResponse = getUserData(user);
-                    userDataResponses.add(userDataResponse);
-                });
+        users.forEach(user -> {
+            UserDataResponse userDataResponse = getUserData(user);
+            userDataResponses.add(userDataResponse);
+        });
         return userDataResponses;
     }
 

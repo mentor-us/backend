@@ -19,9 +19,11 @@ import java.util.List;
 public class CreateMeetingRequest {
 
     @NotBlank
-    @Size(min = 0, max = 20)
+    @Size(min = 0, max = 256)
     private String title;
 
+    @NotBlank
+    @Size(min = 0, max = 256)
     private String description;
 
     @NotNull

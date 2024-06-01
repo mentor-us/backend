@@ -375,14 +375,19 @@ public class TaskServiceImpl implements IRemindableService {
             task.setDeadline(request.getDeadline());
         }
         if (request.getUserIds() != null) {
-            List<Assignee> assignees = task.getAssignees().stream()
-                    .filter(assignee -> request.getUserIds().contains(assignee.getUser().getId()))
-                    .toList();
+            var taskAssignees = task.getAssignees();
+            var assigneesIds = taskAssignees.stream().map(assignee -> assignee.getUser().getId()).toList();
 
-            request.getUserIds().stream()
-                    .filter(userId -> assignees.stream().map(Assignee::getUser).noneMatch(u -> u.getId().equals(userId)))
-                    .forEach(userId -> assignees.add(Assignee.builder().task(task).user(userRepository.findById(userId).orElse(null)).build()));
-            task.setAssignees(assignees);
+            var newAssignees = request.getUserIds().stream().filter(userId -> !assigneesIds.contains(userId)).toList();
+            var removeAssignees = taskAssignees.stream().filter(assignee -> !request.getUserIds().contains(assignee.getUser().getId())).toList();
+            taskAssignees.removeAll(removeAssignees);
+
+            newAssignees.stream().map(userId -> userRepository.findById(userId).orElse(null))
+                    .filter(Objects::nonNull)
+                    .map(u -> Assignee.builder().task(task).user(u).build())
+                    .forEach(taskAssignees::add);
+
+            task.setAssignees(taskAssignees);
         }
         if (request.getParentTask() != null) {
             task.setParentTask(taskRepository.findById(request.getParentTask()).orElse(null));

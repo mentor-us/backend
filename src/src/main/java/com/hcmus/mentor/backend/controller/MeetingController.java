@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,7 +64,6 @@ public class MeetingController {
     /**
      * Create a new meeting in a group.
      *
-     * @param user    The current user's principal information.
      * @param request The request payload for creating a new meeting.
      * @return APIResponse containing the created Meeting.
      */
@@ -71,8 +71,7 @@ public class MeetingController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<Meeting> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails user,
-            @RequestBody CreateMeetingRequest request) {
+            @Valid @RequestBody CreateMeetingRequest request) {
         Meeting newMeeting = meetingService.createNewMeeting(request);
         if (newMeeting == null) {
             return new ApiResponseDto<>(false, "Not found organizer", 400);

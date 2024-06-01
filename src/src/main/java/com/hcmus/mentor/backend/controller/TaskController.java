@@ -86,8 +86,7 @@ public class TaskController {
             @PathVariable String id,
             @RequestBody UpdateTaskRequest request) {
         TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(customerUserDetails, id, request);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**

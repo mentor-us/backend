@@ -157,8 +157,7 @@ public class GroupCategoryController {
             @RequestParam(defaultValue = "25") Integer size) {
         String email = customerUserDetails.getEmail();
         FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        GroupCategoryServiceDto groupCategoryReturn =
-                groupCategoryService.findGroupCategories(email, request, page, size);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.findGroupCategories(email, request, page, size);
         return new ApiResponseDto(
                 pagingResponse((Page<GroupCategory>) groupCategoryReturn.getData()),
                 groupCategoryReturn.getReturnCode(),

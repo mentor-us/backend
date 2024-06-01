@@ -25,8 +25,6 @@ public interface UserService {
 
     UserServiceDto listByEmail(String emailUser, String email, Pageable pageable);
 
-    UserServiceDto listAllPaging(String emailUser, int page, int size);
-
     UserServiceDto listAll();
 
     UserServiceDto listAllByEmail(String emailUser, String email);
