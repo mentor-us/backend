@@ -17,4 +17,6 @@ import lombok.NoArgsConstructor;
 public class GetGroupByIdQuery implements Command<GroupDetailDto> {
 
     private String id;
+
+    private boolean isDetail = false;
 }

@@ -26,7 +26,7 @@ public class GroupMapper {
         modelMapper.createTypeMap(Group.class, GroupDetailDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getCreator().getId(), GroupDetailDto::setCreatorId);
             mapper.map(src -> src.getDefaultChannel().getId(), GroupDetailDto::setDefaultChannelId);
-            mapper.map(src -> src.getGroupCategory().getName(), GroupDetailDto::setGroupCategory);
+            mapper.map(src -> src.getGroupCategory().getId(), GroupDetailDto::setGroupCategory);
             mapper.map(src -> src.getLastMessage().getContent(), GroupDetailDto::setLastMessage);
             mapper.map(src -> src.getLastMessage().getId(), GroupDetailDto::setLastMessageId);
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMembers, GroupDetailDto::setMembers);

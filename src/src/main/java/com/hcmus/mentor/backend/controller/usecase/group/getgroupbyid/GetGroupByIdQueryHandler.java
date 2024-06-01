@@ -22,6 +22,11 @@ public class GetGroupByIdQueryHandler implements Command.Handler<GetGroupByIdQue
     public GroupDetailDto handle(GetGroupByIdQuery query) {
         var group = groupRepository.findById(query.getId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + query.getId()));
 
-        return modelMapper.map(group, GroupDetailDto.class);
+        var dto = modelMapper.map(group, GroupDetailDto.class);
+        if (query.isDetail()) {
+            dto.setGroupCategory(group.getGroupCategory().getName());
+        }
+
+        return dto;
     }
 }
