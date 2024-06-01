@@ -15,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
     User getOrCreateUserByEmail(String emailAddress, String groupName);
@@ -26,7 +25,7 @@ public interface UserService {
 
     UserServiceDto listByEmail(String emailUser, String email, Pageable pageable);
 
-    UserServiceDto listAllPaging(String emailUser, Pageable pageable);
+    UserServiceDto listAllPaging(String emailUser, int page, int size);
 
     UserServiceDto listAll();
 
@@ -34,7 +33,7 @@ public interface UserService {
 
     User findByEmail(String email);
 
-    Optional<User> findById(String id);
+    User findById(String id);
 
     UserServiceDto updateUser(String emailUser, String id, UpdateUserRequest request);
 

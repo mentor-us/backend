@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
-import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
@@ -27,7 +26,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -89,9 +87,10 @@ public class UserController {
             @RequestParam(defaultValue = "") String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
-        Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdDate"));
+
         String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn = userService.listAllPaging(emailUser, pageRequest);
+        UserServiceDto userReturn = userService.listAllPaging(emailUser, page, size );
+
         if (userReturn.getData() != null) {
             return new ApiResponseDto(
                     pagingResponse((Page<User>) userReturn.getData()),
@@ -119,10 +118,10 @@ public class UserController {
             @RequestParam(defaultValue = "") String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
+
         Pageable pageRequest = PageRequest.of(page, size);
         String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn =
-                userService.listByEmail(emailUser, email, pageRequest);
+        UserServiceDto userReturn = userService.listByEmail(emailUser, email, pageRequest);
         return new ApiResponseDto(
                 pagingResponse((Page<User>) userReturn.getData()),
                 userReturn.getReturnCode(),
@@ -177,11 +176,7 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ProfileResponse> getCurrentUser(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser) {
-        var user = userService.findById(loggedUser.getId());
-        if (user.isEmpty()) {
-            throw new DomainException(String.format("User with id %s not found", loggedUser.getId()));
-        }
-        var profileResponse = ProfileResponse.from(user.get());
+        var profileResponse = ProfileResponse.from(userService.findById(loggedUser.getId()));
         return ApiResponseDto.success(profileResponse);
     }
 
@@ -486,8 +481,7 @@ public class UserController {
             throws IOException {
         String email = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.importUsers(email, file);
-        return new ApiResponseDto(
-                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+        return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**
