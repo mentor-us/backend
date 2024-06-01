@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -20,7 +21,7 @@ public class TaskResponse {
     private String id;
     private String title;
     private String description;
-    private Date deadline;
+    private LocalDateTime deadline;
     private String parentTask;
     private Group group;
     private User assigner;

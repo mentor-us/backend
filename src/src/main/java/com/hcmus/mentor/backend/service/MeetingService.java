@@ -26,6 +26,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -170,14 +172,8 @@ public class MeetingService implements IRemindableService {
         return meetingRepository.save(meeting);
     }
 
-    private boolean isEqualDate(Date oldDate, Date newDate) {
-        Calendar oldTime = Calendar.getInstance();
-        oldTime.setTime(oldDate);
-
-        Calendar newTime = Calendar.getInstance();
-        newTime.setTime(newDate);
-
-        return oldTime.equals(newTime);
+    private boolean isEqualDate(LocalDateTime oldDate, LocalDateTime newDate) {
+        return oldDate.equals(newDate);
     }
 
     public void deleteMeeting(String meetingId) {
@@ -252,29 +248,27 @@ public class MeetingService implements IRemindableService {
         return meetingRepository.findAllByOwn(channelIds, userId);
     }
 
-    public List<Meeting> getAllOwnMeetingsByDate(String userId, Date date) {
-        Date startTime = DateUtils.atStartOfDay(date);
-        Date endTime = DateUtils.atEndOfDay(date);
+    public List<Meeting> getAllOwnMeetingsByDate(String userId, LocalDateTime date) {
+        LocalDateTime startTime = date.with(LocalTime.MIN);
+        LocalDateTime endTime = date.with(LocalTime.MAX);
         return getAllOwnMeetingsBetween(userId, startTime, endTime);
     }
 
-    public List<Meeting> getAllOwnMeetingsBetween(String userId, Date startTime, Date endTime) {
+    public List<Meeting> getAllOwnMeetingsBetween(String userId, LocalDateTime startTime, LocalDateTime endTime) {
         List<String> joinedGroupIds = groupService.getAllActiveOwnGroups(userId).stream()
                 .map(Group::getId)
                 .toList();
-        List<Meeting> organizedMeetings = meetingRepository
-                .findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-                        joinedGroupIds, userId, startTime, endTime);
-        List<Meeting> attendeeMeetings = meetingRepository
-                .findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-                        joinedGroupIds, Arrays.asList("*", userId), startTime, endTime);
+        List<Meeting> organizedMeetings = meetingRepository.findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
+                joinedGroupIds, userId, startTime, endTime);
+        List<Meeting> attendeeMeetings = meetingRepository.findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
+                joinedGroupIds, Arrays.asList("*", userId), startTime, endTime);
         return Stream.concat(organizedMeetings.stream(), attendeeMeetings.stream())
                 .toList();
     }
 
-    public List<Meeting> getAllOwnMeetingsByMonth(String userId, Date date) {
-        Date startTime = DateUtils.atStartOfMonth(date);
-        Date endTime = DateUtils.atEndOfMonth(date);
+    public List<Meeting> getAllOwnMeetingsByMonth(String userId, LocalDateTime date) {
+        var startTime = date.with(LocalTime.MIN);
+        var endTime = date.with(LocalTime.MAX);
         return getAllOwnMeetingsBetween(userId, startTime, endTime);
     }
 

@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.service.dto;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,9 +51,9 @@ public class MeetingDto {
 
         private String id;
 
-        private Date timeStart;
+        private LocalDateTime timeStart;
 
-        private Date timeEnd;
+        private LocalDateTime timeEnd;
 
         private String place;
 

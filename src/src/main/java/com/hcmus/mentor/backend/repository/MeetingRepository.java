@@ -8,25 +8,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 
 @Repository
 public interface MeetingRepository extends JpaRepository<Meeting, String> {
 
-    long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    long countByGroupIdInAndCreatedDateBetween(List<String> groupIds, LocalDateTime start, LocalDateTime end);
 
     long countByGroupIdIn(List<String> groupIds);
 
-    long countByCreatedDateBetween(Date start, Date end);
+    long countByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
     Meeting findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
 
     Page<Meeting> findByGroupId(String groupId, Pageable pageRequest);
 
     List<Meeting> findAllByGroupIdInAndOrganizerIdAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-            List<String> groupIds, String userId, Date startDate, Date endDate);
+            List<String> groupIds, String userId, LocalDateTime startDate, LocalDateTime endDate);
 
     @Query("SELECT count(m) " +
             "from Meeting m " +
@@ -60,7 +59,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
             "inner join m.attendees attendees " +
             "WHERE m.group.id in ?1 and (attendees.id = ?2 ) and m.timeStart >= ?3 and m.timeEnd <= ?4")
     List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
-            List<String> groupIds, List<String> ids, Date startDate, Date endDate);
+            List<String> groupIds, List<String> ids, LocalDateTime startDate, LocalDateTime endDate);
 
     //    @Aggregation(pipeline = {
 //            "{$match: {groupId: ?0}}",

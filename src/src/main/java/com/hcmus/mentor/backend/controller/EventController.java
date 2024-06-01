@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -57,7 +57,7 @@ public class EventController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<EventDto>> getAllByDate(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDateTime date) {
         return ApiResponseDto.success(eventService.getAllEventsByDate(customerUserDetails.getId(), date));
     }
 
@@ -73,7 +73,7 @@ public class EventController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<List<EventDto>> getAllByMonth(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date date) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime date) {
         return ApiResponseDto.success(eventService.getAllEventsByMonth(customerUserDetails.getId(), date));
     }
 }

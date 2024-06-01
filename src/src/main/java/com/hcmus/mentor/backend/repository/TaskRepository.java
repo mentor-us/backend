@@ -21,9 +21,9 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     List<Task> findAllByParentTaskId(String parentTask);
 
-    List<Task> findByCreatedDateBetween(Date start, Date end);
+    List<Task> findByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
-    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    List<Task> findByGroupIdInAndCreatedDateBetween(List<String> groupIds, LocalDateTime start, LocalDateTime end);
 
     List<Task> findAllByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 

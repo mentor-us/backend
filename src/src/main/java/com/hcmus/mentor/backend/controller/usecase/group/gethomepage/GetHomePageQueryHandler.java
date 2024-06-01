@@ -49,8 +49,8 @@ public class GetHomePageQueryHandler implements Command.Handler<GetHomePageQuery
         var meetings = meetingRepository.findAllAndHasUserAndStartBefore(channelIds, currentUserId, now).stream()
                 .map(m -> {
                     var dto = modelMapper.map(m, NewMeetingDto.class);
-                    dto.setTimeStart(m.getTimeStart().toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
-                    dto.setTimeEnd(m.getTimeEnd().toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
+                    dto.setTimeStart(m.getTimeStart());
+                    dto.setTimeEnd(m.getTimeEnd());
 
                     return dto;
                 })
@@ -60,7 +60,7 @@ public class GetHomePageQueryHandler implements Command.Handler<GetHomePageQuery
                 .map(t -> {
                     var dto = modelMapper.map(t, NewTaskDto.class);
                     dto.setCreatedDate(t.getCreatedDate().toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
-                    dto.setDeadline(t.getDeadline().toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
+                    dto.setDeadline(t.getDeadline());
                     var status = t.getAssignees().stream()
                             .filter(a -> Objects.equals(a.getUser().getId(), currentUserId))
                             .findFirst()

@@ -6,10 +6,10 @@ import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
@@ -806,16 +806,16 @@ public class GroupController {
             @RequestParam(defaultValue = "") String menteeEmail,
             @RequestParam(defaultValue = "") String groupCategory,
             @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             Date timeStart1,
             @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             Date timeEnd1,
             @RequestParam(defaultValue = "1970-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             Date timeStart2,
             @RequestParam(defaultValue = "2300-01-01T00:00:00")
-            @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             Date timeEnd2,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "") List<String> remainColumns)

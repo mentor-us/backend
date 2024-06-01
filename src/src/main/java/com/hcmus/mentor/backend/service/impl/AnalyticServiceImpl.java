@@ -51,7 +51,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -228,11 +228,9 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private List<SystemAnalyticChartResponse.MonthSystemAnalytic> getChartByMonthForSuperAdmin(LocalDate timeStart, LocalDate timeEnd) {
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
-        for (LocalDate localDate = timeStart;
-             localDate.isBefore(timeEnd);
-             localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate iDate = timeStart; iDate.isBefore(timeEnd); iDate = iDate.plusMonths(1)) {
+            LocalDateTime date = iDate.atStartOfDay();
+            LocalDateTime dateAfterOneMonth = iDate.plusMonths(1).atTime(LocalTime.MAX);
             long newGroups = groupRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
             long newMessages = messageRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
@@ -243,8 +241,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
-                    .year(date.getYear() + 1900)
+                    .month(date.getMonthValue())
+                    .year(date.getYear())
                     .newGroups(newGroups)
                     .newMessages(newMessages)
                     .newTasks(newTasks)
@@ -260,9 +258,9 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<Group> groups = groupRepository.findAllByCreatorId(adminId);
         List<String> channelIds = groups.stream().flatMap(g -> g.getChannels().stream().map(Channel::getId)).toList();
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
-        for (LocalDate localDate = timeStart; localDate.isBefore(timeEnd); localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate iDate = timeStart; iDate.isBefore(timeEnd); iDate = iDate.plusMonths(1)) {
+            LocalDateTime date = iDate.atStartOfDay();
+            LocalDateTime dateAfterOneMonth = iDate.plusMonths(1).atTime(LocalTime.MAX);
 
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
@@ -273,8 +271,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newUsers = userRepository.countByCreatedDateBetween(date, dateAfterOneMonth);
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
-                    .year(date.getYear() + 1900)
+                    .month(date.getMonthValue())
+                    .year(date.getYear())
                     .newGroups(newGroups)
                     .newMessages(newMessages)
                     .newTasks(newTasks)
@@ -315,11 +313,9 @@ public class AnalyticServiceImpl implements AnalyticService {
         var channelIds = channels.stream().map(Channel::getId).collect(Collectors.toList());
         Set<User> users = groups.stream().flatMap(g -> g.getGroupUsers().stream().map(GroupUser::getUser)).collect(Collectors.toSet());
 
-        for (LocalDate localDate = timeStart;
-             localDate.isBefore(timeEnd);
-             localDate = localDate.plusMonths(1)) {
-            Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            Date dateAfterOneMonth = Date.from(localDate.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        for (LocalDate iDate = timeStart; iDate.isBefore(timeEnd); iDate = iDate.plusMonths(1)) {
+            LocalDateTime date = iDate.atStartOfDay();
+            LocalDateTime dateAfterOneMonth = iDate.plusMonths(1).atTime(LocalTime.MAX);
 
             List<Task> tasks = taskRepository.findByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
 
@@ -327,11 +323,11 @@ public class AnalyticServiceImpl implements AnalyticService {
             long newMessages = messageRepository.countByChannelIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
             long newTasks = tasks.stream().map(task -> task.getAssignees().size()).reduce(0, Integer::sum);
             long newMeetings = meetingRepository.countByGroupIdInAndCreatedDateBetween(channelIds, date, dateAfterOneMonth);
-            long newUsers = users.stream().filter(user -> user.getCreatedDate().after(date) && user.getCreatedDate().before(dateAfterOneMonth)).count();
+            long newUsers = users.stream().filter(user -> user.getCreatedDate().after(Date.from(date.atZone(ZoneOffset.UTC).toInstant())) && user.getCreatedDate().before(Date.from(dateAfterOneMonth.atZone(ZoneOffset.UTC).toInstant()))).count();
 
             SystemAnalyticChartResponse.MonthSystemAnalytic monthSystemAnalytic = SystemAnalyticChartResponse.MonthSystemAnalytic.builder()
-                    .month(date.getMonth() + 1)
-                    .year(date.getYear() + 1900)
+                    .month(date.getMonthValue())
+                    .year(date.getYear())
                     .newGroups(newGroups)
                     .newMessages(newMessages)
                     .newTasks(newTasks)

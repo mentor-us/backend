@@ -10,20 +10,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface MessageRepository extends JpaRepository<Message, String> {
 
-    long countByCreatedDateBetween(Date start, Date end);
+    long countByCreatedDateBetween(LocalDateTime start, LocalDateTime end);
 
     long countByChannelIdIn(List<String> channelIds);
 
     long countByChannelIdInAndSenderId(List<String> channelIds, String senderId);
 
-    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, Date start, Date end);
+    long countByChannelIdInAndCreatedDateBetween(List<String> groupIds, LocalDateTime start, LocalDateTime end);
 
     @NotNull
     Optional<Message> findById(@NotNull String id);

@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class DateUtils {
@@ -110,5 +111,9 @@ public class DateUtils {
     public static String formatDate(Date date) {
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm, dd/MM/yyyy");
         return formatter.format(date);
+    }
+
+    public static String formatDate(LocalDateTime date) {
+        return date.format(DateTimeFormatter.ofPattern("HH:mm, dd/MM/yyyy"));
     }
 }

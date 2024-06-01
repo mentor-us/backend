@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -23,10 +24,10 @@ public class MeetingHistory implements Serializable {
     private String id;
 
     @Column(name = "time_start")
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     @Column(name = "time_end")
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     @Column(name = "place")
     private String place;

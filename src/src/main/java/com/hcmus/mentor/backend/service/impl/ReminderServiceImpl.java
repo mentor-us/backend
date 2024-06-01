@@ -8,7 +8,6 @@ import com.hcmus.mentor.backend.repository.ReminderRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.ReminderService;
-import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -34,7 +35,7 @@ public class ReminderServiceImpl implements ReminderService {
 
     @Override
     public void sendReminders() {
-        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(DateUtils.getCurrentDateAtUTC() );
+        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(LocalDateTime.now(ZoneId.systemDefault()));
 
         for (Reminder reminder : reminders) {
             var receiverIds = getStrings(reminder, reminder.getType().toString() + "_REMINDER");

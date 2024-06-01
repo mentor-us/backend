@@ -7,15 +7,13 @@ import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,10 +39,10 @@ public class Meeting implements IRemindable, Serializable {
     private String description;
 
     @Column(name = "time_start")
-    private Date timeStart;
+    private LocalDateTime timeStart;
 
     @Column(name = "time_end")
-    private Date timeEnd;
+    private LocalDateTime timeEnd;
 
     @Column(name = "repeated")
     @Enumerated(EnumType.STRING)
@@ -95,8 +93,7 @@ public class Meeting implements IRemindable, Serializable {
 
     @Override
     public Reminder toReminder() {
-        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm dd/MM/yyyy");
-        String formattedTime = sdf.format(DateUtils.addHours(timeStart, 7));
+        var formattedTime = timeStart.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
         var reminder = Reminder.builder()
                 .group(group)
@@ -113,10 +110,7 @@ public class Meeting implements IRemindable, Serializable {
         return reminder;
     }
 
-    public Date getReminderDate() {
-        LocalDateTime localDateTime =
-                LocalDateTime.ofInstant(timeStart.toInstant(), ZoneId.systemDefault());
-        LocalDateTime reminderTime = localDateTime.minusMinutes(30);
-        return Date.from(reminderTime.atZone(ZoneId.systemDefault()).toInstant());
+    public LocalDateTime getReminderDate() {
+        return timeStart.minusMinutes(30);
     }
 }

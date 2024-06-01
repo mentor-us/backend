@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -48,14 +48,14 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventDto> getAllEventsByDate(String userId, Date date) {
+    public List<EventDto> getAllEventsByDate(String userId, LocalDateTime date) {
         List<Meeting> meetings = meetingService.getAllOwnMeetingsByDate(userId, date);
         List<Task> tasks = taskService.getAllOwnTaskByDate(userId, date);
         return mergeEvents(meetings, tasks);
     }
 
     @Override
-    public List<EventDto> getAllEventsByMonth(String userId, Date date) {
+    public List<EventDto> getAllEventsByMonth(String userId, LocalDateTime date) {
         List<Meeting> meetings = meetingService.getAllOwnMeetingsByMonth(userId, date);
         List<Task> tasks = taskService.getAllOwnTasksByMonth(userId, date);
         return mergeEvents(meetings, tasks);
