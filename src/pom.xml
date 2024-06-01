@@ -43,7 +43,7 @@
         <html2pdf.version>5.0.4</html2pdf.version>
         <tika.version>2.9.2</tika.version>
         <commonio.version>2.16.1</commonio.version>
-        <common-csv.version>1.10.0</common-csv.version>
+        <common-csv.version>1.11.0</common-csv.version>
         <poi.version>5.2.5</poi.version>
         <mapstruct.version>1.6.0.Beta1</mapstruct.version>
         <minio.version>8.5.10</minio.version>
