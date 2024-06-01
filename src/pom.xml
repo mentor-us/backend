@@ -45,7 +45,7 @@
         <commonio.version>2.16.1</commonio.version>
         <common-csv.version>1.10.0</common-csv.version>
         <poi.version>5.2.5</poi.version>
-        <mapstruct.version>1.6.0.Beta1</mapstruct.version>
+        <mapstruct.version>1.6.0.Beta2</mapstruct.version>
         <minio.version>8.5.10</minio.version>
         <pipelinr.version>0.8</pipelinr.version>
         <modelmapper.version>3.2.0</modelmapper.version>
