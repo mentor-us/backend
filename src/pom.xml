@@ -31,7 +31,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- Dependency package version-->
-        <flyway.version>10.11.0</flyway.version>
+        <flyway.version>10.13.0</flyway.version>
         <jjwt.version>0.12.5</jjwt.version>
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
         <lombok.version>1.18.32</lombok.version>
