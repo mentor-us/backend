@@ -29,6 +29,9 @@ public class GetGroupByIdQueryHandler implements Command.Handler<GetGroupByIdQue
         GroupDetailDto groupDetailDto = modelMapper.map(group, GroupDetailDto.class);
         groupDetailDto.setPermissions(groupCategory.getPermissions());
         groupDetailDto.setRole(currentUserId);
+        if (query.isDetail()) {
+            groupDetailDto.setGroupCategory(group.getGroupCategory().getName());
+        }
 
         return groupDetailDto;
     }

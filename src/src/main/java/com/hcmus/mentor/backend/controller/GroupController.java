@@ -624,7 +624,7 @@ public class GroupController {
         } catch (DomainException ex) {
             if (ex.getMessage() == "Không tìm thấy kênh") {
                 try {
-                    var query = GetGroupByIdQuery.builder().id(id).build();
+                    var query = GetGroupByIdQuery.builder().id(id).isDetail(true).build();
 
                     var group = pipeline.send(query);
 
