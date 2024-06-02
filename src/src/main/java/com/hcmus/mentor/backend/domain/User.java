@@ -38,7 +38,7 @@ public class User extends BaseDomain implements Serializable {
     private String email;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
@@ -98,7 +98,7 @@ public class User extends BaseDomain implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<UserRole> roles = new ArrayList<>();
 
     //------------------------------------------------------------------------------------------------------------------

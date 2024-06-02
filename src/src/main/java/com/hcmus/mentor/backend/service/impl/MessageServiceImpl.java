@@ -356,7 +356,7 @@ public class MessageServiceImpl implements MessageService {
                         messageRepository.save(message);
 
                         pipeline.send(UpdateLastMessageCommand.builder()
-                                .message(oldMessage)
+                                .message(message)
                                 .channel(channel)
                                 .build());
 

@@ -7,21 +7,24 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.domain.dto.AssigneeDto;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.util.DateUtils;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,6 +50,7 @@ public class TaskServiceImpl implements IRemindableService {
     private final ChannelRepository channelRepository;
     private final Pipeline pipeline;
     private final MessageRepository messageRepository;
+    private final ModelMapper modelMapper;
 
     @Transactional
     public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
@@ -433,23 +437,25 @@ public class TaskServiceImpl implements IRemindableService {
         return getAllOwnTasksBetween(userId, startTime, endTime);
     }
 
+    @Transactional(readOnly = true)
     public TaskServiceImpl.TaskReturnService getAllOwnTasks(String groupId, String userId) {
         if (!userRepository.existsById(userId)) {
             logger.error("Get all own tasks : Not found user with id {}", userId);
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
+        Group group = groupRepository.findById(groupId).orElse(null);
+        if (group == null) {
             logger.error("Get all own tasks : Not found group with id {}", groupId);
             return new TaskReturnService(NOT_FOUND, "Not found group", null);
         }
-        Group group = groupWrapper.get();
+
         if (!group.isMember(userId)) {
             return new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
         }
 
-        var abc = group.getChannels().stream()
+        var tasks = group.getChannels().stream()
+                .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE)
                 .map(Channel::getTasks)
                 .flatMap(Collection::stream)
                 .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
@@ -459,11 +465,11 @@ public class TaskServiceImpl implements IRemindableService {
                             .findFirst()
                             .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
                             .orElse(null);
-                    return TaskResponse.from(task, assignee, group);
+                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
                 })
                 .sorted(Comparator.comparing(TaskResponse::getCreatedDate).reversed())
                 .toList();
-        return new TaskReturnService(SUCCESS, "", abc);
+        return new TaskReturnService(SUCCESS, "", tasks);
     }
 
     private List<TaskResponse> getOwnAssignedTasks(String groupId, String userId) {
@@ -482,7 +488,7 @@ public class TaskServiceImpl implements IRemindableService {
                             .findFirst()
                             .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
                             .orElse(null);
-                    return TaskResponse.from(task, assignee, group);
+                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
                 })
                 .toList();
     }
@@ -522,7 +528,7 @@ public class TaskServiceImpl implements IRemindableService {
                             .findFirst()
                             .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
                             .orElse(null);
-                    return TaskResponse.from(task, assignee, group);
+                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
                 })
                 .toList();
     }
