@@ -10,6 +10,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResp
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -613,8 +614,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String userId, String type) throws IOException {
-        List<List<String>> data = generateExportDataMembers(userId, type);
+            String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException {
+        List<List<String>> data = generateExportDataMembers(userId, groupUserRole);
         List<String> headers = Arrays.asList("STT", "Tên nhóm", "Loại nhóm");
         String fileName = "output.xlsx";
         Map<String, Integer> indexMap = new HashMap<>();
@@ -707,11 +708,11 @@ public class UserServiceImpl implements UserService {
         return sb.toString();
     }
 
-    private List<List<String>> generateExportDataMembers(String userId, String type) {
+    private List<List<String>> generateExportDataMembers(String userId, GroupUserRole groupUserRole) {
         List<Group> groups = new ArrayList<>();
-        if (type.equals("MENTOR")) {
+        if (groupUserRole.equals(GroupUserRole.MENTOR)) {
             groups = groupRepository.findAllByMentorsIn(userId);
-        } else if (type.equals("MENTEE")) {
+        } else if (groupUserRole.equals(GroupUserRole.MENTEE)) {
             groups = groupRepository.findAllByMenteesIn(userId);
         }
 

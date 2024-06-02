@@ -132,11 +132,11 @@ public class FaqController {
      * Imports existing FAQs from another group.
      *
      * @param loggedUser  The current user's principal information.
-     * @param destGroupId The ID of the FAQ to which FAQs will be imported.
+     * @param destGroupId The ID of the group where FAQs will be imported to.
      * @param request     The request containing information about the FAQs to import.
      * @return ResponseEntity indicating the success of the import operation.
      */
-    @PostMapping("{groupIdgroupId}/import")
+    @PostMapping("{destGroupId}/import")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> importFAQs(

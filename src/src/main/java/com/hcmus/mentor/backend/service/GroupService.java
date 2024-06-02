@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.service;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -68,7 +69,7 @@ public interface GroupService {
             throws IOException;
 
     ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String groupId, String type) throws IOException;
+            String emailUser, List<String> remainColumns, String groupId, GroupUserRole groupUserRole) throws IOException;
 
     void pinChannelMessage(String userId, String channelId, String messageId);
 

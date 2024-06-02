@@ -35,7 +35,7 @@ public class User extends BaseDomain implements Serializable {
     private String email;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
@@ -142,7 +142,7 @@ public class User extends BaseDomain implements Serializable {
     private List<Reminder> reminders = new ArrayList<>();
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default

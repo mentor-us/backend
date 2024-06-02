@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
 import org.springframework.core.io.Resource;
@@ -73,7 +74,7 @@ public interface UserService {
             String emailUser, FindUserRequest request, List<String> remainColumns) throws IOException;
 
     ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String userId, String type) throws IOException;
+            String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException;
 
     UserServiceDto addAdditionalEmail(String userId, String email);
 

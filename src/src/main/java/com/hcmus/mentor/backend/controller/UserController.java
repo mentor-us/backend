@@ -9,6 +9,7 @@ import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdd
 import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
@@ -495,7 +496,7 @@ public class UserController {
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
         return userService.generateExportTableMembers(
-                customerUserDetails.getEmail(), remainColumns, userId, "MENTOR");
+                customerUserDetails.getEmail(), remainColumns, userId, GroupUserRole.MENTOR);
     }
 
     /**
@@ -515,7 +516,7 @@ public class UserController {
             @PathVariable String userId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return userService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, userId, "MENTEE");
+        return userService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, userId, GroupUserRole.MENTEE);
     }
 
     /**

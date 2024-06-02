@@ -122,7 +122,6 @@ public class Channel implements Serializable {
     @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private List<User> users = new ArrayList<>();
 
-
     public boolean isMember(String userId) {
         return users.stream().anyMatch(user -> user.getId().equals(userId));
     }

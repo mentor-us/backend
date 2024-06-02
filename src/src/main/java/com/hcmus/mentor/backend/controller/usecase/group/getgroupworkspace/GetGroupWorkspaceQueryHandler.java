@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -81,7 +82,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         return groupWorkspace;
     }
 
-    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannelDto(String currentUserId, List<GroupUser> groupUsers) {
+    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannelDto(String currentUserId, Set<GroupUser> groupUsers) {
         return channel -> {
             ShortProfile friendId = channel.getUsers().stream()
                     .filter(u -> !Objects.equals(u.getId(), currentUserId))

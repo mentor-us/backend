@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.repository.custom.GroupRepositoryCustom;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group> {
+public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecificationExecutor<Group>, GroupRepositoryCustom {
 
     long countByStatus(GroupStatus status);
 
@@ -46,12 +47,6 @@ public interface GroupRepository extends JpaRepository<Group, String>, JpaSpecif
     List<Group> findAllByGroupCategoryIdIn(List<String> groupCategoryIds);
 
     List<Group> findAllByGroupCategoryIdAndCreatorId(String groupCategoryIds, String creatorId);
-
-    Page<Group> findAllByCreatorId(Pageable pageable, String creatorId);
-
-    List<Group> findAllByCreatorId(String creatorId);
-
-    List<Group> findAllByCreatorIdOrderByCreatedDate(String creatorId);
 
     List<Group> findByIdIn(List<String> ids);
 

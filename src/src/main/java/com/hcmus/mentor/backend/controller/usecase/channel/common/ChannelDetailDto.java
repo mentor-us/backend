@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 
@@ -36,7 +37,7 @@ public class ChannelDetailDto {
     private List<String> mentees = Collections.emptyList();
     private List<String> mentors = Collections.emptyList();
     @Setter(AccessLevel.NONE)
-    private String role;
+    private GroupUserRole role;
     @Setter(AccessLevel.NONE)
     private int totalMember;
     private String groupCategory;
@@ -54,6 +55,6 @@ public class ChannelDetailDto {
             return;
         }
 
-        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 }

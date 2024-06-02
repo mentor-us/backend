@@ -13,9 +13,10 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Entity
 @Table(name = "groups")
@@ -136,7 +137,7 @@ public class Group extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users", "hibernateLazyInitializer", "handler"}, allowSetters = true)
-    private List<Channel> channels = new ArrayList<>();
+    private Set<Channel> channels = new HashSet<>();
 
     /**
      * List of FAQ identifiers
@@ -146,14 +147,14 @@ public class Group extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnoreProperties(value = {"creator", "group", "voters"}, allowSetters = true)
-    private List<Faq> faqs = new ArrayList<>();
+    private Set<Faq> faqs = new HashSet<>();
 
     @JsonIgnore
     @Builder.Default
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
-    private List<GroupUser> groupUsers = new ArrayList<>();
+    private Set<GroupUser> groupUsers = new HashSet<>();
 
     public boolean isMentor(String userId) {
         return groupUsers.stream().anyMatch(member -> member.getUser().getId().equals(userId) && member.isMentor());
