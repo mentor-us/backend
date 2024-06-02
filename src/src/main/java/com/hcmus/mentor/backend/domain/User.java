@@ -39,7 +39,6 @@ public class User extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
-    @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
 
@@ -98,7 +97,7 @@ public class User extends BaseDomain implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     private List<UserRole> roles = new ArrayList<>();
 
     //------------------------------------------------------------------------------------------------------------------
@@ -107,19 +106,16 @@ public class User extends BaseDomain implements Serializable {
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
 
-
     //------------------------------------------------------------------------------------------------------------------
     // === Choice ===
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
     private List<Choice> choices = new ArrayList<>();
 
-
     // === Meeting ===
     @Builder.Default
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
     private List<Meeting> meetingAttendees = new ArrayList<>();
-
 
     //------------------------------------------------------------------------------------------------------------------
     // === Notification ===
@@ -136,13 +132,11 @@ public class User extends BaseDomain implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
 
-
     //------------------------------------------------------------------------------------------------------------------
     // === Reminder ===
     @Builder.Default
     @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
     private List<Reminder> reminders = new ArrayList<>();
-
 
     //------------------s------------------------------------------------------------------------------------------------
     // === Group ===
@@ -150,12 +144,10 @@ public class User extends BaseDomain implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
-
     //------------------------------------------------------------------------------------------------------------------
     // === Channel ===
     @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<Channel> channels;
-
 
     //------------------------------------------------------------------------------------------------------------------
     // === Task ===
@@ -167,17 +159,15 @@ public class User extends BaseDomain implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Assignee> tasksAssignee = new ArrayList<>();
 
-
     //------------------------------------------------------------------------------------------------------------------
     // === Note ===
-    @Builder.Default
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
-    private List<Note> notes = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
-    private List<NoteHistory> noteHistories = new ArrayList<>();
-
+//    @Builder.Default
+//    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+//    private List<Note> notes = new ArrayList<>();
+//
+//    @Builder.Default
+//    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
+//    private List<NoteHistory> noteHistories = new ArrayList<>();
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());

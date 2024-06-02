@@ -11,9 +11,7 @@ import org.hibernate.annotations.BatchSize;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.HashSet;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -138,6 +136,7 @@ public class Group extends BaseDomain implements Serializable {
     @Builder.Default
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private Set<GroupUser> groupUsers = new HashSet<>();
 
     public boolean isMentor(String userId) {
