@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
@@ -25,6 +24,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
+@JsonIgnoreProperties(value = {
+        "messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs",
+        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "note"},
+        allowSetters = true)
 public class User extends BaseDomain implements Serializable {
 
     @Column(name = "name", nullable = false)
@@ -95,83 +98,86 @@ public class User extends BaseDomain implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<UserRole> roles = new ArrayList<>();
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Messge ===
+    @Builder.Default
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
 
+
+    //------------------------------------------------------------------------------------------------------------------
     // === Choice ===
-    @JsonIgnore
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
 
 
     // === Meeting ===
     @Builder.Default
-    @JsonIgnore
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private List<Meeting> meetingAttendees = new ArrayList<>();
 
 
+    //------------------------------------------------------------------------------------------------------------------
     // === Notification ===
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Notification> notificationsSent = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
     private List<NotificationUser> notifications = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"user"}, allowSetters = true)
     private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
 
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Reminder ===
     @Builder.Default
-    @JsonIgnore
     @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"recipients", "group"}, allowSetters = true)
     private List<Reminder> reminders = new ArrayList<>();
 
-    @Builder.Default
-    @ElementCollection(fetch = FetchType.LAZY)
-    private List<UserRole> roles = new ArrayList<>();
 
+    //------------------s------------------------------------------------------------------------------------------------
+    // === Group ===
     @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
 
+    //------------------------------------------------------------------------------------------------------------------
     // === Channel ===
-
-    @JsonIgnore
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<Channel> channels;
 
 
+    //------------------------------------------------------------------------------------------------------------------
     // === Task ===
     @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "assigner", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private List<Task> tasksAssigner = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Assignee> tasksAssignee = new ArrayList<>();
+
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Note ===
+    @Builder.Default
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+    private List<Note> notes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
+    private List<NoteHistory> noteHistories = new ArrayList<>();
+
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());

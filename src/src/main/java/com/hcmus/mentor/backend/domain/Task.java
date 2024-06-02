@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import com.hcmus.mentor.backend.domain.method.IRemindable;
@@ -26,6 +25,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "tasks")
+@JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
 public class Task implements IRemindable, Serializable {
 
     @Id
@@ -57,34 +57,25 @@ public class Task implements IRemindable, Serializable {
     @BatchSize(size = 10)
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "assigner_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User assigner;
 
     @Builder.Default
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_task_id")
-    @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
     private Task parentTask = null;
 
     @BatchSize(size = 10)
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"assigner", "group", "subTasks", "assignees"}, allowSetters = true)
-    @ToString.Exclude
+    @OneToMany(mappedBy = "parentTask", fetch = FetchType.LAZY, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     private List<Task> subTasks = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
-    @ToString.Exclude
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     private List<Assignee> assignees = new ArrayList<>();
 

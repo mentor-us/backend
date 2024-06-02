@@ -3,15 +3,15 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
-@Getter
-@Setter
-@ToString
+@Data
 @Builder
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notification_user")
+@JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
 public class NotificationUser {
 
     @Id
@@ -30,13 +30,13 @@ public class NotificationUser {
     @Column(name = "is_agreed")
     private Boolean isAgreed;
 
-    @ManyToOne()
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id")
-    @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
     private Notification notification;
 
-    @ManyToOne()
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
 }
