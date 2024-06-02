@@ -39,6 +39,7 @@ public class User extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
+    @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
 
