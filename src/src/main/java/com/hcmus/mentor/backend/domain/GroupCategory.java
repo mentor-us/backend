@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -20,7 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "groups_categories")
-public class GroupCategory {
+public class GroupCategory implements Serializable {
 
     @Id
     @Column(name = "id")

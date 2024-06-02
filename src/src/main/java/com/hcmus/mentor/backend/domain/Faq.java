@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 @Builder
 @Table(name = "faqs")
 @AllArgsConstructor
-public class Faq {
+public class Faq implements Serializable {
 
     @Id
     @Column(name = "id")
