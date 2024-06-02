@@ -33,6 +33,7 @@ import com.hcmus.mentor.backend.controller.usecase.group.togglemarkmentee.Toggle
 import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateGroupByIdCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -718,7 +719,7 @@ public class GroupController {
             @PathVariable String groupId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return groupService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, groupId, "MENTOR");
+        return groupService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, groupId, GroupUserRole.MENTOR);
     }
 
     /**
@@ -738,7 +739,7 @@ public class GroupController {
             @PathVariable String groupId,
             @RequestParam(defaultValue = "") List<String> remainColumns)
             throws IOException {
-        return groupService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, groupId, "MENTEE");
+        return groupService.generateExportTableMembers(customerUserDetails.getEmail(), remainColumns, groupId, GroupUserRole.MENTEE);
     }
 
     /**

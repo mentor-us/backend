@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
@@ -9,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -22,6 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "messages")
+@JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
 public class Message implements Serializable {
 
     @Id
@@ -66,47 +67,36 @@ public class Message implements Serializable {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User sender;
 
     @ManyToOne
     @BatchSize(size = 10)
     @JoinColumn(name = "channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel channel;
 
     @Builder.Default
-    @BatchSize(size = 10)
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @JoinColumn(name = "vote_id")
-    @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private Vote vote = null;
 
     @Builder.Default
-    @BatchSize(size = 10)
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @JoinColumn(name = "file_id")
     private File file = null;
 
     @Builder.Default
-    @BatchSize(size = 10)
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @JoinColumn(name = "meeting_id")
-    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private Meeting meeting = null;
 
     @Builder.Default
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     @JoinColumn(name = "task_id")
-    @BatchSize(size = 10)
-    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task = null;
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
-    @JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "message", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     private List<Reaction> reactions = new ArrayList<>();
 
     @PrePersist
@@ -128,10 +118,6 @@ public class Message implements Serializable {
         reaction.react();
         setReactions(reactions);
         return reaction;
-    }
-
-    public void removeReact(User user) {
-        getReactions().removeIf(reaction -> !reaction.getUser().getId().equals(user.getId()));
     }
 
     public void edit(EditMessageRequest request) {

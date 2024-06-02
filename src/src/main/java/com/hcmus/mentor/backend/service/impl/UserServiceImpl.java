@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
@@ -9,6 +10,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResp
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -22,6 +24,7 @@ import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
 import io.minio.errors.*;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -91,17 +94,6 @@ public class UserServiceImpl implements UserService {
         userRepository.save(data);
     }
 
-    private String randomString(int len) {
-        String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        Random rnd = new Random();
-
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++) {
-            sb.append(AB.charAt(rnd.nextInt(AB.length())));
-        }
-        return sb.toString();
-    }
-
     @Override
     public User importUser(String emailAddress, String groupName) {
         if (Boolean.FALSE.equals(userRepository.existsByEmail(emailAddress))) {
@@ -115,17 +107,8 @@ public class UserServiceImpl implements UserService {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (email != null) {
-            Page<User> users = userRepository.findByEmailLikeIgnoreCase(email, pageable);
-            return new UserServiceDto(SUCCESS, null, users);
-        }
         Page<User> users = userRepository.findByEmailLikeIgnoreCase(email, pageable);
         return new UserServiceDto(SUCCESS, null, users);
-    }
-
-    @Override
-    public UserServiceDto listAllPaging(String emailUser, Pageable pageable) {
-        return findUsers(emailUser, new FindUserRequest(), pageable.getPageNumber(), pageable.getPageSize());
     }
 
     @Override
@@ -153,14 +136,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findByEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-
-        return user.orElse(null);
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     @Override
-    public Optional<User> findById(String id) {
-        return userRepository.findById(id);
+    public User findById(String id) {
+        return userRepository.findById(id).orElseThrow(() -> new DomainException(String.format("User with id %s not found", id)));
     }
 
     @Override
@@ -206,33 +187,7 @@ public class UserServiceImpl implements UserService {
         if (!permissionService.isSuperAdmin(emailUser) && request.getRole() == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (request.getName() == null
-                || request.getName().isEmpty()
-                || request.getEmailAddress() == null
-                || request.getEmailAddress().isEmpty()
-                || request.getRole() == null) {
-            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
-        }
-
-        String email = request.getEmailAddress();
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isPresent()) {
-            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
-        }
-
-        UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(role)).build();
-        userRepository.save(user);
-        mailService.sendWelcomeMail(email);
-
-        UserDataResponse userDataResponse = UserDataResponse.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .status(user.isStatus())
-                .role(role)
-                .build();
-        return new UserServiceDto(SUCCESS, "", userDataResponse);
+        return addUser(request);
     }
 
     @Override
@@ -266,64 +221,6 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-//    @Override
-//    public UserServiceDto addUser( AddUserRequest request) {
-//        if (request.getName() == null
-//                || request.getName().isEmpty()
-//                || request.getEmailAddress() == null
-//                || request.getEmailAddress().isEmpty()
-//                || request.getRole() == null) {
-//            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
-//        }
-//
-//        String email = request.getEmailAddress();
-//        Optional<User> userOptional = userRepository.findByEmail(email);
-//        if (userOptional.isPresent()) {
-//            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
-//        }
-//
-//        UserRole role = request.getRole();
-//        User user = User.builder().name(request.getName()).email(email).build();
-//        user.assignRole(role);
-//        userRepository.save(user);
-//        mailService.sendWelcomeMail(email);
-//
-//        UserDataResponse userDataResponse = UserDataResponse.builder()
-//                .id(user.getId())
-//                .name(user.getName())
-//                .email(user.getEmail())
-//                .status(user.isStatus())
-//                .role(role)
-//                .build();
-//        return new UserServiceDto(SUCCESS, "", userDataResponse);
-//    }
-
-    private List<AddUserRequest> getImportData(Workbook workbook) throws IOException {
-        Sheet sheet = workbook.getSheet("Data");
-        List<AddUserRequest> requests = new ArrayList<>();
-        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (i == 0) {
-                continue;
-            }
-            String name = row.getCell(1).getStringCellValue();
-            String email = row.getCell(2).getStringCellValue();
-            String roleString = row.getCell(3).getStringCellValue();
-            UserRole role;
-            if (roleString.equals("Quản trị viên cấp cao")) {
-                role = SUPER_ADMIN;
-            } else if (roleString.equals("Quản trị viên")) {
-                role = ADMIN;
-            } else {
-                role = USER;
-            }
-            AddUserRequest request =
-                    AddUserRequest.builder().name(name).emailAddress(email).role(role).build();
-            requests.add(request);
-        }
-        return requests;
-    }
-
     @Override
     public UserServiceDto importUsers(String emailUser, MultipartFile file) throws IOException {
         InputStream data = file.getInputStream();
@@ -336,7 +233,24 @@ public class UserServiceImpl implements UserService {
         if (!shareService.isValidTemplate(workbook, 1, nameHeader)) {
             return new UserServiceDto(INVALID_TEMPLATE, "Invalid template", null);
         }
-        List<AddUserRequest> requests = getImportData(workbook);
+        Sheet sheet = workbook.getSheet("Data");
+        List<AddUserRequest> requests = new ArrayList<>();
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (i == 0) {
+                continue;
+            }
+            AddUserRequest request = AddUserRequest.builder()
+                    .name(row.getCell(1).getStringCellValue())
+                    .emailAddress(row.getCell(2).getStringCellValue())
+                    .role(switch (row.getCell(3).getStringCellValue()) {
+                        case "Quản trị viên cấp cao" -> SUPER_ADMIN;
+                        case "Quản trị viên" -> ADMIN;
+                        default -> USER;
+                    })
+                    .build();
+            requests.add(request);
+        }
         workbook.close();
         return addUsers(emailUser, requests);
     }
@@ -380,7 +294,7 @@ public class UserServiceImpl implements UserService {
             users.add(user);
             responses.add(userDataResponse);
         }
-        if (duplicateEmails.size() > 0) {
+        if (!duplicateEmails.isEmpty()) {
             return new UserServiceDto(DUPLICATE_USER, "Duplicate user", duplicateEmails);
         }
         users.forEach(user -> mailService.sendWelcomeMail(user.getEmail()));
@@ -405,50 +319,26 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
-    // TODO: Implement this method
-    List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
-        Specification<User> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            if (request.getName() != null && !request.getName().isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
-            }
-            if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-                predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
-            }
-            if (request.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), request.getStatus()));
-            }
-//            if (request.getRole() == null && !permissionService.isSuperAdmin(emailUser)) {
-//                predicates.add(cb.not(root.get("roles").in(SUPER_ADMIN)));
-//            }
-            if (request.getRole() != null) {
-                predicates.add(root.get("roles").in(request.getRole()));
-            }
-
-            // Apply sorting by createdDate (assuming it's a field in the User entity)
-            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    public List<User> getUsersByConditions(String emailUser, FindUserRequest request, int page, int pageSize) {
+        Specification<User> spec = createSpecification(request);
 
         Pageable pageable = PageRequest.of(page, pageSize);
         return userRepository.findAll(spec, pageable).getContent();
     }
+
 
     @Override
     public UserServiceDto findUsers(String emailUser, FindUserRequest request, int page, int pageSize) {
         if (!permissionService.isAdmin(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        List<User> users = getUsersByConditions(emailUser, request, page, pageSize);
-        List<UserDataResponse> findUserResponses = getUsersData(users);
-        long count = users.size();
+        Pageable pageable = PageRequest.of(page, pageSize);
+        Page<User> users = userRepository.findAll(createSpecification(request), pageable);
+        List<UserDataResponse> findUserResponses = getUsersData(users.getContent());
 
-        List<UserDataResponse> pagedUserResponses = findUserResponses.stream()
-                .skip((long) page * pageSize)
-                .limit(pageSize)
-                .toList();
+        var data = new PageImpl<>(findUserResponses, pageable, users.getTotalElements());
 
-        return new UserServiceDto(SUCCESS, "", new PageImpl<>(pagedUserResponses, PageRequest.of(page, pageSize), count));
+        return new UserServiceDto(SUCCESS, "", data);
     }
 
     private UserDataResponse getUserData(User user) {
@@ -476,11 +366,10 @@ public class UserServiceImpl implements UserService {
 
     private List<UserDataResponse> getUsersData(List<User> users) {
         List<UserDataResponse> userDataResponses = new ArrayList<>();
-        users.forEach(
-                user -> {
-                    UserDataResponse userDataResponse = getUserData(user);
-                    userDataResponses.add(userDataResponse);
-                });
+        users.forEach(user -> {
+            UserDataResponse userDataResponse = getUserData(user);
+            userDataResponses.add(userDataResponse);
+        });
         return userDataResponses;
     }
 
@@ -707,67 +596,12 @@ public class UserServiceImpl implements UserService {
         return new UserServiceDto(SUCCESS, "", key);
     }
 
-    private List<List<String>> generateExportData(List<User> users) {
-        List<List<String>> data = new ArrayList<>();
-        int index = 1;
-        for (User user : users) {
-            List<String> row = new ArrayList<>();
-            String status = user.isStatus() ? "Đang hoạt động" : "Bị khoá";
-            List<UserRole> roles = user.getRoles();
-            String role = "Người dùng";
-
-            if (roles.contains(SUPER_ADMIN)) {
-                role = "Quản trị viên cấp cao";
-            } else if (roles.contains(ADMIN)) {
-                role = "Quản trị viên";
-            }
-
-            row.add(Integer.toString(index));
-            row.add(user.getEmail());
-            row.add(user.getName());
-            row.add(role);
-            row.add(status);
-
-            data.add(row);
-            index++;
-        }
-
-        return data;
-    }
-
-    ResponseEntity<Resource> generateExportTable(List<User> users, List<String> remainColumns)
-            throws IOException {
-        List<List<String>> data = generateExportData(users);
-        List<String> headers = Arrays.asList("STT", "Email", "Tên người dùng", "Vai trò", "Trạng thái");
-        String fileName = "output.xlsx";
-        Map<String, Integer> indexMap = new HashMap<>();
-        indexMap.put("email", 1);
-        indexMap.put("name", 2);
-        indexMap.put("role", 3);
-        indexMap.put("status", 4);
-        List<Integer> remainColumnIndexes = new ArrayList<>();
-        remainColumnIndexes.add(0);
-        remainColumns.forEach(
-                remainColumn -> {
-                    if (indexMap.containsKey(remainColumn)) {
-                        remainColumnIndexes.add(indexMap.get(remainColumn));
-                    }
-                });
-        java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
-        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
-                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
-                .contentLength(resource.getFile().length())
-                .body(resource);
-    }
 
     @Override
     public ResponseEntity<Resource> generateExportTable(String emailUser, List<String> remainColumns)
             throws IOException {
         List<User> users = getUsersByConditions(emailUser, new FindUserRequest(), 0, Integer.MAX_VALUE);
-        ResponseEntity<Resource> response = generateExportTable(users, remainColumns);
-        return response;
+        return generateExportTable(users, remainColumns);
     }
 
     @Override
@@ -778,38 +612,10 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    private List<List<String>> generateExportDataMembers(String userId, String type) {
-        List<Group> groups = new ArrayList<>();
-        if (type.equals("MENTOR")) {
-            groups = groupRepository.findAllByMentorsIn(userId);
-        } else if (type.equals("MENTEE")) {
-            groups = groupRepository.findAllByMenteesIn(userId);
-        }
-
-        List<List<String>> data = new ArrayList<>();
-        int index = 1;
-        for (Group group : groups) {
-            Optional<GroupCategory> groupCategoryOptional =
-                    groupCategoryRepository.findById(group.getGroupCategory().getId());
-            String groupCategoryName =
-                    groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
-            List<String> row = new ArrayList<>();
-
-            row.add(Integer.toString(index));
-            row.add(group.getName());
-            row.add(groupCategoryName);
-
-            data.add(row);
-            index++;
-        }
-
-        return data;
-    }
-
     @Override
     public ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String userId, String type) throws IOException {
-        List<List<String>> data = generateExportDataMembers(userId, type);
+            String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException {
+        List<List<String>> data = generateExportDataMembers(userId, groupUserRole);
         List<String> headers = Arrays.asList("STT", "Tên nhóm", "Loại nhóm");
         String fileName = "output.xlsx";
         Map<String, Integer> indexMap = new HashMap<>();
@@ -857,4 +663,132 @@ public class UserServiceImpl implements UserService {
 
         return new UserServiceDto(SUCCESS, "Add addition email success", user);
     }
+
+    private Specification<User> createSpecification(FindUserRequest request) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Filter by name
+            if (request.getName() != null && !request.getName().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + request.getName().toLowerCase() + "%"));
+            }
+
+            // Filter by email
+            if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("email")), "%" + request.getEmail().toLowerCase() + "%"));
+            }
+
+            // Filter by status
+            if (request.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), request.getStatus()));
+            }
+
+            // Filter by role
+            if (request.getRole() != null) {
+                Join<User, UserRole> rolesJoin = root.join("roles");
+                predicates.add(cb.equal(rolesJoin, request.getRole()));
+            }
+
+            // Apply sorting by createdDate (assuming it's a field in the User entity)
+            query.orderBy(cb.desc(root.get("createdDate"))); // Sort by createdDate in descending order
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+
+    private String randomString(int len) {
+        String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        Random rnd = new Random();
+
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append(AB.charAt(rnd.nextInt(AB.length())));
+        }
+        return sb.toString();
+    }
+
+    private List<List<String>> generateExportDataMembers(String userId, GroupUserRole groupUserRole) {
+        List<Group> groups = new ArrayList<>();
+        if (groupUserRole.equals(GroupUserRole.MENTOR)) {
+            groups = groupRepository.findAllByMentorsIn(userId);
+        } else if (groupUserRole.equals(GroupUserRole.MENTEE)) {
+            groups = groupRepository.findAllByMenteesIn(userId);
+        }
+
+        List<List<String>> data = new ArrayList<>();
+        int index = 1;
+        for (Group group : groups) {
+            Optional<GroupCategory> groupCategoryOptional =
+                    groupCategoryRepository.findById(group.getGroupCategory().getId());
+            String groupCategoryName =
+                    groupCategoryOptional.isPresent() ? groupCategoryOptional.get().getName() : "";
+            List<String> row = new ArrayList<>();
+
+            row.add(Integer.toString(index));
+            row.add(group.getName());
+            row.add(groupCategoryName);
+
+            data.add(row);
+            index++;
+        }
+
+        return data;
+    }
+
+    private ResponseEntity<Resource> generateExportTable(List<User> users, List<String> remainColumns) throws IOException {
+        List<List<String>> data = generateExportData(users);
+        List<String> headers = Arrays.asList("STT", "Email", "Tên người dùng", "Vai trò", "Trạng thái");
+        String fileName = "output.xlsx";
+        Map<String, Integer> indexMap = new HashMap<>();
+        indexMap.put("email", 1);
+        indexMap.put("name", 2);
+        indexMap.put("role", 3);
+        indexMap.put("status", 4);
+        List<Integer> remainColumnIndexes = new ArrayList<>();
+        remainColumnIndexes.add(0);
+        remainColumns.forEach(
+                remainColumn -> {
+                    if (indexMap.containsKey(remainColumn)) {
+                        remainColumnIndexes.add(indexMap.get(remainColumn));
+                    }
+                });
+        java.io.File exportFile = FileUtils.generateExcel(headers, data, remainColumnIndexes, fileName);
+        Resource resource = new FileSystemResource(exportFile.getAbsolutePath());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + resource.getFilename())
+                .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                .contentLength(resource.getFile().length())
+                .body(resource);
+    }
+
+    private List<List<String>> generateExportData(List<User> users) {
+        List<List<String>> data = new ArrayList<>();
+        int index = 1;
+        for (User user : users) {
+            List<String> row = new ArrayList<>();
+            String status = user.isStatus() ? "Đang hoạt động" : "Bị khoá";
+            List<UserRole> roles = user.getRoles();
+            String role = "Người dùng";
+
+            if (roles.contains(SUPER_ADMIN)) {
+                role = "Quản trị viên cấp cao";
+            } else if (roles.contains(ADMIN)) {
+                role = "Quản trị viên";
+            }
+
+            row.add(Integer.toString(index));
+            row.add(user.getEmail());
+            row.add(user.getName());
+            row.add(role);
+            row.add(status);
+
+            data.add(row);
+            index++;
+        }
+
+        return data;
+    }
+
+
 }

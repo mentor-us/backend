@@ -21,7 +21,14 @@ public class GroupMapper {
             mapper.skip(GroupWorkspaceDto::setRole);
         });
 
-        modelMapper.createTypeMap(Channel.class, WorkspaceChannelDto.class);
+        modelMapper.createTypeMap(Channel.class, WorkspaceChannelDto.class).addMappings(mapper -> {
+            mapper.map(src -> src.getGroup().getId(), WorkspaceChannelDto::setParentId);
+        });
+
+        modelMapper.createTypeMap(Group.class, BasicGroupDto.class).addMappings(mapper -> {
+            mapper.map(src -> src.getCreator().getId(), BasicGroupDto::setCreatorId);
+            mapper.map(src -> src.getGroupCategory().getName(), BasicGroupDto::setGroupCategory);
+        });
 
         modelMapper.createTypeMap(Group.class, GroupDetailDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getCreator().getId(), GroupDetailDto::setCreatorId);
@@ -32,6 +39,7 @@ public class GroupMapper {
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMembers, GroupDetailDto::setMembers);
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentees, GroupDetailDto::setMentees);
             mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentors, GroupDetailDto::setMentors);
+            mapper.skip(GroupDetailDto::setPermissions);
         });
 
         modelMapper.createTypeMap(Group.class, GroupHomepageDto.class).addMappings(mapper -> {

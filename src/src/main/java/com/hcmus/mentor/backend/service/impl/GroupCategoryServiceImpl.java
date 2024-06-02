@@ -200,8 +200,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (request.getStatus() != null) {
             status = GroupCategoryStatus.valueOf(request.getStatus().toUpperCase());
         }
-        List<GroupCategory> groupCategories = groupCategoryRepository.findGroupCategoriesBySearchConditions(
-                name, description, status, pageSize, offset);
+        List<GroupCategory> groupCategories = groupCategoryRepository.findGroupCategoriesBySearchConditions(name, description, status, pageSize, offset);
         long count = groupCategoryRepository.countGroupCategoriesBySearchConditions(name, description, status);
 
         return new Pair<>(count, groupCategories);
@@ -213,13 +212,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Pair<Long, List<GroupCategory>> groupCategories =
-                getGroupCategoriesBySearchConditions(request, page, pageSize);
-        return new GroupCategoryServiceDto(
-                SUCCESS,
-                "",
-                new PageImpl<>(
-                        groupCategories.getValue(), PageRequest.of(page, pageSize), groupCategories.getKey()));
+        Pair<Long, List<GroupCategory>> groupCategories = getGroupCategoriesBySearchConditions(request, page, pageSize);
+        return new GroupCategoryServiceDto(SUCCESS, "", new PageImpl<>(groupCategories.getValue(), PageRequest.of(page, pageSize), groupCategories.getKey()));
     }
 
     @Override

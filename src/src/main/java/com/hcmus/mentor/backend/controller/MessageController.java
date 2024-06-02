@@ -303,7 +303,6 @@ public class MessageController {
             @RequestBody @Valid ReactMessageRequest request) {
 
         messageService.reactMessage(request);
-
         return ResponseEntity.ok().build();
     }
 
@@ -323,7 +322,6 @@ public class MessageController {
             @RequestParam String senderId) {
 
         messageService.removeReaction(messageId, senderId);
-
         return ResponseEntity.ok().build();
     }
 
@@ -342,7 +340,6 @@ public class MessageController {
             @RequestBody ForwardRequest request) {
 
         messageService.saveForwardMessage(customerUserDetails.getId(), request);
-
         return ResponseEntity.ok().build();
     }
 }

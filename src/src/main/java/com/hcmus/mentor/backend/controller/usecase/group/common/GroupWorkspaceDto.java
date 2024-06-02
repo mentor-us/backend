@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.common;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import lombok.*;
 
 import java.time.Duration;
@@ -27,7 +28,7 @@ public class GroupWorkspaceDto {
     private LocalDateTime timeStart;
     private LocalDateTime timeEnd;
     private Duration duration;
-    private String role;
+    private GroupUserRole role;
     private String imageUrl;
     private List<GroupCategoryPermission> permissions = new ArrayList<>();
     private List<String> pinnedMessageIds = new ArrayList<>();
@@ -47,7 +48,7 @@ public class GroupWorkspaceDto {
             return;
         }
 
-        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 }
 

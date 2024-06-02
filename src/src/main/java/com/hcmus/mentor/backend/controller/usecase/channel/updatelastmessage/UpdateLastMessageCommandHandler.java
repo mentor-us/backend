@@ -4,7 +4,6 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
-import com.hcmus.mentor.backend.repository.MessageRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +17,6 @@ public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLa
 
     private final ChannelRepository channelRepository;
     private final GroupRepository groupRepository;
-    private final MessageRepository messageRepository;
 
     /**
      * {@inheritDoc}
@@ -28,17 +26,21 @@ public class UpdateLastMessageCommandHandler implements Command.Handler<UpdateLa
     public Channel handle(final UpdateLastMessageCommand command) {
         var channel = command.getChannel();
         var message = command.getMessage();
+
         if (channel == null || message == null) {
             return null;
         }
+
+        channel.ping();
         channel.setLastMessage(message);
         channelRepository.save(channel);
 
-        var group = groupRepository.findById(channel.getGroup().getId()).orElse(null);
+        var group = channel.getGroup();
         if (group == null) {
             return channel;
         }
 
+        group.ping();
         group.setLastMessage(message);
         groupRepository.save(group);
 

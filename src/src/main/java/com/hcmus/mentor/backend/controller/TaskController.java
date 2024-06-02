@@ -86,8 +86,7 @@ public class TaskController {
             @PathVariable String id,
             @RequestBody UpdateTaskRequest request) {
         TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(customerUserDetails, id, request);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
@@ -235,10 +234,8 @@ public class TaskController {
     public ApiResponseDto<List<TaskResponse>> getAllOwnTask(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**

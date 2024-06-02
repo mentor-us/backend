@@ -15,6 +15,7 @@ import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
@@ -51,6 +52,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -90,7 +93,7 @@ public class GroupServiceImpl implements GroupService {
                     Optional<GroupUser> groupUser = group.getGroupUsers().stream()
                             .filter(gu -> gu.getUser().getId().equals(userId))
                             .findFirst();
-                    String role = groupUser.map(gu -> gu.isMentor() ? "mentor" : "mentee").orElse("mentee");
+                    String role = groupUser.filter(GroupUser::isMentor).map(gu -> GroupUserRole.MENTOR.toString()).orElse(GroupUserRole.MENTEE.toString());
                     boolean isPinned = groupUser.map(GroupUser::isPinned).orElse(false);
                     return new GroupHomepageResponse(group, role, isPinned);
                 })
@@ -397,32 +400,59 @@ public class GroupServiceImpl implements GroupService {
     @Override
     @Transactional(readOnly = true)
     public GroupServiceDto getGroupMembers(String groupId, String userId) {
-        var group = channelRepository.findById(groupId).map(Channel::getGroup).orElse(null);
-        if (group == null) {
-            group = groupRepository.findById(groupId).orElse(null);
-            if (group == null) {
-                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+        Optional<Channel> channelOptional = channelRepository.findById(groupId);
+
+        Function<Channel, GroupServiceDto> getMembersFromChannel = channel -> {
+            if (channel.getUsers().stream().noneMatch(user -> user.getId().equals(userId))) {
+                return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
-        }
 
-        if (group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(userId))) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
+            // Get user in channel
+            List<User> channelUsers = channel.getUsers();
 
-        List<GroupMembersResponse.GroupMember> mentors = group.getGroupUsers().stream().filter(GroupUser::isMentor)
-                .map(GroupUser::getUser)
-                .map(ProfileResponse::from)
-                .map(profile -> GroupMembersResponse.GroupMember.from(profile, "MENTOR"))
-                .toList();
-        List<GroupMembersResponse.GroupMember> mentees = new ArrayList<>();
-        group.getGroupUsers().stream().filter(gu -> !gu.isMentor()).forEach(gu -> {
-            var user = gu.getUser();
-            var profile = ProfileResponse.from(user);
-            mentees.add(GroupMembersResponse.GroupMember.from(profile, "MENTEE", gu.isMarked()));
-        });
+            // Get mentors in channel
+            Stream<GroupUser> mentorsStream = channel.getGroup().getGroupUsers().stream().filter(GroupUser::isMentor);
+            List<GroupMembersResponse.GroupMember> mentors = mentorsStream.map(GroupUser::getUser).filter(channelUsers::contains)
+                    .map(mentor -> GroupMembersResponse.GroupMember.from(ProfileResponse.from(mentor), GroupUserRole.MENTOR.name())).toList();
 
-        GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
-        return new GroupServiceDto(SUCCESS, null, response);
+            // Get mentees in channel
+            Stream<GroupUser> menteesStream = channel.getGroup().getGroupUsers().stream().filter(gu -> !gu.isMentor());
+            List<GroupMembersResponse.GroupMember> mentees = menteesStream.filter(mentee -> channelUsers.contains(mentee.getUser()))
+                    .map(mentee -> {
+                        var profile = ProfileResponse.from(mentee.getUser());
+                        return GroupMembersResponse.GroupMember.from(profile, GroupUserRole.MENTEE.name(), mentee.isMarked());
+                    }).toList();
+
+            GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
+            return new GroupServiceDto(SUCCESS, null, response);
+        };
+
+        Supplier<GroupServiceDto> getMembersFromGroup = () -> {
+            Optional<Group> groupOptional = groupRepository.findById(groupId);
+
+            return groupOptional.map(group -> {
+                if (group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(userId))) {
+                    return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+                }
+
+                List<GroupMembersResponse.GroupMember> mentors = group.getGroupUsers().stream().filter(GroupUser::isMentor)
+                        .map(GroupUser::getUser)
+                        .map(ProfileResponse::from)
+                        .map(profile -> GroupMembersResponse.GroupMember.from(profile, GroupUserRole.MENTOR.name()))
+                        .toList();
+                List<GroupMembersResponse.GroupMember> mentees = new ArrayList<>();
+                group.getGroupUsers().stream().filter(gu -> !gu.isMentor()).forEach(gu -> {
+                    var user = gu.getUser();
+                    var profile = ProfileResponse.from(user);
+                    mentees.add(GroupMembersResponse.GroupMember.from(profile, GroupUserRole.MENTEE.name(), gu.isMarked()));
+                });
+
+                GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
+                return new GroupServiceDto(SUCCESS, null, response);
+            }).orElse(new GroupServiceDto(NOT_FOUND, "Group not found", null));
+        };
+
+        return channelOptional.map(getMembersFromChannel).orElseGet(getMembersFromGroup);
     }
 
     @Override
@@ -484,7 +514,7 @@ public class GroupServiceImpl implements GroupService {
                 .description(channel.getDescription())
                 .pinnedMessageIds(channel.getMessagesPinned().stream().map(Message::getId).toList())
                 .imageUrl(imageUrl)
-                .role(parentGroup.isMentor(userId) ? "MENTOR" : "MENTEE")
+                .role(parentGroup.isMentor(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE)
                 .parentId(parentGroup.getId())
                 .totalMember(channel.getUsers().size())
                 .type(channel.getType())
@@ -727,13 +757,13 @@ public class GroupServiceImpl implements GroupService {
         return generateExportTable(groups.getValue(), remainColumns);
     }
 
-    private List<List<String>> generateExportDataMembers(String groupId, String type) {
+    private List<List<String>> generateExportDataMembers(String groupId, GroupUserRole groupUserRole) {
         Optional<Group> groupOptional = groupRepository.findById(groupId);
         List<String> memberIds = new ArrayList<>();
         if (groupOptional.isPresent()) {
-            if (type.equals("MENTOR")) {
+            if (groupUserRole.equals(GroupUserRole.MENTOR)) {
                 memberIds = groupOptional.get().getGroupUsers().stream().filter(GroupUser::isMentor).map(gu -> gu.getUser().getId()).toList();
-            } else if (type.equals("MENTEE")) {
+            } else if (groupUserRole.equals(GroupUserRole.MENTEE)) {
                 memberIds = groupOptional.get().getGroupUsers().stream().filter(gu -> !gu.isMentor()).map(gu -> gu.getUser().getId()).toList();
             }
         }
@@ -756,9 +786,9 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String groupId, String type)
+            String emailUser, List<String> remainColumns, String groupId, GroupUserRole groupUserRole)
             throws IOException {
-        List<List<String>> data = generateExportDataMembers(groupId, type);
+        List<List<String>> data = generateExportDataMembers(groupId, groupUserRole);
         List<String> headers = Arrays.asList("STT", "Email", "Họ tên");
         String fileName = "output.xlsx";
         Map<String, Integer> indexMap = new HashMap<>();
@@ -784,7 +814,7 @@ public class GroupServiceImpl implements GroupService {
 
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
-        notificationService.sendTogglePinNotification(message,userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found")),true );
+        notificationService.sendTogglePinNotification(message, userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found")), true);
     }
 
     @Override

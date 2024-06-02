@@ -72,8 +72,4 @@ public class SearchOwnGroupsQueryHandler implements Command.Handler<SearchOwnGro
             return groupHomepageDto;
         };
     }
-
-    private Boolean getIsMentorStatus(String isMentor) {
-        return isMentor.equals("mentor");
-    }
 }
