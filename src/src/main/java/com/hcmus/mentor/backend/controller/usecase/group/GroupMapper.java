@@ -27,7 +27,7 @@ public class GroupMapper {
 
         modelMapper.createTypeMap(Group.class, BasicGroupDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getCreator().getId(), BasicGroupDto::setCreatorId);
-            mapper.map(src -> src.getGroupCategory().getName(), BasicGroupDto::setGroupCategory);
+            mapper.map(src -> src.getGroupCategory().getId(), BasicGroupDto::setGroupCategory);
         });
 
         modelMapper.createTypeMap(Group.class, GroupDetailDto.class).addMappings(mapper -> {
