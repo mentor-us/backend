@@ -805,12 +805,13 @@ public class GroupServiceImpl implements GroupService {
         }
 
         Message message = messageRepository.findByIdAndStatusNot(messageId, DELETED).orElseThrow(() -> new DomainException("Message not found"));
-        if (!channel.getMessagesPinned().contains(message)) {
-            channel.getMessagesPinned().add(message);
-
-            channel.ping();
-            channelRepository.save(channel);
+        if (channel.getMessagesPinned().stream().anyMatch(m -> Objects.equals(m.getId(), messageId))) {
+            return;
         }
+        channel.getMessagesPinned().add(message);
+
+        channel.ping();
+        channelRepository.save(channel);
 
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
@@ -821,11 +822,9 @@ public class GroupServiceImpl implements GroupService {
     public void unpinChannelMessage(String userId, String channelId, String messageId) {
         Channel channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
         Message message = messageRepository.findById(messageId).orElseThrow(() -> new DomainException("Message not found"));
-        if (!channel.getMessagesPinned().contains(message)) {
+        if (channel.getMessagesPinned().stream().noneMatch(m -> Objects.equals(m.getId(), messageId))) {
             return;
         }
-
-        User sender = message.getSender();
 
         channel.getMessagesPinned().remove(message);
         channel.ping();

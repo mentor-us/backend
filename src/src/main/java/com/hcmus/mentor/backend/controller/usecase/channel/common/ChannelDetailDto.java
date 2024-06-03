@@ -24,8 +24,8 @@ public class ChannelDetailDto {
     private String description;
     private String imageUrl;
     private Boolean hasNewMessage;
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
     private Date deletedDate = null;
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

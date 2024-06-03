@@ -127,7 +127,7 @@ public class MessageController {
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -165,7 +165,7 @@ public class MessageController {
                 .newContent(message.getContent())
                 .action(UpdateMessageResponse.Action.update)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getId());
 
         return ResponseEntity.ok().build();
     }

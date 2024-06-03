@@ -7,7 +7,6 @@ import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -184,26 +183,6 @@ public class TaskServiceImpl implements IRemindableService {
         return new TaskReturnService(SUCCESS, "", task);
     }
 
-    private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
-        TaskDetailResponseAssigner assigner = TaskDetailResponseAssigner.from(task.getAssigner());
-        TaskDetailResponseGroup groupInfo = TaskDetailResponseGroup.from(task.getGroup().getGroup());
-        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(emailUser, task.getGroup().getGroup().getId())
-                ? TaskDetailResponseRole.MENTOR
-                : TaskDetailResponseRole.MENTEE;
-
-        var user = userRepository.findByEmail(emailUser).orElse(null);
-        if (user == null) {
-            return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
-        }
-
-        TaskStatus status = task.getAssignees().stream()
-                .filter(assignee -> Objects.equals(assignee.getUser().getId(), user.getId()))
-                .findFirst()
-                .map(Assignee::getStatus)
-                .orElse(null);
-        return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
-    }
-
     public TaskReturnService getTask(String emailUser, String id) {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
@@ -279,15 +258,6 @@ public class TaskServiceImpl implements IRemindableService {
         return new TaskReturnService(SUCCESS, "", data);
     }
 
-    private boolean isAssigned(String emailUser, Task task) {
-        Optional<User> userOptional = userRepository.findByEmail(emailUser);
-        if (userOptional.isEmpty()) {
-            return false;
-        }
-        User user = userOptional.get();
-        return taskRepository.existsByIdAndAssigneeIdsUserId(task.getId(), user.getId());
-    }
-
     public TaskReturnService updateStatus(String emailUser, String id, TaskStatus status) {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
@@ -300,14 +270,14 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(INVALID_PERMISSION, "Invalid permission", null);
         }
 
-        var user = userRepository.findByEmail(emailUser);
-        if (user.isEmpty()) {
+        var user = userRepository.findByEmail(emailUser).orElse(null);
+        if (user == null) {
             logger.error("Update status : Not found user with email {}", emailUser);
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
 
         task.getAssignees().stream()
-                .filter(assignee -> assignee.getUser().equals(user))
+                .filter(assignee -> assignee.getUser().getId().equals(user.getId()))
                 .forEach(assignee -> assignee.setStatus(status));
         taskRepository.save(task);
         groupService.pingGroup(task.getGroup().getId());
@@ -420,9 +390,8 @@ public class TaskServiceImpl implements IRemindableService {
     }
 
     public List<Task> getAllOwnTasksBetween(String userId, Date startTime, Date endTime) {
-        var channels = channelRepository.findOwnChannelsByUserId(userId).stream()
-                .toList();
 
+        var channels = channelRepository.findOwnChannelsByUserId(userId).stream().toList();
         return channels.stream()
                 .map(Channel::getTasks)
                 .flatMap(Collection::stream)
@@ -444,53 +413,14 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        Group group = groupRepository.findById(groupId).orElse(null);
-        if (group == null) {
-            logger.error("Get all own tasks : Not found group with id {}", groupId);
-            return new TaskReturnService(NOT_FOUND, "Not found group", null);
-        }
+        var channelIdsRes = getChannelIds(groupId, userId);
+        if(channelIdsRes.returnCode != SUCCESS)
+            return channelIdsRes;
+        List<String> channelIds = (List<String>) channelIdsRes.getData();
+        var tasks = taskRepository.findAllOwnByChannelIdsAndUserId(channelIds, userId).stream()
+                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
 
-        if (!group.isMember(userId)) {
-            return new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
-        }
-
-        var tasks = group.getChannels().stream()
-                .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE)
-                .map(Channel::getTasks)
-                .flatMap(Collection::stream)
-                .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
-                .map(task -> {
-                    AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUser().getId().equals(userId))
-                            .findFirst()
-                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
-                            .orElse(null);
-                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
-                })
-                .sorted(Comparator.comparing(TaskResponse::getCreatedDate).reversed())
-                .toList();
         return new TaskReturnService(SUCCESS, "", tasks);
-    }
-
-    private List<TaskResponse> getOwnAssignedTasks(String groupId, String userId) {
-        var group = groupRepository.findById(groupId).orElse(null);
-        if (group == null) {
-            return Collections.emptyList();
-        }
-
-        return group.getChannels().stream()
-                .map(Channel::getTasks)
-                .flatMap(Collection::stream)
-                .filter(task -> task.getAssigner().getId().equals(userId) || task.getAssignees().stream().anyMatch(a -> a.getUser().getId().equals(userId)))
-                .map(task -> {
-                    AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUser().getId().equals(userId))
-                            .findFirst()
-                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
-                            .orElse(null);
-                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
-                })
-                .toList();
     }
 
     public TaskReturnService wrapOwnAssignedTasks(String groupId, String userId) {
@@ -499,38 +429,14 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            logger.error("Wrap own assigned tasks : Not found group with id {}", groupId);
-            return new TaskReturnService(NOT_FOUND, "Not found group", null);
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
-            logger.error("Wrap own assigned tasks : Not member in group");
-            return new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
-        }
+        var channelIdsRes = getChannelIds(groupId, userId);
+        if(channelIdsRes.returnCode != SUCCESS)
+            return channelIdsRes;
+        List<String> channelIds = (List<String>) channelIdsRes.getData();
+        var tasks = taskRepository.findAllChannelIdInAndAssigneeId(channelIds, userId).stream()
+                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
 
-        return new TaskReturnService(SUCCESS, "", getOwnAssignedTasks(groupId, userId));
-    }
-
-    private List<TaskResponse> getAssignedByMeTasks(String groupId, String userId) {
-        var group = groupRepository.findById(groupId).orElse(null);
-        if (group == null) {
-            return Collections.emptyList();
-        }
-        return group.getChannels().stream()
-                .map(Channel::getTasks)
-                .flatMap(Collection::stream)
-                .filter(task -> task.getAssigner().getId().equals(userId))
-                .map(task -> {
-                    AssigneeDto assignee = task.getAssignees().stream()
-                            .filter(a -> a.getUser().getId().equals(userId))
-                            .findFirst()
-                            .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
-                            .orElse(null);
-                    return TaskResponse.from(task, assignee, modelMapper.map(group, GroupDetailDto.class));
-                })
-                .toList();
+        return new TaskReturnService(SUCCESS, "", tasks);
     }
 
     public TaskReturnService wrapAssignedByMeTasks(String groupId, String userId) {
@@ -539,19 +445,16 @@ public class TaskServiceImpl implements IRemindableService {
             return new TaskReturnService(NOT_FOUND, "Not found user", null);
         }
 
-        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-        if (groupWrapper.isEmpty()) {
-            logger.error("Wrap assigned by me tasks : Not found group with id {}", groupId);
-            return new TaskReturnService(NOT_FOUND, "Not found group", null);
-        }
-        Group group = groupWrapper.get();
-        if (!group.isMember(userId)) {
-            logger.error("Wrap assigned by me tasks : Not member in group");
-            return new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
-        }
+        var channelIdsRes = getChannelIds(groupId, userId);
+        if(channelIdsRes.returnCode != SUCCESS)
+            return channelIdsRes;
+        List<String> channelIds = (List<String>) channelIdsRes.getData();
+        var tasks = taskRepository.findAllByChannelIdInAndAssignerId(channelIds, userId).stream()
+                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
 
-        return new TaskReturnService(SUCCESS, "", getAssignedByMeTasks(groupId, userId));
+        return new TaskReturnService(SUCCESS, "", tasks);
     }
+
 
     @Override
     public void saveToReminder(IRemindable remindable) {
@@ -560,6 +463,58 @@ public class TaskServiceImpl implements IRemindableService {
         reminder.setRecipients(task.getAssignees().stream().map(Assignee::getUser).toList());
         reminder.setSubject("Bạn có 1 công việc sắp tới hạn");
         reminderRepository.save(reminder);
+    }
+
+    private TaskResponse mappingTaskToTaskResponse(Task task, String userId){
+        AssigneeDto assignee = task.getAssignees().stream()
+                .filter(a -> a.getUser().getId().equals(userId))
+                .findFirst()
+                .map(a -> new AssigneeDto(a.getUser().getId(), a.getStatus()))
+                .orElse(null);
+        var taskResponse = modelMapper.map(task, TaskResponse.class);
+        taskResponse.setStatus(Optional.ofNullable(assignee).map(AssigneeDto::getStatus).orElse(TaskStatus.TO_DO));
+        return taskResponse;
+    }
+
+    private TaskReturnService getChannelIds(String groupId, String userId){
+        List<String> channelIds;
+        var group = groupRepository.findById(groupId).orElse(null);
+
+        if(group == null){
+            if(!permissionService.isMemberInChannel(groupId, userId)){
+                new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
+            }
+            channelIds= Collections.singletonList(groupId);
+        }
+
+        else{
+            channelIds = group.getChannels().stream()
+                    .filter(channel->channel.getStatus() == ChannelStatus.ACTIVE && channel.isMember(userId))
+                    .map(Channel::getId)
+                    .toList();
+        }
+
+        return new TaskReturnService(SUCCESS, null, channelIds);
+    }
+
+    private TaskDetailResponse generateTaskDetailFromTask(String emailUser, Task task) {
+        TaskDetailResponseAssigner assigner = TaskDetailResponseAssigner.from(task.getAssigner());
+        TaskDetailResponseGroup groupInfo = TaskDetailResponseGroup.from(task.getGroup().getGroup());
+        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(emailUser, task.getGroup().getGroup().getId())
+                ? TaskDetailResponseRole.MENTOR
+                : TaskDetailResponseRole.MENTEE;
+
+        var user = userRepository.findByEmail(emailUser).orElse(null);
+        if (user == null) {
+            return TaskDetailResponse.from(task, assigner, groupInfo, role, null);
+        }
+
+        TaskStatus status = task.getAssignees().stream()
+                .filter(assignee -> Objects.equals(assignee.getUser().getId(), user.getId()))
+                .findFirst()
+                .map(Assignee::getStatus)
+                .orElse(null);
+        return TaskDetailResponse.from(task, assigner, groupInfo, role, status);
     }
 
     @Getter
