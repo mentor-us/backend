@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.meeting;
 
 import com.hcmus.mentor.backend.controller.usecase.common.NewEventDto;
+import com.hcmus.mentor.backend.controller.usecase.meeting.common.MeetingResult;
 import com.hcmus.mentor.backend.controller.usecase.meeting.common.NewMeetingDto;
 import com.hcmus.mentor.backend.domain.Meeting;
 import com.hcmus.mentor.backend.domain.User;
@@ -26,7 +27,6 @@ public class MeetingMapper {
             mapper.skip(NewMeetingDto::setTimeEnd);
         }).implicitMappings();
 
-
         modelMapper.createTypeMap(NewMeetingDto.class, NewEventDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getGroup().getName(), NewEventDto::setGroupName);
             mapper.map(src -> src.getOrganizer().getName(), NewEventDto::setUser);
@@ -35,5 +35,8 @@ public class MeetingMapper {
             mapper.skip(NewEventDto::setDeadline);
         });
 
+        modelMapper.createTypeMap(Meeting.class, MeetingResult.class).addMappings(mapper -> {
+            mapper.map(Meeting::getGroup, MeetingResult::setChannel);
+        });
     }
 }

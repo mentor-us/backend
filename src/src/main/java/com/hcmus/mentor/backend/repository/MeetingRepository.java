@@ -62,7 +62,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
             List<String> groupIds, List<String> ids, Date startDate, Date endDate);
 
-
     @Query("select m " +
             "from Meeting m " +
             "join fetch m.group  " +
