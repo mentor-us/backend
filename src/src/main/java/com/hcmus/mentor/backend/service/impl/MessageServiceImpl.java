@@ -326,8 +326,12 @@ public class MessageServiceImpl implements MessageService {
     public void saveForwardMessage(String userId, ForwardRequest request) {
         User sender = userRepository.findById(userId).orElseThrow(() -> new DomainException(USER_NOT_FOUND));
         Message oldMessage = messageRepository.findById(request.getMessageId()).orElseThrow(() -> new DomainException(MESSAGE_NOT_FOUND));
-        if (!ALLOWED_MESSAGE_TYPES.contains(oldMessage.getType().name()))
-            throw new DomainException("Message type not allow forward");
+        if (oldMessage.isDeleted()) {
+            throw new DomainException("Tin nhắn đã bị xóa");
+        }
+        if (!ALLOWED_MESSAGE_TYPES.contains(oldMessage.getType().name())) {
+            throw new DomainException("Không thể chuyển tiếp tin nhắn loại này");
+        }
         var channels = channelRepository.findByIdIn(request.getChannelIds());
 
         try {
