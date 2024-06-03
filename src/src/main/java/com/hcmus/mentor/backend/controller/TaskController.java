@@ -251,10 +251,8 @@ public class TaskController {
     public ApiResponseDto<List<TaskResponse>> getAllOwnAssignedTask(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.wrapOwnAssignedTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.wrapOwnAssignedTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**

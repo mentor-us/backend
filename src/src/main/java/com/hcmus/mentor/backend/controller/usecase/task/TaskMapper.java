@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.task;
 
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskMessageResponse;
+import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.usecase.common.NewEventDto;
 import com.hcmus.mentor.backend.controller.usecase.task.common.NewTaskDto;
 import com.hcmus.mentor.backend.domain.Assignee;
@@ -63,6 +64,11 @@ public class TaskMapper {
             mapper.map(NewTaskDto::getCreatedDate, NewEventDto::setTimeStart);
             mapper.map(NewTaskDto::getDeadline, NewEventDto::setTimeEnd);
             mapper.map(NewTaskDto::getDeadline, NewEventDto::setDeadline);
+        });
+
+        modelMapper.createTypeMap(Task.class, TaskResponse.class).addMappings(mapper->{
+            mapper.map(src->Optional.ofNullable(src.getParentTask()).map(Task::getId).orElse(null), TaskResponse::setParentTask);
+            mapper.skip(TaskResponse::setStatus);
         });
     }
 }

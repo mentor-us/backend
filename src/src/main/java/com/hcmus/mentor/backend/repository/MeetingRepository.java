@@ -62,16 +62,12 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     List<Meeting> findAllByGroupIdInAndAttendeesInAndTimeStartGreaterThanEqualAndTimeEndLessThanEqual(
             List<String> groupIds, List<String> ids, Date startDate, Date endDate);
 
-    //    @Aggregation(pipeline = {
-//            "{$match: {groupId: ?0}}",
-//            "{$addFields: {groupObjectId: {$toObjectId: '$groupId'}}}",
-//            "{$addFields: {organizerObjectId: {$toObjectId: '$organizerId'}}}",
-//            "{$lookup: {from: 'user', localField: 'organizerObjectId', foreignField: '_id', as: 'organizer'}}",
-//            "{$lookup: {from: 'group', localField: 'groupObjectId', foreignField: '_id', as: 'group'}}",
-//            "{'$unwind': '$group'}",
-//            "{'$unwind': '$organizer'}",
-//            "{'$sort':  {'createdDate':  -1}}"
-//    })
-    // TODO: Fix this
+
+    @Query("select m " +
+            "from Meeting m " +
+            "join fetch m.group  " +
+            "join fetch m.organizer " +
+            "where m.group.id = ?1 " +
+            "order by m.createdDate desc ")
     List<Meeting> findAllByGroupId(String groupId);
 }

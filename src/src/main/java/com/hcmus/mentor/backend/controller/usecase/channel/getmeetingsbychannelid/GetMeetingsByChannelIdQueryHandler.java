@@ -31,6 +31,7 @@ public class GetMeetingsByChannelIdQueryHandler implements Command.Handler<GetMe
                         .organizer(meeting.getOrganizer())
                         .channel(meeting.getGroup())
                         .histories(meeting.getHistories())
+                        .createdDate(meeting.getCreatedDate())
                         .build())
                 .toList();
     }

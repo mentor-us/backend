@@ -34,6 +34,8 @@ public class MeetingResult {
 
     private Channel channel;
 
+    private Date createdDate;
+
     @Builder.Default
     private String type = "MEETING";
 

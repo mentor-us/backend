@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
+import com.hcmus.mentor.backend.repository.custom.TaskRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,13 +12,15 @@ import java.util.Date;
 import java.util.List;
 
 @Repository
-public interface TaskRepository extends JpaRepository<Task, String> {
+public interface TaskRepository extends JpaRepository<Task, String>, TaskRepositoryCustom {
 
     Task findFirstByGroupIdInOrderByCreatedDateDesc(List<String> groupIds);
 
     Task findFirstByGroupIdAndAssignerIdOrderByCreatedDateDesc(String groupId, String assignerId);
 
     List<Task> findByGroupId(String groupId);
+
+    List<Task> findByGroupIdIn(List<String> groupIds);
 
     List<Task> findAllByParentTaskId(String parentTask);
 
@@ -63,15 +66,15 @@ public interface TaskRepository extends JpaRepository<Task, String> {
 
     @Query("SELECT t " +
             "FROM Task t " +
-            "INNER JOIN t.assignees assignees " +
+            "INNER JOIN fetch t.assignees assignees " +
             "WHERE (t.assigner.id = ?2 or assignees.id = ?2)" +
             "and t.group.id in ?1")
     List<Task> findAllByOwn(List<String> channelIds, String userId);
 
     @Query("SELECT t FROM Task t " +
-            "INNER JOIN t.assignees a " +
-            "INNER JOIN a.user u " +
-            "INNER JOIN t.assigner assigner " +
+            "INNER JOIN fetch t.assignees a " +
+            "INNER JOIN fetch a.user u " +
+            "INNER JOIN fetch t.assigner assigner " +
             "WHERE t.isDeleted = false " +
             "AND t.group.id IN ?1 " +
             "AND (u.id = ?2 OR assigner.id = ?2) " +
