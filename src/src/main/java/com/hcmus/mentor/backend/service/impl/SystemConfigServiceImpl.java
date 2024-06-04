@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.service.SystemConfigService;
 import com.hcmus.mentor.backend.service.dto.SystemConfigServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SystemConfi
 import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.NOT_FOUND;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
 

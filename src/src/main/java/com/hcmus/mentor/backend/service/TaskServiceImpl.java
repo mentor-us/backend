@@ -186,9 +186,9 @@ public class TaskServiceImpl implements IRemindableService {
 
     public TaskReturnService getTask(String emailUser, String id) {
         var task = taskRepository.findById(id).orElse(null);
-        if (task == null) {
-            logger.error("Get task : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+        if (task == null || task.getIsDeleted()) {
+            logger.error("Không tìm thấy công việc hoặc công việc bị xoá với id {}", id);
+            return new TaskReturnService(NOT_FOUND, String.format("Không tìm thấy công việc hoặc công việc bị xoá với id %s", id), null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {

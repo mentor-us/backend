@@ -22,6 +22,7 @@ import java.util.stream.Stream;
  * EventServiceImpl
  */
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
 

@@ -26,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +37,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPerm
 import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class GroupCategoryServiceImpl implements GroupCategoryService {
 

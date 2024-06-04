@@ -63,8 +63,8 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnC
 import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);

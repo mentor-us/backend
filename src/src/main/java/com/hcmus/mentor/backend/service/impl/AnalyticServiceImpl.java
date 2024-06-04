@@ -41,6 +41,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -66,6 +67,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
  * Analytic service.
  */
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AnalyticServiceImpl implements AnalyticService {
 
