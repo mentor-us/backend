@@ -7,7 +7,6 @@ import com.hcmus.mentor.backend.service.fileupload.S3Settings;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
@@ -60,8 +59,6 @@ public class S3FileStorage implements BlobStorage {
                 .build();
 
         try (InputStream stream = minioClient.getObject(getObjectArgs)) {
-            logger.log(Level.INFO, "File {} is received successfully.", key);
-
             return new ByteArrayInputStream(stream.readAllBytes());
         }
     }

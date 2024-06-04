@@ -283,7 +283,6 @@ public class MessageServiceImpl implements MessageService {
 
         pipeline.send(UpdateLastMessageCommand.builder().message(message).channel(message.getChannel()).build());
         return message;
-
     }
 
     /**
