@@ -264,8 +264,10 @@ public class MessageServiceImpl implements MessageService {
         var tika = new Tika();
         List<String> imageKeys = Arrays.stream(request.getFiles()).map(file -> {
             try {
-                return blobStorage.generateBlobKey(tika.detect(file.getBytes()));
+                var key = blobStorage.generateBlobKey(tika.detect(file.getBytes()));
+                blobStorage.post(file, key);
 
+                return key;
             } catch (Exception e) {
                 throw new DomainException("Save image message failed", e);
             }
