@@ -33,6 +33,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
 import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.*;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class TaskServiceImpl implements IRemindableService {
 
@@ -244,12 +245,11 @@ public class TaskServiceImpl implements IRemindableService {
 
         List<ProfileResponse> assignees = assigneesDto.stream().map(ProfileResponse::from).toList();
 
-        Map<User, TaskStatus> statuses = task.getAssignees().stream()
-                .collect(Collectors.toMap(Assignee::getUser, Assignee::getStatus, (s1, s2) -> s2));
+        Map<String, TaskStatus> statuses = task.getAssignees().stream().collect(Collectors.toMap((assignee) -> assignee.getUser().getId(), Assignee::getStatus, (s1, s2) -> s2));
 
         var data = assignees.stream()
                 .map(assignee -> {
-                    TaskStatus status = statuses.getOrDefault(assignee, null);
+                    TaskStatus status = statuses.getOrDefault(assignee.getId(), TaskStatus.TO_DO);
                     boolean isMentor = group.isMentor(assignee.getId());
                     return TaskAssigneeResponse.from(assignee, status, isMentor);
                 })
@@ -414,11 +414,11 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);
-        if(channelIdsRes.returnCode != SUCCESS)
+        if (channelIdsRes.returnCode != SUCCESS)
             return channelIdsRes;
         List<String> channelIds = (List<String>) channelIdsRes.getData();
         var tasks = taskRepository.findAllOwnByChannelIdsAndUserId(channelIds, userId).stream()
-                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
+                .map(task -> mappingTaskToTaskResponse(task, userId)).toList();
 
         return new TaskReturnService(SUCCESS, "", tasks);
     }
@@ -430,11 +430,11 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);
-        if(channelIdsRes.returnCode != SUCCESS)
+        if (channelIdsRes.returnCode != SUCCESS)
             return channelIdsRes;
         List<String> channelIds = (List<String>) channelIdsRes.getData();
         var tasks = taskRepository.findAllChannelIdInAndAssigneeId(channelIds, userId).stream()
-                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
+                .map(task -> mappingTaskToTaskResponse(task, userId)).toList();
 
         return new TaskReturnService(SUCCESS, "", tasks);
     }
@@ -446,11 +446,11 @@ public class TaskServiceImpl implements IRemindableService {
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);
-        if(channelIdsRes.returnCode != SUCCESS)
+        if (channelIdsRes.returnCode != SUCCESS)
             return channelIdsRes;
         List<String> channelIds = (List<String>) channelIdsRes.getData();
         var tasks = taskRepository.findAllByChannelIdInAndAssignerId(channelIds, userId).stream()
-                .map(task->mappingTaskToTaskResponse(task, userId)).toList();
+                .map(task -> mappingTaskToTaskResponse(task, userId)).toList();
 
         return new TaskReturnService(SUCCESS, "", tasks);
     }
@@ -465,7 +465,7 @@ public class TaskServiceImpl implements IRemindableService {
         reminderRepository.save(reminder);
     }
 
-    private TaskResponse mappingTaskToTaskResponse(Task task, String userId){
+    private TaskResponse mappingTaskToTaskResponse(Task task, String userId) {
         AssigneeDto assignee = task.getAssignees().stream()
                 .filter(a -> a.getUser().getId().equals(userId))
                 .findFirst()
@@ -476,20 +476,18 @@ public class TaskServiceImpl implements IRemindableService {
         return taskResponse;
     }
 
-    private TaskReturnService getChannelIds(String groupId, String userId){
+    private TaskReturnService getChannelIds(String groupId, String userId) {
         List<String> channelIds;
         var group = groupRepository.findById(groupId).orElse(null);
 
-        if(group == null){
-            if(!permissionService.isMemberInChannel(groupId, userId)){
+        if (group == null) {
+            if (!permissionService.isMemberInChannel(groupId, userId)) {
                 new TaskReturnService(INVALID_PERMISSION, "Not member in group", null);
             }
-            channelIds= Collections.singletonList(groupId);
-        }
-
-        else{
+            channelIds = Collections.singletonList(groupId);
+        } else {
             channelIds = group.getChannels().stream()
-                    .filter(channel->channel.getStatus() == ChannelStatus.ACTIVE && channel.isMember(userId))
+                    .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE && channel.isMember(userId))
                     .map(Channel::getId)
                     .toList();
         }
