@@ -77,10 +77,10 @@ public class GroupDto {
     private Duration duration;
 
     @Builder.Default
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
 
     @Builder.Default
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date updatedDate = DateUtils.getDateNowAtUTC() ;
 
     public static GroupDto from(Group group) {
         if (group == null)

@@ -94,7 +94,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isTokenValid(Claims claims) {
-        return !getTokenExpired(claims).before(DateUtils.getCurrentDateAtUTC() );
+        return !getTokenExpired(claims).before(DateUtils.getDateNowAtUTC() );
     }
 
     private Date getTokenExpired(Claims claims) {

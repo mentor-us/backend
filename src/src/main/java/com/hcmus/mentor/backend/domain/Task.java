@@ -44,7 +44,7 @@ public class Task implements IRemindable, Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = com.hcmus.mentor.backend.util.DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = com.hcmus.mentor.backend.util.DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)

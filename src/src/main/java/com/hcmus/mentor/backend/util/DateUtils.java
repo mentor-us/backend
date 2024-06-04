@@ -1,16 +1,21 @@
 package com.hcmus.mentor.backend.util;
 
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.*;
 
 public class DateUtils {
 
-    public static Date getCurrentDateAtUTC() {
-        return Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+    private DateUtils() {
+    }
+
+    public static Date getDateNowAtUTC() {
+        // It always in UTC.
+        return new Date();
+    }
+
+    public static LocalDateTime getLocalDateTimeNowAtUTC() {
+        return LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public static Date atEndOfDay(Date date) {

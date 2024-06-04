@@ -27,11 +27,11 @@ public class BaseDomain implements Serializable {
      * Created date
      */
     @Column(name = "created_date", nullable = false)
-    protected Date createdDate = DateUtils.getCurrentDateAtUTC();
+    protected Date createdDate = DateUtils.getDateNowAtUTC();
 
     /**
      * Updated date
      */
     @Column(name = "updated_date", nullable = false)
-    protected Date updatedDate = DateUtils.getCurrentDateAtUTC();
+    protected Date updatedDate = DateUtils.getDateNowAtUTC();
 }

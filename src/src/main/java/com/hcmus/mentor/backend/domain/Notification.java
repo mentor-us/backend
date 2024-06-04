@@ -41,7 +41,7 @@ public class Notification {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Column(name = "ref_id")
     private String refId;

@@ -27,7 +27,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingGroup(String groupId) {
         var group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-        group.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
+        group.setUpdatedDate(DateUtils.getDateNowAtUTC() );
         groupRepository.save(group);
     }
 
@@ -37,7 +37,7 @@ public class ShareServiceImpl implements ShareService {
     @Override
     public void pingChannel(String channelId) {
         var channel = channelRepository.findById(channelId).orElseThrow(() -> new DomainException("Channel not found"));
-        channel.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
+        channel.setUpdatedDate(DateUtils.getDateNowAtUTC() );
         channelRepository.save(channel);
 
         pingGroup(channel.getGroup().getId());

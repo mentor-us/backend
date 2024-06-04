@@ -77,11 +77,11 @@ public class FaqServiceImpl implements FaqService {
 
         if (request.getAnswer() != null && !request.getAnswer().isEmpty()) {
             faq.setAnswer(request.getAnswer());
-            faq.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
+            faq.setUpdatedDate(DateUtils.getDateNowAtUTC() );
         }
         if (!request.getQuestion().isEmpty()) {
             faq.setQuestion(request.getQuestion());
-            faq.setUpdatedDate(DateUtils.getCurrentDateAtUTC() );
+            faq.setUpdatedDate(DateUtils.getDateNowAtUTC() );
         }
         return faqRepository.save(faq);
     }

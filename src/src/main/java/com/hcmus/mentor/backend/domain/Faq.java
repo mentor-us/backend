@@ -35,11 +35,11 @@ public class Faq implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "updated_date", nullable = false)
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
+    private Date updatedDate = DateUtils.getDateNowAtUTC();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")

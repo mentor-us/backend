@@ -140,10 +140,10 @@ public class GroupDetailResponse {
         private String description;
 
         @Builder.Default
-        private Date createdDate = DateUtils.getCurrentDateAtUTC();
+        private Date createdDate = DateUtils.getDateNowAtUTC();
 
         @Builder.Default
-        private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+        private Date updatedDate = DateUtils.getDateNowAtUTC() ;
 
         @Builder.Default
         private List<String> userIds = new ArrayList<>();

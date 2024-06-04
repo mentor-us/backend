@@ -247,7 +247,7 @@ public class MessageServiceImpl implements MessageService {
         var message = messageRepository.save(Message.builder()
                 .sender(vote.getCreator())
                 .channel(vote.getGroup())
-                .createdDate(DateUtils.getCurrentDateAtUTC())
+                .createdDate(DateUtils.getDateNowAtUTC())
                 .type(Message.Type.VOTE)
                 .vote(vote)
                 .build());
@@ -274,7 +274,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException(USER_NOT_FOUND)))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
-                .createdDate(DateUtils.getCurrentDateAtUTC())
+                .createdDate(DateUtils.getDateNowAtUTC())
                 .type(IMAGE)
                 .images(imageKeys)
                 .build());
@@ -306,7 +306,7 @@ public class MessageServiceImpl implements MessageService {
                 .id(request.getId())
                 .sender(userRepository.findById(request.getSenderId()).orElseThrow(() -> new DomainException(USER_NOT_FOUND)))
                 .channel(channelRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Channel not found")))
-                .createdDate(DateUtils.getCurrentDateAtUTC())
+                .createdDate(DateUtils.getDateNowAtUTC())
                 .type(FILE)
                 .file(file)
                 .build());
@@ -340,7 +340,7 @@ public class MessageServiceImpl implements MessageService {
                         Message message = Message.builder()
                                 .sender(sender)
                                 .channel(channel)
-                                .createdDate(DateUtils.getCurrentDateAtUTC())
+                                .createdDate(DateUtils.getDateNowAtUTC())
                                 .content(oldMessage.getContent())
                                 .type(oldMessage.getType())
                                 .isForward(true)
@@ -379,7 +379,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public void updateCreatedDateVoteMessage(String voteId) {
         messageRepository.findByVoteId(voteId).ifPresent(message -> {
-            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            message.setCreatedDate(DateUtils.getDateNowAtUTC());
             messageRepository.save(message);
         });
     }

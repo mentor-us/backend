@@ -34,7 +34,7 @@ public class MeetingHistory implements Serializable {
 
     @Builder.Default
     @Column(name = "modify_date", nullable = false)
-    private Date modifyDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date modifyDate = DateUtils.getDateNowAtUTC() ;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "modifier_id")

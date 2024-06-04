@@ -44,11 +44,11 @@ public class Channel implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date")
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "updated_date")
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
+    private Date updatedDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "deleted_date")
@@ -118,7 +118,7 @@ public class Channel implements Serializable {
     }
 
     public void ping() {
-        updatedDate = DateUtils.getCurrentDateAtUTC();
+        updatedDate = DateUtils.getDateNowAtUTC();
     }
 
     @Override

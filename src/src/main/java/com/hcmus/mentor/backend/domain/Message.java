@@ -34,7 +34,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "is_edited", nullable = false)
@@ -123,7 +123,7 @@ public class Message implements Serializable {
     public void edit(EditMessageRequest request) {
         setContent(request.getNewContent());
         setStatus(Status.EDITED);
-        setEditedAt(DateUtils.getCurrentDateAtUTC());
+        setEditedAt(DateUtils.getDateNowAtUTC());
         setIsEdited(true);
     }
 

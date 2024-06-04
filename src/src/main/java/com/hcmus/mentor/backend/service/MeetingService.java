@@ -103,7 +103,7 @@ public class MeetingService implements IRemindableService {
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
                 .content("NEW MEETING")
-                .createdDate(DateUtils.getCurrentDateAtUTC())
+                .createdDate(DateUtils.getDateNowAtUTC())
                 .type(Message.Type.MEETING)
                 .channel(meeting.getGroup())
                 .meeting(meeting)
@@ -163,7 +163,7 @@ public class MeetingService implements IRemindableService {
         }
 
         messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
-            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            message.setCreatedDate(DateUtils.getDateNowAtUTC());
             messageRepository.save(message);
         });
 
@@ -303,7 +303,7 @@ public class MeetingService implements IRemindableService {
         meetingRepository.save(meeting);
 
         messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
-            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            message.setCreatedDate(DateUtils.getDateNowAtUTC());
             messageRepository.save(message);
         });
 

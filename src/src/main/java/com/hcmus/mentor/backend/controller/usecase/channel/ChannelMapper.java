@@ -19,6 +19,8 @@ public class ChannelMapper {
             mapper.skip(ChannelDetailDto::setGroupCategory);
             mapper.skip(ChannelDetailDto::setPermissions);
             mapper.skip(ChannelDetailDto::setRole);
+            mapper.skip(ChannelDetailDto::setTimeStart);
+            mapper.skip(ChannelDetailDto::setTimeEnd);
         });
         modelMapper.createTypeMap(Message.class, ShortMediaMessage.class).addMappings(mapper -> {
         });

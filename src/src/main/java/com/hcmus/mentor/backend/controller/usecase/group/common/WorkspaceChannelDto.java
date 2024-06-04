@@ -21,8 +21,8 @@ public class WorkspaceChannelDto {
     private String id;
     private String name;
     private String description;
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
+    private Date updatedDate = DateUtils.getDateNowAtUTC() ;
     private List<String> userIds = new ArrayList<>();
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

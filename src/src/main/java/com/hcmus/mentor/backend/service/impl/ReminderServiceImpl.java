@@ -34,7 +34,7 @@ public class ReminderServiceImpl implements ReminderService {
 
     @Override
     public void sendReminders() {
-        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(DateUtils.getCurrentDateAtUTC() );
+        List<Reminder> reminders = reminderRepository.findByReminderDateBefore(DateUtils.getDateNowAtUTC() );
 
         for (Reminder reminder : reminders) {
             var receiverIds = getStrings(reminder, reminder.getType().toString() + "_REMINDER");

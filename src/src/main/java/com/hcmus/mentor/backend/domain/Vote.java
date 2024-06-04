@@ -68,7 +68,7 @@ public class Vote extends BaseDomain {
 
     public void close() {
         setStatus(Status.CLOSED);
-        setClosedDate(DateUtils.getCurrentDateAtUTC() );
+        setClosedDate(DateUtils.getDateNowAtUTC() );
     }
 
     public void reopen() {

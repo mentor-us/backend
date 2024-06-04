@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -24,8 +25,10 @@ public class ChannelDetailDto {
     private String description;
     private String imageUrl;
     private Boolean hasNewMessage;
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
+    private Date updatedDate = DateUtils.getDateNowAtUTC();
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
     private Date deletedDate = null;
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;

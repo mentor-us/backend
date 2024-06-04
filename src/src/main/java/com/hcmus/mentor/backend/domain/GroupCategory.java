@@ -38,7 +38,7 @@ public class GroupCategory implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

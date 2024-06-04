@@ -172,7 +172,7 @@ public class Group extends BaseDomain implements Serializable {
     }
 
     public void ping() {
-        this.updatedDate = DateUtils.getCurrentDateAtUTC();
+        this.updatedDate = DateUtils.getDateNowAtUTC();
     }
 
     @Override
