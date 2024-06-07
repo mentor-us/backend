@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
