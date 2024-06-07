@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.FindUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;

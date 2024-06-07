@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
-import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.CreateVoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.DoVotingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Choice;
