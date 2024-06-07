@@ -12,7 +12,6 @@ import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.TaskRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -32,7 +31,6 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
 
     private final LoggedUserAccessor loggedUserAccessor;
     private final TaskRepository taskRepository;
-    private final ChannelRepository channelRepository;
     private final PermissionService permissionService;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;

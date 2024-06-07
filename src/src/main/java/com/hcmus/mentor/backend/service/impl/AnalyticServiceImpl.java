@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.FindGroupGeneralAnalyticRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.FindUserAnalyticRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.GroupAnalyticResponse;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.ImportGeneralInformationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnalyticChartResponse;

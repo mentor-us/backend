@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.hcmus.mentor.backend.controller.payload.request.EditMessageRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.EditMessageRequest;
 import com.hcmus.mentor.backend.domain.constant.EmojiType;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;

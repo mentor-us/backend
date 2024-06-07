@@ -1,10 +1,10 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.FindUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.domain.Group;

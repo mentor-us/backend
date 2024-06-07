@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.UpdateGroupCategoryRequest;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
 import org.springframework.core.io.Resource;

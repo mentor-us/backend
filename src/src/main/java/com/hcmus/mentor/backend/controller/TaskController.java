@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.AddTaskRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateStatusByMentorRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;

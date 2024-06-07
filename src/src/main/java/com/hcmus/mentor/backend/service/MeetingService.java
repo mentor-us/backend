@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.service;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingAttendeeResponse;

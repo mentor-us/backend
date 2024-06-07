@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.*;
+import com.hcmus.mentor.backend.controller.payload.request.users.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdditionalEmailCommand;

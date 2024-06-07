@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.AddNotificationRequest;
-import com.hcmus.mentor.backend.controller.payload.request.SubscribeNotificationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.notifications.AddNotificationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.notifications.SubscribeNotificationRequest;
 import com.hcmus.mentor.backend.domain.Notification;
 import com.hcmus.mentor.backend.repository.NotificationRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
