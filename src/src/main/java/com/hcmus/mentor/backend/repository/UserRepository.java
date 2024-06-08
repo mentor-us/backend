@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
+import com.hcmus.mentor.backend.repository.custom.impl.UserRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
+public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User>, UserRepositoryCustom {
 
     long countByStatus(Boolean status);
 

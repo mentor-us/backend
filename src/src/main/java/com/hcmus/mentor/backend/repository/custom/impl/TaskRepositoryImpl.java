@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.repository.custom.impl;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.repository.custom.TaskRepositoryCustom;
 import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
@@ -51,6 +52,7 @@ public class TaskRepositoryImpl extends QuerydslRepositorySupport implements Tas
     }
 
     private <T> JPAQuery<T> findAllByChannelIdsInAndAssigneeIdQuery(Expression<T> expression, List<String> channelIds, String assigneeId) {
+
         return new JPAQuery<Task>(em)
                 .select(expression)
                 .from(task)
@@ -64,9 +66,15 @@ public class TaskRepositoryImpl extends QuerydslRepositorySupport implements Tas
         return new JPAQuery<>(em)
                 .select(expression)
                 .from(task)
-                .leftJoin(task.group, channel).fetchJoin()
-                .leftJoin(task.assignees, assignee).fetchJoin()
-                .leftJoin(task.assigner, user).fetchJoin()
+                .join(task.group, channel).fetchJoin()
+                .join(task.assignees, assignee).fetchJoin()
+                .join(task.assigner, user).fetchJoin()
                 .where(channel.id.in(channelIds).and(user.id.eq(assignedId)));
+    }
+
+    public BooleanExpression buildTaskFilter(List<String> channelIds, String userId, Boolean isAssignee) {
+        return channel.id.in(channelIds)
+                .and(user.id.eq(userId)
+                        .or(task.assigner.id.eq(userId)));
     }
 }

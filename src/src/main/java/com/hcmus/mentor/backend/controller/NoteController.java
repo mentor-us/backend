@@ -8,6 +8,8 @@ import com.hcmus.mentor.backend.controller.payload.request.note.UpdateNoteUserRe
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDto;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfile;
+import com.hcmus.mentor.backend.controller.usecase.note.createnote.CreateNoteCommand;
+import com.hcmus.mentor.backend.domainservice.NoteDomainService;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.NotImplementedException;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +33,8 @@ import java.util.List;
 public class NoteController {
 
     private final Pipeline pipeline;
+    private final NoteDomainService noteDomainService;
+    private final ModelMapper modelMapper;
 
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200", description = "Success")
@@ -45,7 +50,7 @@ public class NoteController {
     @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<List<NoteUserProfile>> getAllUserCanAccessNotes(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser) {
-        throw new NotImplementedException();
+        return ResponseEntity.ok(noteDomainService.getAllUsers(loggedInUser.getId()));
     }
 
     @GetMapping("user/{userId}")
@@ -63,7 +68,10 @@ public class NoteController {
     public ResponseEntity<NoteDetailDto> createNote(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser,
             @RequestBody CreateNoteRequest request) {
-        throw new NotImplementedException();
+        var command = modelMapper.map(request, CreateNoteCommand.class);
+        command.setCreatorId(loggedInUser.getId());
+       NoteDetailDto abc = pipeline.send(command);
+        return ResponseEntity.ok(abc);
     }
 
     @PostMapping("{id}/share")

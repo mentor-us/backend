@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -33,9 +34,12 @@ public class NoteDetailDto {
 
     private boolean isPublic;
 
-    private List<NoteHistory> noteHistories;
+    @Builder.Default
+    private List<NoteHistory> noteHistories = new ArrayList<>();
 
-    private List<NoteUserProfile> users;
+    @Builder.Default
+    private List<NoteUserProfile> users = new ArrayList<>();
 
-    private List<NoteUserProfile> userAccesses;
+    @Builder.Default
+    private List<NoteUserProfile> userAccesses = new ArrayList<>();
 }

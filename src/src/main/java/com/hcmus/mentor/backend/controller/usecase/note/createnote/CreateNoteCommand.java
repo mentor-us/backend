@@ -2,8 +2,10 @@ package com.hcmus.mentor.backend.controller.usecase.note.createnote;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -12,6 +14,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateNoteCommand implements Command<NoteDetailDto> {
 
         private String creatorId;
