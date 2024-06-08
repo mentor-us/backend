@@ -2,23 +2,19 @@ package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.notifications.AddNotificationRequest;
-import com.hcmus.mentor.backend.controller.payload.request.notifications.SubscribeNotificationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.notifications.SubscribeNotificationServerRequest;
+import com.hcmus.mentor.backend.controller.usecase.notification.common.NotificationDetailDto;
 import com.hcmus.mentor.backend.domain.Notification;
-import com.hcmus.mentor.backend.repository.NotificationRepository;
-import com.hcmus.mentor.backend.security.principal.CurrentUser;
-import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
+import com.hcmus.mentor.backend.domain.constant.NotificationAction;
 import com.hcmus.mentor.backend.service.NotificationService;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Optional;
-
-import static com.hcmus.mentor.backend.controller.payload.returnCode.NotificationReturnCode.NOT_FOUND;
 
 /**
  * Notification controller.
@@ -31,25 +27,21 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.Notificatio
 public class NotificationController {
 
     private final NotificationService notificationService;
-    private final NotificationRepository notificationRepository;
 
     /**
      * Get all notifications with paging.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param page                The page number (default is 0).
-     * @param pageSize            The number of notifications per page (default is 25).
+     * @param page     The page number (default is 0).
+     * @param pageSize The number of notifications per page (default is 25).
      * @return APIResponse containing the list of notifications for the user.
      */
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> all(
-            @CurrentUser CustomerUserDetails customerUserDetails,
+    public Map<String, Object> all(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize) {
-        Map<String, Object> response = notificationService.getOwnNotifications(customerUserDetails.getId(), page, pageSize);
-        return ApiResponseDto.success(response);
+        return notificationService.getOwn(page, pageSize);
     }
 
     /**
@@ -61,49 +53,38 @@ public class NotificationController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notification> get(@PathVariable String id) {
-        Optional<Notification> notification = notificationRepository.findById(id);
-        return notification.map(ApiResponseDto::success).orElseGet(() -> ApiResponseDto.notFound(NOT_FOUND));
+    public NotificationDetailDto get(@PathVariable String id) {
+        return notificationService.getById(id);
     }
 
     /**
      * Create a new notification.
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param request             The request payload for creating a new notification.
+     * @param request The request payload for creating a new notification.
      * @return APIResponse containing the created notification or a response indicating failure.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notification> create(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+    public Notification create(
             @RequestBody AddNotificationRequest request) {
-        Notification newNotif = notificationService.createResponseNotification(customerUserDetails.getId(), request);
-        return ApiResponseDto.success(newNotif);
+        return notificationService.create(request);
     }
 
     /**
      * Respond to a notification (e.g., see, accept, or deny).
      *
-     * @param customerUserDetails The current user's principal information.
-     * @param id                  The ID of the notification to respond to.
-     * @param action              The action to perform in response to the notification.
+     * @param id     The ID of the notification to respond to.
+     * @param action The action to perform in response to the notification.
      * @return APIResponse containing the updated notification or a not-found response.
      */
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Notification> response(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
+    public Notification response(
             @PathVariable String id,
-            @RequestParam String action) {
-        String userId = customerUserDetails.getId();
-        Notification notif = notificationService.responseNotification(userId, id, action);
-        if (notif == null) {
-            return ApiResponseDto.notFound(NOT_FOUND);
-        }
-        return ApiResponseDto.success(notif);
+            @RequestParam NotificationAction action) {
+        return notificationService.response(id, action);
     }
 
     /**
@@ -115,9 +96,10 @@ public class NotificationController {
     @PostMapping("subscribe")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Void> subscribe(@RequestBody SubscribeNotificationRequest request) {
-        notificationService.subscribeNotification(request);
-        return ApiResponseDto.success(null);
+    public ResponseEntity<Void> subscribe(@RequestBody SubscribeNotificationServerRequest request) {
+        notificationService.subscribeToServer(request);
+
+        return ResponseEntity.ok().build();
     }
 
     /**
@@ -137,18 +119,12 @@ public class NotificationController {
     /**
      * Get the number of unread notifications.
      *
-     * @param customerUserDetails The current user's principal information.
      * @return APIResponse containing the number of unread notifications for the user.
      */
     @GetMapping("unread")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Long> getUnreadNumber(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
-        String userId = customerUserDetails.getId();
-        if (userId == null) {
-            return ApiResponseDto.notFound(404);
-        }
-        return ApiResponseDto.success(notificationService.getUnreadNumber(userId));
+    public Long getUnreadNumber() {
+        return notificationService.getCountUnread();
     }
 }

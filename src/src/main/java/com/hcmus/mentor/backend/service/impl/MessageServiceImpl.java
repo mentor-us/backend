@@ -370,7 +370,7 @@ public class MessageServiceImpl implements MessageService {
                         return message;
                     }
             ).toList();
-            notificationService.sendForwardMessageNotification(messages, sender);
+            notificationService.sendForForwardMessage(messages, sender);
         } catch (Exception e) {
             throw new DomainException("Forward message failed", e);
         }

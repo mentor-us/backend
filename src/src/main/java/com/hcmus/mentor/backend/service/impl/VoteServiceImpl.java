@@ -119,7 +119,7 @@ public class VoteServiceImpl implements VoteService {
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, userId);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
+        notificationService.sendForNote(newVote.getGroup().getId(), newVote);
         groupService.pingGroup(newVote.getGroup().getId());
         return modelMapper.map(newVote, VoteResult.class);
     }

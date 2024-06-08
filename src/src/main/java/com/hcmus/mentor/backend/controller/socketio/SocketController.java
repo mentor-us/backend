@@ -111,7 +111,7 @@ public class SocketController {
                     .isForward(message.getIsForward())
                     .build();
             Message newMessage = messageService.saveMessage(receivedMessageRequest);
-            notificationService.sendNewMessageNotification(newMessage);
+            notificationService.sendForMessage(newMessage);
 
             MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 

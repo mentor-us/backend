@@ -1,19 +1,20 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.notifications.AddNotificationRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.RescheduleMeetingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.notifications.SubscribeNotificationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.notifications.AddNotificationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.notifications.SubscribeNotificationServerRequest;
 import com.hcmus.mentor.backend.controller.payload.response.NotificationResponse;
-import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.notification.common.NotificationDetailDto;
 import com.hcmus.mentor.backend.domain.*;
+import com.hcmus.mentor.backend.domain.constant.NotificationAction;
 import com.hcmus.mentor.backend.domain.constant.NotificationType;
-import com.hcmus.mentor.backend.event.SendFirebaseNotificationEvent;
 import com.hcmus.mentor.backend.repository.NotificationRepository;
 import com.hcmus.mentor.backend.repository.NotificationSubscriberRepository;
 import com.hcmus.mentor.backend.repository.NotificationUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,7 +22,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.modelmapper.ModelMapper;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -41,28 +41,35 @@ import static com.hcmus.mentor.backend.domain.constant.NotificationType.*;
 public class NotificationServiceImpl implements NotificationService {
 
     private static final Logger logger = LogManager.getLogger(NotificationServiceImpl.class);
+    private final LoggedUserAccessor loggedUserAccessor;
     private final NotificationRepository notificationRepository;
     private final NotificationSubscriberRepository notificationSubscriberRepository;
     private final FirebaseServiceImpl firebaseService;
     private final UserRepository userRepository;
     private final NotificationUserRepository notificationUserRepository;
     private final ModelMapper modelMapper;
-    private final ApplicationEventPublisher applicationEventPublisher;
+
+    private static final String NOT_FOUND_NOTIFICATION_MESSAGE = "Không tìm thấy thông báo.";
+    private static final String NOT_FOUND_USER_MESSAGE = "Không tìm thấy nguời.";
 
     @Override
-    public Map<String, Object> getOwnNotifications(String userId, int page, int size) {
+    public NotificationDetailDto getById(String notificationId) {
+        var notification = notificationRepository.findById(notificationId).orElseThrow(() -> new DomainException(NOT_FOUND_NOTIFICATION_MESSAGE));
+
+        return modelMapper.map(notification, NotificationDetailDto.class);
+    }
+
+    @Override
+    public Map<String, Object> getOwn(int page, int size) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
         PageRequest paging = PageRequest.of(page, size, Sort.by("createdDate").descending());
 
-        Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(userId), paging);
+        Page<Notification> notifications = notificationRepository.findOwnNotifications(Collections.singletonList(currentUserId), paging);
         List<NotificationResponse> notificationsResponse = notifications.stream()
                 .map(notification -> {
                     var response = modelMapper.map(notification, NotificationResponse.class);
                     var shortProfile = userRepository.findById(notification.getSender().getId())
-                            .map(u -> ShortProfile.builder()
-                                    .id(u.getId())
-                                    .name(u.getName())
-                                    .imageUrl(u.getImageUrl())
-                                    .build())
+                            .map(u -> modelMapper.map(u, ShortProfile.class))
                             .orElse(null);
                     response.setSender(shortProfile);
 
@@ -74,33 +81,37 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * @param senderId ID of the sender
      * @param request Request to create a notification
      * @return Notification
      */
     @Override
-    public Notification createResponseNotification(String senderId, AddNotificationRequest request) {
+    public Notification create(AddNotificationRequest request) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
         Notification notification = notificationRepository.save(Notification.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
                 .type(NotificationType.NEED_RESPONSE)
-                .sender(userRepository.findById(senderId).orElse(null))
+                .sender(userRepository.findById(currentUserId).orElse(null))
                 .createdDate(request.getCreatedDate())
                 .build());
+
         var receivers = NotificationUser.builder().notification(notification).user(userRepository.findById(request.getReceiverId()).orElse(null)).build();
         notification.setReceivers(Collections.singletonList(receivers));
+
+        notification = notificationRepository.save(notification);
+
         return notification;
     }
 
-
     /**
-     * @param senderId ID of the sender
      * @param notificationId ID of the notification
-     * @param action Action to response the notification
+     * @param action         Action to response the notification
      * @return Notification
      */
     @Override
-    public Notification responseNotification(String senderId, String notificationId, String action) {
+    public Notification response(String notificationId, NotificationAction action) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
         Notification notification = notificationRepository.findById(notificationId).orElseThrow(() -> new DomainException("Notification not found"));
 
         if (!notification.getType().equals(NotificationType.NEED_RESPONSE)) {
@@ -108,19 +119,19 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         NotificationUser notificationUser = notification.getReceivers().stream()
-                .filter(nu -> nu.getUser().getId().equals(senderId))
+                .filter(nu -> nu.getUser().getId().equals(currentUserId))
                 .findFirst()
                 .orElseThrow(() -> new DomainException("User is not a receiver of this notification"));
 
         switch (action) {
-            case "seen":
+            case SEEN:
                 notificationUser.setIsReaded(true);
                 break;
-            case "accept":
+            case ACCEPT:
                 notificationUser.setIsReaded(true);
                 notificationUser.setIsAgreed(true);
                 break;
-            case "refuse":
+            case REFUSE:
                 notificationUser.setIsReaded(true);
                 notificationUser.setIsAgreed(false);
                 break;
@@ -132,49 +143,32 @@ public class NotificationServiceImpl implements NotificationService {
         return notification;
     }
 
-
-    /**
-     * @param request
-     */
     @Override
-    public void subscribeNotification(SubscribeNotificationRequest request) {
-        if (request == null) {
-            return;
-        }
+    public void subscribeToServer(SubscribeNotificationServerRequest request) {
+        var user = userRepository.findById(request.getUserId()).orElseThrow(() -> new DomainException(NOT_FOUND_USER_MESSAGE));
 
-        unsubscribeNotification(request.getUserId());
+        notificationSubscriberRepository.deleteByUserId(request.getUserId());
 
-        if (request.getToken().isEmpty()) {
-            logger.error("[*] Unsubscribe user notification: userID({})", request.getUserId());
-            return;
-        }
-        logger.info("[*] Subscribe user notification: userID({}) | Token({})", request.getUserId(), request.getToken());
+        logger.info("Unsubscribe user notification with userId {}", request.getUserId());
 
-        List<NotificationSubscriber> subscribes =
-                notificationSubscriberRepository.findByUserIdOrToken(
-                        request.getUserId(), request.getToken());
+        List<NotificationSubscriber> subscribes = notificationSubscriberRepository.findByUserIdOrToken(request.getUserId(), request.getToken());
         if (subscribes.isEmpty()) {
-            NotificationSubscriber subscriber =
-                    NotificationSubscriber.builder()
-                            .user(userRepository.findById(request.getUserId()).orElse(null))
-                            .token(request.getToken())
-                            .build();
+            NotificationSubscriber subscriber = NotificationSubscriber.builder()
+                    .user(user)
+                    .token(request.getToken())
+                    .build();
             notificationSubscriberRepository.save(subscriber);
             return;
         }
 
         subscribes.forEach(subscriber -> {
             subscriber.setToken(request.getToken());
-            subscriber.setUser(userRepository.findById(request.getUserId()).orElse(null));
+            subscriber.setUser(user);
         });
-        notificationSubscriberRepository.saveAll(subscribes);
-    }
 
-    private Map<String, Object> pagingResponse(Slice<Notification> slice, List<NotificationResponse> notifications) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("notifications", notifications);
-        response.put("hasMore", slice.hasNext());
-        return response;
+        logger.info("Subscribe user notification with userId {}, token {}", request.getUserId(), request.getToken());
+
+        notificationSubscriberRepository.saveAll(subscribes);
     }
 
     @Override
@@ -183,34 +177,40 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendNewMessageNotification(Message message) {
+    public long getCountUnread() {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        return notificationUserRepository.countByUserIdAndIsDeletedIsFalse(currentUserId);
+    }
+
+    @Override
+    public void sendForMessage(Message message) {
+        if (message == null) {
+            return;
+        }
+
         var sender = message.getSender();
-        var title = buildTitle(message.getChannel(), sender);
+        var title = getTitleForChannel(message.getChannel(), sender);
         var body = String.format("%s: %s", sender.getName(), Jsoup.parse(message.getContent()).text());
         var notification = createNotification(title, body, NEW_MESSAGE, sender, message.getChannel().getUsers(), message.getId());
         var data = attachDataNotification(message.getChannel().getId(), NEW_MESSAGE);
         data.put("sender", sender.getName());
         data.put("imageUrl", sender.getImageUrl());
+
         var receiver = notification.getReceivers().stream().map(NotificationUser::getUser).map(User::getId).toList();
+
         firebaseService.sendNotificationMulticast(receiver, title, body, data);
     }
 
-    private Map<String, String> attachDataNotification(String groupId, NotificationType type) {
-        Map<String, String> data = new HashMap<>();
-        data.put("type", type.name());
-        data.put("screen", "chat");
-        data.put("groupId", groupId);
-        return data;
-    }
 
     @Override
-    public void sendNewTaskNotification(Task task) {
+    public void sendForTask(Task task) {
         if (task == null) {
             return;
         }
 
-        var title = buildTitle(task.getGroup(), task.getAssigner());
-        var body = "Nhóm có công việc mới \"" + task.getTitle() + "\"";
+        var title = getTitleForChannel(task.getGroup(), task.getAssigner());
+        var body = String.format("Nhóm có công việc mới \"%s\"", task.getTitle());
         var notification = createNotification(title, body, NEW_TASK, task.getAssigner(), task.getAssignees().stream().map(Assignee::getUser).toList(), task.getId());
         var receivers = notification.getReceivers().stream().map(n -> n.getUser().getId()).toList();
         var data = attachDataNotification(task.getGroup().getId(), NEW_TASK);
@@ -219,12 +219,12 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendNewMeetingNotification(Meeting meeting) {
+    public void sendForMeeting(Meeting meeting) {
         if (meeting == null || meeting.getGroup() == null || meeting.getGroup().getGroup() == null) {
             return;
         }
 
-        var title = buildTitle(meeting.getGroup(), meeting.getOrganizer());
+        var title = getTitleForChannel(meeting.getGroup(), meeting.getOrganizer());
         var body = String.format("Nhóm có lịch hẹn mới \"%s\"", meeting.getTitle());
         var notification = createNotification(title, body, NEW_MEETING, meeting.getOrganizer(), meeting.getAttendees(), meeting.getId());
         var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
@@ -234,7 +234,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendNewMediaMessageNotification(Message message) {
+    public void sendForMediaMessage(Message message) {
         boolean isImageMessage = Message.Type.IMAGE.equals(message.getType()) && message.getImages() != null && !message.getImages().isEmpty();
         boolean isFileMessage = Message.Type.FILE.equals(message.getType()) && message.getFile() != null;
         if (!isImageMessage && !isFileMessage) {
@@ -242,7 +242,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         NotificationType type;
-        StringBuilder notificationBody = new StringBuilder(message.getSender().getName() + " đã gửi ");
+        StringBuilder notificationBody = new StringBuilder(String.format("%s đã gửi ", message.getSender().getName()));
         if (Message.Type.IMAGE.equals(message.getType())) {
             type = NEW_IMAGE_MESSAGE;
             notificationBody.append(message.getImages().size()).append(" ảnh mới.");
@@ -258,32 +258,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendNewReactNotification(Message message, ReactMessageResponse reaction, User sender) {
-        if (message == null || reaction == null || message.getSender() == null || sender == null) {
-            return;
-        }
-
-        NotificationSubscriber subscriber = notificationSubscriberRepository.findByUserId(message.getSender().getId()).orElse(null);
-        if (subscriber == null) {
-            return;
-        }
-        var title = buildTitle(message.getChannel(), sender);
-        var body = message.getSender().getName() + " đã thể hiện cảm xúc tin nhắn của bạn.";
-        Map<String, String> data = attachDataNotification(message.getChannel().getId(), NEW_REACTION);
-
-        var event = new SendFirebaseNotificationEvent(this, Collections.singletonList(subscriber.getToken()), title, body, data);
-
-        applicationEventPublisher.publishEvent(event);
-    }
-
-    @Override
-    public void sendRescheduleMeetingNotification(User modifier, Meeting meeting, RescheduleMeetingRequest request) {
+    public void sendForRescheduleMeeting(User modifier, Meeting meeting, RescheduleMeetingRequest request) {
         if (meeting == null || meeting.getGroup() == null || meeting.getGroup().getGroup() == null) {
             return;
         }
 
-        var title = buildTitle(meeting.getGroup(), modifier);
-        var body = "Lịch hẹn: \"" + meeting.getTitle() + "\" đã được dời thời gian.";
+        var title = getTitleForChannel(meeting.getGroup(), modifier);
+        var body = String.format("Lịch hẹn: \"%s\" đã được dời thời gian.", meeting.getTitle());
         var receivers = Stream.concat(Stream.of(meeting.getOrganizer()), meeting.getAttendees().stream()).toList();
         var notification = createNotification(title, body, RESCHEDULE_MEETING, modifier, receivers, meeting.getId());
         var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
@@ -294,14 +275,9 @@ public class NotificationServiceImpl implements NotificationService {
 
 
     @Override
-    public long getUnreadNumber(final String userId) {
-        return 0;
-    }
-
-    @Override
-    public void sendNewVoteNotification(String creatorId, Vote vote) {
-        Optional.of(vote).ifPresent(v->{
-            var title = buildTitle(v.getGroup(), v.getCreator());
+    public void sendForNote(String creatorId, Vote vote) {
+        Optional.of(vote).ifPresent(v -> {
+            var title = getTitleForChannel(v.getGroup(), v.getCreator());
             var body = String.format("Nhóm có cuộc bình chọn mới \"%s\"", v.getQuestion());
             var notification = createNotification(title, body, NEW_VOTE, v.getCreator(), v.getGroup().getUsers(), v.getId());
             var receiverIds = notification.getReceivers().stream().map(nu -> nu.getUser().getId()).toList();
@@ -312,18 +288,18 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendTogglePinNotification(Message message, User pinner, boolean isPin) {
+    public void sendForTogglePin(Message message, User pinner, boolean isPin) {
         if (message == null || pinner == null) {
             return;
         }
 
-        String prefixBody = pinner.getName() + (isPin ? " đã ghim tin nhắn \"" : " đã bỏ ghim tin nhắn \"");
+        String prefixBody = String.format("%s đã %sghim tin nhắn \"", pinner.getName(), isPin ? "" : "bỏ ");
         sendAboutMessageNotification(message, pinner, isPin ? PIN_MESSAGE : UNPIN_MESSAGE, prefixBody, null, message.getId());
     }
 
     @Override
     @SneakyThrows
-    public void sendForwardMessageNotification(List<Message> messages, User sender) {
+    public void sendForForwardMessage(List<Message> messages, User sender) {
         if (messages == null || sender == null || messages.isEmpty()) {
             return;
         }
@@ -336,13 +312,35 @@ public class NotificationServiceImpl implements NotificationService {
 
     }
 
+    public Notification createNotification(String title, String content, NotificationType type, User sender, List<User> receivers, String refId) {
+        Notification notification = Notification.builder()
+                .title(title)
+                .content(content)
+                .type(type)
+                .sender(sender)
+                .refId(refId)
+                .build();
+
+        List<NotificationUser> receiverNotifications = receivers.stream()
+                .filter(user -> !user.getId().equals(sender.getId()))
+                .map(user -> NotificationUser.builder()
+                        .notification(notification)
+                        .user(user)
+                        .build()
+                )
+                .toList();
+        notification.setReceivers(receiverNotifications);
+
+        return notificationRepository.save(notification);
+    }
+
     private void sendAboutMessageNotification(Message message, User sender, NotificationType type, String prefixBody, String body, String refId) {
         if (message == null || sender == null) {
             return;
         }
 
         var channel = message.getChannel();
-        var title = buildTitle(channel, sender);
+        var title = getTitleForChannel(channel, sender);
 
         var receivers = channel.getUsers().stream().filter(user -> !user.getId().equals(sender.getId())).toList();
         Map<String, String> data = attachDataNotification(channel.getId(), type);
@@ -386,41 +384,31 @@ public class NotificationServiceImpl implements NotificationService {
         firebaseService.sendNotificationMulticast(receivers.stream().map(User::getId).toList(), title, body, data);
     }
 
-    private String buildTitle(Channel channel, User sender) {
+    private String getTitleForChannel(Channel channel, User sender) {
         if (channel == null || sender == null) {
             return "";
         }
 
-        var group = Optional.of(channel).map(Channel::getGroup).orElse(null);
-        String title = Optional.ofNullable(group).map(Group::getName).orElse("");
+        var groupName = Optional.of(channel).map(Channel::getGroup).map(Group::getName).orElse("");
         if (channel.getType() == PRIVATE_MESSAGE) {
-            title = title + "\n" + sender.getName();
+            return String.format("%s %n %s", groupName, sender.getName());
         } else {
-            title = title + " - " + channel.getName();
+            return String.format("%s - %s", groupName, channel.getName());
         }
-
-        return title;
     }
 
-    public Notification createNotification(String title, String content, NotificationType type, User sender, List<User> receivers, String refId) {
-        Notification notification = Notification.builder()
-                .title(title)
-                .content(content)
-                .type(type)
-                .sender(sender)
-                .refId(refId)
-                .build();
+    private Map<String, String> attachDataNotification(String groupId, NotificationType type) {
+        Map<String, String> data = new HashMap<>();
+        data.put("type", type.name());
+        data.put("screen", "chat");
+        data.put("groupId", groupId);
+        return data;
+    }
 
-        List<NotificationUser> receiverNotifications = receivers.stream()
-                .filter(user -> !user.getId().equals(sender.getId()))
-                .map(user -> NotificationUser.builder()
-                        .notification(notification)
-                        .user(user)
-                        .build()
-                )
-                .toList();
-        notification.setReceivers(receiverNotifications);
-
-        return notificationRepository.save(notification);
+    private Map<String, Object> pagingResponse(Slice<Notification> slice, List<NotificationResponse> notifications) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("notifications", notifications);
+        response.put("hasMore", slice.hasNext());
+        return response;
     }
 }

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserMapper {
 
-   public UserMapper(ModelMapper modelMapper) {
-       modelMapper.createTypeMap(User.class, ShortProfile.class);
-       modelMapper.createTypeMap(User.class, ProfileResponse.class);
-   }
+    public UserMapper(ModelMapper modelMapper) {
+        modelMapper.createTypeMap(User.class, ShortProfile.class);
+        modelMapper.createTypeMap(User.class, ProfileResponse.class);
+    }
 }

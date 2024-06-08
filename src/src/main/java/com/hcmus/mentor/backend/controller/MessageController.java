@@ -203,7 +203,7 @@ public class MessageController {
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(message);
+        notificationService.sendForMediaMessage(message);
 
         return ResponseEntity.ok(message.getFile().getUrl());
     }
@@ -263,7 +263,7 @@ public class MessageController {
         Message message = messageService.saveImageMessage(request);
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(message);
+        notificationService.sendForMediaMessage(message);
 
         return ResponseEntity.ok().build();
     }
@@ -287,7 +287,7 @@ public class MessageController {
                 continue;
             }
 
-            notificationService.sendNewMessageNotification(message);
+            notificationService.sendForMessage(message);
         }
 
         return ResponseEntity.ok().build();

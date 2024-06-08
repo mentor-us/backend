@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface NotificationUserRepository extends JpaRepository<NotificationUser, String> {
+
+    long countByUserIdAndIsDeletedIsFalse(String userId);
 }

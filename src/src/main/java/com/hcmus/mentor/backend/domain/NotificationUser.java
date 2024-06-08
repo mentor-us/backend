@@ -2,7 +2,10 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 
 @Data
@@ -28,7 +31,7 @@ public class NotificationUser {
     private Boolean isDeleted = false;
 
     @Column(name = "is_agreed")
-    private Boolean isAgreed;
+    private Boolean isAgreed = false;
 
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)

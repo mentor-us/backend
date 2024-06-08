@@ -36,7 +36,7 @@
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
         <lombok.version>1.18.32</lombok.version>
         <socketio.version>2.0.9</socketio.version>
-        <springdoc.version>2.3.0</springdoc.version>
+        <springdoc.version>2.5.0</springdoc.version>
         <api-runtime-javadoc.version>0.15.0</api-runtime-javadoc.version>
         <quartz.version>2.5.0-rc1</quartz.version>
         <jsoup.version>1.17.2</jsoup.version>
@@ -409,6 +409,10 @@
                         <schema>public</schema>
                     </schemas>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
             </plugin>
         </plugins>
         <resources>

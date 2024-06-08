@@ -116,7 +116,7 @@ public class MeetingService implements IRemindableService {
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, request.getOrganizerId());
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
-        notificationService.sendNewMeetingNotification(meeting);
+        notificationService.sendForMeeting(meeting);
         saveToReminder(meeting);
 
         return meeting;
@@ -309,7 +309,7 @@ public class MeetingService implements IRemindableService {
 
         groupService.pingGroup(meeting.getGroup().getGroup().getId());
 
-        notificationService.sendRescheduleMeetingNotification(modifier, meeting, request);
+        notificationService.sendForRescheduleMeeting(modifier, meeting, request);
 
         return meeting;
     }
