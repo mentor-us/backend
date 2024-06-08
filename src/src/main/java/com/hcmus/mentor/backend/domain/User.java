@@ -11,11 +11,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Setter
 @Getter
@@ -26,7 +25,7 @@ import java.util.List;
 @Table(name = "users")
 @JsonIgnoreProperties(value = {
         "messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs",
-        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "note"},
+        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "notes", "createdNotes"},
         allowSetters = true)
 public class User extends BaseDomain implements Serializable {
 
@@ -162,13 +161,30 @@ public class User extends BaseDomain implements Serializable {
 
     //------------------------------------------------------------------------------------------------------------------
     // === Note ===
-//    @Builder.Default
-//    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
-//    private List<Note> notes = new ArrayList<>();
-//
-//    @Builder.Default
-//    @OneToMany(mappedBy = "modifier", fetch = FetchType.LAZY)
-//    private List<NoteHistory> noteHistories = new ArrayList<>();
+    @Builder.Default
+    @BatchSize(size = 10)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+    private Set<Note> notes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    private Set<Note> createdNotes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
+    private Set<Note> ownedNotes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "updatedBy", fetch = FetchType.LAZY)
+    private Set<NoteHistory> noteHistories = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<NoteUserAccess> noteUserAccesses = new HashSet<>();
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());

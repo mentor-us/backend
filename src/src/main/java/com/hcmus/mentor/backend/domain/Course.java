@@ -5,25 +5,28 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
+@Entity
 @Getter
 @Setter
-@Entity
 @Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "semesters")
+@Table(name = "courses")
 @JsonIgnoreProperties(value = {"grades"}, allowSetters = true)
-public class Semester extends BaseDomain implements Serializable {
+public class Course extends BaseDomain implements Serializable {
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
+
+    @Column(name = "code")
+    private String code;
 
     @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "semester", fetch = FetchType.LAZY)
-    private List<Grade> grades = new ArrayList<>();
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    private Set<Grade> grades = new HashSet<>();
 }

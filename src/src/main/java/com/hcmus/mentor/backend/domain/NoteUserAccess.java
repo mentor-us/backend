@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.NotePermission;
+import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,11 +28,13 @@ public class NoteUserAccess extends BaseDomain {
     @Enumerated(EnumType.STRING)
     private NotePermission notePermission = NotePermission.VIEW;
 
+    @Nonnull
     @JoinColumn(name = "note_id")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @ToString.Exclude
     private Note note;
 
+    @Nonnull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     @ToString.Exclude

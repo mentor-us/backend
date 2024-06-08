@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -15,26 +16,30 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notes")
-@JsonIgnoreProperties(value = {"creator", "owner", "users", "noteHistories", "updatedBy"}, allowSetters = true)
-public class Note extends BaseDomain {
+@JsonIgnoreProperties(value = {"creator", "owner", "users", "noteHistories", "updatedBy", "noteUserAccesses"}, allowSetters = true)
+public class Note extends BaseDomain implements Serializable {
 
+    @NonNull
     @Column(name = "title", nullable = false)
     private String title;
 
+    @NonNull
     @Column(name = "content", nullable = false)
     private String content;
-//
-//    @Builder.Default
-//    @Column(name = "is_public")
-//    private boolean isPublic = false;
 
+    @Builder.Default
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
+
+    @NonNull
     @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_id")
     private User creator;
 
+    @NonNull
     @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id")
     private User owner;
 
@@ -43,9 +48,15 @@ public class Note extends BaseDomain {
     @JoinColumn(name = "updated_by")
     private User updatedBy;
 
+    @Builder.Default
     @ToString.Exclude
     @OneToMany(mappedBy = "note", fetch = FetchType.LAZY)
-    private List<NoteHistory> noteHistories = new ArrayList<>();
+    private Set<NoteHistory> noteHistories = new HashSet<>();
+
+    @Builder.Default
+    @ToString.Exclude
+    @OneToMany(mappedBy = "note", fetch = FetchType.LAZY)
+    private Set<NoteUserAccess> noteUserAccesses = new HashSet<>();
 
     @Builder.Default
     @ToString.Exclude
@@ -55,5 +66,5 @@ public class Note extends BaseDomain {
             joinColumns = @JoinColumn(name = "note_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"),
             uniqueConstraints = {@UniqueConstraint(columnNames = {"note_id", "user_id"})})
-    private List<User> users = new ArrayList<>();
+    private Set<User> users = new HashSet<>();
 }

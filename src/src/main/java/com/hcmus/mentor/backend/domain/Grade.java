@@ -12,11 +12,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "grades")
-@JsonIgnoreProperties(value = {"semester", "student"}, allowSetters = true)
+@JsonIgnoreProperties(value = {"semester", "student", "year", "creator", "course"}, allowSetters = true)
 public class Grade extends BaseDomain {
-
-    @Column(name = "name", nullable = false)
-    private String name;
 
     @Builder.Default
     @Column(name = "score", nullable = false)
@@ -33,7 +30,22 @@ public class Grade extends BaseDomain {
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_id")
+    private User creator;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id")
     private Semester semester;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "year_id")
+    private SchoolYear year;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private Course course;
 
 }
