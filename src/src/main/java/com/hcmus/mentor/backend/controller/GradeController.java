@@ -1,18 +1,17 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
+import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeDto;
 import com.hcmus.mentor.backend.controller.usecase.grade.creategrade.CreateGradeCommand;
+import com.hcmus.mentor.backend.controller.usecase.grade.deletegrade.DeleteGradeCommand;
+import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQuery;
+import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
-import com.hcmus.mentor.backend.domain.Grade;
-import com.hcmus.mentor.backend.security.principal.CurrentUser;
-import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "grades")
 @RestController
@@ -21,29 +20,34 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GradeController {
 
+    private final Pipeline pipeline;
+
     @GetMapping("")
-    public ResponseEntity<List<Grade>> getGrade(@Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser) {
-        return ResponseEntity.ok(List.of(new Grade()));
+    public ResponseEntity<SearchGradeResult> searchGrade(SearchGradeQuery query) {
+        var result = pipeline.send(query);
+
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("")
-    public ResponseEntity<Grade> createGrade(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser,
+    public ResponseEntity<GradeDto> create(
             @RequestBody CreateGradeCommand command) {
-        return ResponseEntity.ok(new Grade());
+        return ResponseEntity.ok(pipeline.send(command));
     }
 
     @PatchMapping("{id}")
-    public ResponseEntity<Grade> updateGrade(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser,
+    public ResponseEntity<GradeDto> updateGrade(
             @PathVariable String id, @RequestBody UpdateGradeCommand command) {
-        return ResponseEntity.ok(new Grade());
+        command.setId(id);
+
+        return ResponseEntity.ok(pipeline.send(command));
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<Void> deleteGrade(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedInUser,
+    public ResponseEntity<GradeDto> deleteGrade(
             @PathVariable String id) {
-        return ResponseEntity.ok().build();
+        var command = DeleteGradeCommand.builder().id(id).build();
+
+        return ResponseEntity.ok(pipeline.send(command));
     }
 }

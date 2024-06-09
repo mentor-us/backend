@@ -20,7 +20,7 @@ import static com.hcmus.mentor.backend.domain.QUser.user;
 /**
  * @author duov
  */
-public class GroupRepositoryImpl extends QuerydslRepositorySupport implements GroupRepositoryCustom   {
+public class GroupRepositoryImpl extends QuerydslRepositorySupport implements GroupRepositoryCustom {
 
     private final EntityManager em;
 
@@ -32,10 +32,10 @@ public class GroupRepositoryImpl extends QuerydslRepositorySupport implements Gr
     @Override
     public Page<Group> findAllByCreatorId(Pageable pageable, String creatorId) {
         Long totalCount = findAllByCreatorIdQuery(group.count(), creatorId).fetchOne();
-        JPAQuery<Group> query  = findAllByCreatorIdQuery(group, creatorId);
+        JPAQuery<Group> query = findAllByCreatorIdQuery(group, creatorId);
         Optional.ofNullable(getQuerydsl()).ifPresent(querydsl -> querydsl.applyPagination(pageable, query));
         List<Group> pagedData = query.fetch();
-        return PageableExecutionUtils.getPage(pagedData,pageable, () -> Optional.ofNullable(totalCount).orElse(0L));
+        return PageableExecutionUtils.getPage(pagedData, pageable, () -> Optional.ofNullable(totalCount).orElse(0L));
     }
 
     @Override

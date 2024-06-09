@@ -13,8 +13,4 @@ public abstract class PageQueryFilter {
 
     @JsonProperty("pageSize")
     protected int pageSize = 25;
-
-    public void setSize(int size) {
-        this.pageSize = size;
-    }
 }

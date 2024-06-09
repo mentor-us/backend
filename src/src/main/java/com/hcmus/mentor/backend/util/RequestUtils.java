@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 
 public class RequestUtils {
 
+    private RequestUtils() {
+    }
+
     private static final Logger LOGGER = LogManager.getLogger(RequestUtils.class);
 
     private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
