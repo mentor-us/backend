@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.controller.usecase.grade.creategrade.CreateGrade
 import com.hcmus.mentor.backend.controller.usecase.grade.deletegrade.DeleteGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
+import com.hcmus.mentor.backend.controller.usecase.grade.getgradebyid.GetGradeByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +28,13 @@ public class GradeController {
         var result = pipeline.send(query);
 
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("{id}")
+    public ResponseEntity<GradeDto> getGradeById(@PathVariable String id) {
+        var query = GetGradeByIdQuery.builder().id(id).build();
+
+        return ResponseEntity.ok(pipeline.send(query));
     }
 
     @PostMapping("")
