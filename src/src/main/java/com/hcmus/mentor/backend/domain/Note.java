@@ -16,7 +16,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notes")
-@JsonIgnoreProperties(value = {"creator", "owner", "users", "noteHistories", "updatedBy", "noteUserAccesses"}, allowSetters = true)
+@JsonIgnoreProperties(value = {"creator", "owner", "users", "noteHistories", "updatedBy", "userAccesses"}, allowSetters = true)
 public class Note extends BaseDomain implements Serializable {
 
     @NonNull
@@ -50,13 +50,13 @@ public class Note extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "note", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "note", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST}, orphanRemoval = true)
     private Set<NoteHistory> noteHistories = new HashSet<>();
 
     @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "note", fetch = FetchType.LAZY)
-    private Set<NoteUserAccess> noteUserAccesses = new HashSet<>();
+    @OneToMany(mappedBy = "note", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<NoteUserAccess> userAccesses = new HashSet<>();
 
     @Builder.Default
     @ToString.Exclude

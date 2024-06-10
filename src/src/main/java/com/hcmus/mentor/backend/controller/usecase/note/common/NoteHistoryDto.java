@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class NoteDto {
+public class NoteHistoryDto {
 
     private String id;
 
@@ -19,13 +19,9 @@ public class NoteDto {
 
     private String content;
 
-    private NoteUserProfile creator;
-
     private NoteUserProfile updatedBy;
 
     private LocalDateTime createdDate;
 
     private LocalDateTime updatedDate;
-
-    private Boolean isEditable;
 }

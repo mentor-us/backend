@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.controller.usecase.note.common;
 
-import com.hcmus.mentor.backend.domain.NoteHistory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,11 +34,11 @@ public class NoteDetailDto {
     private boolean isPublic;
 
     @Builder.Default
-    private List<NoteHistory> noteHistories = new ArrayList<>();
+    private List<NoteHistoryDto> noteHistories = new ArrayList<>();
 
     @Builder.Default
     private List<NoteUserProfile> users = new ArrayList<>();
 
     @Builder.Default
-    private List<NoteUserProfile> userAccesses = new ArrayList<>();
+    private List<NoteUserAccessDto> userAccesses = new ArrayList<>();
 }

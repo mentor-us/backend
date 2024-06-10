@@ -1,6 +1,5 @@
-package com.hcmus.mentor.backend.controller.usecase.note.deletenote;
+package com.hcmus.mentor.backend.controller.usecase.note.common;
 
-import an.awesome.pipelinr.Command;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeleteNoteCommand implements Command<Void> {
-
+public class NoteEditable {
     private String noteId;
+    private Boolean editor;
 }

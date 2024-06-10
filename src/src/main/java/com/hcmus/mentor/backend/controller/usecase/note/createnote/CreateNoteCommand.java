@@ -18,8 +18,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateNoteCommand implements Command<NoteDetailDto> {
 
-        private String creatorId;
-
         private String title;
 
         private String content;
