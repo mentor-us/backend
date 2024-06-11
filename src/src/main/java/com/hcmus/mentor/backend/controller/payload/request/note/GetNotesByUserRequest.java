@@ -1,6 +1,6 @@
 package com.hcmus.mentor.backend.controller.payload.request.note;
 
-import com.hcmus.mentor.backend.domain.constant.NotePermission;
+import com.hcmus.mentor.backend.controller.usecase.common.pagination.PageQueryFilter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,9 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class NoteUserShareRequest {
+public class GetNotesByUserRequest extends PageQueryFilter {
 
-    private String userId;
-
-    private NotePermission accessType;
+    private String search;
 }

@@ -1,9 +1,9 @@
-package com.hcmus.mentor.backend.repository.custom.impl;
+package com.hcmus.mentor.backend.repository.custom;
 
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfile;
 
 import java.util.List;
 
-public interface UserRepositoryCustom {
+public interface UserCustomRepository {
     List<NoteUserProfile> findAllAccessNote();
 }

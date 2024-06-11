@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.repository;
 
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
-import com.hcmus.mentor.backend.repository.custom.impl.UserRepositoryCustom;
+import com.hcmus.mentor.backend.repository.custom.UserCustomRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User>, UserRepositoryCustom {
+public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User>, UserCustomRepository {
 
     long countByStatus(Boolean status);
 
@@ -33,7 +33,13 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     Optional<User> findByEmail(String email);
 
-//    List<User> findByEmailIn(List<String> emails);
+    @Query(value = "SELECT ?2 in " +
+            "(SELECT gu1.user_id " +
+            "FROM group_user gu1 " +
+            "JOIN ( SELECT DISTINCT gu.group_id " +
+            "       FROM group_user gu WHERE gu.user_id = ?1 ) AS abc ON abc.group_id = gu1.group_id " +
+            "WHERE gu1.is_mentor = true)", nativeQuery = true)
+    Boolean isMentorOfUser(String userId, String mentorId);
 
     Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
 

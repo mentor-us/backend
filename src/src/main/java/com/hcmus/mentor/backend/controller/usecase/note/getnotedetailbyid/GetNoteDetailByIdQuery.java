@@ -9,7 +9,5 @@ import lombok.Data;
 @Builder
 public class GetNoteDetailByIdQuery implements Command<NoteDetailDto> {
 
-    private String viewerId;
-
     private String noteId;
 }
