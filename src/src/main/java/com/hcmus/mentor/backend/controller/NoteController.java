@@ -52,7 +52,7 @@ public class NoteController {
     @GetMapping("user/{userId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "403", description = "Forbidden")
-    public ResponseEntity<GetNoteResult> getAllNotesByUserId(@PathVariable String userId, @RequestBody GetNotesByUserRequest request) {
+    public ResponseEntity<GetNoteResult> getAllNotesByUserId(@PathVariable String userId, GetNotesByUserRequest request) {
         var command = modelMapper.map(request, GetNotesByUserIdQuery.class);
         command.setUserId(userId);
         return ResponseEntity.ok(pipeline.send(command));
@@ -97,6 +97,6 @@ public class NoteController {
     @ApiResponse(responseCode = "204", description = "Success")
     @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> deleteById(@PathVariable String id) {
-       return ResponseEntity.ok(pipeline.send(new DeleteNoteCommand(id)));
+        return ResponseEntity.ok(pipeline.send(new DeleteNoteCommand(id)));
     }
 }

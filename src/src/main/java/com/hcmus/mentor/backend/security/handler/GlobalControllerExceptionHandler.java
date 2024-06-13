@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -33,6 +34,7 @@ public class GlobalControllerExceptionHandler {
             Map.ofEntries(
                     entry(DomainException.class, HttpStatus.BAD_REQUEST),
                     entry(MethodArgumentNotValidException.class, HttpStatus.BAD_REQUEST),
+                    entry(MissingServletRequestParameterException.class, HttpStatus.BAD_REQUEST),
                     entry(UnauthorizedException.class, HttpStatus.UNAUTHORIZED),
                     entry(ForbiddenException.class, HttpStatus.FORBIDDEN),
                     entry(NotFoundException.class, HttpStatus.NOT_FOUND)

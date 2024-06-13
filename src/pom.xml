@@ -51,6 +51,7 @@
         <modelmapper.version>3.2.0</modelmapper.version>
         <guava.version>33.2.0-jre</guava.version>
         <querydsl.version>5.1.0</querydsl.version>
+        <jedis.version>6.3.2.RELEASE</jedis.version>
     </properties>
 
     <dependencies>
@@ -138,6 +139,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
