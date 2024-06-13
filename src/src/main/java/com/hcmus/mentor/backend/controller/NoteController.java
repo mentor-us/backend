@@ -3,11 +3,11 @@ package com.hcmus.mentor.backend.controller;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.request.note.*;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDto;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfile;
 import com.hcmus.mentor.backend.controller.usecase.note.createnote.CreateNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.deletenote.DeleteNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.getnotedetailbyid.GetNoteDetailByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.note.getnotesbyuserid.GetNoteResult;
 import com.hcmus.mentor.backend.controller.usecase.note.getnotesbyuserid.GetNotesByUserIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.note.sharenote.ShareNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.updatenote.UpdateNoteCommand;
@@ -19,7 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,7 +52,7 @@ public class NoteController {
     @GetMapping("user/{userId}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "403", description = "Forbidden")
-    public ResponseEntity<Page<NoteDto>> getAllNotesByUserId(@PathVariable String userId, @RequestBody GetNotesByUserRequest request) {
+    public ResponseEntity<GetNoteResult> getAllNotesByUserId(@PathVariable String userId, @RequestBody GetNotesByUserRequest request) {
         var command = modelMapper.map(request, GetNotesByUserIdQuery.class);
         command.setUserId(userId);
         return ResponseEntity.ok(pipeline.send(command));

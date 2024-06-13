@@ -38,6 +38,7 @@ public class User extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 25)
     @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
@@ -98,6 +99,7 @@ public class User extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 25)
     private List<UserRole> roles = new ArrayList<>();
 
     //------------------------------------------------------------------------------------------------------------------

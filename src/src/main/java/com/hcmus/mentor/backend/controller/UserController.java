@@ -7,6 +7,8 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdditionalEmailCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserResult;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
@@ -23,6 +25,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.modelmapper.ModelMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,6 +60,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final Pipeline pipeline;
+    private final ModelMapper modelMapper;
 
     /**
      * Retrieve all users.
@@ -585,6 +589,14 @@ public class UserController {
         var command = new RemoveAdditionalEmailCommand(userId, request.getAdditionalEmail());
         var userReturn = command.execute(pipeline);
         return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+    }
+
+    @GetMapping("mentees")
+    @ApiResponse(responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Need authentication")
+    public ResponseEntity<SearchMenteesOfUserResult> getMentees(
+            SearchMenteesOfUserCommand command) {
+        return ResponseEntity.ok(pipeline.send(command));
     }
 
     private Map<String, Object> pagingResponse(Page<User> users) {

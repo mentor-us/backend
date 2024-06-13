@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.note.getnotesbyuserid;
+package com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.usecase.common.pagination.PageQueryFilter;
@@ -9,11 +9,9 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class GetNotesByUserIdQuery extends PageQueryFilter implements Command<GetNoteResult> {
+@NoArgsConstructor
+public class SearchMenteesOfUserCommand extends PageQueryFilter implements Command<SearchMenteesOfUserResult> {
 
-        private String userId;
-
-        private String search;
+    private String email;
 }

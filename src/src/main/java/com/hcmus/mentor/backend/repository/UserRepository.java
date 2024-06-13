@@ -41,6 +41,16 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
             "WHERE gu1.is_mentor = true)", nativeQuery = true)
     Boolean isMentorOfUser(String userId, String mentorId);
 
+    @Query(value = "SELECT DISTINCT u.*, e.*, r.* " +
+            "FROM users u " +
+            "LEFT JOIN user_additional_emails e on e.user_id = u.id " +
+            "LEFT JOIN user_roles r on r.user_id = u.id " +
+            "JOIN group_user gu ON u.ID = gu.user_id " +
+            "JOIN ( SELECT gu1.group_id FROM group_user gu1 WHERE  gu1.user_id = ?1 AND gu1.is_mentor = TRUE ) gm ON gm.group_id = gu.group_id  " +
+            "WHERE ?2 is NULL OR LOWER ( u.email ) LIKE ?2 "
+            , nativeQuery = true)
+    Page<User> findAllMenteeOfUserId(String userId, String email, Pageable pageable);
+
     Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
 
     List<User> findByEmailLikeIgnoreCase(String email);

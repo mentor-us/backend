@@ -63,6 +63,7 @@ public class Message implements Serializable {
 
     @Builder.Default
     @ElementCollection
+    @BatchSize(size = 25)
     private List<String> images = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
