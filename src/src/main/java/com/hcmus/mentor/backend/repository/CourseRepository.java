@@ -5,4 +5,6 @@ import com.hcmus.mentor.backend.repository.custom.CourseRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CourseRepository extends JpaRepository<Course, String>, CourseRepositoryCustom {
+
+    boolean existsByNameOrCode(String name, String code);
 }
