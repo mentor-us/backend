@@ -19,7 +19,8 @@ public interface NoteRepository extends JpaRepository<Note, String>, NoteCustomR
             "JOIN users u on n.creator_id = u.id or n.owner_id = u.id " +
             "LEFT JOIN note_user_access nua ON nua.note_id = n.id " +
             "JOIN ref_user_note nu ON nu.note_id = n.id AND nu.user_id = ?1 " +
-            "WHERE u.id = ?2 OR nua.id = ?2 ORDER BY n.created_date DESC ", nativeQuery = true)
+            "WHERE u.id = ?2 OR nua.id = ?2 " +
+            "ORDER BY n.created_date DESC ", nativeQuery = true)
     Page<Note> findAllByUserIdWithViewerId(String userId, String viewerId, Pageable pageable);
 
     @Query(value = "SELECt exists" +
@@ -36,7 +37,7 @@ public interface NoteRepository extends JpaRepository<Note, String>, NoteCustomR
             "LEFT JOIN note_user_access nua ON nua.note_id = n.id " +
             "JOIN ref_user_note nu ON nu.note_id = n.id AND nu.user_id = ?1 " +
             "WHERE u.id = ?2 OR nua.user_id = ?2 " +
-            "GROUP BY n.id " +
+            "GROUP BY n.id, n.created_date " +
             "ORDER BY n.created_date DESC", nativeQuery = true)
     List<NoteEditableProjection> findAllByUserIdWithViewerIdCanEdit(String userId, String viewerId);
 

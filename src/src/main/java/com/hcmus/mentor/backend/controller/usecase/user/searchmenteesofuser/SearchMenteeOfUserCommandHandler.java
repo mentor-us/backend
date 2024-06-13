@@ -27,7 +27,7 @@ public class SearchMenteeOfUserCommandHandler implements Command.Handler<SearchM
         var currentUserId = loggedUserAccessor.getCurrentUserId();
         var pageMentees = userRepository.findAllMenteeOfUserId(
                 currentUserId,
-                Optional.ofNullable(command.getEmail()).map(e -> "%" + e.toLowerCase() + "%").orElse(null),
+                Optional.ofNullable(command.getQuery()).map(e -> "%" + e.toLowerCase() + "%").orElse(null),
                 PageRequest.of(command.getPage(), command.getPageSize()));
         var data = pageMentees.getContent().stream()
                 .map(mentee -> modelMapper.map(mentee, ShortMenteeProfile.class))

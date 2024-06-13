@@ -10,10 +10,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChoiceMapper {
 
-    public ChoiceMapper(ModelMapper modelMapper){
+    public ChoiceMapper(ModelMapper modelMapper) {
         modelMapper.createTypeMap(Choice.class, ChoiceResult.class).addMappings(mapping ->
                 mapping.using(MapperConverter.mapIdConverter()).map(Choice::getVoters, ChoiceResult::setVoters)
-
         );
 
         modelMapper.createTypeMap(Choice.class, VoteDetailResponse.ChoiceDetail.class);
