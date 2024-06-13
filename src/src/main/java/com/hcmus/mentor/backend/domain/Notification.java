@@ -5,7 +5,9 @@ import com.hcmus.mentor.backend.domain.constant.NotificationType;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
-import net.minidev.json.annotate.JsonIgnore;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,6 +20,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
 public class Notification {
 
     @Id
@@ -38,20 +41,19 @@ public class Notification {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Column(name = "ref_id")
     private String refId;
 
-    @ManyToOne()
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User sender;
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
+    @Fetch(FetchMode.SUBSELECT)
+    @OneToMany(mappedBy = "notification", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     private List<NotificationUser> receivers = new ArrayList<>();
 
     @Override

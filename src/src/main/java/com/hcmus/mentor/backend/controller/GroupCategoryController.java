@@ -1,7 +1,11 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.*;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.DeleteGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.DeleteMultipleGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.UpdateGroupCategoryRequest;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -157,8 +161,7 @@ public class GroupCategoryController {
             @RequestParam(defaultValue = "25") Integer size) {
         String email = customerUserDetails.getEmail();
         FindGroupCategoryRequest request = new FindGroupCategoryRequest(name, description, status);
-        GroupCategoryServiceDto groupCategoryReturn =
-                groupCategoryService.findGroupCategories(email, request, page, size);
+        GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.findGroupCategories(email, request, page, size);
         return new ApiResponseDto(
                 pagingResponse((Page<GroupCategory>) groupCategoryReturn.getData()),
                 groupCategoryReturn.getReturnCode(),

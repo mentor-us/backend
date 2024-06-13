@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.FindGroupGeneralAnalyticRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserAnalyticRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.FindGroupGeneralAnalyticRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.FindUserAnalyticRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.GroupAnalyticResponse;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.ImportGeneralInformationResponse;
 import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnalyticChartResponse;
@@ -13,6 +13,7 @@ import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResp
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.AnalyticAttribute;
@@ -40,6 +41,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -65,6 +67,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode
  * Analytic service.
  */
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AnalyticServiceImpl implements AnalyticService {
 
@@ -376,8 +379,8 @@ public class AnalyticServiceImpl implements AnalyticService {
 
 
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
-        addMembersToAnalytics(members, group.getMentors(), "MENTOR", channelIds);
-        addMembersToAnalytics(members, group.getMentees(), "MENTEE", channelIds);
+        addMembersToAnalytics(members, group.getMentors(), GroupUserRole.MENTOR.name(), channelIds);
+        addMembersToAnalytics(members, group.getMentees(), GroupUserRole.MENTEE.name(), channelIds);
 
         return GroupAnalyticResponse.builder()
                 .id(group.getId())
@@ -399,8 +402,8 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<GroupAnalyticResponse.Member> members = new ArrayList<>();
         if (group != null) {
             var channelIds = group.getChannels().stream().map(Channel::getId).toList();
-            addMembersToAnalytics(members, group.getMentors(), "MENTOR", channelIds);
-            addMembersToAnalytics(members, group.getMentees(), "MENTEE", channelIds);
+            addMembersToAnalytics(members, group.getMentors(), GroupUserRole.MENTOR.name(), channelIds);
+            addMembersToAnalytics(members, group.getMentees(), GroupUserRole.MENTEE.name(), channelIds);
         }
 
         return members;
@@ -870,7 +873,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         List<User> mentees = new ArrayList<>();
 
         var group = groupRepository.findById(groupId).orElse(null);
-        List<GroupUser> groupUsers = group.getGroupUsers();
+        Set<GroupUser> groupUsers = group.getGroupUsers();
         var channelIds = group.getChannels().stream().map(Channel::getId).toList();
 
         if (groupUsers != null) {
@@ -890,13 +893,13 @@ public class AnalyticServiceImpl implements AnalyticService {
 
         if (role != null) {
             if (role.equals(FindUserAnalyticRequest.Role.MENTOR)) {
-                addMembersToAnalytics(members, mentors, "MENTOR", channelIds);
+                addMembersToAnalytics(members, mentors, GroupUserRole.MENTOR.name(), channelIds);
             } else {
-                addMembersToAnalytics(members, mentees, "MENTEE", channelIds);
+                addMembersToAnalytics(members, mentees, GroupUserRole.MENTEE.name(), channelIds);
             }
         } else {
-            addMembersToAnalytics(members, mentors, "MENTOR", channelIds);
-            addMembersToAnalytics(members, mentees, "MENTEE", channelIds);
+            addMembersToAnalytics(members, mentors, GroupUserRole.MENTOR.name(), channelIds);
+            addMembersToAnalytics(members, mentees, GroupUserRole.MENTEE.name(), channelIds);
         }
 
         if (request.getTimeStart() != null && request.getTimeEnd() != null) {

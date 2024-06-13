@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.group.common;
 
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import lombok.*;
 
 import java.time.Duration;
@@ -25,7 +26,7 @@ public class GroupHomepageDto {
     private LocalDateTime timeStart;
     private LocalDateTime timeEnd;
     private Duration duration;
-    private String role;
+    private GroupUserRole role;
     private boolean pinned;
     private String imageUrl;
     private Boolean hasNewMessage;
@@ -40,7 +41,7 @@ public class GroupHomepageDto {
             return;
         }
 
-        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 
     public int getTotalMember() {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.Date;
 
@@ -15,6 +16,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notification_subscriber")
+@JsonIgnoreProperties()
 public class NotificationSubscriber {
 
     @Id
@@ -27,10 +29,11 @@ public class NotificationSubscriber {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
 
-    @ManyToOne
+    @ToString.Exclude
+    @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
 }

@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.AddTaskRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStatusByMentorRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateTaskRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.AddTaskRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateStatusByMentorRequest;
+import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
@@ -86,8 +86,7 @@ public class TaskController {
             @PathVariable String id,
             @RequestBody UpdateTaskRequest request) {
         TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(customerUserDetails, id, request);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
@@ -235,10 +234,8 @@ public class TaskController {
     public ApiResponseDto<List<TaskResponse>> getAllOwnTask(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.getAllOwnTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
@@ -254,10 +251,8 @@ public class TaskController {
     public ApiResponseDto<List<TaskResponse>> getAllOwnAssignedTask(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.wrapOwnAssignedTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.wrapOwnAssignedTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**

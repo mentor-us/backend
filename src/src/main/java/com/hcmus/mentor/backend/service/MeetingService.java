@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.service;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.RescheduleMeetingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingAttendeeResponse;
@@ -103,7 +103,7 @@ public class MeetingService implements IRemindableService {
         Message newMessage = Message.builder()
                 .sender(meeting.getOrganizer())
                 .content("NEW MEETING")
-                .createdDate(DateUtils.getCurrentDateAtUTC())
+                .createdDate(DateUtils.getDateNowAtUTC())
                 .type(Message.Type.MEETING)
                 .channel(meeting.getGroup())
                 .meeting(meeting)
@@ -116,7 +116,7 @@ public class MeetingService implements IRemindableService {
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, request.getOrganizerId());
         socketIOService.sendBroadcastMessage(response, request.getGroupId());
-        notificationService.sendNewMeetingNotification(meeting);
+        notificationService.sendForMeeting(meeting);
         saveToReminder(meeting);
 
         return meeting;
@@ -163,7 +163,7 @@ public class MeetingService implements IRemindableService {
         }
 
         messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
-            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            message.setCreatedDate(DateUtils.getDateNowAtUTC());
             messageRepository.save(message);
         });
 
@@ -303,13 +303,13 @@ public class MeetingService implements IRemindableService {
         meetingRepository.save(meeting);
 
         messageRepository.findByMeetingId(meetingId).ifPresent(message -> {
-            message.setCreatedDate(DateUtils.getCurrentDateAtUTC());
+            message.setCreatedDate(DateUtils.getDateNowAtUTC());
             messageRepository.save(message);
         });
 
         groupService.pingGroup(meeting.getGroup().getGroup().getId());
 
-        notificationService.sendRescheduleMeetingNotification(modifier, meeting, request);
+        notificationService.sendForRescheduleMeeting(modifier, meeting, request);
 
         return meeting;
     }

@@ -1,14 +1,13 @@
 package com.hcmus.mentor.backend.controller.usecase.group.common;
 
+import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import lombok.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Data
 @Builder
@@ -35,6 +34,8 @@ public class GroupDetailDto {
     private List<String> mentors = Collections.emptyList();
     private String name;
     private GroupStatus status;
+    private GroupUserRole role;
+    private List<GroupCategoryPermission> permissions = new ArrayList<>();
 
     @Setter(AccessLevel.NONE)
     private boolean stopWorking;
@@ -51,5 +52,12 @@ public class GroupDetailDto {
 
     public int getTotalMember() {
         return members.size();
+    }
+
+    public void setRole(String userId) {
+        if (mentors == null) {
+            return;
+        }
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 }

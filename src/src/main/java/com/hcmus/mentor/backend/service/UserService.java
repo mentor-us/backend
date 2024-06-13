@@ -1,10 +1,11 @@
 package com.hcmus.mentor.backend.service;
 
-import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindUserRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.FindUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
 import org.springframework.core.io.Resource;
@@ -15,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
     User getOrCreateUserByEmail(String emailAddress, String groupName);
@@ -26,15 +26,13 @@ public interface UserService {
 
     UserServiceDto listByEmail(String emailUser, String email, Pageable pageable);
 
-    UserServiceDto listAllPaging(String emailUser, Pageable pageable);
-
     UserServiceDto listAll();
 
     UserServiceDto listAllByEmail(String emailUser, String email);
 
     User findByEmail(String email);
 
-    Optional<User> findById(String id);
+    User findById(String id);
 
     UserServiceDto updateUser(String emailUser, String id, UpdateUserRequest request);
 
@@ -76,7 +74,7 @@ public interface UserService {
             String emailUser, FindUserRequest request, List<String> remainColumns) throws IOException;
 
     ResponseEntity<Resource> generateExportTableMembers(
-            String emailUser, List<String> remainColumns, String userId, String type) throws IOException;
+            String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException;
 
     UserServiceDto addAdditionalEmail(String userId, String email);
 

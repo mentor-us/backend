@@ -2,7 +2,7 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
-import com.hcmus.mentor.backend.controller.payload.request.AddUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommandResult;

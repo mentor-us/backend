@@ -1,7 +1,6 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
 import jakarta.persistence.*;
@@ -20,6 +19,7 @@ import java.util.Map;
 @Table(name = "reminders")
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(value = {"recipients", "group"}, allowSetters = true)
 public class Reminder {
     @Id
     @Column(name = "id")
@@ -42,23 +42,20 @@ public class Reminder {
     @Column(name = "remindable_id")
     private String remindableId;
 
-    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "rel_user_reminder",
             joinColumns = @JoinColumn(name = "reminder_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
+            inverseJoinColumns = @JoinColumn(name = "user_id"),
+            uniqueConstraints = {@UniqueConstraint(columnNames = {"reminder_id", "user_id"})}
     )
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     @ToString.Exclude
     private List<User> recipients;
 
-    @ManyToOne
-    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    @ToString.Exclude
     private Channel group;
-
 
     @Builder.Default
     @ElementCollection
@@ -75,7 +72,6 @@ public class Reminder {
 
     @SneakyThrows
     public void setProperties(String key, Object value) {
-//        ObjectMapper objectMapper = new ObjectMapper();
         this.propertiesMapJson.put(key, value.toString());
     }
 }

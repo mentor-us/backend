@@ -73,7 +73,7 @@ public class CreateVoteCommandHandler implements Command.Handler<CreateVoteComma
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, currentUserId);
         socketServer.getRoomOperations(command.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(vote.getGroup().getId(), vote);
+        notificationService.sendForNote(vote.getGroup().getId(), vote);
         groupService.pingGroup(vote.getGroup().getId());
 
         return modelMapper.map(vote, VoteResult.class);

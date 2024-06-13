@@ -5,9 +5,9 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
-import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +20,8 @@ public class UpdateChannelCommandHandler implements Command.Handler<UpdateChanne
 
     private final LoggedUserAccessor loggedUserAccessor;
     private final ChannelRepository channelRepository;
-    private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final PermissionService permissionService;
 
     /**
      * {@inheritDoc}
@@ -29,13 +29,10 @@ public class UpdateChannelCommandHandler implements Command.Handler<UpdateChanne
     @Override
     public Channel handle(UpdateChannelCommand request) {
         var userId = loggedUserAccessor.getCurrentUserId();
-
-        var channel = channelRepository.findById(request.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
-        var group = channel.getGroup();
-
-        if (!group.getMentors().contains(userId)) {
+        if (!permissionService.isMentorInChannel(request.getId(), userId)) {
             throw new ForbiddenException("Không có quyền chỉnh sửa kênh");
         }
+        var channel = channelRepository.findById(request.getId()).orElseThrow(() -> new DomainException("Không tìm thấy kênh"));
 
         channel.setName(request.getChannelName());
         channel.setDescription(request.getDescription());

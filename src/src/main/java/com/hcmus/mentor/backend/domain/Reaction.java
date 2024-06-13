@@ -20,6 +20,7 @@ import java.io.Serializable;
                 unique = true)})
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(value = {"message", "user"}, allowSetters = true)
 public class Reaction implements Serializable {
     @Id
     @Column(name = "id")
@@ -42,12 +43,10 @@ public class Reaction implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "message_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private Message message;
 
     public void react() {

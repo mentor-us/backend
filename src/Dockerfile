@@ -11,7 +11,7 @@ COPY ./target/app.jar ./app.jar
 #ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
 
 # Fat ja
-ENTRYPOINT ["java", "-jar", "./app.jar"]
+ENTRYPOINT ["java", "-Xms512m", "-Xmx512m", "-jar", "./app.jar"]
 
 EXPOSE 8080
 EXPOSE 8085

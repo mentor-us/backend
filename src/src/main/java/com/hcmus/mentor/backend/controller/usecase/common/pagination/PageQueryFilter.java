@@ -5,16 +5,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter
+@Setter
 public abstract class PageQueryFilter {
 
-    @Setter
     @JsonProperty("page")
     protected int page = 0;
 
-    @JsonProperty("size")
+    @JsonProperty("pageSize")
     protected int pageSize = 25;
-
-    public void setSize(int size) {
-        this.pageSize = size;
-    }
 }

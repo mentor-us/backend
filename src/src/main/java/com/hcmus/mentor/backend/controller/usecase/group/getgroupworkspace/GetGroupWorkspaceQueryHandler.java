@@ -8,6 +8,7 @@ import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannel
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -54,7 +56,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         var groupWorkspace = modelMapper.map(group, GroupWorkspaceDto.class);
         groupWorkspace.setRole(currentUserId);
 
-        var allChannels = group.getChannels();
+        var allChannels = group.getChannels().stream().filter(c -> c.getStatus() == ChannelStatus.ACTIVE).toList();
         var publicChannel = allChannels.stream()
                 .filter(c -> !Objects.equals(c.getId(), group.getDefaultChannel().getId()))
                 .filter(c -> c.getType() == ChannelType.PUBLIC || c.getType() == ChannelType.PRIVATE)
@@ -80,7 +82,7 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
         return groupWorkspace;
     }
 
-    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannelDto(String currentUserId, List<GroupUser> groupUsers) {
+    private @NotNull Function<Channel, WorkspaceChannelDto> mapToWorkspaceChannelDto(String currentUserId, Set<GroupUser> groupUsers) {
         return channel -> {
             ShortProfile friendId = channel.getUsers().stream()
                     .filter(u -> !Objects.equals(u.getId(), currentUserId))

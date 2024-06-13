@@ -6,7 +6,6 @@ import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
-import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -23,6 +22,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "channels")
+@JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
 public class Channel implements Serializable {
 
     @Id
@@ -44,11 +44,11 @@ public class Channel implements Serializable {
 
     @Builder.Default
     @Column(name = "created_date")
-    private Date createdDate = DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "updated_date")
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC();
+    private Date updatedDate = DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "deleted_date")
@@ -72,63 +72,53 @@ public class Channel implements Serializable {
     @OneToOne(fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     @JoinColumn(name = "last_message_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private Message lastMessage = null;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     @JoinColumn(name = "creator_id", nullable = false)
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @BatchSize(size = 10)
     @JoinColumn(name = "group_id", referencedColumnName = "id", nullable = false)
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private Group group;
 
-    @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private List<Task> tasks;
 
-    @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"creator", "group", "choices"}, allowSetters = true)
     private List<Vote> votes;
 
-    @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private List<Meeting> meetings;
 
     @Builder.Default
-    @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @BatchSize(size = 5)
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE}, orphanRemoval = true)
     @JoinTable(name = "rel_channel_message_pin", joinColumns = @JoinColumn(name = "channel_id"), inverseJoinColumns = @JoinColumn(name = "message_id"))
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
     private List<Message> messagesPinned = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
     @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE})
-    @JoinTable(name = "rel_user_channel", joinColumns = @JoinColumn(name = "channel_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    @JoinTable(
+            name = "rel_user_channel",
+            joinColumns = @JoinColumn(name = "channel_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"),
+            uniqueConstraints = {@UniqueConstraint(columnNames = {"channel_id", "user_id"})})
     private List<User> users = new ArrayList<>();
-
 
     public boolean isMember(String userId) {
         return users.stream().anyMatch(user -> user.getId().equals(userId));
     }
 
     public void ping() {
-        updatedDate = DateUtils.getCurrentDateAtUTC();
+        updatedDate = DateUtils.getDateNowAtUTC();
     }
 
     @Override

@@ -1,10 +1,9 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateStudentInformationRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserForAdminRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
+import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
@@ -12,11 +11,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Setter
 @Getter
@@ -25,6 +23,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
+@JsonIgnoreProperties(value = {
+        "messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs",
+        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "notes", "createdNotes"},
+        allowSetters = true)
 public class User extends BaseDomain implements Serializable {
 
     @Column(name = "name", nullable = false)
@@ -36,6 +38,7 @@ public class User extends BaseDomain implements Serializable {
 
     @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 25)
     @Column(name = "additional_emails")
     @JoinTable(name = "user_additional_emails", joinColumns = @JoinColumn(name = "user_id"))
     private List<String> additionalEmails = new ArrayList<>();
@@ -95,83 +98,95 @@ public class User extends BaseDomain implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"channel", "sender", "reply", "vote", "file", "meeting", "task", "reactions"}, allowSetters = true)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 25)
+    private List<UserRole> roles = new ArrayList<>();
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Messge ===
+    @Builder.Default
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
 
+    //------------------------------------------------------------------------------------------------------------------
     // === Choice ===
-    @JsonIgnore
     @Builder.Default
     @ManyToMany(mappedBy = "voters", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"creator", "vote", "voters"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
-
 
     // === Meeting ===
     @Builder.Default
-    @JsonIgnore
     @ManyToMany(mappedBy = "attendees", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private List<Meeting> meetingAttendees = new ArrayList<>();
 
-
+    //------------------------------------------------------------------------------------------------------------------
     // === Notification ===
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnoreProperties(value = {"receivers", "sender"}, allowSetters = true)
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Notification> notificationsSent = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = {"notification", "user"}, allowSetters = true)
     private List<NotificationUser> notifications = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"user"}, allowSetters = true)
     private List<NotificationSubscriber> notificationSubscribers = new ArrayList<>();
 
+    //------------------------------------------------------------------------------------------------------------------
+    // === Reminder ===
     @Builder.Default
-    @JsonIgnore
     @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"recipients", "group"}, allowSetters = true)
     private List<Reminder> reminders = new ArrayList<>();
 
+    //------------------s------------------------------------------------------------------------------------------------
+    // === Group ===
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
-    private List<UserRole> roles = new ArrayList<>();
-
-    @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"group", "user"}, allowSetters = true)
     private List<GroupUser> groupUsers = new ArrayList<>();
 
-
+    //------------------------------------------------------------------------------------------------------------------
     // === Channel ===
-
-    @JsonIgnore
-    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
     private List<Channel> channels;
 
-
+    //------------------------------------------------------------------------------------------------------------------
     // === Task ===
     @Builder.Default
-    @JsonIgnore
     @OneToMany(mappedBy = "assigner", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private List<Task> tasksAssigner = new ArrayList<>();
 
-    @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Assignee> tasksAssignee = new ArrayList<>();
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Note ===
+    @Builder.Default
+    @BatchSize(size = 10)
+    @ManyToMany(mappedBy = "users", fetch = FetchType.LAZY)
+    private Set<Note> notes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY)
+    private Set<Note> createdNotes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
+    private Set<Note> ownedNotes = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "updatedBy", fetch = FetchType.LAZY)
+    private Set<NoteHistory> noteHistories = new HashSet<>();
+
+    @Builder.Default
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<NoteUserAccess> noteUserAccesses = new HashSet<>();
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());

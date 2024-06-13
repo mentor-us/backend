@@ -35,7 +35,7 @@ public class FirebaseEventListener {
         } else {
             var results = sendMulticastNotification(tokens, event.getTitle(), event.getBody(), event.getData());
 
-            logger.debug("Sent multicast notification with {} success, {} failure, response", results.getSuccessCount(), results.getFailureCount());
+            logger.debug("Sent multicast notification with {} success, {} failure", results.getSuccessCount(), results.getFailureCount());
         }
     }
 

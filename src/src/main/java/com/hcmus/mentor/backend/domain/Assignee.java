@@ -15,6 +15,7 @@ import java.io.Serializable;
 @Builder
 @Entity
 @Table(name = "task_assignee")
+@JsonIgnoreProperties(value = {"task", "user"}, allowSetters = true)
 public class Assignee implements Serializable {
     @Id
     @Column(name = "id")
@@ -26,16 +27,14 @@ public class Assignee implements Serializable {
     @Enumerated(EnumType.STRING)
     private TaskStatus status = TaskStatus.TO_DO;
 
-    @ManyToOne
     @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"assigner", "group", "parentTask", "subTasks", "assignees"}, allowSetters = true)
     private Task task;
 
-    @ManyToOne(cascade = CascadeType.ALL)
     @BatchSize(size = 10)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User user;
 
 }

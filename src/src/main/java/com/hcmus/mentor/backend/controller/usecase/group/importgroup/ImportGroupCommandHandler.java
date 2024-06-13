@@ -180,7 +180,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             var command = CreateGroupCommand.builder()
                     .name(groupName)
                     .description(description)
-                    .createdDate(DateUtils.getCurrentDateAtUTC() )
+                    .createdDate(DateUtils.getDateNowAtUTC() )
                     .menteeEmails(menteeEmails)
                     .mentorEmails(mentorEmails)
                     .groupCategory(groupCategoryId)

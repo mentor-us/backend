@@ -3,9 +3,9 @@ package com.hcmus.mentor.backend.controller.socketio;
 import an.awesome.pipelinr.Pipeline;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
-import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.JoinOutRoomRequest;
-import com.hcmus.mentor.backend.controller.payload.request.ReceivedMessageRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.DoVotingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.JoinOutRoomRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.ReceivedMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.updatelastmessage.UpdateLastMessageCommand;
@@ -95,6 +95,7 @@ public class SocketController {
 
     private DataListener<ReceivedMessageRequest> onChatReceived() {
         return (socketIOClient, message, ackRequest) -> {
+            logger.info("[*] Receive SocketIO - event: send_message - response: {}", message.getGroupId());
             var user = userRepository.findById(message.getSenderId()).orElse(null);
             var receivedMessageRequest = Message.builder()
                     .id(message.getId())
@@ -110,7 +111,7 @@ public class SocketController {
                     .isForward(message.getIsForward())
                     .build();
             Message newMessage = messageService.saveMessage(receivedMessageRequest);
-            notificationService.sendNewMessageNotification(newMessage);
+            notificationService.sendForMessage(newMessage);
 
             MessageDetailResponse response = messageService.mappingToMessageDetailResponse(newMessage, message.getSenderId());
 
@@ -119,7 +120,6 @@ public class SocketController {
             var updateLastMessageCommand = UpdateLastMessageCommand.builder()
                     .message(receivedMessageRequest)
                     .channel(receivedMessageRequest.getChannel()).build();
-            logger.info("[*] Receive SocketIO - event: send_message - response: {}", response.getGroupId());
             pipeline.send(updateLastMessageCommand);
         };
     }

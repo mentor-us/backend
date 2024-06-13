@@ -9,6 +9,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -31,17 +33,24 @@ public class GlobalControllerExceptionHandler {
     private static final Map<Class, HttpStatus> exceptionStatusCodes =
             Map.ofEntries(
                     entry(DomainException.class, HttpStatus.BAD_REQUEST),
+                    entry(MethodArgumentNotValidException.class, HttpStatus.BAD_REQUEST),
+                    entry(MissingServletRequestParameterException.class, HttpStatus.BAD_REQUEST),
                     entry(UnauthorizedException.class, HttpStatus.UNAUTHORIZED),
                     entry(ForbiddenException.class, HttpStatus.FORBIDDEN),
                     entry(NotFoundException.class, HttpStatus.NOT_FOUND)
             );
     private final Environment environment;
 
-    private static void addExceptionInfoToProblemDetails(
-            ProblemDetail problemDetail, DomainException exception) {
+    private static void addExceptionInfoToProblemDetails(ProblemDetail problemDetail, DomainException exception) {
         problemDetail.setTitle(exception.getMessage());
         problemDetail.setType(URI.create(exception.getClass().getSimpleName()));
         addCodeToProblemDetails(problemDetail, exception.getCode());
+    }
+
+    private static void addExceptionInfoToProblemDetails(ProblemDetail problemDetail, MethodArgumentNotValidException exception) {
+        problemDetail.setTitle(exception.getMessage());
+        problemDetail.setType(URI.create(exception.getClass().getSimpleName()));
+        addCodeToProblemDetails(problemDetail, null);
     }
 
     private static void addCodeToProblemDetails(ProblemDetail problemDetail, String code) {
@@ -80,15 +89,15 @@ public class GlobalControllerExceptionHandler {
         HttpStatus statusCode = HttpStatus.BAD_REQUEST;
 
         if (exception instanceof ValidationException validationException) {
-            problem.setProperty(
-                    ERRORS_KEY,
-                    validationException.getErrors().entrySet().stream()
-                            .flatMap(error -> {
-                                var field = error.getKey();
-                                return error.getValue().stream()
-                                        .map(detail -> new ProblemFieldDto(field, detail));
-                            }));
+            problem.setProperty(ERRORS_KEY, validationException.getErrors().entrySet().stream()
+                    .flatMap(error -> {
+                        var field = error.getKey();
+                        return error.getValue().stream().map(detail -> new ProblemFieldDto(field, detail));
+                    }));
             addExceptionInfoToProblemDetails(problem, validationException);
+        } else if (exception instanceof MethodArgumentNotValidException methodArgumentException) {
+            problem.setProperty(ERRORS_KEY, methodArgumentException.getBindingResult().getFieldErrors().stream().map(error -> new ProblemFieldDto(error.getField(), error.getDefaultMessage())));
+            addExceptionInfoToProblemDetails(problem, methodArgumentException);
         } else if (exception instanceof DomainException domainException) {
             addExceptionInfoToProblemDetails(problem, domainException);
             statusCode = getStatusCodeByExceptionType(domainException.getClass());

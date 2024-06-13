@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller.usecase.meeting.common;
 
-import com.hcmus.mentor.backend.domain.Channel;
+import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelDetailDto;
 import com.hcmus.mentor.backend.domain.MeetingHistory;
-import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import lombok.*;
 
@@ -30,9 +30,11 @@ public class MeetingResult {
 
     private String place;
 
-    private User organizer;
+    private ShortProfile organizer;
 
-    private Channel channel;
+    private ChannelDetailDto channel;
+
+    private Date createdDate;
 
     @Builder.Default
     private String type = "MEETING";

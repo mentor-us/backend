@@ -3,6 +3,10 @@ package com.hcmus.mentor.backend.controller;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.controller.payload.request.*;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.EditMessageRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.ReactMessageRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.SendFileRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.SendImagesRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.UpdateMessageResponse;
@@ -127,7 +131,7 @@ public class MessageController {
                 .newContent("")
                 .action(UpdateMessageResponse.Action.delete)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -165,7 +169,7 @@ public class MessageController {
                 .newContent(message.getContent())
                 .action(UpdateMessageResponse.Action.update)
                 .build();
-        socketIOService.sendUpdateMessage(response, message.getChannel().getGroup().getId());
+        socketIOService.sendUpdateMessage(response, message.getChannel().getId());
 
         return ResponseEntity.ok().build();
     }
@@ -199,7 +203,7 @@ public class MessageController {
 
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(message);
+        notificationService.sendForMediaMessage(message);
 
         return ResponseEntity.ok(message.getFile().getUrl());
     }
@@ -259,7 +263,7 @@ public class MessageController {
         Message message = messageService.saveImageMessage(request);
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, senderId);
         socketServer.getRoomOperations(groupId).sendEvent("receive_message", response);
-        notificationService.sendNewMediaMessageNotification(message);
+        notificationService.sendForMediaMessage(message);
 
         return ResponseEntity.ok().build();
     }
@@ -283,7 +287,7 @@ public class MessageController {
                 continue;
             }
 
-            notificationService.sendNewMessageNotification(message);
+            notificationService.sendForMessage(message);
         }
 
         return ResponseEntity.ok().build();
@@ -303,7 +307,6 @@ public class MessageController {
             @RequestBody @Valid ReactMessageRequest request) {
 
         messageService.reactMessage(request);
-
         return ResponseEntity.ok().build();
     }
 
@@ -323,7 +326,6 @@ public class MessageController {
             @RequestParam String senderId) {
 
         messageService.removeReaction(messageId, senderId);
-
         return ResponseEntity.ok().build();
     }
 
@@ -342,7 +344,6 @@ public class MessageController {
             @RequestBody ForwardRequest request) {
 
         messageService.saveForwardMessage(customerUserDetails.getId(), request);
-
         return ResponseEntity.ok().build();
     }
 }

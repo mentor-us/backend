@@ -3,9 +3,9 @@ package com.hcmus.mentor.backend.service.impl;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
-import com.hcmus.mentor.backend.controller.payload.request.CreateVoteRequest;
-import com.hcmus.mentor.backend.controller.payload.request.DoVotingRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateVoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.CreateVoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.DoVotingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.votes.UpdateVoteRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.payload.response.votes.VoteDetailResponse;
@@ -119,7 +119,7 @@ public class VoteServiceImpl implements VoteService {
         MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, userId);
         socketServer.getRoomOperations(request.getGroupId()).sendEvent("receive_message", response);
 
-        notificationService.sendNewVoteNotification(newVote.getGroup().getId(), newVote);
+        notificationService.sendForNote(newVote.getGroup().getId(), newVote);
         groupService.pingGroup(newVote.getGroup().getId());
         return modelMapper.map(newVote, VoteResult.class);
     }

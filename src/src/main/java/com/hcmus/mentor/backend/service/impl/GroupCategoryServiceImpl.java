@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.CreateGroupCategoryRequest;
-import com.hcmus.mentor.backend.controller.payload.request.FindGroupCategoryRequest;
-import com.hcmus.mentor.backend.controller.payload.request.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.request.groupcategories.UpdateGroupCategoryRequest;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
@@ -26,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +37,7 @@ import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPerm
 import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class GroupCategoryServiceImpl implements GroupCategoryService {
 
@@ -200,8 +202,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (request.getStatus() != null) {
             status = GroupCategoryStatus.valueOf(request.getStatus().toUpperCase());
         }
-        List<GroupCategory> groupCategories = groupCategoryRepository.findGroupCategoriesBySearchConditions(
-                name, description, status, pageSize, offset);
+        List<GroupCategory> groupCategories = groupCategoryRepository.findGroupCategoriesBySearchConditions(name, description, status, pageSize, offset);
         long count = groupCategoryRepository.countGroupCategoriesBySearchConditions(name, description, status);
 
         return new Pair<>(count, groupCategories);
@@ -213,13 +214,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!permissionService.isAdmin(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Pair<Long, List<GroupCategory>> groupCategories =
-                getGroupCategoriesBySearchConditions(request, page, pageSize);
-        return new GroupCategoryServiceDto(
-                SUCCESS,
-                "",
-                new PageImpl<>(
-                        groupCategories.getValue(), PageRequest.of(page, pageSize), groupCategories.getKey()));
+        Pair<Long, List<GroupCategory>> groupCategories = getGroupCategoriesBySearchConditions(request, page, pageSize);
+        return new GroupCategoryServiceDto(SUCCESS, "", new PageImpl<>(groupCategories.getValue(), PageRequest.of(page, pageSize), groupCategories.getKey()));
     }
 
     @Override

@@ -77,6 +77,8 @@ public class GetChannelByIdQueryHandler implements Command.Handler<GetChannelByI
         channelDetail.setRole(currentUserId);
         channelDetail.setPinnedMessageIds(channel.getMessagesPinned().stream().map(Message::getId).toList());
         channelDetail.setPinnedMessages(messageService.mappingToMessageDetailResponse(channel.getMessagesPinned(), currentUserId));
+        channelDetail.setTimeStart(parentGroup.getTimeStart());
+        channelDetail.setTimeEnd(parentGroup.getTimeEnd());
 
         return channelDetail;
     }

@@ -24,9 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
@@ -93,7 +91,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         groupRepository.save(group);
 
-        List<GroupUser> groupUsers = new ArrayList<>();
+        Set<GroupUser> groupUsers = new HashSet<>();
         var mentors = command.getMentorEmails().stream()
                 .filter(Objects::nonNull)
                 .filter(Predicate.not(String::isEmpty))

@@ -1,13 +1,13 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "groups_categories")
-public class GroupCategory {
+public class GroupCategory implements Serializable {
 
     @Id
     @Column(name = "id")
@@ -38,7 +38,7 @@ public class GroupCategory {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -54,8 +54,8 @@ public class GroupCategory {
 
     @Builder.Default
     @JsonIgnore
+    @ToString.Exclude
     @OneToMany(mappedBy = "groupCategory", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"lastMessage", "defaultChannel", "channels", "groupCategory", "creator", "channels", "faqs", "groupUsers"}, allowSetters = true)
     private List<Group> groups = new ArrayList<>();
 
     public void update(

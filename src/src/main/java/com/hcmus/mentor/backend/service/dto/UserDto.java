@@ -70,7 +70,7 @@ public class UserDto {
     private List<UserRole> roles = new ArrayList<>();
 
     @Builder.Default
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC() ;
 
     private int trainingPoint;
 

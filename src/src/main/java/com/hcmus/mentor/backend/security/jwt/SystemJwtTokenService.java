@@ -35,8 +35,8 @@ public class SystemJwtTokenService implements AuthenticationTokenService {
                 .and()
                 .claims(claims)
                 .issuer(constants.issuer)
-                .issuedAt(DateUtils.getCurrentDateAtUTC() )
-                .expiration(new Date(DateUtils.getCurrentDateAtUTC() .getTime() + expirationTime.toMillis()))
+                .issuedAt(DateUtils.getDateNowAtUTC() )
+                .expiration(new Date(DateUtils.getDateNowAtUTC() .getTime() + expirationTime.toMillis()))
                 .signWith(getSigningKey(), Jwts.SIG.HS512)
                 .compact();
     }

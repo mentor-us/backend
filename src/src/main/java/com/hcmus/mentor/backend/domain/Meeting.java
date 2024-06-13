@@ -1,6 +1,5 @@
 package com.hcmus.mentor.backend.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.domain.constant.MeetingRepeated;
 import com.hcmus.mentor.backend.domain.constant.ReminderType;
@@ -27,6 +26,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "meetings")
+@JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
 public class Meeting implements IRemindable, Serializable {
 
     @Id
@@ -55,7 +55,7 @@ public class Meeting implements IRemindable, Serializable {
 
     @Builder.Default
     @Column(name = "created_date", nullable = false)
-    private Date createdDate = com.hcmus.mentor.backend.util.DateUtils.getCurrentDateAtUTC();
+    private Date createdDate = com.hcmus.mentor.backend.util.DateUtils.getDateNowAtUTC();
 
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -68,28 +68,26 @@ public class Meeting implements IRemindable, Serializable {
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User organizer;
 
     @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
-    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
-    @JsonIgnore
     @Builder.Default
     @Fetch(FetchMode.SUBSELECT)
     @OneToMany(mappedBy = "meeting", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = {"meeting", "modifier"}, allowSetters = true)
     private List<MeetingHistory> histories = new ArrayList<>();
 
     @Builder.Default
-    @JsonIgnore
+    @BatchSize(size = 10)
     @ManyToMany(fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
-    @JoinTable(name = "rel_user_meeting_attendees", joinColumns = @JoinColumn(name = "meeting_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
+    @JoinTable(
+            name = "rel_user_meeting_attendees",
+            joinColumns = @JoinColumn(name = "meeting_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"),
+            uniqueConstraints = {@UniqueConstraint(columnNames = {"meeting_id", "user_id"})})
     private List<User> attendees = new ArrayList<>();
 
 

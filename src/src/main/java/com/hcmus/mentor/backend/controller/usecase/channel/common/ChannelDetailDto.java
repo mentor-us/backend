@@ -4,9 +4,11 @@ import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDeta
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -23,8 +25,10 @@ public class ChannelDetailDto {
     private String description;
     private String imageUrl;
     private Boolean hasNewMessage;
-    private Date createdDate = DateUtils.getCurrentDateAtUTC() ;
-    private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date createdDate = DateUtils.getDateNowAtUTC();
+    private Date updatedDate = DateUtils.getDateNowAtUTC();
+    private LocalDateTime timeStart;
+    private LocalDateTime timeEnd;
     private Date deletedDate = null;
     private ChannelStatus status = ChannelStatus.ACTIVE;
     private ChannelType type = ChannelType.PUBLIC;
@@ -36,7 +40,7 @@ public class ChannelDetailDto {
     private List<String> mentees = Collections.emptyList();
     private List<String> mentors = Collections.emptyList();
     @Setter(AccessLevel.NONE)
-    private String role;
+    private GroupUserRole role;
     @Setter(AccessLevel.NONE)
     private int totalMember;
     private String groupCategory;
@@ -54,6 +58,6 @@ public class ChannelDetailDto {
             return;
         }
 
-        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 }

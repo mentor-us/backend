@@ -1,12 +1,12 @@
 package com.hcmus.mentor.backend.service.fileupload.impl;
 
+import com.google.common.collect.Lists;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.service.fileupload.KeyGenerationStrategy;
 import com.hcmus.mentor.backend.service.fileupload.S3Settings;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tika.Tika;
@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * {@inheritDoc}
@@ -58,8 +59,6 @@ public class S3FileStorage implements BlobStorage {
                 .build();
 
         try (InputStream stream = minioClient.getObject(getObjectArgs)) {
-            logger.log(Level.INFO, "File {} is received successfully.", key);
-
             return new ByteArrayInputStream(stream.readAllBytes());
         }
     }
@@ -140,5 +139,28 @@ public class S3FileStorage implements BlobStorage {
                 .build();
 
         return minioClient.getPresignedObjectUrl(args);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return
+     */
+    @SneakyThrows
+    @Override
+    public String copyFile(String sourceKey) {
+        String newKey = generateNewKey(sourceKey);
+        minioClient.copyObject(CopyObjectArgs.builder()
+                .source(CopySource.builder().bucket(bucket).object(sourceKey).build())
+                .bucket(bucket)
+                .object(newKey)
+                .build());
+
+        return newKey;
+    }
+
+    private String generateNewKey(String oldKey) {
+        var oldType = Lists.reverse(Arrays.asList(oldKey.split("\\."))).stream().findFirst().orElse("");
+        return generateBlobKey(oldType);
     }
 }

@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
+import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -46,7 +47,7 @@ public class GroupDetailResponse {
 
     private Duration duration;
 
-    private String role;
+    private GroupUserRole role;
 
     private boolean isPinned;
 
@@ -109,7 +110,7 @@ public class GroupDetailResponse {
         if (mentors == null) {
             return;
         }
-        role = mentors.contains(userId) ? "MENTOR" : "MENTEE";
+        role = mentors.contains(userId) ? GroupUserRole.MENTOR : GroupUserRole.MENTEE;
     }
 
     public void setPinned(boolean isPinned) {
@@ -139,10 +140,10 @@ public class GroupDetailResponse {
         private String description;
 
         @Builder.Default
-        private Date createdDate = DateUtils.getCurrentDateAtUTC();
+        private Date createdDate = DateUtils.getDateNowAtUTC();
 
         @Builder.Default
-        private Date updatedDate = DateUtils.getCurrentDateAtUTC() ;
+        private Date updatedDate = DateUtils.getDateNowAtUTC() ;
 
         @Builder.Default
         private List<String> userIds = new ArrayList<>();

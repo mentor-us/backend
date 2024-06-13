@@ -15,6 +15,7 @@ import java.util.Date;
 @Builder
 @Table(name = "meeting_histories")
 @AllArgsConstructor
+@JsonIgnoreProperties(value = {"meeting", "modifier"}, allowSetters = true)
 public class MeetingHistory implements Serializable {
 
     @Id
@@ -33,16 +34,14 @@ public class MeetingHistory implements Serializable {
 
     @Builder.Default
     @Column(name = "modify_date", nullable = false)
-    private Date modifyDate = DateUtils.getCurrentDateAtUTC() ;
+    private Date modifyDate = DateUtils.getDateNowAtUTC() ;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "modifier_id")
-    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User modifier;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id")
-    @JsonIgnoreProperties(value = {"organizer", "group", "histories", "attendees"}, allowSetters = true)
     private Meeting meeting;
 
     public MeetingHistory() {

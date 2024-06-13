@@ -2,8 +2,10 @@ package com.hcmus.mentor.backend.controller.usecase.group.getallgroups;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.controller.usecase.group.common.BasicGroupDto;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domain.QGroup;
+import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -14,12 +16,17 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.querydsl.QSort;
 import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQuery, Page<GroupDetailDto>> {
+public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQuery, Page<BasicGroupDto>> {
 
     private final Logger logger = LoggerFactory.getLogger(GetAllGroupsQueryHandler.class);
     private final ModelMapper modelMapper;
@@ -30,7 +37,7 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
     private final UserRepository userRepository;
 
     @Override
-    public Page<GroupDetailDto> handle(GetAllGroupsQuery query) {
+    public Page<BasicGroupDto> handle(GetAllGroupsQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         if (!query.getType().equals("admin")) {
@@ -41,10 +48,10 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
 
         boolean isSuperAdmin = permissionService.isSuperAdmin(currentUserId, 0);
 
-        Pageable pageRequest = PageRequest.of(query.getPage(), query.getPageSize(), Sort.by(Sort.Direction.DESC, "createdDate"));
+        Pageable pageRequest = PageRequest.of(query.getPage(), query.getPageSize(), new QSort(QGroup.group.createdDate.desc()));
 
         if (isSuperAdmin) {
-            groups = groupRepository.findAll(pageRequest);
+            groups = groupRepository.findAllWithPagination(pageRequest);
         } else {
             var exists = userRepository.existsById(currentUserId);
             if (!exists) {
@@ -66,6 +73,12 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
             }
         }
 
-        return new PageImpl<>(groups.getContent().stream().map(group -> modelMapper.map(group, GroupDetailDto.class)).toList(), pageRequest, groups.getTotalElements());
+        return groups.map(group -> {
+            var channels = group.getChannels().stream()
+                    .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE)
+                    .collect(Collectors.toSet());
+            group.setChannels(channels);
+            return modelMapper.map(group, BasicGroupDto.class);
+        });
     }
 }
