@@ -14,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
+
 /**
  * Handler for {@link UpdateGroupByIdCommandHandler}.
  */
@@ -32,32 +34,29 @@ public class UpdateGroupByIdCommandHandler implements Command.Handler<UpdateGrou
     public GroupDetailDto handle(UpdateGroupByIdCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        if (groupRepository.existsByName(command.getName())) {
-            throw new DomainException("Tên nhóm đã tồn tại");
+        var group = groupRepository.findById(command.getId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + command.getId(), NOT_FOUND));
+
+        if (groupRepository.existsByName(command.getName()) && !command.getName().equals(group.getName())) {
+            throw new DomainException("Tên nhóm đã tồn tại", DUPLICATE_GROUP);
         }
 
-        var group = groupRepository.findById(command.getId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + command.getId()));
-
-        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElseThrow(() -> new DomainException("Không tìm thấy loại nhóm với id " + command.getGroupCategory()));
+        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElseThrow(() -> new DomainException("Không tìm thấy loại nhóm với id " + command.getGroupCategory(), NOT_FOUND));
 
         if (!groupDomainService.isStartAndEndTimeValid(command.getTimeStart(), command.getTimeEnd())) {
-            throw new DomainException("Thời gian không hợp lệ");
+            throw new DomainException("Thời gian không hợp lệ", TIME_START_TOO_FAR_FROM_NOW);
         }
 
         if (!command.getName().equals(group.getName())) {
-            group.setName(group.getName());
-        }
-        if (!command.getName().equals(group.getName())) {
-            group.setName(group.getName());
+            group.setName(command.getName());
         }
         if (!command.getDescription().equals(group.getDescription())) {
-            group.setDescription(group.getDescription());
+            group.setDescription(command.getDescription());
         }
         if (!command.getTimeStart().equals(group.getTimeStart())) {
-            group.setTimeStart(group.getTimeStart());
+            group.setTimeStart(command.getTimeStart());
         }
         if (!command.getTimeEnd().equals(group.getTimeEnd())) {
-            group.setTimeEnd(group.getTimeEnd());
+            group.setTimeEnd(command.getTimeEnd());
         }
         if (!command.getStatus().equals(GroupStatus.DISABLED)) {
             var newGroupStatus = groupDomainService.getGroupStatus(command.getTimeStart(), command.getTimeEnd());
@@ -71,7 +70,7 @@ public class UpdateGroupByIdCommandHandler implements Command.Handler<UpdateGrou
             group.setStatus(GroupStatus.DISABLED);
         }
 
-        groupRepository.save(group);
+        group = groupRepository.save(group);
 
         logger.info("User id {} updated group {}", currentUserId, group.getId());
 
