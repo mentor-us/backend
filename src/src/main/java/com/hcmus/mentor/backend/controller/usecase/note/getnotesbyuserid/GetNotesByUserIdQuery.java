@@ -2,12 +2,10 @@ package com.hcmus.mentor.backend.controller.usecase.note.getnotesbyuserid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.usecase.common.pagination.PageQueryFilter;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
