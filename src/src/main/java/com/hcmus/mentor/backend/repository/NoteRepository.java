@@ -14,21 +14,14 @@ import java.util.List;
 @Repository
 public interface NoteRepository extends JpaRepository<Note, String>, NoteCustomRepository {
 
-    @Query(value = "SELECT n.*" +
+    @Query(value = "SELECT DISTINCT n.* " +
             "FROM notes n " +
-            "JOIN users u on n.creator_id = u.id or n.owner_id = u.id " +
-            "LEFT JOIN note_user_access nua ON nua.note_id = n.id " +
-            "JOIN ref_user_note nu ON nu.note_id = n.id AND nu.user_id = ?1 " +
-            "WHERE u.id = ?2 OR nua.id = ?2 " +
-            "ORDER BY n.created_date DESC ", nativeQuery = true)
+            "JOIN users u ON n.creator_id = u.\"id\" OR n.owner_id = u.\"id\" " +
+            "LEFT JOIN note_user_access nua ON nua.note_id = n.\"id\" " +
+            "LEFT JOIN ref_user_note nu ON nu.note_id = n.\"id\" " +
+            "WHERE ( u.\"id\" = ?2 OR nua.user_id = ?2 ) AND nu.user_id = ?1 " +
+            "ORDER BY n.created_date DESC", nativeQuery = true)
     Page<Note> findAllByUserIdWithViewerId(String userId, String viewerId, Pageable pageable);
-
-    @Query(value = "SELECt exists" +
-            "(SELECT n.id FROM notes n " +
-            "LEFT JOIN users u ON n.owner_id = u.id " +
-            "LEFT JOIN note_user_access nua ON n.id = nua.note_id " +
-            "WHERE (u.id = ?2 OR (nua.user_id = ?2 AND nua.note_Permission = 'EDIT')) AND n.id = ?1) ", nativeQuery = true)
-    boolean canEdit(String noteId, String editor);
 
     @Query(value = "SELECT n.id, " +
             "MAX(CASE WHEN n.owner_id = ?2 OR (nua.user_id = ?2 AND nua.note_Permission = 'EDIT') THEN 1 ELSE 0 END) AS canEdit " +
@@ -40,6 +33,13 @@ public interface NoteRepository extends JpaRepository<Note, String>, NoteCustomR
             "GROUP BY n.id, n.created_date " +
             "ORDER BY n.created_date DESC", nativeQuery = true)
     List<NoteEditableProjection> findAllByUserIdWithViewerIdCanEdit(String userId, String viewerId);
+
+    @Query(value = "SELECt exists" +
+            "(SELECT n.id FROM notes n " +
+            "LEFT JOIN users u ON n.owner_id = u.id " +
+            "LEFT JOIN note_user_access nua ON n.id = nua.note_id " +
+            "WHERE (u.id = ?2 OR (nua.user_id = ?2 AND nua.note_Permission = 'EDIT')) AND n.id = ?1) ", nativeQuery = true)
+    boolean canEdit(String noteId, String editor);
 
     @Query(value = "SELECt exists" +
             "( SELECT n.id FROM notes n " +

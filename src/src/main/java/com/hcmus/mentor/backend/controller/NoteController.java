@@ -2,8 +2,9 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.payload.request.note.*;
+import com.hcmus.mentor.backend.controller.usecase.note.searchuserhasnotebyviewer.SearchUserHasNoteByViewerQuery;
+import com.hcmus.mentor.backend.controller.usecase.note.searchuserhasnotebyviewer.SearchUserHasNoteByViewerResult;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfile;
 import com.hcmus.mentor.backend.controller.usecase.note.createnote.CreateNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.deletenote.DeleteNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.getnotedetailbyid.GetNoteDetailByIdQuery;
@@ -21,8 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "notes")
 @RestController
@@ -45,8 +44,8 @@ public class NoteController {
     @GetMapping("/users")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "403", description = "Forbidden")
-    public ResponseEntity<List<NoteUserProfile>> getAllUserCanAccessNotes() {
-        return ResponseEntity.ok(noteDomainService.getAllUsers());
+    public ResponseEntity<SearchUserHasNoteByViewerResult> searchUserHasNoteByViewer(SearchUserHasNoteByViewerQuery query) {
+        return ResponseEntity.ok(pipeline.send(query));
     }
 
     @GetMapping("user/{userId}")

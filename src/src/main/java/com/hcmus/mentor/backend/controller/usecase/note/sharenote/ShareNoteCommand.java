@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ShareNoteCommand implements Command<NoteDetailDto> {
 
-        private String noteId;
+    private String noteId;
 
-        private List<NoteUserShareRequest> users;
+    private List<NoteUserShareRequest> users;
 }
