@@ -437,9 +437,9 @@ public class GroupController {
         try {
             var group = pipeline.send(command);
 
-            return new ApiResponseDto(group, 200, "Success");
+            return ApiResponseDto.success(group);
         } catch (DomainException ex) {
-            return new ApiResponseDto(null, 400, ex.getMessage());
+            return new ApiResponseDto(null, Integer.parseInt(ex.getCode()), ex.getMessage());
         }
     }
 
