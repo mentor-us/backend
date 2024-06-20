@@ -29,24 +29,32 @@ public class UserRepositoryImpl extends QuerydslRepositorySupport implements Use
     }
 
     @Override
-    public Page<NoteUserProfile> findAllAccessNote(String viewerId, Pageable pageable) {
-        Long totalCount = findAllUsersCanBeAssessQuery(user.count(), viewerId).fetchOne();
-        JPAQuery<NoteUserProfile> query = findAllUsersCanBeAssessQuery(Projections.bean(NoteUserProfile.class, user.id, user.name, user.email, user.imageUrl, note.id.countDistinct().as("totalNotes")), viewerId)
+    public Page<NoteUserProfile> findAllAccessNote(String viewerId, String query, Pageable pageable) {
+        Long totalCount = findAllUsersCanBeAssessQuery(user.count(), viewerId, query).fetchOne();
+
+        var noteUserProfileProjection = Projections.bean(NoteUserProfile.class,
+                user.id, user.name, user.email, user.imageUrl, note.id.countDistinct().as("totalNotes"));
+        JPAQuery<NoteUserProfile> usersQuery = findAllUsersCanBeAssessQuery(noteUserProfileProjection, viewerId, query)
                 .groupBy(user.id, user.name, user.email, user.imageUrl);
-        Optional.ofNullable(getQuerydsl()).ifPresent(querydsl -> querydsl.applyPagination(pageable, query));
-        return PageableExecutionUtils.getPage(query.fetch(), pageable, () -> Optional.ofNullable(totalCount).orElse(0L));
+        Optional.ofNullable(getQuerydsl()).ifPresent(querydsl -> querydsl.applyPagination(pageable, usersQuery));
+
+        return PageableExecutionUtils.getPage(usersQuery.fetch(), pageable, () -> Optional.ofNullable(totalCount).orElse(0L));
     }
 
-    private <T> JPAQuery<T> findAllUsersCanBeAssessQuery(Expression<T> expression, String viewerId) {
+    private <T> JPAQuery<T> findAllUsersCanBeAssessQuery(Expression<T> expression, String viewerId, String query) {
         QUser u = QUser.user;
         QNote n = QNote.note;
-
-        return new JPAQuery<>(em)
+        var querySql = new JPAQuery<>(em)
                 .select(expression)
                 .from(u)
                 .leftJoin(n).on(n.creator.id.eq(viewerId)
                         .or(n.owner.id.eq(viewerId))
                         .or(n.userAccesses.any().user.id.eq(viewerId)))
                 .where(n.users.any().id.eq(u.id));
+        if (query != null && !query.isEmpty()) {
+            querySql.where(u.name.containsIgnoreCase(query).or(u.email.containsIgnoreCase(query)));
+        }
+
+        return querySql;
     }
 }

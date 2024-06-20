@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.note.common;
 
+import com.hcmus.mentor.backend.domain.constant.NoteShareType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,10 @@ public class NoteDto {
     private String content;
 
     private NoteUserProfile creator;
+
+    private NoteShareType shareType;
+
+    private NoteUserProfile owner;
 
     private NoteUserProfile updatedBy;
 

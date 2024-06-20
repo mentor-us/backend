@@ -17,7 +17,7 @@ public class SearchUserHasNoteByViewerQueryHandler implements Command.Handler<Se
     @Override
     public SearchUserHasNoteByViewerResult handle(SearchUserHasNoteByViewerQuery command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
-        var noteUserProfilePage = userRepository.findAllAccessNote(currentUserId, PageRequest.of(command.getPage(), command.getPageSize()));
+        var noteUserProfilePage = userRepository.findAllAccessNote(currentUserId, command.getQuery(), PageRequest.of(command.getPage(), command.getPageSize()) );
         var result = new SearchUserHasNoteByViewerResult();
         result.setData(noteUserProfilePage.getContent());
         MappingUtil.mapPageQueryMetadata(noteUserProfilePage, result);

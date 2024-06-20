@@ -24,8 +24,6 @@ public class CreateNoteRequest {
     @Size(message = "Nội dung dài tối đa 256 ký tự", max = 256)
     private String content;
 
-    private boolean isPublic = false;
-
     @NotEmpty(message = "Ghi chú phải liên quan tới ít nhất 1 người")
     private List<String> userIds;
 }

@@ -25,8 +25,8 @@ public class DeleteNoteCommandHandler implements Command.Handler<DeleteNoteComma
     public Void handle(DeleteNoteCommand command) {
         var note = noteRepository.findById(command.getNoteId()).orElseThrow(() -> new DomainException("Không tim thấy ghi chú"));
         var user = userRepository.findById(loggedUserAccessor.getCurrentUserId()).orElseThrow(() -> new DomainException("Không tìm thấy người cập nhật"));
-        if (note.getCreator().equals(user)) {
-            throw new DomainException("Chỉ owner được phép xoá ghi chú");
+        if (note.getOwner().getId().equals(user.getId()) || note.getCreator().getId().equals(user.getId())) {
+            throw new DomainException("Chỉ owner hoặc người tạo được phép xoá ghi chú");
         }
 
         noteRepository.delete(note);

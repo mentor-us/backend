@@ -30,6 +30,9 @@ public class GetNoteDetailByIdQueryHandler implements Command.Handler<GetNoteDet
             throw new DomainException("Bạn không có quyền xem ghi chú này");
         }
 
-        return modelMapper.map(note, NoteDetailDto.class);
+        var result = modelMapper.map(note, NoteDetailDto.class);
+        result.setEditable(viewer.getId().equals(note.getOwner().getId()) || result.getUserAccesses().stream().anyMatch(access -> access.getUser().getId().equals(viewer.getId()) && access.getNotePermission().equals("EDIT")));
+
+        return result;
     }
 }
