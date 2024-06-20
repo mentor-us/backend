@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.controller.usecase.note.sharenote;
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.payload.request.note.NoteUserShareRequest;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
+import com.hcmus.mentor.backend.domain.constant.NoteShareType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,8 @@ import java.util.List;
 public class ShareNoteCommand implements Command<NoteDetailDto> {
 
     private String noteId;
+
+    private NoteShareType shareType;
 
     private List<NoteUserShareRequest> users;
 }

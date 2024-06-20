@@ -15,10 +15,10 @@ import lombok.*;
 @JsonIgnoreProperties(value = {"updatedBy", "note"}, allowSetters = true)
 public class NoteHistory extends BaseDomain {
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", columnDefinition = "TEXT", nullable = false)
     private String title;
 
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @ToString.Exclude

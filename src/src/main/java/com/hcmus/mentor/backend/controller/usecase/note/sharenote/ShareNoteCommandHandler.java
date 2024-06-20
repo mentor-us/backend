@@ -32,7 +32,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
     public NoteDetailDto handle(ShareNoteCommand command) {
         var note = noteRepository.findById(command.getNoteId()).orElseThrow(() -> new DomainException("Không tim thấy ghi chú"));
         var user = userRepository.findById(loggedUserAccessor.getCurrentUserId()).orElseThrow(() -> new DomainException("Không tìm thấy người cập nhật"));
-        if (!note.getCreator().equals(user)) {
+        if (!note.getOwner().getId().equals(user.getId())) {
             throw new DomainException("Chỉ owner được phép chia sẻ ghi chú");
         }
 
@@ -49,6 +49,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
                     .notePermission(mapUserAccessRequest.get(u.getId())).user(u).note(note).build());
         });
 
+        note.setNoteShareType(command.getShareType());
         note.setUserAccesses(oldAccesses);
 
         noteRepository.save(note);

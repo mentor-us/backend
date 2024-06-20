@@ -22,7 +22,5 @@ public class CreateNoteCommand implements Command<NoteDetailDto> {
 
         private String content;
 
-//        private boolean isPublic;
-
         private List<String> userIds;
 }

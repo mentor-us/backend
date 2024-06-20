@@ -5,5 +5,5 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface UserCustomRepository {
-    Page<NoteUserProfile> findAllAccessNote(String viewerId, Pageable pageable);
+    Page<NoteUserProfile> findAllAccessNote(String viewerId, String query, Pageable pageable);
 }

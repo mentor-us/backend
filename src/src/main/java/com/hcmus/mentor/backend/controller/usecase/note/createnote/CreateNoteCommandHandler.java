@@ -50,6 +50,7 @@ public class CreateNoteCommandHandler implements Command.Handler<CreateNoteComma
                 .content(command.getContent())
                 .creator(creator)
                 .owner(creator)
+                .updatedBy(creator)
                 .users(new HashSet<>(users))
                 .build());
         return modelMapper.map(note, NoteDetailDto.class);
