@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SchoolYearDto {
 
+    private String id;
     private String name;
 }

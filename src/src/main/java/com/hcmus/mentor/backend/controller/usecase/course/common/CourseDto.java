@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CourseDto {
 
+    private String id;
     private String name;
     private String code;
 }

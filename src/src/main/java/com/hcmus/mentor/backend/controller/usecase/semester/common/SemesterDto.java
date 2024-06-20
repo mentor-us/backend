@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SemesterDto {
 
+    private String id;
     private String name;
 }
