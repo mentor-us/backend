@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.note.sharenote;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.note.NoteUserShareRequest;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
 import com.hcmus.mentor.backend.domain.NoteUserAccess;
@@ -33,7 +34,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
         var note = noteRepository.findById(command.getNoteId()).orElseThrow(() -> new DomainException("Không tim thấy ghi chú"));
         var user = userRepository.findById(loggedUserAccessor.getCurrentUserId()).orElseThrow(() -> new DomainException("Không tìm thấy người cập nhật"));
         if (!note.getOwner().getId().equals(user.getId())) {
-            throw new DomainException("Chỉ owner được phép chia sẻ ghi chú");
+            throw new ForbiddenException("Chỉ người sở hữu được phép chia sẻ ghi chú");
         }
 
         var userIds = command.getUsers().stream().map(NoteUserShareRequest::getUserId).toList();
