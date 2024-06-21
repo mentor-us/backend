@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * School years controller.
+ */
 @Tag(name = "years")
 @RestController
 @RequestMapping("api/years")
@@ -24,6 +27,13 @@ public class SchoolYearController {
 
     private final Pipeline pipeline;
 
+    /**
+     * Search for school years based on criteria.
+     *
+     * @param query Search criteria for school years
+     * @return ResponseEntity containing the search results
+     */
+
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SearchSchoolYearResult> search(SearchSchoolYearQuery query) {
@@ -32,6 +42,12 @@ public class SchoolYearController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * Retrieve a school year by its ID.
+     *
+     * @param id ID of the school year to retrieve
+     * @return ResponseEntity containing the school year details
+     */
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SchoolYearDto> getById(@PathVariable String id) {
@@ -40,23 +56,39 @@ public class SchoolYearController {
         return ResponseEntity.ok(pipeline.send(query));
     }
 
+    /**
+     * Create a new school year.
+     *
+     * @param command Command containing school year details for creation
+     * @return ResponseEntity containing the created school year details
+     */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
-    public ResponseEntity<SchoolYearDto> create(
-            @RequestBody CreateSchoolYearCommand command) {
+    public ResponseEntity<SchoolYearDto> create(@RequestBody CreateSchoolYearCommand command) {
         return ResponseEntity.ok(pipeline.send(command));
     }
 
+    /**
+     * Update an existing school year.
+     *
+     * @param id      ID of the school year to update
+     * @param command Command containing updated school year details
+     * @return ResponseEntity containing the updated school year details
+     */
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
-    public ResponseEntity<SchoolYearDto> update(
-            @PathVariable String id,
-            @RequestBody UpdateSchoolYearCommand command) {
+    public ResponseEntity<SchoolYearDto> update(@PathVariable String id, @RequestBody UpdateSchoolYearCommand command) {
         command.setId(id);
 
         return ResponseEntity.ok(pipeline.send(command));
     }
 
+    /**
+     * Delete a school year by its ID.
+     *
+     * @param id ID of the school year to delete
+     * @return ResponseEntity containing the details of the deleted school year
+     */
     @DeleteMapping("{id}")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SchoolYearDto> delete(@PathVariable String id) {
