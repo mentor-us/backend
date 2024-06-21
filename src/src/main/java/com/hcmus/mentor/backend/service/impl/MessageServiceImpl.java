@@ -4,10 +4,10 @@ import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.request.messages.ReactMessageRequest;
 import com.hcmus.mentor.backend.controller.payload.request.messages.SendFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.messages.SendImagesRequest;
-import com.hcmus.mentor.backend.controller.payload.request.meetings.ForwardRequest;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.ReactMessageResponse;
@@ -85,7 +85,9 @@ public class MessageServiceImpl implements MessageService {
     @Transactional(readOnly = true)
     public List<MessageDetailResponse> getGroupMessages(String viewerId, String groupId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        var messages = messageRepository.getGroupMessagesByChannelId(pageable, groupId).getContent();
+
+        var messages = messageRepository.getGroupMessagesByChannelId(groupId, viewerId, pageable).getContent();
+
         return mappingToMessageDetailResponse(messages, viewerId);
     }
 

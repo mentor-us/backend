@@ -46,14 +46,22 @@ public interface MessageRepository extends JpaRepository<Message, String>, Messa
 
     List<Message> getAllGroupMessagesByChannelId(String groupId);
 
-    @Query("SELECT m " +
-            "FROM Message m " +
-            "join fetch m.sender s " +
-            "join fetch m.channel c " +
-            "left join fetch m.file " +
-            "WHERE m.channel.id = ?1 " +
-            "ORDER BY m.createdDate DESC ")
-    Page<Message> getGroupMessagesByChannelId(Pageable pageable, String groupId);
+    @Query(value = "SELECT DISTINCT me.* " +
+            "FROM messages me " +
+            "JOIN users u ON me.sender_id = u.id " +
+            "LEFT JOIN tasks t ON me.task_id = t.id " +
+            "LEFT JOIN task_assignee ta ON t.id = ta.task_id " +
+            "LEFT JOIN meetings mt ON me.meeting_id = mt.id " +
+            "LEFT JOIN rel_user_meeting_attendees ma ON mt.id = ma.meeting_id " +
+            "LEFT JOIN channels c ON me.channel_id = c.id " +
+            "LEFT JOIN public.files f on me.file_id = f.id " +
+            "WHERE me.channel_id = ?1 " +
+            "AND (CASE " +
+            "WHEN me.type = 'TASK' THEN t.assigner_id = ?2 OR ta.user_id = ?2 " +
+            "WHEN me.type = 'MEETING' THEN mt.organizer_id = ?2 OR ma.user_id = ?2 " +
+            "ELSE TRUE END ) " +
+            "ORDER BY me.created_date DESC", nativeQuery = true)
+    Page<Message> getGroupMessagesByChannelId(String groupId, String viewId, Pageable pageable);
 
     @Query("SELECT m, s, c " +
             "FROM Message m " +
