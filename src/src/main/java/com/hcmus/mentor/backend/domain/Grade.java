@@ -23,6 +23,10 @@ public class Grade extends BaseDomain {
     @Column(name = "verified", nullable = false)
     private boolean verified = false;
 
+    @Builder.Default
+    @Column(name = "is_retake", nullable = false)
+    private boolean isRetake = false;
+
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")

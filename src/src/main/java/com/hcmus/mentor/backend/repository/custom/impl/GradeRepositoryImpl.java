@@ -5,14 +5,17 @@ import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQue
 import com.hcmus.mentor.backend.domain.Grade;
 import com.hcmus.mentor.backend.domain.QUser;
 import com.hcmus.mentor.backend.repository.custom.GradeRepositoryCustom;
+import com.hcmus.mentor.backend.util.OrderUtil;
 import com.querydsl.core.types.Expression;
 import com.querydsl.jpa.impl.JPAQuery;
 import jakarta.persistence.EntityManager;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.hcmus.mentor.backend.domain.QCourse.course;
@@ -55,12 +58,21 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
                 .join(grade.course, course).fetchJoin();
 
         // Filter
-        if (!Strings.isNullOrEmpty(query.getUserId())) {
-            statement.where(student.id.eq(query.getUserId()));
-        }
+        applyFilter(query, statement, student);
 
         // Sorting
-        statement.orderBy(grade.createdDate.desc());
+        if (!Strings.isNullOrEmpty(query.getOrderBy())) {
+            OrderUtil.addOrderBy(
+                    statement,
+                    OrderUtil.parseSeparated(query.getOrderBy()),
+                    List.of(MutablePair.of("year", schoolYear.createdDate),
+                            MutablePair.of("semester", semester.createdDate),
+                            MutablePair.of("course", course.createdDate)
+                    )
+            );
+        } else {
+            statement.orderBy(grade.createdDate.desc());
+        }
 
         return statement;
     }
@@ -70,13 +82,33 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
         var statement = new JPAQuery<Grade>(em)
                 .select(expression)
                 .from(grade)
-                .join(grade.student, student);
+                .join(grade.student, student)
+                .join(grade.creator, new QUser("creator"))
+                .join(grade.year, schoolYear)
+                .join(grade.semester, semester)
+                .join(grade.course, course);
 
         // Filter
+        applyFilter(query, statement, student);
+
+        return statement;
+    }
+
+    private static <T> void applyFilter(SearchGradeQuery query, JPAQuery<T> statement, QUser student) {
         if (!Strings.isNullOrEmpty(query.getUserId())) {
             statement.where(student.id.eq(query.getUserId()));
         }
-
-        return statement;
+        if (!Strings.isNullOrEmpty(query.getCourseId())) {
+            statement.where(course.id.eq(query.getCourseId()));
+        }
+        if (!Strings.isNullOrEmpty(query.getSemesterId())) {
+            statement.where(semester.id.eq(query.getSemesterId()));
+        }
+        if (!Strings.isNullOrEmpty(query.getYearId())) {
+            statement.where(schoolYear.id.eq(query.getYearId()));
+        }
+        if (query.isRetake()) {
+            statement.where(grade.isRetake.eq(true));
+        }
     }
 }
