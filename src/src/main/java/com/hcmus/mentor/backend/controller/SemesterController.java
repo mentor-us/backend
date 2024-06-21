@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Semester controller.
+ */
 @Tag(name = "semesters")
 @RestController
 @RequestMapping("api/semesters")
@@ -24,6 +27,12 @@ public class SemesterController {
 
     private final Pipeline pipeline;
 
+    /**
+     * Search for semesters based on criteria.
+     *
+     * @param query Search criteria for semesters
+     * @return ResponseEntity containing the search results
+     */
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SearchSemesterResult> search(SearchSemesterQuery query) {
@@ -32,6 +41,12 @@ public class SemesterController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * Retrieve a semester by its ID.
+     *
+     * @param id ID of the semester to retrieve
+     * @return ResponseEntity containing the semester details
+     */
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SemesterDto> getById(
@@ -41,6 +56,12 @@ public class SemesterController {
         return ResponseEntity.ok(pipeline.send(query));
     }
 
+    /**
+     * Create a new semester.
+     *
+     * @param command Command containing semester details for creation
+     * @return ResponseEntity containing the created semester details
+     */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SemesterDto> create(
@@ -48,6 +69,13 @@ public class SemesterController {
         return ResponseEntity.ok(pipeline.send(command));
     }
 
+    /**
+     * Update an existing semester.
+     *
+     * @param id      ID of the semester to update
+     * @param command Command containing updated semester details
+     * @return ResponseEntity containing the updated semester details
+     */
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SemesterDto> update(
@@ -58,6 +86,12 @@ public class SemesterController {
         return ResponseEntity.ok(pipeline.send(command));
     }
 
+    /**
+     * Delete a semester by its ID.
+     *
+     * @param id ID of the semester to delete
+     * @return ResponseEntity containing the details of the deleted semester
+     */
     @DeleteMapping("{id}")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<SemesterDto> delete(@PathVariable String id) {
