@@ -19,7 +19,6 @@ public class CreateGradeCommand implements Command<GradeDto> {
     private Double score = 0.0;
     private boolean verified = false;
     private String studentId;
-    private String creatorId;
     private String semesterId;
     private String schoolYearId;
     private String courseId;

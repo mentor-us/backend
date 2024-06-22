@@ -329,9 +329,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto findUsers(String emailUser, FindUserRequest request, int page, int pageSize) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
         Pageable pageable = PageRequest.of(page, pageSize);
         Page<User> users = userRepository.findAll(createSpecification(request), pageable);
         List<UserDataResponse> findUserResponses = getUsersData(users.getContent());
