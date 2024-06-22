@@ -8,13 +8,10 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class ApiResponseDto<T> {
-    private static final Integer SUCCESS_CODE = 200;
 
     private boolean success;
     private String message;
-
     private T data;
-
     private Integer returnCode;
 
     public ApiResponseDto(boolean success, String message, Integer returnCode) {
@@ -33,11 +30,15 @@ public class ApiResponseDto<T> {
         this.data = data;
     }
 
-    public static ApiResponseDto success(Object data) {
-        return new ApiResponseDto<>(data, SUCCESS_CODE);
+    public static <T> ApiResponseDto<T> success(T data) {
+        return new ApiResponseDto<>(data, ReturnCodeConstants.SUCCESS);
     }
 
-    public static ApiResponseDto notFound(Integer returnCode) {
-        return new ApiResponseDto(false, "Not found", returnCode);
+    public static <T> ApiResponseDto<T> failure(String message, Integer returnCode) {
+        return new ApiResponseDto<>(null, returnCode, message);
+    }
+
+    public static <T> ApiResponseDto<T> notFound(Integer returnCode) {
+        return new ApiResponseDto<>(false, "Not found", returnCode);
     }
 }

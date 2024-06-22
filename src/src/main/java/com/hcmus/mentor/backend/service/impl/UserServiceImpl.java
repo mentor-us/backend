@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAd
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
@@ -56,10 +57,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.INVALID_TEMPLATE;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.GROUP_INVALID_TEMPLATE;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
@@ -160,7 +160,7 @@ public class UserServiceImpl implements UserService {
 
         Optional<User> userOptional = userRepository.findById(id);
         if (!userOptional.isPresent()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
         User user = userOptional.get();
 
@@ -197,13 +197,13 @@ public class UserServiceImpl implements UserService {
                 || request.getEmailAddress() == null
                 || request.getEmailAddress().isEmpty()
                 || request.getRole() == null) {
-            return new UserServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
 
         String email = request.getEmailAddress();
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
-            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_USER, "Duplicate user", null);
         }
 
         UserRole role = request.getRole();
@@ -231,7 +231,7 @@ public class UserServiceImpl implements UserService {
         nameHeader.add("Email *");
         nameHeader.add("Vai trò *");
         if (!shareService.isValidTemplate(workbook, 1, nameHeader)) {
-            return new UserServiceDto(INVALID_TEMPLATE, "Invalid template", null);
+            return new UserServiceDto(GROUP_INVALID_TEMPLATE, "Invalid template", null);
         }
         Sheet sheet = workbook.getSheet("Data");
         List<AddUserRequest> requests = new ArrayList<>();
@@ -295,7 +295,7 @@ public class UserServiceImpl implements UserService {
             responses.add(userDataResponse);
         }
         if (!duplicateEmails.isEmpty()) {
-            return new UserServiceDto(DUPLICATE_USER, "Duplicate user", duplicateEmails);
+            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_USER, "Duplicate user", duplicateEmails);
         }
         users.forEach(user -> mailService.sendWelcomeMail(user.getEmail()));
 
@@ -308,7 +308,7 @@ public class UserServiceImpl implements UserService {
     public UserServiceDto updateUser(String userId, UpdateUserRequest request) {
         Optional<User> userOptional = userRepository.findById(userId);
         if (!userOptional.isPresent()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
         User user = userOptional.get();
@@ -386,7 +386,7 @@ public class UserServiceImpl implements UserService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", notFoundIds);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", notFoundIds);
         }
         List<User> users = userRepository.findByIdIn(userIds);
 
@@ -420,7 +420,7 @@ public class UserServiceImpl implements UserService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", notFoundIds);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", notFoundIds);
         }
         List<User> users = userRepository.findByIdIn(ids);
 
@@ -457,7 +457,7 @@ public class UserServiceImpl implements UserService {
             }
         }
         if (!notFoundIds.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", notFoundIds);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", notFoundIds);
         }
         List<User> users = userRepository.findByIdIn(ids);
 
@@ -488,7 +488,7 @@ public class UserServiceImpl implements UserService {
         }
         Optional<User> userOptional = userRepository.findById(id);
         if (!userOptional.isPresent()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
         User user = userOptional.get();
         UserDetailResponse userDetailResponse = UserDetailResponse.from(user);
@@ -539,7 +539,7 @@ public class UserServiceImpl implements UserService {
         }
         Optional<User> userOptional = userRepository.findById(userId);
         if (!userOptional.isPresent()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
         User user = userOptional.get();
@@ -565,7 +565,7 @@ public class UserServiceImpl implements UserService {
             throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
         Optional<User> userWrapper = userRepository.findById(userId);
         if (!userWrapper.isPresent()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
@@ -583,7 +583,7 @@ public class UserServiceImpl implements UserService {
             throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
         Optional<User> userWrapper = userRepository.findById(userId);
         if (userWrapper.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
         String key = blobStorage.generateBlobKey(new Tika().detect(file.getBytes()));
@@ -647,12 +647,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserServiceDto addAdditionalEmail(String userId, String email) {
         if (userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()) {
-            return new UserServiceDto(DUPLICATE_EMAIL, "Duplicate email", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_EMAIL, "Duplicate email", null);
         }
 
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
         var user = userOptional.get();

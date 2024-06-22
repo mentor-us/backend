@@ -62,8 +62,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_NOT_FOUND;
 
 /**
  * Group controller.
@@ -151,7 +151,7 @@ public class GroupController {
 
             return ApiResponseDto.success(group);
         } catch (DomainException ex) {
-            return ApiResponseDto.notFound(NOT_FOUND);
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
         }
     }
 
@@ -230,7 +230,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -260,7 +260,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -289,7 +289,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -318,7 +318,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -348,7 +348,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -378,7 +378,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -505,7 +505,7 @@ public class GroupController {
             }
         }
         if (!notfoundGroups.isEmpty()) {
-            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+            return new ApiResponseDto(notfoundGroups, USER_NOT_FOUND, "Không tìm thấy nhóm");
         }
 
         return new ApiResponseDto(groups, 200, "Success");
@@ -539,7 +539,7 @@ public class GroupController {
             }
         }
         if (!notfoundGroups.isEmpty()) {
-            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+            return new ApiResponseDto(notfoundGroups, USER_NOT_FOUND, "Không tìm thấy nhóm");
         }
 
         return new ApiResponseDto(groups, 200, "Success");
@@ -630,11 +630,11 @@ public class GroupController {
 
                     return ApiResponseDto.success(group);
                 } catch (DomainException groupException) {
-                    return new ApiResponseDto<>(null, NOT_FOUND, groupException.getMessage());
+                    return new ApiResponseDto<>(null, USER_NOT_FOUND, groupException.getMessage());
                 }
             }
 
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 

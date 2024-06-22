@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
@@ -13,8 +14,6 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
 
 /**
  * Handler for {@link UpdateGroupByIdCommandHandler}.
@@ -34,16 +33,16 @@ public class UpdateGroupByIdCommandHandler implements Command.Handler<UpdateGrou
     public GroupDetailDto handle(UpdateGroupByIdCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        var group = groupRepository.findById(command.getId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + command.getId(), NOT_FOUND));
+        var group = groupRepository.findById(command.getId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + command.getId(), ReturnCodeConstants.GROUP_NOT_FOUND));
 
         if (groupRepository.existsByName(command.getName()) && !command.getName().equals(group.getName())) {
-            throw new DomainException("Tên nhóm đã tồn tại", DUPLICATE_GROUP);
+            throw new DomainException("Tên nhóm đã tồn tại", ReturnCodeConstants.GROUP_DUPLICATE_GROUP);
         }
 
-        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElseThrow(() -> new DomainException("Không tìm thấy loại nhóm với id " + command.getGroupCategory(), NOT_FOUND));
+        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElseThrow(() -> new DomainException("Không tìm thấy loại nhóm với id " + command.getGroupCategory(), ReturnCodeConstants.GROUP_NOT_FOUND));
 
         if (!groupDomainService.isStartAndEndTimeValid(command.getTimeStart(), command.getTimeEnd())) {
-            throw new DomainException("Thời gian không hợp lệ", TIME_START_TOO_FAR_FROM_NOW);
+            throw new DomainException("Thời gian không hợp lệ", ReturnCodeConstants.GROUP_TIME_START_TOO_FAR_FROM_NOW);
         }
 
         if (!command.getName().equals(group.getName())) {

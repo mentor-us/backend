@@ -11,6 +11,7 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAv
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
@@ -57,8 +58,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.domain.Message.Status.DELETED;
 import static com.hcmus.mentor.backend.service.impl.AnalyticServiceImpl.getResourceResponseEntity;
 
@@ -157,15 +157,15 @@ public class GroupServiceImpl implements GroupService {
             List<String> mentors, List<String> mentees) {
         List<String> invalidEmails = validateInvalidMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(INVALID_EMAILS, "Invalid emails", invalidEmails);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_EMAILS, "Invalid emails", invalidEmails);
         }
         invalidEmails = validateDomainMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(INVALID_DOMAINS, "Invalid domains", invalidEmails);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_DOMAINS, "Invalid domains", invalidEmails);
         }
         invalidEmails = validateDuplicatedMails(mentors, mentees);
         if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
         }
         return new GroupServiceDto(SUCCESS, "", null);
     }
@@ -314,11 +314,11 @@ public class GroupServiceImpl implements GroupService {
         }
         Optional<Group> groupWrapper = groupRepository.findById(groupId);
         if (groupWrapper.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", null);
         }
         Group group = groupWrapper.get();
         if (group.getStatus() == GroupStatus.DELETED) {
-            return new GroupServiceDto(NOT_FOUND, "Group has been deleted", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group has been deleted", null);
         }
         return new GroupServiceDto(SUCCESS, null, group);
     }
@@ -389,7 +389,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         if (!notFoundIds.isEmpty()) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", notFoundIds);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
         groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
@@ -449,7 +449,7 @@ public class GroupServiceImpl implements GroupService {
 
                 GroupMembersResponse response = GroupMembersResponse.builder().mentors(mentors).mentees(mentees).build();
                 return new GroupServiceDto(SUCCESS, null, response);
-            }).orElse(new GroupServiceDto(NOT_FOUND, "Group not found", null));
+            }).orElse(new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", null));
         };
 
         return channelOptional.map(getMembersFromChannel).orElseGet(getMembersFromGroup);
@@ -475,14 +475,14 @@ public class GroupServiceImpl implements GroupService {
     public GroupServiceDto getGroupDetail(String userId, String groupId) {
         var channel = channelRepository.findById(groupId).orElse(null);
         if (channel == null) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", null);
         }
 
         var group = channel.getGroup();
 
         GroupDetailResponse channelDetail = fulfillChannelDetail(userId, channel, group);
         if (channelDetail == null) {
-            return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", null);
         }
 
         channelDetail.setPinnedMessages(messageService.mappingToMessageDetailResponse(messageRepository.findByIdIn(channelDetail.getPinnedMessageIds()), userId));
@@ -573,7 +573,7 @@ public class GroupServiceImpl implements GroupService {
         if (groupWrapper.isEmpty()) {
             Optional<Channel> channelWrapper = channelRepository.findById(groupId);
             if (channelWrapper.isEmpty()) {
-                return new GroupServiceDto(NOT_FOUND, "Group not found", null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", null);
             }
 
             Channel channel = channelWrapper.get();

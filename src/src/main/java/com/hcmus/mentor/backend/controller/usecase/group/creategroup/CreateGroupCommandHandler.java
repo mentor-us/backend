@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.group.creategroup;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
@@ -27,9 +28,8 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 
 /**
  * Handler for {@link CreateGroupCommand}.
@@ -70,7 +70,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElse(null);
         if (groupCategory == null) {
-            return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not found", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_GROUP_CATEGORY_NOT_FOUND, "Group category not found", null);
         }
 
         var group = modelMapper.map(command, Group.class);
@@ -135,11 +135,11 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
 
         var isValidTimeRange = groupDomainService.isStartAndEndTimeValid(command.getTimeStart(), command.getTimeEnd());
         if (!isValidTimeRange) {
-            return new GroupServiceDto(INVALID_DOMAINS, "Invalid time range", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_DOMAINS, "Invalid time range", null);
         }
 
         if (groupRepository.existsByName(command.getName())) {
-            return new GroupServiceDto(DUPLICATE_GROUP, "Group name already exists", null);
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_GROUP, "Group name already exists", null);
         }
 
         var isValidateMemberEmail = groupService.validateListMentorsMentees(command.getMentorEmails(), command.getMenteeEmails());

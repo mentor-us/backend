@@ -1,13 +1,15 @@
 package com.hcmus.mentor.backend.controller;
 
+import an.awesome.pipelinr.Pipeline;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.tasks.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskAssigneeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.TaskResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.controller.usecase.task.add.AddTaskCommand;
 import com.hcmus.mentor.backend.domain.Task;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
@@ -33,6 +35,7 @@ import java.util.List;
 public class TaskController {
 
     private final TaskServiceImpl taskService;
+    private final Pipeline pipeline;
 
     /**
      * Retrieve fully detailed information of a task.
@@ -48,26 +51,26 @@ public class TaskController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
         String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTask(emailUser, id);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
      * Add a new task to a group.
      *
-     * @param loggedUser The current user's principal information.
-     * @param request    The request object containing information about the new task.
-     * @return APIResponse containing the added task or an error response.
+     * @param command The command object containing the information of the new task.
+     * @return APIResponse containing the new task or an error response.
      */
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Task> add(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser,
-            @RequestBody AddTaskRequest request) {
-        TaskServiceImpl.TaskReturnService taskReturn = taskService.addTask(loggedUser.getId(), request);
+    public ApiResponseDto<Task> add(@RequestBody AddTaskCommand command) {
+        try {
+            var task = pipeline.send(command);
 
-        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+            return ApiResponseDto.success(task);
+        } catch (DomainException e) {
+            return ApiResponseDto.failure(e.getMessage(), Integer.valueOf(e.getCode()));
+        }
     }
 
     /**
@@ -126,10 +129,8 @@ public class TaskController {
             @PathVariable String id,
             @RequestBody UpdateStatusByMentorRequest request) {
         String emailUser = customerUserDetails.getEmail();
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.updateStatusByMentor(emailUser, id, request);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.updateStatusByMentor(emailUser, id, request);
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
@@ -268,9 +269,7 @@ public class TaskController {
     public ApiResponseDto<List<TaskResponse>> getAllOwnAssignedByMeTask(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam("groupId") String groupId) {
-        TaskServiceImpl.TaskReturnService taskReturn =
-                taskService.wrapAssignedByMeTasks(groupId, customerUserDetails.getId());
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        TaskServiceImpl.TaskReturnService taskReturn = taskService.wrapAssignedByMeTasks(groupId, customerUserDetails.getId());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 }

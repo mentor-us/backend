@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.importgroup;
 import an.awesome.pipelinr.Command;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
@@ -30,9 +31,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 
 /**
  * Handler for {@link ImportGroupCommand}
@@ -75,7 +75,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             nameHeaders.add("Ngày kết thúc *\n" + "(dd/MM/YYYY)");
 
             if (!shareService.isValidTemplate(workbook, 2, nameHeaders)) {
-                return new GroupServiceDto(INVALID_TEMPLATE, "Invalid template", null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_TEMPLATE, "Invalid template", null);
             }
 
             GroupServiceDto validReadGroups = readGroups(workbook);
@@ -126,17 +126,17 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             // Validate required fields
             // Group category
             if (row.getCell(1) == null || row.getCell(2).getStringCellValue().isEmpty()) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Loại nhóm %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Loại nhóm %s", errorOnRow), null);
             }
             groupCategoryName = row.getCell(1).getStringCellValue();
             if (!groupCategoryRepository.existsByName(groupCategoryName)) {
-                return new GroupServiceDto(GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_GROUP_CATEGORY_NOT_FOUND, "Group category not exists", groupCategoryName);
             }
             String groupCategoryId = groupCategoryRepository.findByName(groupCategoryName).getId();
 
             // Mentee email
             if (row.getCell(2) == null || row.getCell(2).getStringCellValue().isEmpty()) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Email người được quản lý %s", errorOnRow), null);
             }
             menteeEmails = Arrays.stream(row.getCell(2).getStringCellValue().split("\n"))
                     .filter(Objects::nonNull)
@@ -145,15 +145,15 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
 
             // Group name
             if (row.getCell(3) == null || row.getCell(3).getStringCellValue().isEmpty()) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Tên nhóm  %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Tên nhóm  %s", errorOnRow), null);
             }
             groupName = row.getCell(3).getStringCellValue();
             if (commands.containsKey(groupName) || groupCategoryRepository.existsByName(groupName))
-                return new GroupServiceDto(DUPLICATE_GROUP, "Group name has been duplicated", groupName);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_GROUP, "Group name has been duplicated", groupName);
 
             // Mentor email
             if (row.getCell(5) == null || row.getCell(5).getStringCellValue().isEmpty()) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Email người quản lý %s", errorOnRow), null);
             }
             mentorEmails = Arrays.stream(row.getCell(5).getStringCellValue().split("\n"))
                     .filter(Objects::nonNull)
@@ -162,19 +162,19 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
 
             // Start date
             if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
             }
             timeStart = row.getCell(6).getLocalDateTimeCellValue();
 
             // End date
             if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
-                return new GroupServiceDto(NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
             }
             timeEnd = row.getCell(7).getLocalDateTimeCellValue();
 
             var isValidTimeRange = groupDomainService.isStartAndEndTimeValid(timeStart, timeEnd);
             if (!isValidTimeRange) {
-                return new GroupServiceDto(INVALID_DOMAINS, "Invalid time range", null);
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_DOMAINS, "Invalid time range", null);
             }
 
             var command = CreateGroupCommand.builder()

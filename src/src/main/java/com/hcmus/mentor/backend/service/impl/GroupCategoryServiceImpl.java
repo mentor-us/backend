@@ -4,6 +4,7 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groupcategories.UpdateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
@@ -32,9 +33,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.GroupCategoryReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 
 @Service
 @Transactional
@@ -55,7 +55,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     public GroupCategoryServiceDto findById(String id) {
         var groupCategory = groupCategoryRepository.findById(id);
         if (groupCategory.isEmpty()) {
-            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
@@ -69,7 +69,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 || request.getName().isEmpty()
                 || request.getIconUrl() == null
                 || request.getIconUrl().isEmpty()) {
-            return new GroupCategoryServiceDto(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Not enough required fields", null);
         }
         if (groupCategoryRepository.existsByName(request.getName())) {
             GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
@@ -96,7 +96,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
                 return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
             }
-            return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
         if (request.getIconUrl().startsWith("data:")) {
@@ -128,11 +128,11 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
         var groupCategory = groupCategoryRepository.findById(id).orElse(null);
         if (groupCategory == null) {
-            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
 
         if (groupCategoryRepository.existsByName(request.getName()) && !request.getName().equals(groupCategory.getName())) {
-            return new GroupCategoryServiceDto(DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
 
         if (!Objects.equals(request.getIconUrl(), groupCategory.getIconUrl())) {
@@ -166,14 +166,14 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
         var groupCategory = groupCategoryRepository.findById(id).orElse(null);
         if (groupCategory == null) {
-            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", null);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
 
         List<Group> groups = groupRepository.findAllByGroupCategoryId(id);
         if (!newGroupCategoryId.isEmpty()) {
             groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
             if (groupCategory == null) {
-                return new GroupCategoryServiceDto(NOT_FOUND, "Not found new group category", newGroupCategoryId);
+                return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
                 group.setGroupCategory(groupCategory);
@@ -235,7 +235,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                     () -> notFoundIds.add(id));
         }
         if (!notFoundIds.isEmpty()) {
-            return new GroupCategoryServiceDto(NOT_FOUND, "Not found group category", notFoundIds);
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", notFoundIds);
         }
 
         List<Group> groups = groupRepository.findAllByGroupCategoryIdIn(ids);
@@ -244,7 +244,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         if (!newGroupCategoryId.isEmpty()) {
             var groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
             if (groupCategory == null) {
-                return new GroupCategoryServiceDto(NOT_FOUND, "Not found new group category", newGroupCategoryId);
+                return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
                 group.setGroupCategory(groupCategory);

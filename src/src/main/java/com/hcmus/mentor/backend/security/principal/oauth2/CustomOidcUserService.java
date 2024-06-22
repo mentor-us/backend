@@ -1,7 +1,7 @@
 package com.hcmus.mentor.backend.security.principal.oauth2;
 
 import com.hcmus.mentor.backend.controller.exception.OAuth2AuthenticationProcessingException;
-import com.hcmus.mentor.backend.controller.payload.returnCode.AuthenticationErrorCode;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
@@ -46,7 +46,7 @@ public class CustomOidcUserService extends OidcUserService {
 
         CustomerOidcUser customerOidcUser = CustomerOidcUserFactory.getOAuth2UserInfo(registrationId, attributes);
         if (!StringUtils.hasLength(customerOidcUser.getEmail())) {
-            throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.INVALID_EMAIL);
+            throw new OAuth2AuthenticationProcessingException(ReturnCodeConstants.AUTHENTICATION_INVALID_EMAIL);
         }
 
         String email = customerOidcUser.getEmail();
@@ -55,10 +55,10 @@ public class CustomOidcUserService extends OidcUserService {
         User data = userRepository
                 .findByEmail(email)
                 .or(() -> userRepository.findByAdditionalEmailsContains(email))
-                .orElseThrow(() -> new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new OAuth2AuthenticationProcessingException(ReturnCodeConstants.AUTHENTICATION_NOT_FOUND));
 
         if (!data.isStatus()) {
-            throw new OAuth2AuthenticationProcessingException(AuthenticationErrorCode.BLOCKED);
+            throw new OAuth2AuthenticationProcessingException(ReturnCodeConstants.AUTHENTICATION_BLOCKED);
         }
 
         User user = updateExistingUser(data, customerOidcUser);
