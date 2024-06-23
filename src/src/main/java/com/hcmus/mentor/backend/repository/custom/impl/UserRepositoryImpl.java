@@ -22,7 +22,6 @@ import static com.hcmus.mentor.backend.domain.QUser.user;
 public class UserRepositoryImpl extends QuerydslRepositorySupport implements UserCustomRepository {
 
     private final EntityManager em;
-
     public UserRepositoryImpl(EntityManager em) {
         super(User.class);
         this.em = em;
@@ -57,4 +56,5 @@ public class UserRepositoryImpl extends QuerydslRepositorySupport implements Use
 
         return querySql;
     }
+
 }

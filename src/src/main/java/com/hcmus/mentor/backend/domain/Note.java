@@ -31,7 +31,7 @@ public class Note extends BaseDomain implements Serializable {
     @Column(name = "share_type", nullable = false)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private NoteShareType noteShareType = NoteShareType.PRIVATE;
+    private NoteShareType shareType = NoteShareType.PRIVATE;
 
     @NonNull
     @ToString.Exclude

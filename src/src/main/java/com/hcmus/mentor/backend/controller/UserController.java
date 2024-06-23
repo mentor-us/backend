@@ -555,7 +555,7 @@ public class UserController {
      * Add additional email to user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId              User ID to add an additional email.
+     * @param userId              User ID.
      * @param request             AddAdditionEmailRequest containing the additional email.
      * @return ApiResponseDto<User> - Response containing the user with additional email added.
      */

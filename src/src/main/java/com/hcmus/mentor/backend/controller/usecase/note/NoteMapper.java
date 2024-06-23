@@ -41,7 +41,10 @@ public class NoteMapper {
             mapper.using(MapperConverter.mapDateConverter()).map(Note::getUpdatedDate, NoteDto::setUpdatedDate);
         });
 
-        modelMapper.createTypeMap(NoteHistory.class, NoteHistoryDto.class);
+        modelMapper.createTypeMap(NoteHistory.class, NoteHistoryDto.class).addMappings(mapper -> {
+            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getCreatedDate, NoteHistoryDto::setCreatedDate);
+            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getUpdatedDate, NoteHistoryDto::setUpdatedDate);
+        });
         modelMapper.createTypeMap(NoteUserAccess.class, NoteUserProfile.class);
     }
 }
