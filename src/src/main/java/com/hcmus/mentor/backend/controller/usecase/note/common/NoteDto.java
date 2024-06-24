@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -33,4 +35,7 @@ public class NoteDto {
     private LocalDateTime updatedDate;
 
     private Boolean isEditable;
+
+    @Builder.Default
+    private List<NoteUserAccessDto> userAccesses = new ArrayList<>();
 }

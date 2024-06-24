@@ -78,6 +78,8 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
             logger.info("Update note with NoteId {}, UpdaterId {}, UpdaterName {}", note.getId(), updater.getId(), updater.getName());
         }
 
-        return modelMapper.map(note, NoteDetailDto.class);
+        var result = modelMapper.map(note, NoteDetailDto.class);
+        result.setEditable(true);
+        return result;
     }
 }

@@ -32,7 +32,7 @@ public class GetNoteDetailByIdQueryHandler implements Command.Handler<GetNoteDet
         }
 
         var result = modelMapper.map(note, NoteDetailDto.class);
-        result.setEditable(viewer.getId().equals(note.getOwner().getId()) || result.getUserAccesses().stream().anyMatch(access -> access.getUser().getId().equals(viewer.getId()) && access.getNotePermission().equals("EDIT")));
+        result.setEditable(noteRepository.canEdit(note.getId(), viewer.getId()));
 
         return result;
     }
