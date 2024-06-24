@@ -50,7 +50,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
                     .notePermission(mapUserAccessRequest.get(u.getId())).user(u).note(note).build());
         });
 
-        note.setNoteShareType(command.getShareType());
+        note.setShareType(command.getShareType());
         note.setUserAccesses(oldAccesses);
 
         noteRepository.save(note);

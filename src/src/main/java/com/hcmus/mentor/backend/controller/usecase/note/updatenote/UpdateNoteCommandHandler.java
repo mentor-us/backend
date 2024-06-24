@@ -36,7 +36,7 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
 
         var updater = userRepository.findById(loggedUserAccessor.getCurrentUserId()).orElseThrow(() -> new DomainException("Không tìm thấy người cập nhật"));
 
-        if (noteRepository.canEdit(command.getNoteId(), updater.getId())) {
+        if (!noteRepository.canEdit(command.getNoteId(), updater.getId())) {
             throw new ForbiddenException("Không có quyền chỉnh sửa ghi chú");
         }
 

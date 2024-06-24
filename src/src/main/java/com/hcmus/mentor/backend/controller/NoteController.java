@@ -135,6 +135,6 @@ public class NoteController {
     @ApiResponse(responseCode = "204", description = "Success")
     @ApiResponse(responseCode = "403", description = "Forbidden")
     public ResponseEntity<Void> deleteById(@PathVariable String id) {
-        return ResponseEntity.ok(pipeline.send(new DeleteNoteCommand(id)));
+        return ResponseEntity.ok(pipeline.send(DeleteNoteCommand.builder().noteId(id).build()));
     }
 }
