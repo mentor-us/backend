@@ -11,5 +11,5 @@ import lombok.*;
 @AllArgsConstructor
 public class SearchUserHasNoteByViewerQuery extends PageQueryFilter implements Command<SearchUserHasNoteByViewerResult> {
 
-    private String query;
+    private String search;
 }

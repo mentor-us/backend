@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class SearchUserHasNoteByViewerQueryHandler implements Command.Handler<SearchUserHasNoteByViewerQuery, SearchUserHasNoteByViewerResult> {
@@ -20,7 +22,9 @@ public class SearchUserHasNoteByViewerQueryHandler implements Command.Handler<Se
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         var noteUserProfileProjectionPage = userRepository.findAllUsersHasNoteAccess(
-                currentUserId, command.getQuery(), PageRequest.of(command.getPage(), command.getPageSize()));
+                currentUserId,
+                Optional.ofNullable(command.getSearch()).map(s -> "%" + s.toUpperCase() + "%").orElse(null),
+                PageRequest.of(command.getPage(), command.getPageSize()));
         var noteUserProfiles = noteUserProfileProjectionPage.getContent().stream().map(noteUserProfileProjection -> NoteUserProfile.builder()
                 .id(noteUserProfileProjection.getId())
                 .name(noteUserProfileProjection.getName())
