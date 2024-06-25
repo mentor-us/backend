@@ -67,7 +67,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     Optional<User> findShortProfile(String id);
 
     @Query(
-            value = "SELECT u.id, u.name, u.email, u.image_url, COUNT ( DISTINCT n.id  ) AS totalNotes " +
+            value = "SELECT u.id, u.name, u.email, u.image_url AS imageUrl, COUNT ( DISTINCT n.id  ) AS totalNotes " +
                     "FROM users u " +
                     "   JOIN ref_user_note nu ON nu.user_id = u.id  " +
                     "   JOIN notes n ON n.id  = nu.note_id " +
