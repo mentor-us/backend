@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,6 +22,10 @@ public class SemesterService {
 
     public Optional<Semester> findById(String id) {
         return semesterRepository.findById(id);
+    }
+
+    public List<Semester> findAll() {
+        return semesterRepository.findAll();
     }
 
     public boolean exists(String name) {

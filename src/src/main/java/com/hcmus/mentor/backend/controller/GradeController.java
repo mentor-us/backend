@@ -7,12 +7,19 @@ import com.hcmus.mentor.backend.controller.usecase.grade.deletegrade.DeleteGrade
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgradebyid.GetGradeByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.grade.gettemplateimport.GetTemplateImportGradeQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Grade controller.
@@ -50,6 +57,23 @@ public class GradeController {
         var query = GetGradeByIdQuery.builder().id(id).build();
 
         return ResponseEntity.ok(pipeline.send(query));
+    }
+
+    /**
+     * Get the template for importing grades.
+     *
+     * @return ResponseEntity containing the InputStreamResource of the template.
+     */
+    @GetMapping(path = "import", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public ResponseEntity<InputStreamResource> getTemplateGrade() {
+        var query = GetTemplateImportGradeQuery.builder().build();
+        var result = pipeline.send(query);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment;filename=template_import_grade-%s.xlsx", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+                .contentLength(result.getContentLength())
+                .contentType(MediaType.valueOf(result.getContentType()))
+                .body(new InputStreamResource(result.getStream()));
     }
 
     /**

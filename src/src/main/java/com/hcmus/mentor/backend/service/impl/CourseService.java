@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,6 +22,10 @@ public class CourseService {
 
     public Optional<Course> findById(String id) {
         return courseRepository.findById(id);
+    }
+
+    public List<Course> findAll() {
+        return courseRepository.findAll();
     }
 
     public boolean exists(String name, String code) {
