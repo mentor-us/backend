@@ -7,6 +7,7 @@ import com.hcmus.mentor.backend.controller.usecase.grade.deletegrade.DeleteGrade
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgradebyid.GetGradeByIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.grade.sharegrade.ShareGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +31,7 @@ public class GradeController {
      * Search grade.
      *
      * @param query Search criteria for grades.
-     * @return ResponseEntity containing the search results.
+     * @return      ResponseEntity containing the search results.
      */
     @GetMapping("")
     public ResponseEntity<SearchGradeResult> searchGrade(SearchGradeQuery query) {
@@ -42,8 +43,8 @@ public class GradeController {
     /**
      * Retrieve a grade by its ID
      *
-     * @param id ID of the grade to retrieve
-     * @return ResponseEntity containing the grade details
+     * @param id    ID of the grade to retrieve
+     * @return      ResponseEntity containing the grade details
      */
     @GetMapping("{id}")
     public ResponseEntity<GradeDto> getGradeById(@PathVariable String id) {
@@ -55,8 +56,8 @@ public class GradeController {
     /**
      * Create a new grade
      *
-     * @param command Command containing grade details for creation
-     * @return ResponseEntity containing the created grade details
+     * @param command   Command containing grade details for creation
+     * @return          ResponseEntity containing the created grade details
      */
     @PostMapping("")
     public ResponseEntity<GradeDto> create(@RequestBody CreateGradeCommand command) {
@@ -66,9 +67,9 @@ public class GradeController {
     /**
      * Update an existing grade
      *
-     * @param id      ID of the grade to update
-     * @param command Command containing updated grade details
-     * @return ResponseEntity containing the updated grade details
+     * @param id        ID of the grade to update
+     * @param command   Command containing updated grade details
+     * @return          ÎResponseEntity containing the updated grade details
      */
     @PatchMapping("{id}")
     public ResponseEntity<GradeDto> updateGrade(@PathVariable String id, @RequestBody UpdateGradeCommand command) {
@@ -80,13 +81,20 @@ public class GradeController {
     /**
      * Delete a grade by its ID
      *
-     * @param id ID of the grade to delete
-     * @return ResponseEntity containing the details of the deleted grade
+     * @param id    ID of the grade to delete
+     * @return      ResponseEntity containing the details of the deleted grade
      */
     @DeleteMapping("{id}")
     public ResponseEntity<GradeDto> deleteGrade(@PathVariable String id) {
         var command = DeleteGradeCommand.builder().id(id).build();
 
         return ResponseEntity.ok(pipeline.send(command));
+    }
+
+    @PostMapping("/share")
+    public ResponseEntity<Void> shareGrade(@RequestBody ShareGradeCommand command) {
+        pipeline.send(command);
+
+        return ResponseEntity.ok().build();
     }
 }

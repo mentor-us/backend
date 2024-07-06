@@ -5,6 +5,7 @@ import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentIn
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.constant.AuthProvider;
+import com.hcmus.mentor.backend.domain.constant.GradeShareType;
 import com.hcmus.mentor.backend.domain.constant.UserGender;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import jakarta.persistence.*;
@@ -25,7 +26,7 @@ import java.util.*;
 @Table(name = "users")
 @JsonIgnoreProperties(value = {
         "messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs",
-        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "notes", "createdNotes"},
+        "groupUsers", "channels", "tasksAssigner", "tasksAssignee", "hibernateLazyInitializer", "handler", "noteHistories", "notes", "createdNotes", "userCanAccessGrade"},
         allowSetters = true)
 public class User extends BaseDomain implements Serializable {
 
@@ -98,12 +99,17 @@ public class User extends BaseDomain implements Serializable {
     private UserGender gender = UserGender.MALE;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grade_share_type", nullable = false)
+    private GradeShareType gradeShareType = GradeShareType.PRIVATE;
+
+    @Builder.Default
     @ElementCollection(fetch = FetchType.EAGER)
-    @BatchSize(size = 25)
+    @BatchSize(size = 5)
     private List<UserRole> roles = new ArrayList<>();
 
     //------------------------------------------------------------------------------------------------------------------
-    // === Messge ===
+    // === Message ===
     @Builder.Default
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
@@ -140,7 +146,7 @@ public class User extends BaseDomain implements Serializable {
     @ManyToMany(mappedBy = "recipients", fetch = FetchType.LAZY)
     private List<Reminder> reminders = new ArrayList<>();
 
-    //------------------s------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------------
     // === Group ===
     @Builder.Default
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
@@ -187,6 +193,13 @@ public class User extends BaseDomain implements Serializable {
     @BatchSize(size = 10)
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<NoteUserAccess> noteUserAccesses = new HashSet<>();
+
+
+    //------------------------------------------------------------------------------------------------------------------
+    // === Grade ===
+    @Builder.Default
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<GradeUserAccess> userCanAccessGrade = new HashSet<>();
 
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
