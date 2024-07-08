@@ -1,0 +1,2 @@
+ALTER TABLE users
+    ADD COLUMN grade_share_type VARCHAR(255) NOT NULL DEFAULT 'PRIVATE';

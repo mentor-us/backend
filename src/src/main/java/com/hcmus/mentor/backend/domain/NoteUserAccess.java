@@ -20,7 +20,7 @@ import lombok.*;
                 columnList = "note_id,user_id",
                 unique = true
         )})
-@JsonIgnoreProperties(value = {"note", "user"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"note", "user"}, allowSetters = true)
 public class NoteUserAccess extends BaseDomain {
 
     @Builder.Default

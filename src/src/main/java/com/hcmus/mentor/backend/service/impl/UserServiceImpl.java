@@ -206,8 +206,7 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_USER, "Duplicate user", null);
         }
 
-        UserRole role = request.getRole();
-        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(USER)).build();
+        User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(request.getRole())).build();
         userRepository.save(user);
         mailService.sendWelcomeMail(email);
 
@@ -216,7 +215,7 @@ public class UserServiceImpl implements UserService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .status(user.isStatus())
-                .role(role)
+                .role(user.getRoles().stream().findFirst().orElse(null))
                 .build();
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
