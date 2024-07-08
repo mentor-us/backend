@@ -33,20 +33,20 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
     }
 
     @Override
-    public Page<Grade> searchGrade(SearchGradeQuery query) {
-        var statement = searchGradeBase(grade, query);
+    public Page<Grade> search(SearchGradeQuery query) {
+        var statement = searchResult(grade, query);
 
         // Paging
         var pageable = PageRequest.of(query.getPage(), query.getPageSize());
         Optional.ofNullable(getQuerydsl()).ifPresent(querydsl -> querydsl.applyPagination(pageable, statement));
 
         var rows = statement.fetch();
-        var total = searchGradeCount(grade.count(), query).fetchOne();
+        var total = searchCount(grade.count(), query).fetchOne();
 
         return PageableExecutionUtils.getPage(rows, pageable, () -> Optional.ofNullable(total).orElse(0L));
     }
 
-    private <T> JPAQuery<T> searchGradeBase(Expression<T> expression, SearchGradeQuery query) {
+    private <T> JPAQuery<T> searchResult(Expression<T> expression, SearchGradeQuery query) {
         var student = new QUser("student");
         var statement = new JPAQuery<Grade>(em)
                 .select(expression)
@@ -67,7 +67,8 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
                     OrderUtil.parseSeparated(query.getOrderBy()),
                     List.of(MutablePair.of("year", schoolYear.createdDate),
                             MutablePair.of("semester", semester.createdDate),
-                            MutablePair.of("course", course.createdDate)
+                            MutablePair.of("course", course.createdDate),
+                            MutablePair.of("create", grade.createdDate)
                     )
             );
         } else {
@@ -77,7 +78,7 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
         return statement;
     }
 
-    private <T> JPAQuery<T> searchGradeCount(Expression<T> expression, SearchGradeQuery query) {
+    private <T> JPAQuery<T> searchCount(Expression<T> expression, SearchGradeQuery query) {
         var student = new QUser("student");
         var statement = new JPAQuery<Grade>(em)
                 .select(expression)

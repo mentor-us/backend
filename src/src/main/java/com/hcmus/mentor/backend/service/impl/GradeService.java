@@ -18,7 +18,7 @@ public class GradeService {
     private final GradeRepository gradeRepository;
 
     public Page<Grade> searchGrade(SearchGradeQuery query) {
-        return gradeRepository.searchGrade(query);
+        return gradeRepository.search(query);
     }
 
     public Optional<Grade> findById(String id) {

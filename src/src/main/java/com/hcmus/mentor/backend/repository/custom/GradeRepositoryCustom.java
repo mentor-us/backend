@@ -6,5 +6,5 @@ import org.springframework.data.domain.Page;
 
 public interface GradeRepositoryCustom {
 
-    Page<Grade> searchGrade(SearchGradeQuery query);
+    Page<Grade> search(SearchGradeQuery query);
 }

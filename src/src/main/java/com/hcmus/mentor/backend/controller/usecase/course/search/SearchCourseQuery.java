@@ -9,4 +9,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 public class SearchCourseQuery extends PageQueryFilter implements Command<SearchCourseResult> {
+
+    private String name;
+    private String code;
 }
