@@ -37,40 +37,40 @@ public class UpdateGradeCommandHandler implements Command.Handler<UpdateGradeCom
 
         var isUpdated = false;
 
-        if (!grade.getScore().equals(command.getScore())) {
+        if (command.getScore() != null && !grade.getScore().equals(command.getScore())) {
             grade.setScore(command.getScore());
             isUpdated = true;
         }
 
-        if (grade.isVerified() != command.isVerified()) {
+        if (command.getVerified() != null && grade.isVerified() != command.getVerified()) {
             grade.setScore(command.getScore());
         }
 
-        if (!grade.getStudent().getId().equals(command.getStudent())) {
+        if (command.getStudent() != null && !grade.getStudent().getId().equals(command.getStudent())) {
             var student = userRepository.findById(command.getStudent()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy sinh viên với id %s", command.getStudent())));
             grade.setStudent(student);
             isUpdated = true;
         }
 
-        if (!grade.getCreator().getId().equals(command.getCreator())) {
+        if (command.getCreator() != null && !grade.getCreator().getId().equals(command.getCreator())) {
             var creator = userRepository.findById(command.getCreator()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy người tạo điểm với id %s", command.getCreator())));
             grade.setCreator(creator);
             isUpdated = true;
         }
 
-        if (!grade.getSemester().getId().equals(command.getSemester())) {
+        if (command.getSemester() != null && !grade.getSemester().getId().equals(command.getSemester())) {
             var semester = semesterRepository.findById(command.getSemester()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy học kỳ với id %s", command.getSemester())));
             grade.setSemester(semester);
             isUpdated = true;
         }
 
-        if (!grade.getYear().getId().equals(command.getYear())) {
+        if (command.getYear() != null && !grade.getYear().getId().equals(command.getYear())) {
             var year = schoolYearRepository.findById(command.getYear()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy năm học với id %s", command.getYear())));
             grade.setYear(year);
             isUpdated = true;
         }
 
-        if (!grade.getCourse().getId().equals(command.getCourse())) {
+        if (command.getCourse() != null && !grade.getCourse().getId().equals(command.getCourse())) {
             var course = courseRepository.findById(command.getCourse()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy môn học với id %s", command.getCourse())));
             grade.setCourse(course);
             isUpdated = true;

@@ -16,8 +16,8 @@ public class UpdateGradeCommand implements Command<GradeDto> {
 
     @JsonIgnoreProperties
     private String id;
-    private Double score = 0.0;
-    private boolean verified = false;
+    private Double score;
+    private Boolean verified;
     private String student;
     private String creator;
     private String semester;
