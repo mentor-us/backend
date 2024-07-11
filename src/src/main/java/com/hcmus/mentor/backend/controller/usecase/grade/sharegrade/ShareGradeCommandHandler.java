@@ -3,12 +3,14 @@ package com.hcmus.mentor.backend.controller.usecase.grade.sharegrade;
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
+import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeUserDto;
 import com.hcmus.mentor.backend.domain.GradeUserAccess;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GradeShareType;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.PermissionService;
+import com.hcmus.mentor.backend.service.impl.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,14 +20,15 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class ShareGradeCommandHandler implements Command.Handler<ShareGradeCommand, Void> {
+public class ShareGradeCommandHandler implements Command.Handler<ShareGradeCommand, GradeUserDto> {
 
     private final LoggedUserAccessor loggedUserAccessor;
     private final UserRepository userRepository;
     private final PermissionService permissionService;
+    private final GradeService gradeService;
 
     @Override
-    public Void handle(ShareGradeCommand command) {
+    public GradeUserDto handle(ShareGradeCommand command) {
         var currentUser = getCurrentUser();
         validateAdminPermission(currentUser);
 
@@ -36,7 +39,7 @@ public class ShareGradeCommandHandler implements Command.Handler<ShareGradeComma
 
         userRepository.save(user);
 
-        return null;
+        return gradeService.mapToGradeUserDto(user);
     }
 
     private User getCurrentUser() {

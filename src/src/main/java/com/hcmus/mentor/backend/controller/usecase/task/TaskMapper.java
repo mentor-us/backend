@@ -25,7 +25,7 @@ public class TaskMapper {
 
         var mappingAssignee = new Converter<List<Assignee>, List<TaskAssigneeResponse>>() {
             public List<TaskAssigneeResponse> convert(MappingContext<List<Assignee>, List<TaskAssigneeResponse>> context) {
-                if (context.getSource() == null || context.getSource().size() == 0) {
+                if (context.getSource() == null || context.getSource().isEmpty()) {
                     return List.of();
                 }
 

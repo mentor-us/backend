@@ -20,17 +20,27 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     long countByStatus(Boolean status);
 
-//    long countByIdInAndStatus(List<String> userIds, Boolean status);
-
     long countByCreatedDateBetween(Date start, Date end);
-
-//    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
     Boolean existsByEmail(String email);
 
     Boolean existsByEmailAndRolesContains(String email, UserRole role);
 
     Boolean existsByIdAndRolesContains(String id, UserRole role);
+
+    @Query(value = "SELECT exists( " +
+            "SELECT u.id " +
+            "FROM users u " +
+            "   LEFT JOIN list_mentors lm ON u.id = lm.mentee_id " +
+            "   LEFT JOIN grade_user_access gua ON u.id = gua.user_id " +
+            "   LEFT JOIN user_roles ur ON u.id = ur.user_id " +
+            "WHERE u.id = ?1 " +
+            "   AND ( ur.roles = 0 " +
+            "       OR u.grade_share_type = 'PUBLIC' " +
+            "       OR ( u.grade_share_type = 'MENTOR' AND lm.mentor_id = ?2 ) " +
+            "       OR gua.user_access_id = ?2 ))",
+            nativeQuery = true)
+    Boolean canAccessUserGrade(String userId, String viewerId);
 
     Optional<User> findByEmail(String email);
 
