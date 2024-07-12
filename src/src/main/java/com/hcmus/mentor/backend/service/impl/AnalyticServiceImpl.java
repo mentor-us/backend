@@ -11,6 +11,7 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
@@ -58,10 +59,9 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.AnalyticReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION_STRING;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION_STRING;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 
 /**
  * Analytic service.
@@ -216,7 +216,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         int lastDay = getLastDayOfMonth(yearEnd, monthEnd);
         LocalDate timeEnd = LocalDate.of(yearEnd, monthEnd, lastDay);
         if (timeEnd.isBefore(timeStart)) {
-            return new ApiResponseDto<>(null, INVALID_TIME_RANGE, INVALID_TIME_RANGE_STRING);
+            return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE_STRING);
         }
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data;
         if (permissionService.isSuperAdmin(emailUser)) {
@@ -304,7 +304,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         int lastDay = getLastDayOfMonth(yearEnd, monthEnd);
         LocalDate timeEnd = LocalDate.of(yearEnd, monthEnd, lastDay);
         if (timeEnd.isBefore(timeStart)) {
-            return new ApiResponseDto<>(null, INVALID_TIME_RANGE, INVALID_TIME_RANGE_STRING);
+            return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE_STRING);
         }
         ArrayList<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         List<Group> groups;
@@ -362,7 +362,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         var group = groupRepository.findById(groupId).orElse(null);
         if (group == null) {
-            return new ApiResponseDto<>(null, NOT_FOUND_GROUP, "Not found group");
+            return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_NOT_FOUND_GROUP, "Not found group");
         }
         return new ApiResponseDto<>(getGeneralGroupAnalytic(group), SUCCESS, "");
     }
@@ -999,10 +999,10 @@ public class AnalyticServiceImpl implements AnalyticService {
             }
         }
         if (!notFoundsUser.isEmpty()) {
-            return new ApiResponseDto<>(notFoundsUser, NOT_FOUND_USER, "Not found users");
+            return new ApiResponseDto<>(notFoundsUser, ReturnCodeConstants.ANALYTIC_NOT_FOUND_USER, "Not found users");
         }
         if (!invalidValues.isEmpty()) {
-            return new ApiResponseDto<>(invalidValues, INVALID_VALUE, "Invalid values");
+            return new ApiResponseDto<>(invalidValues, ReturnCodeConstants.ANALYTIC_INVALID_VALUE, "Invalid values");
         }
 
         return new ApiResponseDto<>(null, SUCCESS, "");
@@ -1059,10 +1059,10 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
 
         if (!notFoundsUser.isEmpty()) {
-            return new ApiResponseDto<>(notFoundsUser, NOT_FOUND_USER, NOT_FOUND_USER_STRING);
+            return new ApiResponseDto<>(notFoundsUser, ReturnCodeConstants.ANALYTIC_NOT_FOUND_USER, ReturnCodeConstants.ANALYTIC_NOT_FOUND_USER_STRING);
         }
         if (!invalidValues.isEmpty()) {
-            return new ApiResponseDto<>(invalidValues, INVALID_VALUE, INVALID_VALUE_STRING);
+            return new ApiResponseDto<>(invalidValues, ReturnCodeConstants.ANALYTIC_INVALID_VALUE, ReturnCodeConstants.ANALYTIC_INVALID_VALUE_STRING);
         }
         return new ApiResponseDto<>(null, SUCCESS, "");
     }
@@ -1173,10 +1173,10 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         var user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            return new ApiResponseDto<>(null, NOT_FOUND_USER, "Not found user");
+            return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_NOT_FOUND_USER, "Not found user");
         }
         if (!isValidStudyingPoint(request.getStudyingPoint().toString()) || !isValidTrainingPoint(request.getTrainingPoint().toString())) {
-            return new ApiResponseDto<>(null, INVALID_VALUE, "Invalid value");
+            return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_INVALID_VALUE, "Invalid value");
         }
         user.update(request);
         userRepository.save(user);

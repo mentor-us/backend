@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.SystemConfig;
 import com.hcmus.mentor.backend.repository.SystemConfigRepository;
 import com.hcmus.mentor.backend.service.PermissionService;
@@ -16,10 +17,9 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SystemConfigReturnCode.*;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.TASK_NOT_FOUND;
 
 @Service
 @Transactional
@@ -42,14 +42,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public SystemConfigServiceDto updateValue(String emailUser, String id, Object value) {
         Optional<SystemConfig> configOptional = systemConfigRepository.findById(id);
         if (configOptional.isEmpty()) {
-            return new SystemConfigServiceDto(NOT_FOUND, "Not found system config", null);
+            return new SystemConfigServiceDto(TASK_NOT_FOUND, "Not found system config", null);
         }
         SystemConfig config = configOptional.get();
         if (!permissionService.isAdmin(emailUser)) {
             return new SystemConfigServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (!isValidType(value, config.getType())) {
-            return new SystemConfigServiceDto(INVALID_TYPE, "Invalid type", value);
+            return new SystemConfigServiceDto(ReturnCodeConstants.SYSTEM_CONFIG_INVALID_TYPE, "Invalid type", value);
         }
         SystemConfigServiceDto isValidValue = isValidValue(config.getKey(), value);
         if (!Objects.equals(isValidValue.getReturnCode(), SUCCESS)) {
@@ -72,13 +72,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 String[] domains = (String[]) value;
                 for (String domain : domains) {
                     if (!isValidDomain(domain)) {
-                        return new SystemConfigServiceDto(INVALID_DOMAIN, "Invalid domain", domain);
+                        return new SystemConfigServiceDto(ReturnCodeConstants.SYSTEM_CONFIG_INVALID_DOMAIN, "Invalid domain", domain);
                     }
                 }
                 break;
             case "valid_max_year":
                 if ((int) value < 0) {
-                    return new SystemConfigServiceDto(INVALID_MAX_YEAR, "Invalid max year", value);
+                    return new SystemConfigServiceDto(ReturnCodeConstants.SYSTEM_CONFIG_INVALID_MAX_YEAR, "Invalid max year", value);
                 }
                 break;
             default:

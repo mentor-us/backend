@@ -29,7 +29,7 @@ public class Message implements Serializable {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
     @Builder.Default

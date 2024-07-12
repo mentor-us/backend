@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.DUPLICATE_EMAIL;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_DUPLICATE_EMAIL;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_NOT_FOUND;
 
 /**
  * Handler for {@link AddAdditionalEmailCommand}.
@@ -30,12 +30,12 @@ public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAddi
     @Override
     public UserServiceDto handle(AddAdditionalEmailCommand command) {
         if (userRepository.findByAdditionalEmailsContains(command.getAdditionalEmail()).isPresent() || userRepository.findByEmail(command.getAdditionalEmail()).isPresent()) {
-            return new UserServiceDto(DUPLICATE_EMAIL, "Duplicate email", null);
+            return new UserServiceDto(USER_DUPLICATE_EMAIL, "Duplicate email", null);
         }
 
         Optional<User> userOptional = userRepository.findById(command.getUserId());
         if (userOptional.isEmpty()) {
-            return new UserServiceDto(NOT_FOUND, "Not found user", null);
+            return new UserServiceDto(USER_NOT_FOUND, "Not found user", null);
         }
 
         var user = userOptional.get();

@@ -1,11 +1,14 @@
 package com.hcmus.mentor.backend.controller.usecase.note.common;
 
+import com.hcmus.mentor.backend.domain.constant.NoteShareType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,6 +24,10 @@ public class NoteDto {
 
     private NoteUserProfile creator;
 
+    private NoteShareType shareType;
+
+    private NoteUserProfile owner;
+
     private NoteUserProfile updatedBy;
 
     private LocalDateTime createdDate;
@@ -28,4 +35,7 @@ public class NoteDto {
     private LocalDateTime updatedDate;
 
     private Boolean isEditable;
+
+    @Builder.Default
+    private List<NoteUserAccessDto> userAccesses = new ArrayList<>();
 }

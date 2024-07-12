@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -14,8 +16,7 @@ import lombok.NoArgsConstructor;
 public class UpdateNoteCommand implements Command<NoteDetailDto> {
 
     private String noteId;
-
     private String title;
-
     private String content;
+    private List<String> userIds;
 }

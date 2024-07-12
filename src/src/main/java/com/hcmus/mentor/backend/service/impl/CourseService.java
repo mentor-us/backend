@@ -23,6 +23,10 @@ public class CourseService {
         return courseRepository.findById(id);
     }
 
+    public boolean exists(String name, String code) {
+        return courseRepository.existsByNameOrCode(name, code);
+    }
+
     public Course create(Course course) {
         return courseRepository.save(course);
     }

@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_NOT_FOUND;
 
 /**
  * User controller.
@@ -160,7 +160,7 @@ public class UserController {
     public ApiResponseDto<ProfileResponse> get(@PathVariable String id) {
         Optional<User> userWrapper = userRepository.findById(id);
         if (!userWrapper.isPresent()) {
-            return ApiResponseDto.notFound(NOT_FOUND);
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
         }
         ProfileResponse response = ProfileResponse.from(userWrapper.get());
         return ApiResponseDto.success(response);
@@ -194,7 +194,7 @@ public class UserController {
     public ApiResponseDto<User> activate(@PathVariable String id) {
         Optional<User> userOptional = userRepository.findById(id);
         if (!userOptional.isPresent()) {
-            return new ApiResponseDto(false, "No Account", NOT_FOUND);
+            return new ApiResponseDto(false, "No Account", USER_NOT_FOUND);
         }
         User user = userOptional.get();
         user.activate();
@@ -555,7 +555,7 @@ public class UserController {
      * Add additional email to user.
      *
      * @param customerUserDetails Current authenticated user's principal.
-     * @param userId              User ID to add an additional email.
+     * @param userId              User ID.
      * @param request             AddAdditionEmailRequest containing the additional email.
      * @return ApiResponseDto<User> - Response containing the user with additional email added.
      */

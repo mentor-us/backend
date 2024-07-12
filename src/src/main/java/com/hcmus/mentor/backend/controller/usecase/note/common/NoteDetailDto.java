@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.note.common;
 
+import com.hcmus.mentor.backend.domain.constant.NoteShareType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,17 +22,19 @@ public class NoteDetailDto {
 
     private String content;
 
+    private NoteShareType shareType;
+
     private NoteUserProfile creator;
 
     private NoteUserProfile updatedBy;
+
+    private NoteUserProfile owner;
 
     private LocalDateTime createdDate;
 
     private LocalDateTime updatedDate;
 
     private boolean isEditable;
-
-    private boolean isPublic;
 
     @Builder.Default
     private List<NoteHistoryDto> noteHistories = new ArrayList<>();

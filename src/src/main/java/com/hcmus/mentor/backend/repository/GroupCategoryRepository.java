@@ -37,7 +37,7 @@ public interface GroupCategoryRepository extends JpaRepository<GroupCategory, St
             @Param("pageSize") int pageSize,
             @Param("offset") int offset);
 
-    @Query("SELECT gc " +
+    @Query("SELECT count(gc.id) " +
             "FROM GroupCategory gc " +
             "WHERE (:name IS NULL OR gc.name LIKE CONCAT('%', :name, '%')) " +
             "AND (:description IS NULL OR gc.description LIKE CONCAT('%', :description, '%')) " +

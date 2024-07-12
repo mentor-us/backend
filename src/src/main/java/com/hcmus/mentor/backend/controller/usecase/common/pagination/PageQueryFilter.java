@@ -13,4 +13,6 @@ public abstract class PageQueryFilter {
 
     @JsonProperty("pageSize")
     protected int pageSize = 25;
+
+    protected String orderBy = "";
 }

@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.channel.common;
 
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.common.DetailDto;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
@@ -18,7 +19,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChannelDetailDto {
+public class ChannelDetailDto implements DetailDto {
 
     private String id;
     private String name;

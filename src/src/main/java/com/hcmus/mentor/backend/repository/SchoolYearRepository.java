@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SchoolYearRepository extends JpaRepository<SchoolYear, String>, SchoolYearRepositoryCustom {
+
+    boolean existsByName(String name);
 }

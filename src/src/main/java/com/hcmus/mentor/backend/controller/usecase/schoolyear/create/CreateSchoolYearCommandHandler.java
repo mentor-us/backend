@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.schoolyear.create;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.schoolyear.common.SchoolYearDto;
 import com.hcmus.mentor.backend.domain.SchoolYear;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -23,6 +24,10 @@ public class CreateSchoolYearCommandHandler implements Command.Handler<CreateSch
     @Override
     public SchoolYearDto handle(CreateSchoolYearCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        if (schoolYearService.exists(command.getName())) {
+            throw new DomainException("Năm học đã tồn tại");
+        }
 
         var schoolYear = modelMapper.map(command, SchoolYear.class);
 

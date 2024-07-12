@@ -1,9 +1,9 @@
 package com.hcmus.mentor.backend.repository.custom;
 
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfile;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserCustomRepository {
-    List<NoteUserProfile> findAllAccessNote();
+    Page<NoteUserProfile> findAllAccessNote(String viewerId, String query, Pageable pageable);
 }

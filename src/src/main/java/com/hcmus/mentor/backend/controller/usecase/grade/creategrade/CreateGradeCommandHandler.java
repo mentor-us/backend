@@ -34,17 +34,11 @@ public class CreateGradeCommandHandler implements Command.Handler<CreateGradeCom
     public GradeDto handle(CreateGradeCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        var student = userRepository.findById(command.getStudent()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy sinh viên vơi id %s", command.getStudent())));
-        User creator;
-        if (command.getCreator().equals(command.getStudent())) {
-            creator = student;
-        } else {
-            creator = userRepository.findById(command.getCreator()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy người tạo vơi id %s", command.getCreator())));
-        }
-
-        var semester = semesterRepository.findById(command.getSemester()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy học kỳ vơi id %s", command.getSemester())));
-        var schoolYear = schoolYearRepository.findById(command.getYear()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy năm học vơi id %s", command.getYear())));
-        var course = courseRepository.findById(command.getCourse()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy môn học vơi id %s", command.getCourse())));
+        var student = userRepository.findById(command.getStudentId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy sinh viên với id %s", command.getStudentId())));
+        var creator = userRepository.findById(currentUserId).orElseThrow(() -> new DomainException(String.format("Không tìm thấy người dùng với id %s", currentUserId)));
+        var semester = semesterRepository.findById(command.getSemesterId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy học kỳ với id %s", command.getSemesterId())));
+        var schoolYear = schoolYearRepository.findById(command.getSchoolYearId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy năm học với id %s", command.getSchoolYearId())));
+        var course = courseRepository.findById(command.getCourseId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy môn học với id %s", command.getCourseId())));
 
         var grade = modelMapper.map(command, Grade.class);
         grade.setStudent(student);

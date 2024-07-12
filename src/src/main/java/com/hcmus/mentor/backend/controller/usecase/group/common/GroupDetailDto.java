@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.group.common;
 
+import com.hcmus.mentor.backend.controller.usecase.common.DetailDto;
 import com.hcmus.mentor.backend.domain.constant.GroupCategoryPermission;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
@@ -13,7 +14,7 @@ import java.util.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupDetailDto {
+public class GroupDetailDto implements DetailDto {
 
     private String id;
     private List<String> channelIds = Collections.emptyList();

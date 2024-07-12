@@ -1,12 +1,10 @@
 package com.hcmus.mentor.backend.service;
 
-import an.awesome.pipelinr.Pipeline;
-import com.hcmus.mentor.backend.controller.payload.request.tasks.AddTaskRequest;
 import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateStatusByMentorRequest;
 import com.hcmus.mentor.backend.controller.payload.request.tasks.UpdateTaskRequest;
-import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.tasks.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.TaskStatus;
@@ -28,9 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.SuccessCode.SUCCESS;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.TaskReturnCode.*;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
 
 @Service
 @Transactional
@@ -48,82 +45,13 @@ public class TaskServiceImpl implements IRemindableService {
     private final ReminderRepository reminderRepository;
     private final NotificationService notificationService;
     private final ChannelRepository channelRepository;
-    private final Pipeline pipeline;
     private final MessageRepository messageRepository;
     private final ModelMapper modelMapper;
-
-    @Transactional
-    public TaskReturnService addTask(String loggedUserId, AddTaskRequest request) {
-        if (!channelRepository.existsById(request.getGroupId())) {
-            logger.error("Add task : Not found channel with id {}", request.getGroupId());
-            return new TaskReturnService(NOT_FOUND_GROUP, "Not found channel", null);
-        }
-
-        if (request.getTitle() == null || request.getTitle().isEmpty() || request.getDeadline() == null) {
-            logger.error("Add task : Not enough required fields : title={}, deadline={}", request.getTitle(), request.getDeadline());
-            return new TaskReturnService(NOT_ENOUGH_FIELDS, "Not enough required fields", null);
-        }
-
-        Task parentTask = null;
-        if (request.getParentTask() != null) {
-            parentTask = taskRepository.findById(request.getParentTask()).orElse(null);
-            if (request.getParentTask() != null && parentTask == null && !request.getParentTask().isEmpty()) {
-                logger.error("Add task : Not found parent task with id {}", request.getParentTask());
-                return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
-            }
-        }
-
-        var channel = channelRepository.findById(request.getGroupId()).orElse(null);
-        if (channel == null) {
-            logger.error("Add task : Not found channel with id {}", request.getGroupId());
-            return new TaskReturnService(NOT_FOUND_GROUP, "Not found channel", null);
-        }
-
-        var membersOfChannel = channel.getUsers();
-        var memberIdsOfChannel = membersOfChannel.stream().map(User::getId).toList();
-        if (!request.getUserIds().contains("*")) {
-            for (String userId : request.getUserIds()) {
-                if (!memberIdsOfChannel.contains(userId)) {
-                    logger.error("Add task : Not found user with id {} in group {}", userId, request.getGroupId());
-                    return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
-                }
-            }
-        }
-
-        List<User> userAssignees = request.getUserIds().contains("*") ? membersOfChannel : userRepository.findAllById(request.getUserIds());
-        User assigner = userRepository.findById(loggedUserId).orElse(null);
-        if (assigner == null) {
-            logger.error("Add task : Not found user with id {}", loggedUserId);
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
-        }
-
-        var task = Task.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .deadline(request.getDeadline())
-                .group(channel)
-                .assigner(assigner)
-                .parentTask(parentTask)
-                .build();
-        var assignee = userAssignees.stream().map(user -> Assignee.builder().task(task).user(user).build()).toList();
-        task.setAssignees(assignee);
-        taskRepository.save(task);
-
-        Message message = messageService.saveTaskMessage(task);
-        groupService.pingGroup(request.getGroupId());
-
-        MessageDetailResponse response = messageService.mappingToMessageDetailResponse(message, assigner.getId());
-        socketIOService.sendBroadcastMessage(response, task.getGroup().getId());
-        saveToReminder(task);
-        notificationService.sendForTask(task);
-
-        return new TaskReturnService(SUCCESS, "", task);
-    }
 
     public TaskReturnService getTasksByGroupId(String emailUser, String groupId) {
         if (!groupRepository.existsById(groupId)) {
             logger.error("Get tasks by group id : Not found group with id {}", groupId);
-            return new TaskReturnService(NOT_FOUND_GROUP, "Not found group", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND_GROUP, "Not found group", null);
         }
         if (!permissionService.isMemberByEmailInGroup(emailUser, groupId)) {
             logger.error("Get tasks by group id : Invalid permission");
@@ -141,7 +69,7 @@ public class TaskServiceImpl implements IRemindableService {
         var user = userRepository.findByEmail(emailUser).orElse(null);
         if (user == null) {
             logger.error("Get tasks by email user : Not found user with email {}", emailUser);
-            return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
         }
         List<Task> tasks = taskRepository.findByAssigneeIdsUserId(user.getId());
         List<TaskDetailResponse> taskDetailResponses = new ArrayList<>();
@@ -156,7 +84,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Delete task : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
         if (!permissionService.isMentorByEmailOfGroup(user.getEmail(), task.getGroup().getId()) && !task.getAssigner().getId().equals(user.getId())) {
             logger.error("Delete task : Invalid permission");
@@ -188,7 +116,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null || task.getIsDeleted()) {
             logger.error("Không tìm thấy công việc hoặc công việc bị xoá với id {}", id);
-            return new TaskReturnService(NOT_FOUND, String.format("Không tìm thấy công việc hoặc công việc bị xoá với id %s", id), null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, String.format("Không tìm thấy công việc hoặc công việc bị xoá với id %s", id), null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
@@ -204,7 +132,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Get task assigner : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
@@ -221,7 +149,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Get task assignees : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
@@ -236,7 +164,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(taskId).orElse(null);
         if (task == null) {
             logger.error("Get task assignees : Not found task with id {}", taskId);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         Group group = task.getGroup().getGroup();
@@ -262,7 +190,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Update status : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
@@ -273,7 +201,7 @@ public class TaskServiceImpl implements IRemindableService {
         var user = userRepository.findByEmail(emailUser).orElse(null);
         if (user == null) {
             logger.error("Update status : Not found user with email {}", emailUser);
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found user", null);
         }
 
         task.getAssignees().stream()
@@ -289,7 +217,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Update status by mentor : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(emailUser, task.getGroup().getGroup().getId())) {
@@ -300,12 +228,12 @@ public class TaskServiceImpl implements IRemindableService {
         var user = userRepository.findByEmail(request.getEmailUserAssigned()).orElse(null);
         if (user == null) {
             logger.error("Update status by mentor : Not found user with email {}", request.getEmailUserAssigned());
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found user", null);
         }
 
         if (task.getAssignees().stream().anyMatch(assignee -> assignee.getUser().getId().equals(user.getId()))) {
             logger.error("Update status by mentor : User {} is not assigned in task", request.getEmailUserAssigned());
-            return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
         }
 
         task.getAssignees().stream()
@@ -321,7 +249,7 @@ public class TaskServiceImpl implements IRemindableService {
         var task = taskRepository.findById(id).orElse(null);
         if (task == null) {
             logger.error("Update task : Not found task with id {}", id);
-            return new TaskReturnService(NOT_FOUND, "Not found task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found task", null);
         }
 
         if (!permissionService.isMemberByEmailInGroup(user.getEmail(), task.getGroup().getGroup().getId())) {
@@ -330,12 +258,12 @@ public class TaskServiceImpl implements IRemindableService {
         }
         if (request.getParentTask() != null && !taskRepository.existsById(request.getParentTask())) {
             logger.error("Update task : Not found parent task with id {}", request.getParentTask());
-            return new TaskReturnService(NOT_FOUND_PARENT_TASK, "Not found parent task", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND_PARENT_TASK, "Not found parent task", null);
         }
         for (String assigneeId : request.getUserIds()) {
             if (!permissionService.isMemberInGroup(assigneeId, task.getGroup().getGroup().getId())) {
                 logger.error("Update task : Not found user with id {} in group {}", assigneeId, task.getGroup().getGroup().getId());
-                return new TaskReturnService(NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
+                return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND_USER_IN_GROUP, "Not found user in group", null);
             }
         }
 
@@ -410,7 +338,7 @@ public class TaskServiceImpl implements IRemindableService {
     public TaskServiceImpl.TaskReturnService getAllOwnTasks(String groupId, String userId) {
         if (!userRepository.existsById(userId)) {
             logger.error("Get all own tasks : Not found user with id {}", userId);
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found user", null);
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);
@@ -426,7 +354,7 @@ public class TaskServiceImpl implements IRemindableService {
     public TaskReturnService wrapOwnAssignedTasks(String groupId, String userId) {
         if (!userRepository.existsById(userId)) {
             logger.error("Wrap own assigned tasks : Not found user with id {}", userId);
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found user", null);
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);
@@ -442,7 +370,7 @@ public class TaskServiceImpl implements IRemindableService {
     public TaskReturnService wrapAssignedByMeTasks(String groupId, String userId) {
         if (!userRepository.existsById(userId)) {
             logger.error("Wrap assigned by me tasks : Not found user with id {}", userId);
-            return new TaskReturnService(NOT_FOUND, "Not found user", null);
+            return new TaskReturnService(ReturnCodeConstants.TASK_NOT_FOUND, "Not found user", null);
         }
 
         var channelIdsRes = getChannelIds(groupId, userId);

@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.note.getnotedetailbyid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
 import com.hcmus.mentor.backend.repository.NoteRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -27,9 +28,12 @@ public class GetNoteDetailByIdQueryHandler implements Command.Handler<GetNoteDet
         var note = noteRepository.getNoteById(command.getNoteId()).orElseThrow(() -> new DomainException("Không tìm thấy ghi chú"));
 
         if (noteRepository.canView(viewer.getId(), command.getNoteId())) {
-            throw new DomainException("Bạn không có quyền xem ghi chú này");
+            throw new ForbiddenException("Bạn không có quyền xem ghi chú này");
         }
 
-        return modelMapper.map(note, NoteDetailDto.class);
+        var result = modelMapper.map(note, NoteDetailDto.class);
+        result.setEditable(noteRepository.canEdit(note.getId(), viewer.getId()));
+
+        return result;
     }
 }

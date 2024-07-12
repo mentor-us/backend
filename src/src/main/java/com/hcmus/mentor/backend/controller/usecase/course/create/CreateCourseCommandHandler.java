@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.course.create;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.course.common.CourseDto;
 import com.hcmus.mentor.backend.domain.Course;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -23,6 +24,10 @@ public class CreateCourseCommandHandler implements Command.Handler<CreateCourseC
     @Override
     public CourseDto handle(CreateCourseCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        if (courseService.exists(command.getName(), command.getCode())) {
+            throw new DomainException("Course already exists");
+        }
 
         var course = modelMapper.map(command, Course.class);
 

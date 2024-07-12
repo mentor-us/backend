@@ -1,0 +1,17 @@
+ALTER TABLE notes
+    DROP COLUMN IF EXISTS is_public;
+
+ALTER TABLE notes
+    ADD COLUMN IF NOT EXISTS share_type VARCHAR(255) NOT NULL DEFAULT 'PRIVATE';
+
+ALTER TABLE notes
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE notes
+    ALTER COLUMN content TYPE TEXT;
+
+ALTER TABLE note_histories
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE note_histories
+    ALTER COLUMN content TYPE TEXT;

@@ -20,6 +20,7 @@ public class GradeDto {
     private String id;
     private Double score = 0.0;
     private boolean verified = false;
+    private boolean isRetake = false;
     private ShortProfile student;
     private ShortProfile creator;
     private Semester semester;

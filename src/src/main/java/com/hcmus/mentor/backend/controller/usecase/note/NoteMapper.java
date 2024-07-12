@@ -1,6 +1,9 @@
 package com.hcmus.mentor.backend.controller.usecase.note;
 
-import com.hcmus.mentor.backend.controller.payload.request.note.*;
+import com.hcmus.mentor.backend.controller.payload.request.note.CreateNoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.note.GetNotesByUserRequest;
+import com.hcmus.mentor.backend.controller.payload.request.note.ShareNoteRequest;
+import com.hcmus.mentor.backend.controller.payload.request.note.UpdateNoteRequest;
 import com.hcmus.mentor.backend.controller.usecase.common.mapper.MapperConverter;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDto;
@@ -10,7 +13,6 @@ import com.hcmus.mentor.backend.controller.usecase.note.createnote.CreateNoteCom
 import com.hcmus.mentor.backend.controller.usecase.note.getnotesbyuserid.GetNotesByUserIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.note.sharenote.ShareNoteCommand;
 import com.hcmus.mentor.backend.controller.usecase.note.updatenote.UpdateNoteCommand;
-import com.hcmus.mentor.backend.controller.usecase.note.updatenoteuser.UpdateNoteUserCommand;
 import com.hcmus.mentor.backend.domain.Note;
 import com.hcmus.mentor.backend.domain.NoteHistory;
 import com.hcmus.mentor.backend.domain.NoteUserAccess;
@@ -26,7 +28,6 @@ public class NoteMapper {
         modelMapper.createTypeMap(UpdateNoteRequest.class, UpdateNoteCommand.class).addMappings(mapper -> {
             mapper.skip(UpdateNoteCommand::setNoteId);
         });
-        modelMapper.createTypeMap(UpdateNoteUserRequest.class, UpdateNoteUserCommand.class);
 
         modelMapper.createTypeMap(ShareNoteRequest.class, ShareNoteCommand.class);
         modelMapper.createTypeMap(GetNotesByUserRequest.class, GetNotesByUserIdQuery.class);
@@ -40,7 +41,10 @@ public class NoteMapper {
             mapper.using(MapperConverter.mapDateConverter()).map(Note::getUpdatedDate, NoteDto::setUpdatedDate);
         });
 
-        modelMapper.createTypeMap(NoteHistory.class, NoteHistoryDto.class);
+        modelMapper.createTypeMap(NoteHistory.class, NoteHistoryDto.class).addMappings(mapper -> {
+            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getCreatedDate, NoteHistoryDto::setCreatedDate);
+            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getUpdatedDate, NoteHistoryDto::setUpdatedDate);
+        });
         modelMapper.createTypeMap(NoteUserAccess.class, NoteUserProfile.class);
     }
 }

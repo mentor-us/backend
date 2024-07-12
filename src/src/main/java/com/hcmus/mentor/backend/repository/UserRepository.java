@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.repository;
 
+import com.hcmus.mentor.backend.controller.usecase.note.common.NoteUserProfileProjection;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.custom.UserCustomRepository;
@@ -19,11 +20,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     long countByStatus(Boolean status);
 
-//    long countByIdInAndStatus(List<String> userIds, Boolean status);
-
     long countByCreatedDateBetween(Date start, Date end);
-
-//    long countByIdInAndCreatedDateBetween(List<String> userIds, Date start, Date end);
 
     Boolean existsByEmail(String email);
 
@@ -31,24 +28,33 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     Boolean existsByIdAndRolesContains(String id, UserRole role);
 
+    @Query(value = "SELECT exists( " +
+            "SELECT u.id " +
+            "FROM users u " +
+            "   LEFT JOIN list_mentors lm ON u.id = lm.mentee_id " +
+            "   LEFT JOIN grade_user_access gua ON u.id = gua.user_id " +
+            "   LEFT JOIN user_roles ur ON u.id = ur.user_id " +
+            "WHERE u.id = ?1 " +
+            "   AND ( ur.roles = 0 " +
+            "       OR u.grade_share_type = 'PUBLIC' " +
+            "       OR ( u.grade_share_type = 'MENTOR' AND lm.mentor_id = ?2 ) " +
+            "       OR gua.user_access_id = ?2 ))",
+            nativeQuery = true)
+    Boolean canAccessUserGrade(String userId, String viewerId);
+
     Optional<User> findByEmail(String email);
 
-    @Query(value = "SELECT ?2 in " +
-            "(SELECT gu1.user_id " +
-            "FROM group_user gu1 " +
-            "JOIN ( SELECT DISTINCT gu.group_id " +
-            "       FROM group_user gu WHERE gu.user_id = ?1 ) AS abc ON abc.group_id = gu1.group_id " +
-            "WHERE gu1.is_mentor = true)", nativeQuery = true)
+    @Query(value = "SELECT exists(SELECT * FROM list_mentors mt WHERE mt.mentor_id = ?2 AND mt.mentee_id = ?1)", nativeQuery = true)
     Boolean isMentorOfUser(String userId, String mentorId);
 
-    @Query(value = "SELECT DISTINCT u.*, e.*, r.* " +
+    @Query(value = "SELECT DISTINCT u.* " +
             "FROM users u " +
             "LEFT JOIN user_additional_emails e on e.user_id = u.id " +
             "LEFT JOIN user_roles r on r.user_id = u.id " +
-            "JOIN group_user gu ON u.ID = gu.user_id " +
-            "JOIN ( SELECT gu1.group_id FROM group_user gu1 WHERE  gu1.user_id = ?1 AND gu1.is_mentor = TRUE ) gm ON gm.group_id = gu.group_id  " +
-            "WHERE 1 = 1 " +
-            "AND (?2 is NULL OR LOWER ( u.email ) LIKE ?2 OR LOWER ( u.name ) LIKE ?2) ", nativeQuery = true)
+            "LEFT JOIN list_mentors mt on u.id = mt.mentee_id " +
+            "WHERE mt.mentor_id = ?1 " +
+            "AND (?2 IS NULL OR UPPER ( u.email ) LIKE ?2 OR UPPER ( u.name ) LIKE ?2) ",
+            nativeQuery = true)
     Page<User> findAllMenteeOfUserId(String userId, String query, Pageable pageable);
 
     Page<User> findByEmailLikeIgnoreCase(String email, Pageable pageable);
@@ -69,4 +75,38 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     @Query("SELECT u FROM User u WHERE u.id = ?1")
     Optional<User> findShortProfile(String id);
+
+    @Query(
+            value = "SELECT u.id, u.name, u.email, u.image_url AS imageUrl, COUNT ( DISTINCT n.id  ) AS totalNotes " +
+                    "FROM users u " +
+                    "   JOIN ref_user_note nu ON nu.user_id = u.id  " +
+                    "   JOIN notes n ON n.id  = nu.note_id " +
+                    "   LEFT JOIN note_user_access nua ON nua.note_id = n.id  " +
+                    "   LEFT JOIN list_mentors mt ON mt.mentee_id = u.id " +
+                    "WHERE " +
+                    "   (n.share_type = 'PUBLIC' " +
+                    "       OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) " +
+                    "       OR n.creator_id =  ?1 " +
+                    "       OR n.owner_id =  ?1 " +
+                    "       OR nua.user_id =  ?1 )" +
+                    "   AND (?2 is null " +
+                    "       OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) " +
+                    "GROUP BY u.id, u.name, u.email, u.image_url ",
+            countQuery = "SELECT COUNT ( * ) " +
+                    "FROM users u " +
+                    "   JOIN ref_user_note nu ON nu.user_id = u.id  " +
+                    "   JOIN notes n ON n.id  = nu.note_id " +
+                    "   LEFT JOIN note_user_access nua ON nua.note_id = n.id  " +
+                    "   LEFT JOIN list_mentors mt ON mt.mentee_id = u.id " +
+                    "WHERE " +
+                    "   (n.share_type = 'PUBLIC' " +
+                    "       OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) " +
+                    "       OR n.creator_id =  ?1 " +
+                    "       OR n.owner_id =  ?1 " +
+                    "       OR nua.user_id =  ?1 )" +
+                    "   AND (?2 is null " +
+                    "       OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) " +
+                    "GROUP BY u.id, u.name, u.email, u.image_url ",
+            nativeQuery = true)
+    Page<NoteUserProfileProjection> findAllUsersHasNoteAccess(String viewerId, String query, Pageable pageable);
 }

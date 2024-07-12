@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.note.createnote;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
 import com.hcmus.mentor.backend.domain.Note;
 import com.hcmus.mentor.backend.repository.NoteRepository;
@@ -33,14 +34,14 @@ public class CreateNoteCommandHandler implements Command.Handler<CreateNoteComma
 
         var users = userRepository.findAllById(command.getUserIds());
         if (users.isEmpty()) {
-            throw new DomainException("Ghi chú phải liên quan tới ít nhất 1 người");
+            throw new ForbiddenException("Ghi chú phải liên quan tới ít nhất 1 người");
         }
 
         var userIsNotMenteeOfCreator = users.stream()
                 .map(user -> userRepository.isMentorOfUser(user.getId(), creator.getId()) ? null : user.getName())
                 .filter(Objects::nonNull).toList();
         if (!userIsNotMenteeOfCreator.isEmpty()) {
-            throw new DomainException(
+            throw new ForbiddenException(
                     String.format("Người tạo ghi chú không phải là mentor của %s",
                             String.join(",", userIsNotMenteeOfCreator)));
         }
@@ -50,8 +51,10 @@ public class CreateNoteCommandHandler implements Command.Handler<CreateNoteComma
                 .content(command.getContent())
                 .creator(creator)
                 .owner(creator)
+                .updatedBy(creator)
                 .users(new HashSet<>(users))
                 .build());
+
         return modelMapper.map(note, NoteDetailDto.class);
     }
 }

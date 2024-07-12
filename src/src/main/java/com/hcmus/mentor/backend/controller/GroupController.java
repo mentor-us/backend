@@ -6,16 +6,15 @@ import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
-import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAvatarResponse;
 import com.hcmus.mentor.backend.controller.usecase.channel.common.ChannelForwardDto;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelbyid.GetChannelByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getchannelforward.GetChannelsForwardQuery;
 import com.hcmus.mentor.backend.controller.usecase.channel.getmediabychannelid.GetMediaByChannelIdQuery;
+import com.hcmus.mentor.backend.controller.usecase.common.DetailDto;
 import com.hcmus.mentor.backend.controller.usecase.group.addmembertogroup.AddMemberToGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
-import com.hcmus.mentor.backend.controller.usecase.group.common.GroupHomepageDto;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.creategroup.CreateGroupCommand;
 import com.hcmus.mentor.backend.controller.usecase.group.enabledisablestatusgroupbyid.EnableDisableGroupByIdCommand;
@@ -62,8 +61,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.returnCode.InvalidPermissionCode.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.returnCode.UserReturnCode.NOT_FOUND;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_NOT_FOUND;
 
 /**
  * Group controller.
@@ -106,7 +105,7 @@ public class GroupController {
     @GetMapping("own")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<GroupHomepageDto>> getOwnGroups(
+    public ApiResponseDto<Map<String, Object>> getOwnGroups(
             SearchOwnGroupsQuery query) {
         var groups = pipeline.send(query);
 
@@ -125,7 +124,7 @@ public class GroupController {
     @GetMapping("recent")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<GroupDetailDto>> recentGroups(
+    public ApiResponseDto<Map<String, Object>> recentGroups(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int pageSize) {
@@ -142,7 +141,7 @@ public class GroupController {
     @GetMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> getGroupById(
+    public ApiResponseDto<GroupDetailDto> getGroupById(
             @PathVariable("id") String id) {
         try {
             var query = GetGroupByIdQuery.builder().id(id).build();
@@ -151,7 +150,7 @@ public class GroupController {
 
             return ApiResponseDto.success(group);
         } catch (DomainException ex) {
-            return ApiResponseDto.notFound(NOT_FOUND);
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
         }
     }
 
@@ -197,7 +196,7 @@ public class GroupController {
     @GetMapping("find")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Page<Group>> searchGroup(
+    public ApiResponseDto<Map<String, Object>> searchGroup(
             SearchGroupsQuery query) {
         var groups = pipeline.send(query);
 
@@ -214,7 +213,7 @@ public class GroupController {
     @PostMapping("{groupId}/mentees")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> addMentees(
+    public ApiResponseDto<GroupDetailDto> addMentees(
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
         try {
@@ -230,7 +229,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -244,7 +243,7 @@ public class GroupController {
     @PostMapping("{groupId}/mentors")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> addMentors(
+    public ApiResponseDto<GroupDetailDto> addMentors(
             @PathVariable("groupId") String groupId,
             @RequestBody AddMembersRequest request) {
         try {
@@ -260,7 +259,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -289,7 +288,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -318,7 +317,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -348,7 +347,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -378,7 +377,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -429,7 +428,7 @@ public class GroupController {
     @PatchMapping("{id}")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Group> update(
+    public ApiResponseDto<GroupDetailDto> update(
             @PathVariable String id,
             @RequestBody UpdateGroupByIdCommand command) {
         command.setId(id);
@@ -437,9 +436,9 @@ public class GroupController {
         try {
             var group = pipeline.send(command);
 
-            return new ApiResponseDto(group, 200, "Success");
+            return ApiResponseDto.success(group);
         } catch (DomainException ex) {
-            return new ApiResponseDto(null, 400, ex.getMessage());
+            return new ApiResponseDto(null, Integer.parseInt(ex.getCode()), ex.getMessage());
         }
     }
 
@@ -505,7 +504,7 @@ public class GroupController {
             }
         }
         if (!notfoundGroups.isEmpty()) {
-            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+            return new ApiResponseDto(notfoundGroups, USER_NOT_FOUND, "Không tìm thấy nhóm");
         }
 
         return new ApiResponseDto(groups, 200, "Success");
@@ -539,7 +538,7 @@ public class GroupController {
             }
         }
         if (!notfoundGroups.isEmpty()) {
-            return new ApiResponseDto(notfoundGroups, NOT_FOUND, "Không tìm thấy nhóm");
+            return new ApiResponseDto(notfoundGroups, USER_NOT_FOUND, "Không tìm thấy nhóm");
         }
 
         return new ApiResponseDto(groups, 200, "Success");
@@ -609,7 +608,7 @@ public class GroupController {
     @GetMapping("{id}/detail")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<GroupDetailResponse> getChannelById(
+    public ApiResponseDto<DetailDto> getChannelById(
             @PathVariable("id") String id) {
         try {
             var query = GetChannelByIdQuery.builder()
@@ -630,11 +629,11 @@ public class GroupController {
 
                     return ApiResponseDto.success(group);
                 } catch (DomainException groupException) {
-                    return new ApiResponseDto<>(null, NOT_FOUND, groupException.getMessage());
+                    return new ApiResponseDto<>(null, USER_NOT_FOUND, groupException.getMessage());
                 }
             }
 
-            return new ApiResponseDto<>(null, NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
         }
     }
 
@@ -648,7 +647,7 @@ public class GroupController {
     @GetMapping("{id}/media")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<ShortMediaMessage> getGroupMedia(
+    public ApiResponseDto<List<ShortMediaMessage>> getGroupMedia(
             @PathVariable("id") String id) {
         try {
             var query = GetMediaByChannelIdQuery.builder()

@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.controller.usecase.semester.create;
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.semester.common.SemesterDto;
 import com.hcmus.mentor.backend.domain.Semester;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
@@ -23,6 +24,10 @@ public class CreateSemesterCommandHandler implements Command.Handler<CreateSemes
     @Override
     public SemesterDto handle(CreateSemesterCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        if (semesterService.exists(command.getName())) {
+            throw new DomainException("Học kỳ đã tồn tại");
+        }
 
         var semester = modelMapper.map(command, Semester.class);
 

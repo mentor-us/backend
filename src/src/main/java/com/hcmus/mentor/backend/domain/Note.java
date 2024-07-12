@@ -1,6 +1,7 @@
 package com.hcmus.mentor.backend.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.hcmus.mentor.backend.domain.constant.NoteShareType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,16 +21,17 @@ import java.util.Set;
 public class Note extends BaseDomain implements Serializable {
 
     @NonNull
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", columnDefinition = "TEXT", nullable = false)
     private String title;
 
     @NonNull
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "share_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @Column(name = "is_public")
-    private Boolean isPublic = false;
+    private NoteShareType shareType = NoteShareType.PRIVATE;
 
     @NonNull
     @ToString.Exclude

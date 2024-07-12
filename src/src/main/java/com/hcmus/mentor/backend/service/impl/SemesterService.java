@@ -23,6 +23,10 @@ public class SemesterService {
         return semesterRepository.findById(id);
     }
 
+    public boolean exists(String name) {
+        return semesterRepository.existsByName(name);
+    }
+
     public Semester create(Semester semester) {
         return semesterRepository.save(semester);
     }

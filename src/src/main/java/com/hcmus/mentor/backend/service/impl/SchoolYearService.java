@@ -23,6 +23,10 @@ public class SchoolYearService {
         return schoolYearRepository.findById(id);
     }
 
+    public boolean exists(String name) {
+        return schoolYearRepository.existsByName(name);
+    }
+
     public SchoolYear create(SchoolYear schoolYear) {
         return schoolYearRepository.save(schoolYear);
     }
