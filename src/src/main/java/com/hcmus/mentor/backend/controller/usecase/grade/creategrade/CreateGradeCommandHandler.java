@@ -4,10 +4,6 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeDto;
 import com.hcmus.mentor.backend.domain.Grade;
-import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.repository.CourseRepository;
-import com.hcmus.mentor.backend.repository.SchoolYearRepository;
-import com.hcmus.mentor.backend.repository.SemesterRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.impl.GradeService;
@@ -26,9 +22,6 @@ public class CreateGradeCommandHandler implements Command.Handler<CreateGradeCom
     private final LoggedUserAccessor loggedUserAccessor;
     private final GradeService gradeService;
     private final UserRepository userRepository;
-    private final SemesterRepository semesterRepository;
-    private final SchoolYearRepository schoolYearRepository;
-    private final CourseRepository courseRepository;
 
     @Override
     public GradeDto handle(CreateGradeCommand command) {
@@ -36,16 +29,15 @@ public class CreateGradeCommandHandler implements Command.Handler<CreateGradeCom
 
         var student = userRepository.findById(command.getStudentId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy sinh viên với id %s", command.getStudentId())));
         var creator = userRepository.findById(currentUserId).orElseThrow(() -> new DomainException(String.format("Không tìm thấy người dùng với id %s", currentUserId)));
-        var semester = semesterRepository.findById(command.getSemesterId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy học kỳ với id %s", command.getSemesterId())));
-        var schoolYear = schoolYearRepository.findById(command.getSchoolYearId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy năm học với id %s", command.getSchoolYearId())));
-        var course = courseRepository.findById(command.getCourseId()).orElseThrow(() -> new DomainException(String.format("Không tìm thấy môn học với id %s", command.getCourseId())));
 
         var grade = modelMapper.map(command, Grade.class);
         grade.setStudent(student);
         grade.setCreator(creator);
-        grade.setSemester(semester);
-        grade.setYear(schoolYear);
-        grade.setCourse(course);
+        grade.setSemester(command.getSemester());
+        grade.setYear(command.getYear());
+        grade.setCourseCode(command.getCourseCode());
+        grade.setCourseName(command.getCourseName());
+        grade.setIsRetake(command.getIsRetake());
 
         grade = gradeService.create(grade);
 
