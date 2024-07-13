@@ -1,9 +1,6 @@
 package com.hcmus.mentor.backend.controller.usecase.grade.common;
 
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.domain.Course;
-import com.hcmus.mentor.backend.domain.SchoolYear;
-import com.hcmus.mentor.backend.domain.Semester;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,13 +16,13 @@ public class GradeDto {
 
     private String id;
     private Double score = 0.0;
-    private boolean verified = false;
-    private boolean isRetake = false;
+    private Boolean isRetake;
     private ShortProfile student;
     private ShortProfile creator;
-    private Semester semester;
-    private SchoolYear year;
-    private Course course;
+    private Integer semester;
+    private String year;
+    private String courseCode;
+    private String courseName;
     private Date createdDate;
     private Date updatedDate;
 }

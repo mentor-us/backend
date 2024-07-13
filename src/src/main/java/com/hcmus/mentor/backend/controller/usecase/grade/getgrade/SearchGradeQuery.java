@@ -12,8 +12,9 @@ import lombok.*;
 public class SearchGradeQuery extends PageQueryFilter implements Command<SearchGradeResult> {
 
     private String userId;
-    private String courseId;
-    private String semesterId;
-    private String yearId;
-    private boolean isRetake;
+    private String courseName;
+    private String courseCode;
+    private Integer semester;
+    private String year;
+    private Boolean isRetake;
 }

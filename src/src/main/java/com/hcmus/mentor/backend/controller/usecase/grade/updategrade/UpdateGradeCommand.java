@@ -17,10 +17,10 @@ public class UpdateGradeCommand implements Command<GradeDto> {
     @JsonIgnoreProperties
     private String id;
     private Double score;
-    private Boolean verified;
     private String student;
-    private String creator;
-    private String semester;
+    private Integer semester;
     private String year;
-    private String course;
+    private String courseName;
+    private String courseCode;
+    private Boolean isRetake;
 }
