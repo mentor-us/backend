@@ -59,7 +59,15 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
             OrderUtil.addOrderBy(
                     statement,
                     OrderUtil.parseSeparated(query.getOrderBy()),
-                    List.of(MutablePair.of("create", grade.createdDate))
+                    List.of(MutablePair.of("create", grade.createdDate),
+                            MutablePair.of("update", grade.updatedDate),
+                            MutablePair.of("year", grade.year),
+                            MutablePair.of("semester", grade.semester),
+                            MutablePair.of("courseName", grade.courseName),
+                            MutablePair.of("courseCode", grade.courseCode),
+                            MutablePair.of("isRetake", grade.isRetake),
+                            MutablePair.of("grade", grade.score),
+                            MutablePair.of("studentId", student.id))
             );
         } else {
             statement.orderBy(grade.createdDate.desc());
@@ -93,7 +101,7 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
             statement.where(grade.courseCode.eq(query.getCourseCode()));
         }
         if (!Strings.isNullOrEmpty(query.getYear())) {
-            statement.where(grade.id.eq(query.getYear()));
+            statement.where(grade.year.eq(query.getYear()));
         }
         Optional.ofNullable(query.getSemester()).ifPresent(semester -> statement.where(grade.semester.eq(semester)));
         Optional.ofNullable(query.getIsRetake()).ifPresent(isRetake -> statement.where(grade.isRetake.eq(isRetake)));
