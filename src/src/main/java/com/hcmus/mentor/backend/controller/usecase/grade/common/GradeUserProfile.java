@@ -1,4 +1,4 @@
-package com.hcmus.mentor.backend.controller.usecase.course.common;
+package com.hcmus.mentor.backend.controller.usecase.grade.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CourseDto {
+public class GradeUserProfile {
 
     private String id;
     private String name;
-    private String code;
+    private String email;
+    private String imageUrl;
 }
