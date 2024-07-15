@@ -39,6 +39,10 @@ public class ApiResponseDto<T> {
     }
 
     public static <T> ApiResponseDto<T> notFound(Integer returnCode) {
-        return new ApiResponseDto<>(false, "Not found", returnCode);
+        return new ApiResponseDto<>(false, "Không tìm thấy", returnCode);
+    }
+
+    public static <T> ApiResponseDto<T> notFound(String message, Integer returnCode) {
+        return new ApiResponseDto<>(false, "Không tìm thấy", returnCode);
     }
 }

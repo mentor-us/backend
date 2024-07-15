@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Getter
@@ -10,7 +11,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Table(name = "grade_user_access",
         indexes = {@Index(name = "idx_user_user_access_unit", columnList = "user_id,user_access_id", unique = true)})
 @JsonIgnoreProperties(value = {"user", "userAccess"}, allowSetters = true)

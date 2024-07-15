@@ -5,6 +5,7 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
+import com.hcmus.mentor.backend.controller.usecase.vote.ChoiceMapper;
 import com.hcmus.mentor.backend.controller.usecase.vote.common.VoteResult;
 import com.hcmus.mentor.backend.domain.Choice;
 import com.hcmus.mentor.backend.domain.Message;
@@ -41,6 +42,7 @@ public class CreateVoteCommandHandler implements Command.Handler<CreateVoteComma
     private final SocketIOServer socketServer;
     private final NotificationService notificationService;
     private final GroupService groupService;
+    private final ChoiceMapper choiceMapper;
 
     @Override
     @Transactional
@@ -60,10 +62,15 @@ public class CreateVoteCommandHandler implements Command.Handler<CreateVoteComma
         vote.setCreator(sender);
 
         var choices = command.getChoices().stream()
-                .map(choice -> Choice.builder()
-                        .creator(sender)
-                        .name(choice.getName())
-                        .vote(vote).build())
+                .map(c -> {
+                    var choice = Choice.builder()
+                            .creator(sender)
+                            .name(c.getName())
+                            .vote(vote)
+                            .build();
+
+                    return choice;
+                })
                 .toList();
         vote.setChoices(choices);
 

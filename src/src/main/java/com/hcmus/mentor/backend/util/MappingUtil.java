@@ -5,7 +5,10 @@ import org.springframework.data.domain.Page;
 
 public class MappingUtil {
 
-    public static void mapPageQueryMetadata(Page page, PageQueryResult result) {
+    private MappingUtil() {
+    }
+
+    public static void mapPageQueryMetadata(Page<?> page, PageQueryResult<?> result) {
         result.setPage(page.getNumber());
         result.setPageSize(page.getSize());
         result.setTotalPages(page.getTotalPages());

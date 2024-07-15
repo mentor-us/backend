@@ -9,13 +9,18 @@ import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdd
 import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserResult;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
@@ -57,6 +62,8 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 @Validated
 public class UserController {
 
+    private final LoggedUserAccessor loggedUserAccessor;
+    private final AuditRecordService auditRecordService;
     private final UserRepository userRepository;
     private final UserService userService;
     private final Pipeline pipeline;
@@ -192,13 +199,29 @@ public class UserController {
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> activate(@PathVariable String id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (!userOptional.isPresent()) {
-            return new ApiResponseDto(false, "No Account", USER_NOT_FOUND);
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+        var currentUser = userRepository.findById(currentUserId).orElse(null);
+        if (currentUser == null) {
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
         }
-        User user = userOptional.get();
+
+        var user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
+        }
+
         user.activate();
         userRepository.save(user);
+
+        var auditRecord = AuditRecord.builder()
+                .entityId(user.getId())
+                .user(currentUser)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail(String.format("Người dùng %s đã được kích hoạt", user.getEmail()))
+                .user(currentUser)
+                .build();
+        auditRecordService.save(auditRecord);
 
         return ApiResponseDto.success(user);
     }

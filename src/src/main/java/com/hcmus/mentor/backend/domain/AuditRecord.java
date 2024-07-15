@@ -5,15 +5,16 @@ import com.hcmus.mentor.backend.domain.constant.ActionType;
 import com.hcmus.mentor.backend.domain.constant.DomainType;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
 
+@Entity
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Entity
 @Table(name = "audit_record")
+@SuperBuilder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonIgnoreProperties(value = {"user"}, allowSetters = true)
 public class AuditRecord extends BaseDomain {
 
