@@ -34,7 +34,7 @@
         <flyway.version>10.11.0</flyway.version>
         <jjwt.version>0.12.5</jjwt.version>
         <google-firebase-admin.version>9.2.0</google-firebase-admin.version>
-        <lombok.version>1.18.32</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <socketio.version>2.0.9</socketio.version>
         <springdoc.version>2.5.0</springdoc.version>
         <api-runtime-javadoc.version>0.15.0</api-runtime-javadoc.version>
