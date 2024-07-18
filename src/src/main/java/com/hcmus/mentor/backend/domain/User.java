@@ -238,6 +238,14 @@ public class User extends BaseDomain implements Serializable {
         this.setEmailVerified(true);
     }
 
+    public void enable() {
+        this.setStatus(true);
+    }
+
+    public void disable() {
+        this.setStatus(false);
+    }
+
     public void updateAvatar(String url) {
         if (url.isEmpty()) {
             return;

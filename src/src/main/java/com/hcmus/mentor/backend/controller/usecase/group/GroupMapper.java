@@ -16,8 +16,8 @@ public class GroupMapper {
             mapper.map(src -> src.getGroupCategory().getName(), GroupWorkspaceDto::setGroupCategory);
             mapper.map(src -> src.getGroupCategory().getPermissions(), GroupWorkspaceDto::setPermissions);
             mapper.map(src -> src.getDefaultChannel().getId(), GroupWorkspaceDto::setDefaultChannelId);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentees, GroupWorkspaceDto::setMentees);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentors, GroupWorkspaceDto::setMentors);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentees, GroupWorkspaceDto::setMentees);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentors, GroupWorkspaceDto::setMentors);
             mapper.skip(GroupWorkspaceDto::setRole);
         });
 
@@ -36,17 +36,17 @@ public class GroupMapper {
             mapper.map(src -> src.getGroupCategory().getId(), GroupDetailDto::setGroupCategory);
             mapper.map(src -> src.getLastMessage().getContent(), GroupDetailDto::setLastMessage);
             mapper.map(src -> src.getLastMessage().getId(), GroupDetailDto::setLastMessageId);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMembers, GroupDetailDto::setMembers);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentees, GroupDetailDto::setMentees);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentors, GroupDetailDto::setMentors);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMembers, GroupDetailDto::setMembers);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentees, GroupDetailDto::setMentees);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentors, GroupDetailDto::setMentors);
             mapper.skip(GroupDetailDto::setPermissions);
         });
 
         modelMapper.createTypeMap(Group.class, GroupHomepageDto.class).addMappings(mapper -> {
             mapper.map(src -> src.getGroupCategory().getName(), GroupHomepageDto::setGroupCategory);
             mapper.map(src -> src.getDefaultChannel().getId(), GroupHomepageDto::setDefaultChannelId);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentees, GroupHomepageDto::setMentees);
-            mapper.using(MapperConverter.mapIdConverter()).map(Group::getMentors, GroupHomepageDto::setMentors);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentees, GroupHomepageDto::setMentees);
+            mapper.using(MapperConverter.mapIdConverter).map(Group::getMentors, GroupHomepageDto::setMentors);
             mapper.skip(GroupHomepageDto::setRole);
             mapper.skip(GroupHomepageDto::setPinned);
         });

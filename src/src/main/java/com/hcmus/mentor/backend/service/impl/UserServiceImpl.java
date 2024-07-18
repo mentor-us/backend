@@ -1,13 +1,12 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
@@ -57,9 +56,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.GROUP_INVALID_TEMPLATE;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.*;
 import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
@@ -76,6 +73,11 @@ public class UserServiceImpl implements UserService {
     private final BlobStorage blobStorage;
     private final ShareService shareService;
     private final GroupUserRepository groupUserRepository;
+
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 
     @Override
     public User getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -140,8 +142,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findById(String id) {
-        return userRepository.findById(id).orElseThrow(() -> new DomainException(String.format("User with id %s not found", id)));
+    public Optional<User> findById(String id) {
+        return userRepository.findById(id);
     }
 
     @Override

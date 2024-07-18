@@ -16,8 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Optional;
 
 public interface UserService {
+    User save(User user);
+
     User getOrCreateUserByEmail(String emailAddress, String groupName);
 
     void addNewAccount(String emailAddress);
@@ -32,7 +35,7 @@ public interface UserService {
 
     User findByEmail(String email);
 
-    User findById(String id);
+    Optional<User> findById(String id);
 
     UserServiceDto updateUser(String emailUser, String id, UpdateUserRequest request);
 
