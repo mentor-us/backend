@@ -4,10 +4,15 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -25,6 +30,8 @@ public class EnableDisableGroupByIdCommandHandler implements Command.Handler<Ena
     private final PermissionService permissionService;
     private final GroupRepository groupRepository;
     private final GroupDomainService groupDomainService;
+    private final AuditRecordService auditRecordService;
+    private final UserRepository userRepository;
 
     @Override
     public GroupDetailDto handle(EnableDisableGroupByIdCommand command) {
@@ -53,9 +60,16 @@ public class EnableDisableGroupByIdCommandHandler implements Command.Handler<Ena
             }
         }
 
-        groupRepository.save(group);
-
         if (isUpdate) {
+            groupRepository.save(group);
+            auditRecordService.save(AuditRecord.builder()
+                    .user(userRepository.findById(currentUserId).orElse(null))
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.GROUP)
+                    .entityId(group.getId())
+                    .detail(String.format("%s nhóm %s", group.getStatus().equals(GroupStatus.DISABLED) ? "Đã vô hiệu hóa" : "Đã kích hoạt", group.getName()))
+                    .build());
+
             logger.info("Đã cập nhật trạng thái nhóm với id {} thành {}", command.getId(), command.getStatus());
         }
 

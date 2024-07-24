@@ -43,7 +43,6 @@ public class EnableUserByIdCommandHandler implements Command.Handler<EnableUserB
                     .action(ActionType.UPDATED)
                     .domain(DomainType.USER)
                     .detail(String.format("Người dùng %s đã được kích hoạt", user.getEmail()))
-                    .user(currentUser)
                     .build();
 
             auditRecordService.save(auditRecord);

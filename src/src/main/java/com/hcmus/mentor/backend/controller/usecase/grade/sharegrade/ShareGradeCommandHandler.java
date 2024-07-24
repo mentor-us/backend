@@ -4,11 +4,15 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeUserDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.GradeUserAccess;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.domain.constant.GradeShareType;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.impl.GradeService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ public class ShareGradeCommandHandler implements Command.Handler<ShareGradeComma
     private final UserRepository userRepository;
     private final PermissionService permissionService;
     private final GradeService gradeService;
+    private final AuditRecordService auditRecordService;
 
     @Override
     public GradeUserDto handle(ShareGradeCommand command) {
@@ -38,6 +43,15 @@ public class ShareGradeCommandHandler implements Command.Handler<ShareGradeComma
         updateUserGradeAccess(user, command.getUserAccessIds());
 
         userRepository.save(user);
+        var userCanAccess = new StringBuilder();
+        user.getUserCanAccessGrade().forEach(gua -> userCanAccess.append(gua.getUserAccess().getEmail()).append(", "));
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .entityId(user.getId())
+                .detail(String.format("Chia sẻ điểm cho người dùng %s với loại chia sẻ %S người có quyền truy cập: %s", user.getEmail(), user.getGradeShareType(), userCanAccess))
+                .user(currentUser)
+                .build());
 
         return gradeService.mapToGradeUserDto(user);
     }

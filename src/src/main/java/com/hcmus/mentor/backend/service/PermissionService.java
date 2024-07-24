@@ -5,9 +5,9 @@ public interface PermissionService {
 
     boolean isSuperAdmin(String id, int dummy);
 
-    boolean isAdmin(String email);
+    boolean isAdminByEmail(String email);
 
-    boolean isSuperAdmin(String email);
+    boolean isSuperAdminByEmail(String email);
 
     boolean isGroupCreatorByEmail(String email, String groupId);
 

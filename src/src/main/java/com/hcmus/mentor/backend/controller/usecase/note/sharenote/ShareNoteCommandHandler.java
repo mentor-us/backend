@@ -5,10 +5,14 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.request.note.NoteUserShareRequest;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.NoteUserAccess;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.NoteRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -27,6 +31,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final LoggedUserAccessor loggedUserAccessor;
+    private final AuditRecordService auditRecordService;
 
     @Override
     @Transactional
@@ -41,19 +46,40 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
         var users = userRepository.findAllByIdIn(userIds);
         var mapUserAccessRequest = command.getUsers().stream().collect(Collectors.toMap(NoteUserShareRequest::getUserId, NoteUserShareRequest::getAccessType));
 
-        var oldAccesses = note.getUserAccesses();
-        oldAccesses.stream().filter(ua -> !userIds.contains(ua.getUser().getId())).toList().forEach(oldAccesses::remove);
-        oldAccesses.forEach(userAccess -> userAccess.setNotePermission(mapUserAccessRequest.get(userAccess.getUser().getId())));
-        var userAssesses = oldAccesses.stream().map(NoteUserAccess::getUser).toList();
+        var userAccesses = note.getUserAccesses();
+        userAccesses.stream().filter(ua -> !userIds.contains(ua.getUser().getId())).toList().forEach(userAccesses::remove);
+        userAccesses.forEach(userAccess -> userAccess.setNotePermission(mapUserAccessRequest.get(userAccess.getUser().getId())));
+        var userAssesses = userAccesses.stream().map(NoteUserAccess::getUser).toList();
         users.stream().filter(u -> !userAssesses.contains(u)).forEach(u -> {
-            oldAccesses.add(NoteUserAccess.builder()
+            userAccesses.add(NoteUserAccess.builder()
                     .notePermission(mapUserAccessRequest.get(u.getId())).user(u).note(note).build());
         });
 
-        note.setShareType(command.getShareType());
-        note.setUserAccesses(oldAccesses);
+        var isUpdated = false;
+        if (command.getShareType() != null && command.getShareType().equals(note.getShareType())) {
+            note.setShareType(command.getShareType());
+            isUpdated = true;
+        }
+        if (userAccesses.stream().sorted().equals(note.getUserAccesses().stream().sorted())) {
+            note.setUserAccesses(userAccesses);
+            isUpdated = true;
+        }
 
-        noteRepository.save(note);
+        if (isUpdated) {
+            noteRepository.save(note);
+            auditRecordService.save(AuditRecord.builder()
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.NOTE)
+                    .entityId(note.getId())
+                    .user(user)
+                    .detail(String.format("Chia sẻ ghi chú với loại: %s và  người dùng: \n%s ",
+                            command.getShareType(),
+                            note.getUserAccesses().stream()
+                                    .map(u -> String.format("%s: %s", u.getUser().getEmail(), u.getNotePermission()))
+                                    .collect(Collectors.joining("\n"))))
+                    .build());
+            logger.info("Ghi chú được chia sẻ: {}", note.getId());
+        }
         return modelMapper.map(note, NoteDetailDto.class);
     }
 }

@@ -4,7 +4,9 @@ import com.hcmus.mentor.backend.controller.usecase.auditrecord.commond.AuditReco
 import com.hcmus.mentor.backend.controller.usecase.common.mapper.MapperConverter;
 import com.hcmus.mentor.backend.domain.AuditRecord;
 import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuditRecordMapper {
 
     public AuditRecordMapper(ModelMapper modelMapper) {

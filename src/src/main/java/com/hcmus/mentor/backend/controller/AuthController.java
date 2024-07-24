@@ -2,22 +2,22 @@ package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.ValidationException;
-import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.TokenModel;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.loginuser.LoginUserCommandResult;
 import com.hcmus.mentor.backend.controller.usecase.user.authenticateuser.refreshtoken.RefreshTokenCommand;
 import com.hcmus.mentor.backend.service.UserService;
-import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Authentication controller.
@@ -80,9 +80,9 @@ public class AuthController {
         throw new IllegalStateException("This method shouldn't be called. It's implemented by Spring Security filters.");
     }
 
-    @PostMapping("/register")
-    @Profile("!prod")
-    public UserServiceDto fakeRegister(@RequestBody AddUserRequest request) {
-        return userService.addUser(request);
-    }
+//    @PostMapping("/register")
+//    @Profile("!prod")
+//    public UserServiceDto fakeRegister(@RequestBody AddUserRequest request) {
+//        return userService.addUser(request);
+//    }
 }

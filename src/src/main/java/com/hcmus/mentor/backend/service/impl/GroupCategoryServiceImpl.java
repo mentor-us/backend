@@ -1,16 +1,18 @@
 package com.hcmus.mentor.backend.service.impl;
 
 import com.hcmus.mentor.backend.controller.exception.DomainException;
-import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
 import com.hcmus.mentor.backend.controller.payload.request.groupcategories.UpdateGroupCategoryRequest;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
+import com.hcmus.mentor.backend.controller.payload.request.messages.CreateGroupCategoryRequest;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
-import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
+import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.GroupCategoryService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.dto.GroupCategoryServiceDto;
@@ -45,6 +47,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     private final GroupRepository groupRepository;
     private final PermissionService permissionService;
     private final BlobStorage blobStorage;
+    private final AuditRecordService auditRecordService;
+    private final UserRepository userRepository;
 
     @Override
     public List<GroupCategory> findAll() {
@@ -62,7 +66,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     @Override
     public GroupCategoryServiceDto create(String emailUser, CreateGroupCategoryRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (request.getName() == null
@@ -94,6 +98,14 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
                 groupCategoryRepository.save(groupCategory);
 
+                auditRecordService.save(AuditRecord.builder()
+                        .action(ActionType.CREATED)
+                        .domain(DomainType.GROUP_CATEGORY)
+                        .entityId(groupCategory.getId())
+                        .detail(String.format("Tạo mới loại nhóm %s", groupCategory.getName()))
+                        .user(userRepository.findByEmail(emailUser).orElse(null))
+                        .build());
+
                 return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
             }
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
@@ -123,7 +135,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     @Override
     public GroupCategoryServiceDto update(String emailUser, String id, UpdateGroupCategoryRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         var groupCategory = groupCategoryRepository.findById(id).orElse(null);
@@ -149,19 +161,43 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             }
         }
 
-        groupCategory.update(
-                request.getName(),
-                request.getDescription(),
-                request.getIconUrl(),
-                request.getPermissions());
+
+        var detail = new StringBuilder();
+        if (!groupCategory.getName().equals(request.getName())) {
+            detail.append("\n").append("Tên: ").append(groupCategory.getName());
+        }
+        if (!groupCategory.getDescription().equals(request.getDescription())) {
+            detail.append("\n").append("Mô tả: ").append(groupCategory.getDescription());
+        }
+
+        if (!groupCategory.getIconUrl().equals(request.getIconUrl())) {
+            detail.append("\n").append("Icon: ").append(groupCategory.getIconUrl());
+        }
+
+        if (!groupCategory.getPermissions().equals(request.getPermissions())) {
+            var permissions = new StringBuilder();
+            for (GroupCategoryPermission permission : request.getPermissions()) {
+                permissions.append(permission.getDescription()).append(", ");
+            }
+            detail.append("\n").append("Quyền: ").append(permissions);
+        }
+
         groupCategoryRepository.save(groupCategory);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.GROUP_CATEGORY)
+                .entityId(groupCategory.getId())
+                .detail(String.format("Cập nhật loại nhóm %s %s", groupCategory.getName(), detail))
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .build());
+
 
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
     @Override
     public GroupCategoryServiceDto delete(String emailUser, String id, String newGroupCategoryId) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         var groupCategory = groupCategoryRepository.findById(id).orElse(null);
@@ -188,6 +224,13 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
         groupCategory.setStatus(GroupCategoryStatus.DELETED);
         groupCategoryRepository.save(groupCategory);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.DELETED)
+                .domain(DomainType.GROUP_CATEGORY)
+                .entityId(groupCategory.getId())
+                .detail(String.format("Xoá loại nhóm %s", groupCategory.getName()))
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .build());
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
@@ -211,7 +254,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     @Override
     public GroupCategoryServiceDto findGroupCategories(
             String emailUser, FindGroupCategoryRequest request, int page, int pageSize) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Pair<Long, List<GroupCategory>> groupCategories = getGroupCategoriesBySearchConditions(request, page, pageSize);
@@ -220,7 +263,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
     @Override
     public GroupCategoryServiceDto deleteMultiple(String emailUser, List<String> ids, String newGroupCategoryId) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -254,9 +297,21 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
             groupRepository.saveAll(groups);
         }
-        groupCategories.forEach(groupCategory -> groupCategory.setStatus(GroupCategoryStatus.DELETED));
+        var auditRecords = new ArrayList<AuditRecord>();
+        groupCategories.forEach(groupCategory ->
+        {
+            groupCategory.setStatus(GroupCategoryStatus.DELETED);
+            auditRecords.add(AuditRecord.builder()
+                    .action(ActionType.DELETED)
+                    .domain(DomainType.GROUP_CATEGORY)
+                    .entityId(groupCategory.getId())
+                    .detail(String.format("Xoá loại nhóm %s", groupCategory.getName()))
+                    .user(userRepository.findByEmail(emailUser).orElse(null))
+                    .build());
+        });
 
         groupCategoryRepository.saveAll(groupCategories);
+        auditRecordService.saveAll(auditRecords);
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategories);
     }
 

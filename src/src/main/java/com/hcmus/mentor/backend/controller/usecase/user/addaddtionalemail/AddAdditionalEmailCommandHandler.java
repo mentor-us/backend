@@ -2,8 +2,12 @@ package com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail;
 
 
 import an.awesome.pipelinr.Command;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.UserRepository;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +26,7 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAdditionalEmailCommand, UserServiceDto> {
 
     private final UserRepository userRepository;
+    private final AuditRecordService auditRecordService;
 
     /**
      * @param command command to add additional email to user account.
@@ -43,6 +48,14 @@ public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAddi
         additionEmails.add(command.getAdditionalEmail());
         user.setAdditionalEmails(additionEmails);
         userRepository.save(user);
+
+        auditRecordService.save(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(user)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail("Người dùng %s đã thêm email phụ: " + command.getAdditionalEmail())
+                .build());
 
         return new UserServiceDto(SUCCESS, "Add addition email success", user);
     }

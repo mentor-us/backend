@@ -11,8 +11,8 @@ import org.hibernate.annotations.BatchSize;
 @Entity
 @Getter
 @Setter
-@Table(name = "audit_record")
 @SuperBuilder(toBuilder = true)
+@Table(name = "audit_record")
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(value = {"user"}, allowSetters = true)

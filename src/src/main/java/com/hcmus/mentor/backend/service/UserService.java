@@ -37,8 +37,6 @@ public interface UserService {
 
     Optional<User> findById(String id);
 
-    UserServiceDto updateUser(String emailUser, String id, UpdateUserRequest request);
-
     UserServiceDto deleteUser(String emailUser, String id);
 
     UserServiceDto addUser(String emailUser, AddUserRequest request);
@@ -79,6 +77,6 @@ public interface UserService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException;
 
-    UserServiceDto addAdditionalEmail(String userId, String email);
+//    UserServiceDto addAdditionalEmail(String userId, String email);
 
 }

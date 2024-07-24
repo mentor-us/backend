@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuditRecordService {
@@ -15,6 +17,10 @@ public class AuditRecordService {
 
     public Page<AuditRecord> search(SearchAuditRecordQuery query) {
         return auditRecordRepository.search(query);
+    }
+
+    public void saveAll(List<AuditRecord> auditRecords) {
+        auditRecordRepository.saveAll(auditRecords);
     }
 
     public AuditRecord save(AuditRecord auditRecord) {
