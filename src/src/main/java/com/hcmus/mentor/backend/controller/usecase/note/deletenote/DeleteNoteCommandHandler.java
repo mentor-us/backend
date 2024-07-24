@@ -3,9 +3,13 @@ package com.hcmus.mentor.backend.controller.usecase.note.deletenote;
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
+import com.hcmus.mentor.backend.domain.AuditRecord;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.NoteRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,7 @@ public class DeleteNoteCommandHandler implements Command.Handler<DeleteNoteComma
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final LoggedUserAccessor loggedUserAccessor;
+    private final AuditRecordService auditRecordService;
 
     @Override
     @Transactional
@@ -33,6 +38,12 @@ public class DeleteNoteCommandHandler implements Command.Handler<DeleteNoteComma
         }
 
         noteRepository.delete(note);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.DELETED)
+                .domain(DomainType.NOTE)
+                .entityId(note.getId())
+                .detail("Xoá ghi chú")
+                .build());
 
         return null;
     }

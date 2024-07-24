@@ -4,11 +4,16 @@ import an.awesome.pipelinr.Command;
 import an.awesome.pipelinr.Voidy;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Message;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.MessageRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,6 +30,8 @@ public class RemoveChannelCommandHandler implements Command.Handler<RemoveChanne
     private final ChannelRepository channelRepository;
     private final MessageRepository messageRepository;
     private final PermissionService permissionService;
+    private final AuditRecordService auditRecordService;
+    private final UserRepository userRepository;
 
     /**
      * {@inheritDoc}
@@ -48,9 +55,18 @@ public class RemoveChannelCommandHandler implements Command.Handler<RemoveChanne
             throw new DomainException("Không thể xoá kênh mặc định");
         }
 
+        messageRepository.deleteAllByChannelId(channel.getId(), Message.Status.DELETED);
         channel.setStatus(ChannelStatus.DELETED);
         channelRepository.save(channel);
-        messageRepository.deleteAllByChannelId(channel.getId(), Message.Status.DELETED);
+
+        auditRecordService.save(AuditRecord.builder()
+                .user(userRepository.findById(userId).orElse(null))
+                .entityId(channel.getId())
+                .domain(DomainType.CHANNEL)
+                .action(ActionType.DELETED)
+                .detail(String.format("Xoá kênh %s", channel.getName()))
+                .build());
+
         return null;
     }
 }

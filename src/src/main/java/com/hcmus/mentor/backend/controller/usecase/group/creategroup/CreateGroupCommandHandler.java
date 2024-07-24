@@ -2,17 +2,21 @@ package com.hcmus.mentor.backend.controller.usecase.group.creategroup;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.UserService;
@@ -25,7 +29,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
@@ -49,6 +55,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
     private final GroupDomainService groupDomainService;
+    private final AuditRecordService auditRecordService;
 
     /**
      * @param command The command to create a new group.
@@ -120,6 +127,18 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
         group.setDefaultChannel(channel);
 
         groupRepository.save(group);
+        var menteesEmail = new StringBuffer();
+        var mentorsEmail = new StringBuffer();
+        mentees.forEach(mentee -> menteesEmail.append("\n").append(mentee.getEmail()));
+        mentors.forEach(mentor -> mentorsEmail.append("\n").append(mentor.getEmail()));
+
+        auditRecordService.save(AuditRecord.builder()
+                .user(creator)
+                .action(ActionType.CREATED)
+                .domain(DomainType.GROUP)
+                .entityId(group.getId())
+                .detail(String.format("Tạo nhóm mới %s: \n Mentors: %s \n Mentees: %s", group.getName(), mentorsEmail, menteesEmail))
+                .build());
 
         logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}", group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
 

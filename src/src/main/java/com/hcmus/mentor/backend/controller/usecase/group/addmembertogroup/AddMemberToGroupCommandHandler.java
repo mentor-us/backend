@@ -4,12 +4,17 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.GroupUser;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.GroupUserRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.MailService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.UserService;
@@ -34,6 +39,8 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
     private final UserService userService;
     private final ChannelRepository channelRepository;
     private final MailService mailService;
+    private final AuditRecordService auditRecordService;
+    private final UserRepository userRepository;
 
     @Override
     public GroupDetailDto handle(AddMemberToGroupCommand command) {
@@ -57,6 +64,18 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
                     .map(user -> GroupUser.builder().user(user).group(group).isMentor(command.isMentor()).build())
                     .toList();
             groupUserRepository.saveAll(groupUsers);
+
+            var newMembers = new StringBuilder();
+            users.forEach(user -> newMembers.append("\n").append(user.getEmail()));
+
+            auditRecordService.save(AuditRecord.builder()
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.GROUP)
+                    .entityId(group.getId())
+                    .detail(String.format("Thêm %s vào nhóm %s: %s", command.isMentor() ? "mentor" : "mentee", group.getName(), newMembers))
+                    .user(userRepository.findById(currentUserId).orElse(null))
+                    .build()
+            );
 
             Channel channel = channelRepository.findById(group.getDefaultChannel().getId()).orElse(null);
             if (channel == null) {

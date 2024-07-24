@@ -23,7 +23,6 @@ import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
-import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -43,7 +42,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -330,18 +328,14 @@ public class UserController {
     /**
      * Delete multiple users.
      *
-     * @param customerUserDetails Current authenticated user's principal.
-     * @param ids                 List of User IDs to delete.
+     * @param ids List of User IDs to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @DeleteMapping("")
-    public ApiResponseDto deleteMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody List<String> ids) {
-        String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn = userService.deleteMultiple(emailUser, ids);
+    public ApiResponseDto deleteMultiple(@RequestBody List<String> ids) {
+        UserServiceDto userReturn = userService.deleteMultiple("", ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -408,22 +402,14 @@ public class UserController {
      * @param customerUserDetails Current authenticated user's principal.
      * @param file                MultipartFile containing the avatar image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated avatar.
-     * @throws GeneralSecurityException  If there is a general security exception.
-     * @throws IOException               If there is an I/O exception.
-     * @throws ServerException           If there is a server exception.
-     * @throws InsufficientDataException If there is insufficient data.
-     * @throws ErrorResponseException    If there is an error response.
-     * @throws InvalidResponseException  If the response is invalid.
-     * @throws XmlParserException        If there is an XML parsing exception.
-     * @throws InternalException         If there is an internal exception.
      */
     @PostMapping("avatar")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @SneakyThrows
     public ApiResponseDto<String> updateAvatar(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+            @RequestParam MultipartFile file) {
         UserServiceDto userReturn =
                 userService.updateAvatar(customerUserDetails.getId(), file);
         return new ApiResponseDto(
@@ -436,24 +422,15 @@ public class UserController {
      * @param customerUserDetails Current authenticated user's principal.
      * @param file                MultipartFile containing the wallpaper image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated wallpaper.
-     * @throws GeneralSecurityException  If there is a general security exception.
-     * @throws IOException               If there is an I/O exception.
-     * @throws ServerException           If there is a server exception.
-     * @throws InsufficientDataException If there is insufficient data.
-     * @throws ErrorResponseException    If there is an error response.
-     * @throws InvalidResponseException  If the response is invalid.
-     * @throws XmlParserException        If there is an XML parsing exception.
-     * @throws InternalException         If there is an internal exception.
      */
     @PostMapping("wallpaper")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @SneakyThrows
     public ApiResponseDto<String> updateWallpaper(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        UserServiceDto userReturn =
-                userService.updateWallpaper(customerUserDetails.getId(), file);
+            @RequestParam MultipartFile file) {
+        UserServiceDto userReturn = userService.updateWallpaper(customerUserDetails.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }

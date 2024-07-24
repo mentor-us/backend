@@ -31,12 +31,12 @@ public class PermissionServiceImpl implements PermissionService {
     }
 
     @Override
-    public boolean isAdmin(String email) {
-        return isSuperAdmin(email) || userRepository.existsByEmailAndRolesContains(email, ADMIN);
+    public boolean isAdminByEmail(String email) {
+        return isSuperAdminByEmail(email) || userRepository.existsByEmailAndRolesContains(email, ADMIN);
     }
 
     @Override
-    public boolean isSuperAdmin(String email) {
+    public boolean isSuperAdminByEmail(String email) {
         return userRepository.existsByEmailAndRolesContains(email, SUPER_ADMIN);
     }
 
@@ -47,7 +47,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     public boolean hasPermissionOnGroup(String email, String groupId) {
-        return isSuperAdmin(email) || isGroupCreatorByEmail(email, groupId);
+        return isSuperAdminByEmail(email) || isGroupCreatorByEmail(email, groupId);
     }
 
     @Override
