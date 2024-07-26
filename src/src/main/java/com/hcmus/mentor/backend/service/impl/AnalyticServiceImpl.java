@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.messages.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.FindUserAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
@@ -11,7 +13,6 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
@@ -59,9 +60,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION_STRING;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.*;
 
 /**
  * Analytic service.
@@ -747,8 +746,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             predicates.add(cb.like(cb.lower(root.get("name")), "%" + groupName.toLowerCase() + "%"));
         }
 
-        if (groupCategory != null && !groupCategory.isEmpty()) {
-            predicates.add(cb.equal(root.get("groupCategory"), groupCategory));
+        if (!Strings.isNullOrEmpty(groupCategory)) {
+            predicates.add(cb.equal(root.get("groupCategory").<String>get("id"), groupCategory));
         }
 
         if (status != null) {
@@ -773,20 +772,17 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public ApiResponseDto findGroupGeneralAnalytic(
-            String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request) {
+    public ApiResponseDto findGroupGeneralAnalytic(String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request) {
         if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
-        List<GroupGeneralResponse> responses =
-                getGroupGeneralAnalyticBySearchConditions(emailUser, request);
+        List<GroupGeneralResponse> responses = getGroupGeneralAnalyticBySearchConditions(emailUser, request);
 
         long offset = (long) pageRequest.getPageNumber() * pageRequest.getPageSize();
-        List<GroupGeneralResponse> pagedResponses =
-                responses.stream()
-                        .skip(offset)
-                        .limit(pageRequest.getPageSize())
-                        .toList();
+        List<GroupGeneralResponse> pagedResponses = responses.stream()
+                .skip(offset)
+                .limit(pageRequest.getPageSize())
+                .toList();
 
         Page<GroupGeneralResponse> responsesPage =
                 new PageImpl<>(pagedResponses, pageRequest, responses.size());
