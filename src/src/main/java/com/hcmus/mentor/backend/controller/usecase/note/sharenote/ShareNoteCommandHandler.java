@@ -56,7 +56,7 @@ public class ShareNoteCommandHandler implements Command.Handler<ShareNoteCommand
         });
 
         var isUpdated = false;
-        if (command.getShareType() != null && command.getShareType().equals(note.getShareType())) {
+        if (command.getShareType() != null && !command.getShareType().equals(note.getShareType())) {
             note.setShareType(command.getShareType());
             isUpdated = true;
         }
