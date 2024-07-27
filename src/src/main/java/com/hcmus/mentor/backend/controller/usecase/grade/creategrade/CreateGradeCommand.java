@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class CreateGradeCommand implements Command<GradeDto> {
 
     private Double score = 0.0;
+    private String value;
     private String studentId;
     private String courseName;
     private String courseCode;
