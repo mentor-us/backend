@@ -37,12 +37,12 @@ public class UpdateGradeCommandHandler implements Command.Handler<UpdateGradeCom
 
         var detail = new StringBuilder();
 
-        if (command.getScore() != null && !grade.getScore().equals(command.getScore())) {
+        if (command.getScore() != null && !command.getScore().equals(grade.getScore())) {
             grade.setScore(command.getScore());
             detail.append("\n").append(String.format("Điểm số: %f", grade.getScore()));
         }
 
-        if (!grade.getValue().equals(command.getValue())) {
+        if (command.getValue() != null && !command.getValue().equals(grade.getValue())) {
             grade.setValue(command.getValue());
             detail.append("\n").append(String.format("Điểm chữ: %s", grade.getValue()));
         }
