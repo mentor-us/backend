@@ -31,7 +31,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     public SystemConfigServiceDto listAll(String emailUser) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new SystemConfigServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<SystemConfig> systemConfigs = systemConfigRepository.findAll();
@@ -45,7 +45,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             return new SystemConfigServiceDto(TASK_NOT_FOUND, "Not found system config", null);
         }
         SystemConfig config = configOptional.get();
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new SystemConfigServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         if (!isValidType(value, config.getType())) {

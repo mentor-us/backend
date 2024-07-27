@@ -5,10 +5,15 @@ import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.NoteHistory;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.NoteRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -28,6 +33,7 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
     private final LoggedUserAccessor loggedUserAccessor;
+    private final AuditRecordService auditRecordService;
 
     @Override
     @Transactional
@@ -42,6 +48,7 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
 
         var isUpdate = false;
         var isAddHistory = false;
+        var isAddAuditLog = false;
 
         var noteHistory = NoteHistory.builder()
                 .note(note)
@@ -63,6 +70,7 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
         if (command.getUserIds() != null && !command.getUserIds().isEmpty()) {
             note.setUsers(new HashSet<>(userRepository.findAllById(command.getUserIds())));
             isUpdate = true;
+            isAddAuditLog = true;
         }
 
         if (Boolean.TRUE.equals(isAddHistory)) {
@@ -76,6 +84,16 @@ public class UpdateNoteCommandHandler implements Command.Handler<UpdateNoteComma
             noteRepository.save(note);
 
             logger.info("Update note with NoteId {}, UpdaterId {}, UpdaterName {}", note.getId(), updater.getId(), updater.getName());
+        }
+
+        if (Boolean.TRUE.equals(isAddAuditLog)) {
+            auditRecordService.save(AuditRecord.builder()
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.NOTE)
+                    .entityId(note.getId())
+                    .user(updater)
+                    .detail(String.format("Cập nhật ghi chú %s cho người dùng mới: %s", note.getTitle(), note.getUsers().stream().map(User::getEmail).reduce((a, b) -> a + ", " + b).orElse("")))
+                    .build());
         }
 
         var result = modelMapper.map(note, NoteDetailDto.class);

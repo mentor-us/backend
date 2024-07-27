@@ -4,9 +4,15 @@ import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
+import com.hcmus.mentor.backend.domain.AuditRecord;
+import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.GroupUserRepository;
+import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -24,6 +30,8 @@ public class PromoteDenoteUserByIdCommandHandler implements Command.Handler<Prom
     private final PermissionService permissionService;
     private final GroupRepository groupRepository;
     private final GroupUserRepository groupUserRepository;
+    private final AuditRecordService auditRecordService;
+    private final UserRepository userRepository;
 
     @Override
     public GroupDetailDto handle(PromoteDenoteUserByIdCommand command) {
@@ -43,6 +51,14 @@ public class PromoteDenoteUserByIdCommandHandler implements Command.Handler<Prom
                 groupUser.setMentor(true);
                 groupUserRepository.save(groupUser);
 
+                auditRecordService.save(AuditRecord.builder()
+                        .action(ActionType.UPDATED)
+                        .domain(DomainType.GROUP)
+                        .user(userRepository.findById(curerntUserId).orElse(null))
+                        .entityId(group.getId())
+                        .detail(String.format("Chuyển vai trò người dùng %s thành mentor trong nhóm %s", userRepository.findById(command.getUserId()).map(User::getEmail).orElse(""), group.getName()))
+                        .build());
+
                 logger.info("User {} promoted to mentor in group {}", command.getUserId(), command.getGroupId());
             }
         } else {
@@ -51,6 +67,14 @@ public class PromoteDenoteUserByIdCommandHandler implements Command.Handler<Prom
             } else {
                 groupUser.setMentor(false);
                 groupUserRepository.save(groupUser);
+
+                auditRecordService.save(AuditRecord.builder()
+                        .action(ActionType.UPDATED)
+                        .domain(DomainType.GROUP)
+                        .user(userRepository.findById(curerntUserId).orElse(null))
+                        .entityId(group.getId())
+                        .detail(String.format("Chuyển vai trò người dùng %s thành mentee trong nhóm %s", userRepository.findById(command.getUserId()).map(User::getEmail).orElse(""), group.getName()))
+                        .build());
 
                 logger.info("User {} demoted to mentee in group {}", command.getUserId(), command.getGroupId());
             }

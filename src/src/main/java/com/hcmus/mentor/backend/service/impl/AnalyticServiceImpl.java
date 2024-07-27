@@ -1,6 +1,8 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.messages.FindGroupGeneralAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.FindUserAnalyticRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateStudentInformationRequest;
@@ -11,7 +13,6 @@ import com.hcmus.mentor.backend.controller.payload.response.analytic.SystemAnaly
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupGeneralResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingResponse;
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageResponse;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
@@ -59,9 +60,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION_STRING;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.*;
 
 /**
  * Analytic service.
@@ -152,11 +151,11 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<SystemAnalyticResponse> getGeneralInformation(String emailUser) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         SystemAnalyticResponse response;
-        if (permissionService.isSuperAdmin(emailUser)) {
+        if (permissionService.isSuperAdminByEmail(emailUser)) {
             response = getGeneralInformationForSuperAdmin();
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
@@ -168,13 +167,13 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<SystemAnalyticResponse> getGeneralInformationByGroupCategory(String emailUser, String groupCategoryId) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         List<Group> groups;
         long activeGroups;
 
-        if (permissionService.isSuperAdmin(emailUser)) {
+        if (permissionService.isSuperAdminByEmail(emailUser)) {
             groups = groupRepository.findAllByGroupCategoryId(groupCategoryId);
             activeGroups = groupRepository.countByGroupCategoryIdAndStatus(groupCategoryId, GroupStatus.ACTIVE);
         } else {
@@ -209,7 +208,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<SystemAnalyticChartResponse> getDataForChart(String emailUser, int monthStart, int yearStart, int monthEnd, int yearEnd) throws ParseException {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         LocalDate timeStart = LocalDate.of(yearStart, monthStart, 1);
@@ -219,7 +218,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             return new ApiResponseDto<>(null, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE, ReturnCodeConstants.ANALYTIC_INVALID_TIME_RANGE_STRING);
         }
         List<SystemAnalyticChartResponse.MonthSystemAnalytic> data;
-        if (permissionService.isSuperAdmin(emailUser)) {
+        if (permissionService.isSuperAdminByEmail(emailUser)) {
             data = getChartByMonthForSuperAdmin(timeStart, timeEnd);
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
@@ -297,7 +296,7 @@ public class AnalyticServiceImpl implements AnalyticService {
             int monthEnd,
             int yearEnd,
             String groupCategoryId) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         LocalDate timeStart = LocalDate.of(yearStart, monthStart, 1);
@@ -308,7 +307,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         }
         ArrayList<SystemAnalyticChartResponse.MonthSystemAnalytic> data = new ArrayList<>();
         List<Group> groups;
-        if (permissionService.isSuperAdmin(emailUser)) {
+        if (permissionService.isSuperAdminByEmail(emailUser)) {
             groups = groupRepository.findAllByGroupCategoryId(groupCategoryId);
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
@@ -357,7 +356,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<GroupAnalyticResponse> getGroupAnalytic(String emailUser, String groupId) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         var group = groupRepository.findById(groupId).orElse(null);
@@ -593,11 +592,11 @@ public class AnalyticServiceImpl implements AnalyticService {
     @Override
     public ApiResponseDto getGroupGeneralAnalytic(
             String emailUser, Pageable pageRequest) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         Page<Group> groups;
-        if (permissionService.isSuperAdmin(emailUser)) {
+        if (permissionService.isSuperAdminByEmail(emailUser)) {
             groups = groupRepository.findAll(pageRequest);
         } else {
             var adminId = Objects.requireNonNull(userRepository.findByEmail(emailUser).orElse(null)).getId();
@@ -611,7 +610,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     private List<GroupGeneralResponse> getAllGroupGeneralAnalytic(String emailUser) {
         List<Group> groups;
-        boolean isSuperAdmin = permissionService.isSuperAdmin(emailUser);
+        boolean isSuperAdmin = permissionService.isSuperAdminByEmail(emailUser);
         if (isSuperAdmin) {
             groups = groupRepository.findAllByOrderByCreatedDate();
         } else {
@@ -747,8 +746,8 @@ public class AnalyticServiceImpl implements AnalyticService {
             predicates.add(cb.like(cb.lower(root.get("name")), "%" + groupName.toLowerCase() + "%"));
         }
 
-        if (groupCategory != null && !groupCategory.isEmpty()) {
-            predicates.add(cb.equal(root.get("groupCategory"), groupCategory));
+        if (!Strings.isNullOrEmpty(groupCategory)) {
+            predicates.add(cb.equal(root.get("groupCategory").<String>get("id"), groupCategory));
         }
 
         if (status != null) {
@@ -773,20 +772,17 @@ public class AnalyticServiceImpl implements AnalyticService {
     }
 
     @Override
-    public ApiResponseDto findGroupGeneralAnalytic(
-            String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+    public ApiResponseDto findGroupGeneralAnalytic(String emailUser, Pageable pageRequest, FindGroupGeneralAnalyticRequest request) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
-        List<GroupGeneralResponse> responses =
-                getGroupGeneralAnalyticBySearchConditions(emailUser, request);
+        List<GroupGeneralResponse> responses = getGroupGeneralAnalyticBySearchConditions(emailUser, request);
 
         long offset = (long) pageRequest.getPageNumber() * pageRequest.getPageSize();
-        List<GroupGeneralResponse> pagedResponses =
-                responses.stream()
-                        .skip(offset)
-                        .limit(pageRequest.getPageSize())
-                        .toList();
+        List<GroupGeneralResponse> pagedResponses = responses.stream()
+                .skip(offset)
+                .limit(pageRequest.getPageSize())
+                .toList();
 
         Page<GroupGeneralResponse> responsesPage =
                 new PageImpl<>(pagedResponses, pageRequest, responses.size());
@@ -916,7 +912,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<List<GroupAnalyticResponse.Member>> findUserAnalytic(String emailUser, String groupId, FindUserAnalyticRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
 
@@ -936,7 +932,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     @Override
     public ApiResponseDto<Map<String, String>> importData(
             String emailUser, MultipartFile file, String type) throws IOException {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         Map<String, String> data = parseExcelTwoColumns(file);
@@ -1069,7 +1065,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<List<ImportGeneralInformationResponse>> importMultipleData(String emailUser, MultipartFile file) throws IOException {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         Map<String, List<String>> data = parseExcelFourColumns(file);
@@ -1168,7 +1164,7 @@ public class AnalyticServiceImpl implements AnalyticService {
 
     @Override
     public ApiResponseDto<User> updateStudentInformation(String emailUser, String userId, UpdateStudentInformationRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, INVALID_PERMISSION_STRING);
         }
         var user = userRepository.findById(userId).orElse(null);
@@ -1189,7 +1185,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (group == null) {
             return null;
         }
-        if (!permissionService.isAdmin(exporterEmail)) {
+        if (!permissionService.isAdminByEmail(exporterEmail)) {
             return null;
         }
         GroupAnalyticResponse data = getGeneralGroupAnalytic(group);
@@ -1226,7 +1222,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (!groupRepository.existsById(groupId)) {
             return null;
         }
-        if (!permissionService.isAdmin(exporterEmail)) {
+        if (!permissionService.isAdminByEmail(exporterEmail)) {
             return null;
         }
 

@@ -33,17 +33,17 @@ public class NoteMapper {
         modelMapper.createTypeMap(GetNotesByUserRequest.class, GetNotesByUserIdQuery.class);
         modelMapper.createTypeMap(User.class, NoteUserProfile.class);
         modelMapper.createTypeMap(Note.class, NoteDetailDto.class).addMappings(mapper -> {
-            mapper.using(MapperConverter.mapDateConverter()).map(Note::getCreatedDate, NoteDetailDto::setCreatedDate);
-            mapper.using(MapperConverter.mapDateConverter()).map(Note::getUpdatedDate, NoteDetailDto::setUpdatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(Note::getCreatedDate, NoteDetailDto::setCreatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(Note::getUpdatedDate, NoteDetailDto::setUpdatedDate);
         });
         modelMapper.createTypeMap(Note.class, NoteDto.class).addMappings(mapper -> {
-            mapper.using(MapperConverter.mapDateConverter()).map(Note::getCreatedDate, NoteDto::setCreatedDate);
-            mapper.using(MapperConverter.mapDateConverter()).map(Note::getUpdatedDate, NoteDto::setUpdatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(Note::getCreatedDate, NoteDto::setCreatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(Note::getUpdatedDate, NoteDto::setUpdatedDate);
         });
 
         modelMapper.createTypeMap(NoteHistory.class, NoteHistoryDto.class).addMappings(mapper -> {
-            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getCreatedDate, NoteHistoryDto::setCreatedDate);
-            mapper.using(MapperConverter.mapDateConverter()).map(NoteHistory::getUpdatedDate, NoteHistoryDto::setUpdatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(NoteHistory::getCreatedDate, NoteHistoryDto::setCreatedDate);
+            mapper.using(MapperConverter.toLocalDateTime).map(NoteHistory::getUpdatedDate, NoteHistoryDto::setUpdatedDate);
         });
         modelMapper.createTypeMap(NoteUserAccess.class, NoteUserProfile.class);
     }

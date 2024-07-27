@@ -1,11 +1,13 @@
 package com.hcmus.mentor.backend.controller;
 
 import an.awesome.pipelinr.Pipeline;
+import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
 import com.hcmus.mentor.backend.controller.payload.request.users.*;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
 import com.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail.AddAdditionalEmailCommand;
+import com.hcmus.mentor.backend.controller.usecase.user.enablebyid.EnableUserByIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.removeadditionalemail.RemoveAdditionalEmailCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserCommand;
 import com.hcmus.mentor.backend.controller.usecase.user.searchmenteesofuser.SearchMenteesOfUserResult;
@@ -15,10 +17,12 @@ import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.service.dto.UserDto;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
-import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,7 +42,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +60,8 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 @Validated
 public class UserController {
 
+    private final LoggedUserAccessor loggedUserAccessor;
+    private final AuditRecordService auditRecordService;
     private final UserRepository userRepository;
     private final UserService userService;
     private final Pipeline pipeline;
@@ -178,8 +183,13 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<ProfileResponse> getCurrentUser(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails loggedUser) {
-        var profileResponse = ProfileResponse.from(userService.findById(loggedUser.getId()));
-        return ApiResponseDto.success(profileResponse);
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+        var currentUser = userService.findById(currentUserId).orElse(null);
+        if (currentUser == null) {
+            return ApiResponseDto.notFound(USER_NOT_FOUND);
+        }
+
+        return ApiResponseDto.success(ProfileResponse.from(currentUser));
     }
 
     /**
@@ -191,16 +201,18 @@ public class UserController {
     @PostMapping("{id}/activate")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<User> activate(@PathVariable String id) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (!userOptional.isPresent()) {
-            return new ApiResponseDto(false, "No Account", USER_NOT_FOUND);
-        }
-        User user = userOptional.get();
-        user.activate();
-        userRepository.save(user);
+    public ApiResponseDto<UserDto> activate(@PathVariable String id) {
+        try {
+            var command = EnableUserByIdCommand.builder()
+                    .id(id)
+                    .build();
 
-        return ApiResponseDto.success(user);
+            var user = pipeline.send(command);
+
+            return ApiResponseDto.success(user);
+        } catch (DomainException e) {
+            return ApiResponseDto.failure(e.getMessage(), Integer.valueOf(e.getCode()));
+        }
     }
 
     /**
@@ -316,18 +328,14 @@ public class UserController {
     /**
      * Delete multiple users.
      *
-     * @param customerUserDetails Current authenticated user's principal.
-     * @param ids                 List of User IDs to delete.
+     * @param ids List of User IDs to delete.
      * @return ApiResponseDto - Response containing the result of the delete operation.
      */
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
     @DeleteMapping("")
-    public ApiResponseDto deleteMultiple(
-            @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody List<String> ids) {
-        String emailUser = customerUserDetails.getEmail();
-        UserServiceDto userReturn = userService.deleteMultiple(emailUser, ids);
+    public ApiResponseDto deleteMultiple(@RequestBody List<String> ids) {
+        UserServiceDto userReturn = userService.deleteMultiple("", ids);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
@@ -394,22 +402,14 @@ public class UserController {
      * @param customerUserDetails Current authenticated user's principal.
      * @param file                MultipartFile containing the avatar image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated avatar.
-     * @throws GeneralSecurityException  If there is a general security exception.
-     * @throws IOException               If there is an I/O exception.
-     * @throws ServerException           If there is a server exception.
-     * @throws InsufficientDataException If there is insufficient data.
-     * @throws ErrorResponseException    If there is an error response.
-     * @throws InvalidResponseException  If the response is invalid.
-     * @throws XmlParserException        If there is an XML parsing exception.
-     * @throws InternalException         If there is an internal exception.
      */
     @PostMapping("avatar")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @SneakyThrows
     public ApiResponseDto<String> updateAvatar(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+            @RequestParam MultipartFile file) {
         UserServiceDto userReturn =
                 userService.updateAvatar(customerUserDetails.getId(), file);
         return new ApiResponseDto(
@@ -422,24 +422,15 @@ public class UserController {
      * @param customerUserDetails Current authenticated user's principal.
      * @param file                MultipartFile containing the wallpaper image.
      * @return ApiResponseDto<String> - Response containing the URL of the updated wallpaper.
-     * @throws GeneralSecurityException  If there is a general security exception.
-     * @throws IOException               If there is an I/O exception.
-     * @throws ServerException           If there is a server exception.
-     * @throws InsufficientDataException If there is insufficient data.
-     * @throws ErrorResponseException    If there is an error response.
-     * @throws InvalidResponseException  If the response is invalid.
-     * @throws XmlParserException        If there is an XML parsing exception.
-     * @throws InternalException         If there is an internal exception.
      */
     @PostMapping("wallpaper")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
+    @SneakyThrows
     public ApiResponseDto<String> updateWallpaper(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestParam MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
-        UserServiceDto userReturn =
-                userService.updateWallpaper(customerUserDetails.getId(), file);
+            @RequestParam MultipartFile file) {
+        UserServiceDto userReturn = userService.updateWallpaper(customerUserDetails.getId(), file);
         return new ApiResponseDto(
                 userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }

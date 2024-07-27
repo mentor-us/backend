@@ -1,30 +1,30 @@
 package com.hcmus.mentor.backend.service.impl;
 
-import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.google.common.base.Strings;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.users.AddUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.FindUserRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAdminRequest;
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDataResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.UserDetailResponse;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
 import com.hcmus.mentor.backend.domain.constant.UserRole;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.GroupUserRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
-import com.hcmus.mentor.backend.service.MailService;
-import com.hcmus.mentor.backend.service.PermissionService;
-import com.hcmus.mentor.backend.service.ShareService;
-import com.hcmus.mentor.backend.service.UserService;
+import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import com.hcmus.mentor.backend.service.fileupload.BlobStorage;
 import com.hcmus.mentor.backend.util.FileUtils;
-import io.minio.errors.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
@@ -52,14 +52,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.GROUP_INVALID_TEMPLATE;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
-import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.*;
 import static com.hcmus.mentor.backend.domain.constant.UserRole.*;
 
 @Service
@@ -76,6 +71,13 @@ public class UserServiceImpl implements UserService {
     private final BlobStorage blobStorage;
     private final ShareService shareService;
     private final GroupUserRepository groupUserRepository;
+    private final AuditRecordService auditRecordService;
+    private final LoggedUserAccessor loggedUserAccessor;
+
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 
     @Override
     public User getOrCreateUserByEmail(String emailAddress, String groupName) {
@@ -104,7 +106,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto listByEmail(String emailUser, String email, Pageable pageable) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Page<User> users = userRepository.findByEmailLikeIgnoreCase(email, pageable);
@@ -120,7 +122,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto listAllByEmail(String emailUser, String email) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<User> users;
@@ -140,21 +142,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findById(String id) {
-        return userRepository.findById(id).orElseThrow(() -> new DomainException(String.format("User with id %s not found", id)));
-    }
-
-    @Override
-    public UserServiceDto updateUser(String emailUser, String id, UpdateUserRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
-            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        return updateUser(id, request);
+    public Optional<User> findById(String id) {
+        return userRepository.findById(id);
     }
 
     @Override
     public UserServiceDto deleteUser(String emailUser, String id) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -164,8 +158,8 @@ public class UserServiceImpl implements UserService {
         }
         User user = userOptional.get();
 
-        if (!permissionService.isSuperAdmin(emailUser)
-                && permissionService.isSuperAdmin(user.getEmail())) {
+        if (!permissionService.isSuperAdminByEmail(emailUser)
+                && permissionService.isSuperAdminByEmail(user.getEmail())) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
 
@@ -175,19 +169,42 @@ public class UserServiceImpl implements UserService {
 
         userRepository.delete(user);
 
+        var auditRecord = AuditRecord.builder()
+                .entityId(user.getId())
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .action(ActionType.DELETED)
+                .domain(DomainType.USER)
+                .detail(String.format("Người dùng %s đã xoá", user.getEmail()))
+                .build();
+
+        auditRecordService.save(auditRecord);
+
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
 
     @Override
     public UserServiceDto addUser(String emailUser, AddUserRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (!permissionService.isSuperAdmin(emailUser) && request.getRole() == SUPER_ADMIN) {
+        if (!permissionService.isSuperAdminByEmail(emailUser) && request.getRole() == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        return addUser(request);
+
+        var result = addUser(request);
+        if (result.getReturnCode().equals(SUCCESS)) {
+            var user = (User) result.getData();
+            var auditRecord = AuditRecord.builder()
+                    .entityId(user.getId())
+                    .user(userRepository.findByEmail(emailUser).orElse(null))
+                    .action(ActionType.CREATED)
+                    .domain(DomainType.USER)
+                    .detail(String.format("Người dùng %s đã được tạo", user.getEmail()))
+                    .build();
+            auditRecordService.save(auditRecord);
+        }
+        return result;
     }
 
     @Override
@@ -256,14 +273,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto addUsers(String emailUser, List<AddUserRequest> requests) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<User> users = new ArrayList<>();
         List<UserDataResponse> responses = new ArrayList<>();
         List<String> duplicateEmails = new ArrayList<>();
         for (AddUserRequest request : requests) {
-            if (!permissionService.isSuperAdmin(emailUser) && request.getRole() == SUPER_ADMIN) {
+            if (!permissionService.isSuperAdminByEmail(emailUser) && request.getRole() == SUPER_ADMIN) {
                 return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
             }
             String name = request.getName();
@@ -300,18 +317,59 @@ public class UserServiceImpl implements UserService {
 
         userRepository.saveAll(users);
 
+        List<AuditRecord> auditRecords = new ArrayList<>();
+        users.forEach(user -> auditRecords.add(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .action(ActionType.CREATED)
+                .domain(DomainType.USER)
+                .detail(String.format("Người dùng %s đã được tạo", user.getEmail()))
+                .build()));
+        auditRecordService.saveAll(auditRecords);
+
         return new UserServiceDto(SUCCESS, "", responses);
     }
 
     @Override
     public UserServiceDto updateUser(String userId, UpdateUserRequest request) {
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (!userOptional.isPresent()) {
+        var user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
             return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
-        User user = userOptional.get();
-        user.update(request);
+        var recordString = "";
+
+        if (!Strings.isNullOrEmpty(request.getName()) && !request.getName().equals(user.getName())) {
+            user.setName(request.getName());
+            recordString += "\nTên: " + request.getName();
+        }
+
+        if (!Strings.isNullOrEmpty(request.getPhone()) && !request.getPhone().equals(user.getPhone())) {
+            user.setPhone(request.getPhone());
+            recordString += "\nSố điện thoại: " + request.getPhone();
+        }
+
+        if (request.getGender() != null && !request.getGender().equals(user.getGender())) {
+            user.setGender(request.getGender());
+            recordString += "\nGiới tính: " + request.getGender();
+        }
+
+        if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate())) {
+            user.setBirthDate(request.getBirthDate());
+            recordString += "\nNgày sinh: " + request.getBirthDate();
+        }
+
+        if (!recordString.isEmpty()) {
+            userRepository.save(user);
+            AuditRecord auditRecord = AuditRecord.builder()
+                    .entityId(user.getId())
+                    .user(user)
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.USER)
+                    .detail("Người dùng " + user.getEmail() + " đã được cập nhật với các thông tin mới: " + recordString)
+                    .build();
+            auditRecordService.save(auditRecord);
+        }
         userRepository.save(user);
         UserDataResponse userDataResponse = getUserData(user);
 
@@ -371,13 +429,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto deleteMultiple(String emailUser, List<String> userIds) {
-        if (!permissionService.isAdmin(emailUser)) {
+        var currentUser = userRepository.findById(loggedUserAccessor.getCurrentUserId()).orElse(null);
+        if (currentUser == null) {
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
+        }
+        if (!permissionService.isAdminByEmail(currentUser.getEmail())) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : userIds) {
             Optional<User> userOptional = userRepository.findById(id);
-            if (!userOptional.isPresent()) {
+            if (userOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -388,8 +450,7 @@ public class UserServiceImpl implements UserService {
 
         List<String> invalidIds = new ArrayList<>();
         for (User user : users) {
-            if (!permissionService.isSuperAdmin(emailUser)
-                    && permissionService.isSuperAdmin(user.getEmail())) {
+            if (!permissionService.isSuperAdminByEmail(currentUser.getEmail()) && permissionService.isSuperAdminByEmail(user.getEmail())) {
                 invalidIds.add(user.getId());
             }
         }
@@ -400,18 +461,29 @@ public class UserServiceImpl implements UserService {
         groupUserRepository.deleteByUserIdIn(userIds);
         userRepository.deleteAllById(userIds);
 
+        List<AuditRecord> auditRecords = new ArrayList<>();
+        users.forEach(user -> auditRecords.add(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .action(ActionType.CREATED)
+                .domain(DomainType.USER)
+                .detail(String.format("Người dùng %s đã được tạo", user.getEmail()))
+                .build()));
+        auditRecordService.saveAll(auditRecords);
+
+
         return new UserServiceDto(SUCCESS, "", users);
     }
 
     @Override
     public UserServiceDto disableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
             Optional<User> userOptional = userRepository.findById(id);
-            if (!userOptional.isPresent()) {
+            if (userOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -422,8 +494,8 @@ public class UserServiceImpl implements UserService {
 
         List<String> invalidIds = new ArrayList<>();
         for (User user : users) {
-            if (!permissionService.isSuperAdmin(emailUser)
-                    && permissionService.isSuperAdmin(user.getEmail())) {
+            if (!permissionService.isSuperAdminByEmail(emailUser)
+                    && permissionService.isSuperAdminByEmail(user.getEmail())) {
                 invalidIds.add(user.getId());
             }
         }
@@ -433,8 +505,18 @@ public class UserServiceImpl implements UserService {
 
         for (User user : users) {
             user.setStatus(false);
-            userRepository.save(user);
         }
+        userRepository.saveAll(users);
+        List<AuditRecord> auditRecords = new ArrayList<>();
+        users.forEach(user -> auditRecords.add(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .action(ActionType.CREATED)
+                .domain(DomainType.USER)
+                .detail(String.format("Người dùng %s đã được tạo", user.getEmail()))
+                .build()));
+        auditRecordService.saveAll(auditRecords);
+
         List<UserDataResponse> userDataResponses = getUsersData(users);
 
         return new UserServiceDto(SUCCESS, "", userDataResponses);
@@ -442,13 +524,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto enableMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
         for (String id : ids) {
             Optional<User> userOptional = userRepository.findById(id);
-            if (!userOptional.isPresent()) {
+            if (userOptional.isEmpty()) {
                 notFoundIds.add(id);
             }
         }
@@ -459,8 +541,8 @@ public class UserServiceImpl implements UserService {
 
         List<String> invalidIds = new ArrayList<>();
         for (User user : users) {
-            if (!permissionService.isSuperAdmin(emailUser)
-                    && permissionService.isSuperAdmin(user.getEmail())) {
+            if (!permissionService.isSuperAdminByEmail(emailUser)
+                    && permissionService.isSuperAdminByEmail(user.getEmail())) {
                 invalidIds.add(user.getId());
             }
         }
@@ -468,10 +550,19 @@ public class UserServiceImpl implements UserService {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", invalidIds);
         }
 
+        List<AuditRecord> auditRecords = new ArrayList<>();
         for (User user : users) {
             user.setStatus(true);
-            userRepository.save(user);
+            auditRecords.add(AuditRecord.builder()
+                    .entityId(user.getId())
+                    .user(userRepository.findByEmail(emailUser).orElse(null))
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.USER)
+                    .detail("Người dùng " + user.getEmail() + " đã được kích hoạt bởi quản trị viên")
+                    .build());
         }
+        userRepository.saveAll(users);
+        auditRecordService.saveAll(auditRecords);
         List<UserDataResponse> userDataResponses = getUsersData(users);
 
         return new UserServiceDto(SUCCESS, "", userDataResponses);
@@ -479,7 +570,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto getDetail(String emailUser, String id) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         Optional<User> userOptional = userRepository.findById(id);
@@ -530,37 +621,77 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto updateUserForAdmin(String emailUser, String userId, UpdateUserForAdminRequest request) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (!userOptional.isPresent()) {
+
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
             return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
-        User user = userOptional.get();
-        user.update(request);
+        var detailUpdate = new StringBuilder();
+
+        if (!Strings.isNullOrEmpty(request.getName()) && !request.getName().equals(user.getName())) {
+            user.setName(request.getName());
+            detailUpdate.append("\n").append("Tên: ").append(request.getName());
+        }
+
+        if (!Strings.isNullOrEmpty(request.getPhone()) && !request.getPhone().equals(user.getPhone())) {
+            user.setPhone(request.getPhone());
+            detailUpdate.append("\n").append("Số điện thoại: ").append(request.getPhone());
+        }
+
+        if (request.getGender() != null && !request.getGender().equals(user.getGender())) {
+            user.setGender(request.getGender());
+            detailUpdate.append("\n").append("Giới tính: ").append(request.getGender());
+        }
+
+        if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate())) {
+            user.setBirthDate(request.getBirthDate());
+            detailUpdate.append("\n").append("Ngày sinh: ").append(request.getBirthDate());
+        }
+
+        if (request.isStatus() != user.isStatus()) {
+            user.setStatus(request.isStatus());
+            detailUpdate.append("\n").append("Trạng thái: ").append(request.isStatus());
+        }
 
         UserRole role = request.getRole();
-        if (!permissionService.isSuperAdmin(emailUser) && role == SUPER_ADMIN) {
+        if (!permissionService.isSuperAdminByEmail(emailUser) && role == SUPER_ADMIN) {
             return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
-        if (!permissionService.isSuperAdmin(emailUser) && permissionService.isSuperAdmin(user.getEmail())) {
-            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-        user.setRoles(new ArrayList<>(List.of(role)));
 
-        userRepository.save(user);
+        if (!permissionService.isSuperAdminByEmail(emailUser) && permissionService.isSuperAdminByEmail(user.getEmail())) {
+            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+        }
+
+        if (!role.equals(user.getRoles().stream().findFirst().orElse(null))) {
+            user.setRoles(new ArrayList<>(List.of(role)));
+            detailUpdate.append("\n").append("Vai trò: ").append(role);
+        }
+
+        if (!detailUpdate.isEmpty()) {
+            userRepository.save(user);
+            AuditRecord auditRecord = AuditRecord.builder()
+                    .entityId(user.getId())
+                    .user(user)
+                    .action(ActionType.UPDATED)
+                    .domain(DomainType.USER)
+                    .detail(String.format("Người dùng %s đã được cập nhật bởi quản trị viên với các thông tin mới: %s", user.getEmail(), detailUpdate))
+                    .build();
+            auditRecordService.save(auditRecord);
+        }
+
         UserDataResponse userDataResponse = getUserData(user);
 
         return new UserServiceDto(SUCCESS, "", userDataResponse);
     }
 
     @Override
-    public UserServiceDto updateAvatar(String userId, MultipartFile file)
-            throws GeneralSecurityException, IOException, ServerException, InsufficientDataException, ErrorResponseException, InvalidResponseException, XmlParserException, InternalException {
+    public UserServiceDto updateAvatar(String userId, MultipartFile file) throws IOException {
         Optional<User> userWrapper = userRepository.findById(userId);
-        if (!userWrapper.isPresent()) {
+        if (userWrapper.isEmpty()) {
             return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
         }
 
@@ -571,12 +702,20 @@ public class UserServiceImpl implements UserService {
         user.updateAvatar(key);
         userRepository.save(user);
 
+        auditRecordService.save(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(user)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail("Người dùng " + user.getEmail() + " đã cập nhật ảnh đại diện")
+                .build());
+
         return new UserServiceDto(SUCCESS, "", key);
     }
 
     @Override
     public UserServiceDto updateWallpaper(String userId, MultipartFile file)
-            throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+            throws IOException {
         Optional<User> userWrapper = userRepository.findById(userId);
         if (userWrapper.isEmpty()) {
             return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
@@ -588,6 +727,14 @@ public class UserServiceImpl implements UserService {
         User user = userWrapper.get();
         user.updateWallpaper(key);
         userRepository.save(user);
+
+        auditRecordService.save(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(user)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail("Người dùng " + user.getEmail() + " đã cập nhật ảnh bìa")
+                .build());
 
         return new UserServiceDto(SUCCESS, "", key);
     }
@@ -635,30 +782,30 @@ public class UserServiceImpl implements UserService {
                 .body(resource);
     }
 
-    /**
-     * @param userId id of user
-     * @param email  email to add
-     * @return UserReturnService
-     */
-    @Override
-    public UserServiceDto addAdditionalEmail(String userId, String email) {
-        if (userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()) {
-            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_EMAIL, "Duplicate email", null);
-        }
-
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
-        }
-
-        var user = userOptional.get();
-        var additionEmails = user.getAdditionalEmails();
-        additionEmails.add(email);
-        user.setAdditionalEmails(additionEmails);
-        userRepository.save(user);
-
-        return new UserServiceDto(SUCCESS, "Add addition email success", user);
-    }
+//    /**
+//     * @param userId id of user
+//     * @param email to add
+//     * @return UserReturnService
+//     */
+//    @Override
+//    public UserServiceDto addAdditionalEmail(String userId, String email) {
+//        if (userRepository.findByAdditionalEmailsContains(email).isPresent() || userRepository.findByEmail(email).isPresent()) {
+//            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_EMAIL, "Duplicate email", null);
+//        }
+//
+//        Optional<User> userOptional = userRepository.findById(userId);
+//        if (userOptional.isEmpty()) {
+//            return new UserServiceDto(ReturnCodeConstants.USER_NOT_FOUND, "Not found user", null);
+//        }
+//
+//        var user = userOptional.get();
+//        var additionEmails = user.getAdditionalEmails();
+//        additionEmails.add(email);
+//        user.setAdditionalEmails(additionEmails);
+//        userRepository.save(user);
+//
+//        return new UserServiceDto(SUCCESS, "Add addition email success", user);
+//    }
 
     private Specification<User> createSpecification(FindUserRequest request) {
         return (root, query, cb) -> {

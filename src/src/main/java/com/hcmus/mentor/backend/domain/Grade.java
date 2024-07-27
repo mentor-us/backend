@@ -3,29 +3,31 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @Entity
-@Builder
+@SuperBuilder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "grades")
-@JsonIgnoreProperties(value = {"semester", "student", "year", "creator", "course"}, allowSetters = true)
+@Table(name = "grades",
+        indexes = {
+                @Index(name = "idx_grades_info", columnList = "year,semester,course_code,course_name"),
+                @Index(name = "idx_grades_student", columnList = "student_id")})
+@JsonIgnoreProperties(value = {"creator", "student"}, allowSetters = true)
 public class Grade extends BaseDomain {
 
-    @Builder.Default
-    @Column(name = "score", nullable = false)
-    private Double score = 0.0;
+    @Column(name = "score")
+    private Double score;
 
-    @Builder.Default
-    @Column(name = "verified", nullable = false)
-    private boolean verified = false;
+    @Column(name = "value")
+    private String value;
 
     @Builder.Default
     @Column(name = "is_retake", nullable = false)
-    private boolean isRetake = false;
+    private Boolean isRetake = false;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,18 +39,15 @@ public class Grade extends BaseDomain {
     @JoinColumn(name = "creator_id")
     private User creator;
 
-    @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id")
-    private Semester semester;
+    @Column(name = "semester")
+    private Integer semester;
 
-    @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "year_id")
-    private SchoolYear year;
+    @Column(name = "year")
+    private String year;
 
-    @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
-    private Course course;
+    @Column(name = "course_name")
+    private String courseName;
+
+    @Column(name = "course_code")
+    private String courseCode;
 }

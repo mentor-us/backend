@@ -3,7 +3,11 @@ package com.hcmus.mentor.backend.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hcmus.mentor.backend.util.DateUtils;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,8 +15,7 @@ import java.util.Date;
 import java.util.List;
 
 @Getter
-@Setter
-@Builder
+@SuperBuilder
 @Entity
 @Table(name = "votes")
 @NoArgsConstructor
@@ -48,18 +51,13 @@ public class Vote extends BaseDomain {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
-//    @JsonIgnoreProperties(value = {"messages", "choices", "meetingAttendees", "notificationsSent", "notifications", "notificationSubscribers", "reminders", "faqs", "groupUsers", "channels", "tasksAssigner", "tasksAssignee"}, allowSetters = true)
     private User creator;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "channel_id")
-//    @JsonIgnoreProperties(value = {"lastMessage", "creator", "group", "tasks", "votes", "meetings", "messagesPinned", "users"}, allowSetters = true)
     private Channel group;
 
-//    @JsonIgnore
-    @Builder.Default
     @OneToMany(mappedBy = "vote", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JsonIgnoreProperties(value = {"creator", "vote"}, allowSetters = true)
     private List<Choice> choices = new ArrayList<>();
 
     public Choice getChoice(String id) {
@@ -68,7 +66,7 @@ public class Vote extends BaseDomain {
 
     public void close() {
         setStatus(Status.CLOSED);
-        setClosedDate(DateUtils.getDateNowAtUTC() );
+        setClosedDate(DateUtils.getDateNowAtUTC());
     }
 
     public void reopen() {
@@ -95,6 +93,46 @@ public class Vote extends BaseDomain {
                 "deletedDate = " + deletedDate + ", " +
                 "isMultipleChoice = " + isMultipleChoice + ", " +
                 "status = " + status + ")";
+    }
+
+    public void setQuestion(String question) {
+        this.question = question;
+    }
+
+    public void setTimeEnd(LocalDateTime timeEnd) {
+        this.timeEnd = timeEnd;
+    }
+
+    public void setClosedDate(Date closedDate) {
+        this.closedDate = closedDate;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public void setDeletedDate(Date deletedDate) {
+        this.deletedDate = deletedDate;
+    }
+
+    public void setIsMultipleChoice(Boolean isMultipleChoice) {
+        this.isMultipleChoice = isMultipleChoice;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public void setCreator(User creator) {
+        this.creator = creator;
+    }
+
+    public void setGroup(Channel group) {
+        this.group = group;
+    }
+
+    public void setChoices(List<Choice> choices) {
+        this.choices = choices;
     }
 
     public enum Status {

@@ -18,10 +18,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hcmus.mentor.backend.domain.QCourse.course;
 import static com.hcmus.mentor.backend.domain.QGrade.grade;
-import static com.hcmus.mentor.backend.domain.QSchoolYear.schoolYear;
-import static com.hcmus.mentor.backend.domain.QSemester.semester;
 
 public class GradeRepositoryImpl extends QuerydslRepositorySupport implements GradeRepositoryCustom {
 
@@ -52,10 +49,7 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
                 .select(expression)
                 .from(grade)
                 .join(grade.student, student).fetchJoin()
-                .join(grade.creator, new QUser("creator")).fetchJoin()
-                .join(grade.year, schoolYear).fetchJoin()
-                .join(grade.semester, semester).fetchJoin()
-                .join(grade.course, course).fetchJoin();
+                .join(grade.creator, new QUser("creator")).fetchJoin();
 
         // Filter
         applyFilter(query, statement, student);
@@ -65,11 +59,15 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
             OrderUtil.addOrderBy(
                     statement,
                     OrderUtil.parseSeparated(query.getOrderBy()),
-                    List.of(MutablePair.of("year", schoolYear.createdDate),
-                            MutablePair.of("semester", semester.createdDate),
-                            MutablePair.of("course", course.createdDate),
-                            MutablePair.of("create", grade.createdDate)
-                    )
+                    List.of(MutablePair.of("create", grade.createdDate),
+                            MutablePair.of("update", grade.updatedDate),
+                            MutablePair.of("year", grade.year),
+                            MutablePair.of("semester", grade.semester),
+                            MutablePair.of("courseName", grade.courseName),
+                            MutablePair.of("courseCode", grade.courseCode),
+                            MutablePair.of("isRetake", grade.isRetake),
+                            MutablePair.of("grade", grade.score),
+                            MutablePair.of("studentId", student.id))
             );
         } else {
             statement.orderBy(grade.createdDate.desc());
@@ -84,10 +82,7 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
                 .select(expression)
                 .from(grade)
                 .join(grade.student, student)
-                .join(grade.creator, new QUser("creator"))
-                .join(grade.year, schoolYear)
-                .join(grade.semester, semester)
-                .join(grade.course, course);
+                .join(grade.creator, new QUser("creator"));
 
         // Filter
         applyFilter(query, statement, student);
@@ -99,17 +94,16 @@ public class GradeRepositoryImpl extends QuerydslRepositorySupport implements Gr
         if (!Strings.isNullOrEmpty(query.getUserId())) {
             statement.where(student.id.eq(query.getUserId()));
         }
-        if (!Strings.isNullOrEmpty(query.getCourseId())) {
-            statement.where(course.id.eq(query.getCourseId()));
+        if (!Strings.isNullOrEmpty(query.getCourseName())) {
+            statement.where(grade.courseName.eq(query.getCourseName()));
         }
-        if (!Strings.isNullOrEmpty(query.getSemesterId())) {
-            statement.where(semester.id.eq(query.getSemesterId()));
+        if (!Strings.isNullOrEmpty(query.getCourseCode())) {
+            statement.where(grade.courseCode.eq(query.getCourseCode()));
         }
-        if (!Strings.isNullOrEmpty(query.getYearId())) {
-            statement.where(schoolYear.id.eq(query.getYearId()));
+        if (!Strings.isNullOrEmpty(query.getYear())) {
+            statement.where(grade.year.eq(query.getYear()));
         }
-        if (query.isRetake()) {
-            statement.where(grade.isRetake.eq(true));
-        }
+        Optional.ofNullable(query.getSemester()).ifPresent(semester -> statement.where(grade.semester.eq(semester)));
+        Optional.ofNullable(query.getIsRetake()).ifPresent(isRetake -> statement.where(grade.isRetake.eq(isRetake)));
     }
 }

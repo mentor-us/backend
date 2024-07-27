@@ -20,7 +20,7 @@ public class AuthenticateConstant {
     /**
      * Access token expiration time.
      */
-    public static final Duration ACCESS_TOKEN_EXPIRATION_TIME = Duration.ofHours(24);
+    public static final Duration ACCESS_TOKEN_EXPIRATION_TIME = Duration.ofDays(30);
 
     /**
      * Issuer for jwt.

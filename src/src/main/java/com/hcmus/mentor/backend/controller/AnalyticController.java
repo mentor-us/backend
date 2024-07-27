@@ -404,10 +404,8 @@ public class AnalyticController {
             Date timeEnd)
             throws IOException {
         String emailUser = customerUserDetails.getEmail();
-        FindGroupGeneralAnalyticRequest request =
-                new FindGroupGeneralAnalyticRequest(groupName, groupCategory, status, timeStart, timeEnd);
-        Pageable pageRequest =
-                PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
+        FindGroupGeneralAnalyticRequest request = new FindGroupGeneralAnalyticRequest(groupName, groupCategory, status, timeStart, timeEnd);
+        Pageable pageRequest = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
 
         return analyticService.findGroupGeneralAnalytic(emailUser, pageRequest, request);
     }

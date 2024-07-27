@@ -33,10 +33,8 @@ import com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid.UpdateG
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
-import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
-import com.hcmus.mentor.backend.service.EventService;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -75,9 +73,7 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 public class GroupController {
 
     private final Logger logger = LoggerFactory.getLogger(GroupController.class);
-    private final UserRepository userRepository;
     private final GroupService groupService;
-    private final EventService eventService;
     private final Pipeline pipeline;
 
     /**

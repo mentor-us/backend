@@ -3,6 +3,7 @@ package com.hcmus.mentor.backend.service.impl;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.FileModel;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupHomepageResponse;
@@ -11,12 +12,8 @@ import com.hcmus.mentor.backend.controller.payload.response.groups.UpdateGroupAv
 import com.hcmus.mentor.backend.controller.payload.response.messages.MessageDetailResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ProfileResponse;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
-import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.domain.*;
-import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import com.hcmus.mentor.backend.domain.constant.GroupCategoryStatus;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
-import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
+import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
@@ -80,6 +77,7 @@ public class GroupServiceImpl implements GroupService {
     private final BlobStorage blobStorage;
     private final GroupUserRepository groupUserRepository;
     private final ModelMapper modelMapper;
+    private final AuditRecordService auditRecordService;
 
 
     /**
@@ -239,7 +237,7 @@ public class GroupServiceImpl implements GroupService {
                 predicates.add(builder.between(root.get("timeEnd"), timeStart2, timeEnd2));
             }
 
-            if (emailUser != null && !emailUser.isEmpty() && !permissionService.isSuperAdmin(emailUser)) {
+            if (emailUser != null && !emailUser.isEmpty() && !permissionService.isSuperAdminByEmail(emailUser)) {
                 String userId = getUserIdByEmail(emailUser);
                 if (!StringUtils.isEmpty(userId)) {
                     predicates.add(builder.equal(root.get("creatorId"), userId));
@@ -337,6 +335,14 @@ public class GroupServiceImpl implements GroupService {
 
         group.setStatus(GroupStatus.DELETED);
         groupRepository.save(group);
+
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.DELETED)
+                .domain(DomainType.GROUP)
+                .user(userRepository.findByEmail(emailUser).orElse(null))
+                .entityId(groupId)
+                .detail(String.format("Xoá nhóm %s", group.getName()))
+                .build());
         return new GroupServiceDto(SUCCESS, null, group);
     }
 
@@ -377,7 +383,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupServiceDto deleteMultiple(String emailUser, List<String> ids) {
-        if (!permissionService.isAdmin(emailUser)) {
+        if (!permissionService.isAdminByEmail(emailUser)) {
             return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
         }
         List<String> notFoundIds = new ArrayList<>();
@@ -392,8 +398,20 @@ public class GroupServiceImpl implements GroupService {
             return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_FOUND, "Group not found", notFoundIds);
         }
         List<Group> groups = groupRepository.findByIdIn(ids);
-        groups.forEach(group -> group.setStatus(GroupStatus.DELETED));
+        List<AuditRecord> auditRecords = new ArrayList<>();
+        groups.forEach(group -> {
+            group.setStatus(GroupStatus.DELETED);
+            auditRecords.add(AuditRecord.builder()
+                    .action(ActionType.DELETED)
+                    .domain(DomainType.GROUP)
+                    .entityId(group.getId())
+                    .user(userRepository.findByEmail(emailUser).orElse(null))
+                    .detail(String.format("Xoá nhóm %s", group.getName()))
+                    .build());
+        });
+
         groupRepository.saveAll(groups);
+        auditRecordService.saveAll(auditRecords);
         return new GroupServiceDto(SUCCESS, null, groups);
     }
 
@@ -461,6 +479,14 @@ public class GroupServiceImpl implements GroupService {
         var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(() -> new DomainException("User not found"));
         groupUser.setPinned(true);
         groupUserRepository.save(groupUser);
+
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.GROUP)
+                .entityId(groupId)
+                .user(userRepository.findById(userId).orElse(null))
+                .detail(String.format("Ghim nhóm %s", group.getName()))
+                .build());
     }
 
     @Override
@@ -469,6 +495,14 @@ public class GroupServiceImpl implements GroupService {
         var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(userId)).findFirst().orElseThrow(() -> new DomainException("User not found"));
         groupUser.setPinned(false);
         groupUserRepository.save(groupUser);
+
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.GROUP)
+                .entityId(groupId)
+                .user(userRepository.findById(userId).orElse(null))
+                .detail(String.format("Bỏ ghim nhóm %s", group.getName()))
+                .build());
     }
 
     @Override
@@ -652,12 +686,19 @@ public class GroupServiceImpl implements GroupService {
 
         group.setImageUrl(key);
         groupRepository.save(group);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.GROUP)
+                .entityId(groupId)
+                .user(userRepository.findById(userId).orElse(null))
+                .detail("Cập nhật ảnh đại diện")
+                .build());
         return new UpdateGroupAvatarResponse(key);
     }
 
     private List<Group> getGroupsForAdmin(String emailUser) {
         List<Group> groups;
-        boolean isSuperAdmin = permissionService.isSuperAdmin(emailUser);
+        boolean isSuperAdmin = permissionService.isSuperAdminByEmail(emailUser);
         if (isSuperAdmin) {
             groups = groupRepository.findAllByOrderByCreatedDate();
         } else {
@@ -813,6 +854,24 @@ public class GroupServiceImpl implements GroupService {
         channel.ping();
         channelRepository.save(channel);
 
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.CHANNEL)
+                .entityId(channelId)
+                .user(userRepository.findById(userId).orElse(null))
+                .detail(String.format("Ghim: %s", switch (message.getType()) {
+                    case TEXT -> message.getContent();
+                    case FILE -> "Tệp đính kèm";
+                    case IMAGE -> "Ảnh đính kèm";
+                    case VIDEO -> "Video đính kèm";
+                    case MEETING -> "Lịch hẹn đính kèm";
+                    case TASK -> "Công việc đính kèm";
+                    case VOTE -> "Cuộc bình chọn đính kèm";
+                    case NOTIFICATION -> "Thông báo đính kèm";
+                    case SYSTEM -> "";
+                }))
+                .build());
+
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
         socketIOService.sendNewPinMessage(messageDetail);
         notificationService.sendForTogglePin(message, userRepository.findById(userId).orElseThrow(() -> new DomainException("User not found")), true);
@@ -830,6 +889,23 @@ public class GroupServiceImpl implements GroupService {
         channel.ping();
 
         channelRepository.save(channel);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.UPDATED)
+                .domain(DomainType.CHANNEL)
+                .entityId(channelId)
+                .user(userRepository.findById(userId).orElse(null))
+                .detail(String.format("Bỏ ghim: %s", switch (message.getType()) {
+                    case TEXT -> message.getContent();
+                    case FILE -> "Tệp đính kèm";
+                    case IMAGE -> "Ảnh đính kèm";
+                    case VIDEO -> "Video đính kèm";
+                    case MEETING -> "Lịch hẹn đính kèm";
+                    case TASK -> "Công việc đính kèm";
+                    case VOTE -> "Cuộc bình chọn đính kèm";
+                    case NOTIFICATION -> "Thông báo đính kèm";
+                    case SYSTEM -> "";
+                }))
+                .build());
         socketIOService.sendNewUnpinMessage(channelId, messageId);
 
         User pinnerMessage = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));

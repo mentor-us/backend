@@ -2,13 +2,17 @@ package com.hcmus.mentor.backend.controller.usecase.channel.addchannel;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.User;
+import com.hcmus.mentor.backend.domain.constant.ActionType;
 import com.hcmus.mentor.backend.domain.constant.ChannelType;
+import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
+import com.hcmus.mentor.backend.service.AuditRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +29,7 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
     private final GroupRepository groupRepository;
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
+    private final AuditRecordService auditRecordService;
 
     /**
      * {@inheritDoc}
@@ -63,6 +68,15 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
             data.setName(command.getChannelName());
         }
 
-        return channelRepository.save(data);
+        var channel = channelRepository.save(data);
+        auditRecordService.save(AuditRecord.builder()
+                .action(ActionType.CREATED)
+                .domain(DomainType.CHANNEL)
+                .user(creator)
+                .detail(String.format("Tạo kênh %s thuộc nhóm %s", data.getName(), group.getName()))
+                .entityId(channel.getId())
+                .build());
+
+        return channel;
     }
 }

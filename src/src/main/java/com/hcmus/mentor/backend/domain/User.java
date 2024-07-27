@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
 
 import java.io.Serializable;
@@ -20,7 +21,7 @@ import java.util.*;
 @Setter
 @Getter
 @Entity
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
@@ -235,6 +236,14 @@ public class User extends BaseDomain implements Serializable {
 
     public void activate() {
         this.setEmailVerified(true);
+    }
+
+    public void enable() {
+        this.setStatus(true);
+    }
+
+    public void disable() {
+        this.setStatus(false);
     }
 
     public void updateAvatar(String url) {
