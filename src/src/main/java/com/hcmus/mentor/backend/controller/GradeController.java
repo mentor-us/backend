@@ -9,13 +9,18 @@ import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQue
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgradebyid.GetGradeByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getshareinfobyuserid.GetShareInfoByUserQuery;
+import com.hcmus.mentor.backend.controller.usecase.grade.importgrade.ImportGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.sharegrade.ShareGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * Grade controller.
@@ -101,5 +106,12 @@ public class GradeController {
     @GetMapping("/share/{userId}")
     public ResponseEntity<GradeUserDto> getShareInfo(@PathVariable String userId) {
         return ResponseEntity.ok(pipeline.send(GetShareInfoByUserQuery.builder().userId(userId).build()));
+    }
+
+    @PostMapping(value = "/import/{userId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<List<GradeDto>> importGrade(@RequestParam("file") MultipartFile file, @PathVariable String userId) {
+
+        var command = ImportGradeCommand.builder().file(file).userId(userId).build();
+        return ResponseEntity.ok(pipeline.send(command));
     }
 }
