@@ -24,10 +24,12 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -111,14 +113,15 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
         List<String> mentorEmails;
         String groupName;
         String description = "";
-        LocalDateTime timeStart;
-        LocalDateTime timeEnd;
+        LocalDateTime timeStart = null;
+        LocalDateTime timeEnd = null;
 
-        DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+        var formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        formatter.withLocale(Locale.US);
 
         for (int i = 0; i <= sheet.getLastRowNum(); i++) {
             var errorOnRow = String.format("tại dòng %d không có dữ liệu.", i);
+            var errorFormatOnRow = String.format("tại dòng %d không đúng định dạng.", i);
             Row row = sheet.getRow(i);
             if (i == 0) {
                 continue;
@@ -161,16 +164,55 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
                     .toList();
 
             // Start date
-            if (row.getCell(6) == null || row.getCell(6).getDateCellValue() == null) {
+            if (row.getCell(6) == null) {
                 return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
             }
-            timeStart = row.getCell(6).getLocalDateTimeCellValue();
+            var startDateCellType = row.getCell(6).getCellType();
+            switch (startDateCellType) {
+                case STRING:
+                    var timeStartString = row.getCell(6).getStringCellValue();
+                    try {
+                        var ld = LocalDate.parse(timeStartString, formatter);
+                        timeStart = LocalDateTime.of(ld, LocalTime.MIN);
+                    } catch (DateTimeParseException e) {
+                        return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_TEMPLATE, String.format("Ngày bắt đầu %s %s, định dạng đúng phải là dd/MM/yyyy", timeStartString, errorFormatOnRow), null);
+                    }
+
+                    break;
+                case NUMERIC:
+                    timeStart = row.getCell(6).getLocalDateTimeCellValue();
+
+                    break;
+            }
+            if (timeStart == null) {
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày bắt đầu %s", errorOnRow), null);
+            }
 
             // End date
-            if (row.getCell(7) == null || row.getCell(6).getDateCellValue() == null) {
+            if (row.getCell(6) == null) {
                 return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
             }
-            timeEnd = row.getCell(7).getLocalDateTimeCellValue();
+
+            var endDateCellType = row.getCell(7).getCellType();
+            switch (endDateCellType) {
+                case STRING:
+                    var timeEndString = row.getCell(7).getStringCellValue();
+                    try {
+                        var ld = LocalDate.parse(timeEndString, formatter);
+                        timeEnd = LocalDateTime.of(ld, LocalTime.MIN);
+                    } catch (DateTimeParseException e) {
+                        return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_TEMPLATE, String.format("Ngày kết thúc %s %s, định dạng đúng phải là dd/MM/yyyy", timeEndString, errorFormatOnRow), null);
+                    }
+
+                    break;
+                case NUMERIC:
+                    timeEnd = row.getCell(7).getLocalDateTimeCellValue();
+
+                    break;
+            }
+            if (timeEnd == null) {
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS, String.format("Ngày kết thúc %s", errorOnRow), null);
+            }
 
             var isValidTimeRange = groupDomainService.isStartAndEndTimeValid(timeStart, timeEnd);
             if (!isValidTimeRange) {
@@ -180,7 +222,7 @@ public class ImportGroupCommandHandler implements Command.Handler<ImportGroupCom
             var command = CreateGroupCommand.builder()
                     .name(groupName)
                     .description(description)
-                    .createdDate(DateUtils.getDateNowAtUTC() )
+                    .createdDate(DateUtils.getDateNowAtUTC())
                     .menteeEmails(menteeEmails)
                     .mentorEmails(mentorEmails)
                     .groupCategory(groupCategoryId)
