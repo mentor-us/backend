@@ -43,6 +43,8 @@ public class CreateGradeCommandHandler implements Command.Handler<CreateGradeCom
         grade.setCourseCode(command.getCourseCode());
         grade.setCourseName(command.getCourseName());
         grade.setIsRetake(command.getIsRetake());
+        grade.setScore(command.getScore());
+        grade.setValue(command.getValue());
 
         grade = gradeService.create(grade);
 
