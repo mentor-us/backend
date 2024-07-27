@@ -1,0 +1,6 @@
+ALTER TABLE grades
+    ADD COLUMN IF NOT EXISTS grade_version_id VARCHAR(255);
+
+
+ALTER TABLE grades
+    ADD CONSTRAINT FK_GRADES_ON_GRADE_VERSIONS FOREIGN KEY (grade_version_id) REFERENCES grade_versions (id);

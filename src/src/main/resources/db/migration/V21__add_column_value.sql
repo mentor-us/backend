@@ -1,0 +1,5 @@
+ALTER TABLE grades
+    ADD COLUMN value VARCHAR(3);
+
+ALTER TABLE grades
+    ALTER COLUMN score DROP NOT NULL;
