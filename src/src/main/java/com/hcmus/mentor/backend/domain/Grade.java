@@ -19,9 +19,11 @@ import lombok.experimental.SuperBuilder;
 @JsonIgnoreProperties(value = {"creator", "student"}, allowSetters = true)
 public class Grade extends BaseDomain {
 
-    @Builder.Default
-    @Column(name = "score", nullable = false)
-    private Double score = 0.0;
+    @Column(name = "score")
+    private Double score;
+
+    @Column(name = "value")
+    private String value;
 
     @Builder.Default
     @Column(name = "is_retake", nullable = false)

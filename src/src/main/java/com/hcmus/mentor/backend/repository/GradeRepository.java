@@ -22,4 +22,6 @@ public interface GradeRepository extends JpaRepository<Grade, String>, GradeRepo
             "       OR gua.user_access_id = ?2 ))",
             nativeQuery = true)
     boolean canAccessGrade(String gradeId, String viewerId);
+
+    Grade findByYearAndSemesterAndCourseCodeAndStudentId(String year, Integer semester, String courseCode, String studentId);
 }

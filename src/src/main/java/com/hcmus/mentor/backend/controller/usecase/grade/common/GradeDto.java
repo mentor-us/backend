@@ -15,7 +15,8 @@ import java.util.Date;
 public class GradeDto {
 
     private String id;
-    private Double score = 0.0;
+    private Double score;
+    private String value;
     private Boolean isRetake;
     private ShortProfile student;
     private ShortProfile creator;
