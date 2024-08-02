@@ -194,7 +194,7 @@ public class UserServiceImpl implements UserService {
 
         var result = addUser(request);
         if (result.getReturnCode().equals(SUCCESS)) {
-            var user = (User) result.getData();
+            var user = (UserDataResponse) result.getData();
             var auditRecord = AuditRecord.builder()
                     .entityId(user.getId())
                     .user(userRepository.findByEmail(emailUser).orElse(null))
