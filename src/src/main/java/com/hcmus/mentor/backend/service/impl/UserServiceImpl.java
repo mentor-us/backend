@@ -194,7 +194,7 @@ public class UserServiceImpl implements UserService {
 
         var result = addUser(request);
         if (result.getReturnCode().equals(SUCCESS)) {
-            var user = (User) result.getData();
+            var user = (UserDataResponse) result.getData();
             var auditRecord = AuditRecord.builder()
                     .entityId(user.getId())
                     .user(userRepository.findByEmail(emailUser).orElse(null))
@@ -339,38 +339,27 @@ public class UserServiceImpl implements UserService {
 
         var recordString = "";
 
-        if (!Strings.isNullOrEmpty(request.getName()) && !request.getName().equals(user.getName())) {
-            user.setName(request.getName());
-            recordString += "\nTên: " + request.getName();
-        }
+        user.setName(request.getName());
+        user.setPhone(request.getPhone());
+        user.setBirthDate(request.getBirthDate());
+        user.setGender(request.getGender());
 
-        if (!Strings.isNullOrEmpty(request.getPhone()) && !request.getPhone().equals(user.getPhone())) {
-            user.setPhone(request.getPhone());
-            recordString += "\nSố điện thoại: " + request.getPhone();
-        }
+        recordString += "\nTên: " + request.getName();
+        recordString += "\nSố điện thoại: " + request.getPhone();
+        recordString += "\nGiới tính: " + request.getGender();
+        recordString += "\nNgày sinh: " + request.getBirthDate();
 
-        if (request.getGender() != null && !request.getGender().equals(user.getGender())) {
-            user.setGender(request.getGender());
-            recordString += "\nGiới tính: " + request.getGender();
-        }
-
-        if (request.getBirthDate() != null && !request.getBirthDate().equals(user.getBirthDate())) {
-            user.setBirthDate(request.getBirthDate());
-            recordString += "\nNgày sinh: " + request.getBirthDate();
-        }
-
-        if (!recordString.isEmpty()) {
-            userRepository.save(user);
-            AuditRecord auditRecord = AuditRecord.builder()
-                    .entityId(user.getId())
-                    .user(user)
-                    .action(ActionType.UPDATED)
-                    .domain(DomainType.USER)
-                    .detail("Người dùng " + user.getEmail() + " đã được cập nhật với các thông tin mới: " + recordString)
-                    .build();
-            auditRecordService.save(auditRecord);
-        }
         userRepository.save(user);
+
+        AuditRecord auditRecord = AuditRecord.builder()
+                .entityId(user.getId())
+                .user(user)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail("Người dùng " + user.getEmail() + " đã được cập nhật với các thông tin mới: " + recordString)
+                .build();
+        auditRecordService.save(auditRecord);
+
         UserDataResponse userDataResponse = getUserData(user);
 
         return new UserServiceDto(SUCCESS, "", userDataResponse);
