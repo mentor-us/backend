@@ -68,5 +68,15 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
             "join fetch m.organizer " +
             "where m.group.id = ?1 " +
             "order by m.createdDate desc ")
+    List<Meeting> findAllByChannelId(String groupId);
+
+    @Query("""
+            SELECT m
+            FROM Meeting m
+            JOIN FETCH m.group ch
+            JOIN FETCH ch.group gr
+            WHERE gr.id = ?1
+            ORDER BY m.createdDate DESC
+            """)
     List<Meeting> findAllByGroupId(String groupId);
 }

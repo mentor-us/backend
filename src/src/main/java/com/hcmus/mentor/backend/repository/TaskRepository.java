@@ -34,6 +34,14 @@ public interface TaskRepository extends JpaRepository<Task, String>, TaskReposit
 
     List<Task> findAllByGroupIdIn(List<String> groupIds);
 
+    @Query("""
+            SELECT t
+            FROM Task t
+            JOIN t.group ch
+            JOIN ch.group gr
+            WHERE gr.id = :groupId
+            ORDER BY t.deadline DESC
+            """)
     List<Task> findAllByGroupId(String groupId);
 
     @Query("SELECT t FROM Task t " +

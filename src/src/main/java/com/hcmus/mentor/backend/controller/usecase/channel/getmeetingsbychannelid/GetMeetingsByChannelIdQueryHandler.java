@@ -21,7 +21,7 @@ public class GetMeetingsByChannelIdQueryHandler implements Command.Handler<GetMe
      */
     @Override
     public List<MeetingResult> handle(GetMeetingsByChannelIdQuery query) {
-        return meetingRepository.findAllByGroupId(query.getId()).stream()
+        return meetingRepository.findAllByChannelId(query.getId()).stream()
                 .map(meeting -> modelMapper.map(meeting, MeetingResult.class))
                 .toList();
     }

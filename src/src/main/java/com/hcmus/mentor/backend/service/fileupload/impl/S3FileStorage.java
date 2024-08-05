@@ -50,8 +50,8 @@ public class S3FileStorage implements BlobStorage {
     /**
      * {@inheritDoc}
      */
-    @SneakyThrows
     @Override
+    @SneakyThrows
     public InputStream get(String key) {
         var getObjectArgs = GetObjectArgs.builder()
                 .bucket(bucket)
