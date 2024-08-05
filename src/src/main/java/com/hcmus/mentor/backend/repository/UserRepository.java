@@ -76,37 +76,46 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     @Query("SELECT u FROM User u WHERE u.id = ?1")
     Optional<User> findShortProfile(String id);
 
-    @Query(
-            value = "SELECT u.id, u.name, u.email, u.image_url AS imageUrl, COUNT ( DISTINCT n.id  ) AS totalNotes " +
-                    "FROM users u " +
-                    "   JOIN ref_user_note nu ON nu.user_id = u.id  " +
-                    "   JOIN notes n ON n.id  = nu.note_id " +
-                    "   LEFT JOIN note_user_access nua ON nua.note_id = n.id  " +
-                    "   LEFT JOIN list_mentors mt ON mt.mentee_id = u.id " +
-                    "WHERE " +
-                    "   (n.share_type = 'PUBLIC' " +
-                    "       OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) " +
-                    "       OR n.creator_id =  ?1 " +
-                    "       OR n.owner_id =  ?1 " +
-                    "       OR nua.user_id =  ?1 )" +
-                    "   AND (?2 is null " +
-                    "       OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) " +
-                    "GROUP BY u.id, u.name, u.email, u.image_url ",
-            countQuery = "SELECT COUNT ( * ) " +
-                    "FROM users u " +
-                    "   JOIN ref_user_note nu ON nu.user_id = u.id  " +
-                    "   JOIN notes n ON n.id  = nu.note_id " +
-                    "   LEFT JOIN note_user_access nua ON nua.note_id = n.id  " +
-                    "   LEFT JOIN list_mentors mt ON mt.mentee_id = u.id " +
-                    "WHERE " +
-                    "   (n.share_type = 'PUBLIC' " +
-                    "       OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) " +
-                    "       OR n.creator_id =  ?1 " +
-                    "       OR n.owner_id =  ?1 " +
-                    "       OR nua.user_id =  ?1 )" +
-                    "   AND (?2 is null " +
-                    "       OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) " +
-                    "GROUP BY u.id, u.name, u.email, u.image_url ",
-            nativeQuery = true)
+    @Query(nativeQuery = true,
+            value = """
+                    SELECT
+                        u.id, u.name, u.email, u.image_url AS imageUrl, COUNT ( DISTINCT n.id  ) AS totalNotes
+                    FROM 
+                        users u 
+                        JOIN ref_user_note nu ON nu.user_id = u.id  
+                        JOIN notes n ON n.id  = nu.note_id 
+                        LEFT JOIN note_user_access nua ON nua.note_id = n.id  
+                        LEFT JOIN list_mentors mt ON mt.mentee_id = u.id 
+                    WHERE (
+                         n.share_type = 'PUBLIC'
+                        OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) 
+                        OR n.creator_id =  ?1 
+                        OR n.owner_id =  ?1 
+                        OR nua.user_id =  ?1 
+                        )
+                        AND (?2 is null OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) 
+                    GROUP BY u.id, u.name, u.email, u.image_url 
+                    """,
+            countQuery = """
+                    SELECT
+                        COUNT (*)
+                    FROM 
+                        users u 
+                        JOIN ref_user_note nu ON nu.user_id = u.id  
+                        JOIN notes n ON n.id  = nu.note_id 
+                        LEFT JOIN note_user_access nua ON nua.note_id = n.id  
+                        LEFT JOIN list_mentors mt ON mt.mentee_id = u.id 
+                    WHERE 
+                        (n.share_type = 'PUBLIC'
+                        OR ( n.share_type IN ( 'MENTOR_VIEW', 'MENTOR_EDIT' ) AND mt.mentor_id = ?1 ) 
+                        OR n.creator_id =  ?1 
+                        OR n.owner_id =  ?1 
+                        OR nua.user_id =  ?1 )
+                        AND (?2 is null 
+                        OR (UPPER(u.name) LIKE ?2 OR UPPER(u.email) LIKE ?2)) 
+                    GROUP BY u.id, u.name, u.email, u.image_url
+                    """)
     Page<NoteUserProfileProjection> findAllUsersHasNoteAccess(String viewerId, String query, Pageable pageable);
+
+    Boolean existsByEmailAndStatusTrue(String email);
 }

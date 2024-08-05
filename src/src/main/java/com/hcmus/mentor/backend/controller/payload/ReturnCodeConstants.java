@@ -33,6 +33,7 @@ public class ReturnCodeConstants {
     public static final Integer GROUP_INVALID_DOMAINS = 219;
     public static final Integer GROUP_INVALID_ROLE = 220;
     public static final Integer GROUP_INVALID_TEMPLATE = 221;
+    public static final Integer GROUP_USER_NOT_ACTIVATE = 222;
 
     // EndRegion: Group
 

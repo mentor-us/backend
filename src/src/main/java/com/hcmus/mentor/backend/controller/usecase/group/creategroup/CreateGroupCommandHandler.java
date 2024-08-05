@@ -80,6 +80,27 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
             return new GroupServiceDto(ReturnCodeConstants.GROUP_GROUP_CATEGORY_NOT_FOUND, "Group category not found", null);
         }
 
+        for (var email : command.getMentorEmails()) {
+            var status = userService.isAccountActivate(email);
+            if (status == -1) {
+                continue;
+            }
+
+            if (status == 0) {
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentor %s đã bị khoá, xin dùng tài khoản khác", email), null);
+            }
+        }
+
+        for (var email : command.getMenteeEmails()) {
+            var status = userService.isAccountActivate(email);
+            if (status == -1) {
+                continue;
+            }
+            if (status == 0) {
+                return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentee %s đã bị khoá, xin dùng tài khoản khác", email), null);
+            }
+        }
+
         var group = modelMapper.map(command, Group.class);
 
         group.setCreator(creator);

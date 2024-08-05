@@ -771,6 +771,15 @@ public class UserServiceImpl implements UserService {
                 .body(resource);
     }
 
+    @Override
+    public int isAccountActivate(String email) {
+        if (Boolean.FALSE.equals(userRepository.existsByEmail(email))) {
+            return -1;
+        }
+
+        return userRepository.existsByEmailAndStatusTrue(email) ? 0 : 1;
+    }
+
 //    /**
 //     * @param userId id of user
 //     * @param email to add
