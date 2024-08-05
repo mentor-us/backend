@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.modelmapper.ModelMapper;
@@ -266,7 +267,7 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> add(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody AddUserRequest request) {
+            @Valid @RequestBody AddUserRequest request) {
         String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.addUser(emailUser, request);
         return new ApiResponseDto(
