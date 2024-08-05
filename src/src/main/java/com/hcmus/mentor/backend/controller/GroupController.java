@@ -41,6 +41,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -66,6 +67,7 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
  * Group controller.
  */
 @Tag(name = "groups")
+@Valid
 @RestController
 @RequestMapping("api/groups")
 @SecurityRequirement(name = "bearer")
@@ -192,8 +194,7 @@ public class GroupController {
     @GetMapping("find")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> searchGroup(
-            SearchGroupsQuery query) {
+    public ApiResponseDto<Map<String, Object>> searchGroup(@Valid SearchGroupsQuery query) {
         var groups = pipeline.send(query);
 
         return ApiResponseDto.success(pagingResponse(groups));
