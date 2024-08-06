@@ -251,8 +251,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
         String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.deleteUser(emailUser, id);
-        return new ApiResponseDto(
-                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+        return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**

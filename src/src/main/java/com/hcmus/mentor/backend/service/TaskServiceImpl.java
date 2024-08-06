@@ -319,7 +319,7 @@ public class TaskServiceImpl implements IRemindableService {
 
     public List<Task> getAllOwnTasksBetween(String userId, Date startTime, Date endTime) {
 
-        var channels = channelRepository.findOwnChannelsByUserId(userId).stream().toList();
+        var channels = channelRepository.findOwnActivateChannelsByUserId(userId).stream().toList();
         return channels.stream()
                 .map(Channel::getTasks)
                 .flatMap(Collection::stream)

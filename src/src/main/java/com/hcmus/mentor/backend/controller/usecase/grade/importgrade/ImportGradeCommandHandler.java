@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -124,7 +123,7 @@ public class ImportGradeCommandHandler implements Command.Handler<ImportGradeCom
             Double gradePoint = getGradePoint(cellIterator.next());
 
             if (gradeValue != null || gradePoint != null) {
-                Optional.ofNullable(gradeRepository.findByYearAndSemesterAndCourseCodeAndStudentId(year, semester, courseCode, student.getId()))
+                gradeRepository.findByYearAndSemesterAndCourseCodeAndStudentId(year, semester, courseCode, student.getId())
                         .ifPresentOrElse(grade -> {
                             grade.setScore(gradePoint);
                             grade.setValue(gradeValue);
