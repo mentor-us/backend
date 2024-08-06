@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -87,7 +88,7 @@ public class TaskController {
     public ApiResponseDto<Task> update(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
-            @RequestBody UpdateTaskRequest request) {
+            @Valid @RequestBody UpdateTaskRequest request) {
         TaskServiceImpl.TaskReturnService taskReturn = taskService.updateTask(customerUserDetails, id, request);
         return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
