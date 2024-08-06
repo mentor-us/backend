@@ -1,8 +1,8 @@
 package com.hcmus.mentor.backend.controller;
 
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
-import com.hcmus.mentor.backend.controller.payload.request.meetings.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.CreateMeetingRequest;
+import com.hcmus.mentor.backend.controller.payload.request.meetings.RescheduleMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.request.meetings.UpdateMeetingRequest;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingAttendeeResponse;
 import com.hcmus.mentor.backend.controller.payload.response.meetings.MeetingDetailResponse;
@@ -13,7 +13,6 @@ import com.hcmus.mentor.backend.security.principal.CurrentUser;
 import com.hcmus.mentor.backend.security.principal.userdetails.CustomerUserDetails;
 import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.MeetingService;
-import com.hcmus.mentor.backend.service.NotificationService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -38,7 +37,6 @@ public class MeetingController {
     private final MeetingService meetingService;
     private final GroupService groupService;
     private final MeetingRepository meetingRepository;
-    private final NotificationService notificationService;
 
     /**
      * (Use api /api/channels/{id}/meetings) Retrieve all meetings of a group.
