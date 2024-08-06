@@ -24,7 +24,7 @@ public class AddChannelCommand implements Command<Channel> {
      */
     @NotBlank(message = "Tên kênh không được để trống")
     @Length(max = 255, message = "Tên kênh không được quá 255 ký tự")
-    private String channelName;ư
+    private String channelName;
 
     /**
      * s
