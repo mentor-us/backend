@@ -83,7 +83,7 @@ public class GroupCategoryController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<GroupCategory> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-          @Valid @RequestBody CreateGroupCategoryRequest request) {
+            @Valid @RequestBody CreateGroupCategoryRequest request) {
         var email = customerUserDetails.getEmail();
         var result = groupCategoryService.create(email, request);
 
@@ -104,7 +104,7 @@ public class GroupCategoryController {
     public ApiResponseDto<GroupCategory> update(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
             @PathVariable String id,
-            @RequestBody UpdateGroupCategoryRequest request) {
+            @Valid @RequestBody UpdateGroupCategoryRequest request) {
         String email = customerUserDetails.getEmail();
         GroupCategoryServiceDto groupCategoryReturn = groupCategoryService.update(email, id, request);
         return new ApiResponseDto(
