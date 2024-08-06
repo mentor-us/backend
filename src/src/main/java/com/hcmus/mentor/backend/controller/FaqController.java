@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -80,7 +81,7 @@ public class FaqController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ResponseEntity<String> create(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody CreateFaqRequest request) {
+            @Valid @RequestBody CreateFaqRequest request) {
         Faq faq = faqService.createFaq(customerUserDetails.getId(), request);
         if (faq == null) {
             return ResponseEntity.badRequest().build();
