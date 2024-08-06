@@ -6,7 +6,6 @@ import com.hcmus.mentor.backend.controller.usecase.group.common.BasicGroupDto;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.QGroup;
 import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
-import com.hcmus.mentor.backend.domain.constant.GroupStatus;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
@@ -21,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.querydsl.QSort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
 
@@ -37,6 +37,7 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public Page<BasicGroupDto> handle(GetAllGroupsQuery query) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
@@ -61,17 +62,7 @@ public class GetAllGroupsQueryHandler implements Command.Handler<GetAllGroupsQue
             groups = groupRepository.findAllByCreatorId(pageRequest, currentUserId);
         }
 
-        for (Group group : groups.getContent()) {
-            if (group.getStatus() == GroupStatus.DISABLED || group.getStatus() == GroupStatus.DELETED) {
-                continue;
-            }
-
-            var groupStatus = groupDomainService.getGroupStatus(group.getTimeStart(), group.getTimeEnd());
-            if (!groupStatus.equals(group.getStatus())) {
-                group.setStatus(groupStatus);
-                groupRepository.save(group);
-            }
-        }
+        groupDomainService.validateTimeGroups(groups.getContent());
 
         return groups.map(group -> {
             var channels = group.getChannels().stream()

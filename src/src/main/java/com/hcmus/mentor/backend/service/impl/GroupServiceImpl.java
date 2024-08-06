@@ -14,6 +14,7 @@ import com.hcmus.mentor.backend.controller.payload.response.users.ProfileRespons
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.domain.*;
 import com.hcmus.mentor.backend.domain.constant.*;
+import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.*;
 import com.hcmus.mentor.backend.service.*;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
@@ -46,8 +47,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
@@ -78,6 +77,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupUserRepository groupUserRepository;
     private final ModelMapper modelMapper;
     private final AuditRecordService auditRecordService;
+    private final GroupDomainService groupDomainService;
 
 
     /**
@@ -168,31 +168,6 @@ public class GroupServiceImpl implements GroupService {
         return new GroupServiceDto(SUCCESS, "", null);
     }
 
-    public GroupStatus getStatusFromTimeStartAndTimeEnd(LocalDateTime timeStart, LocalDateTime timeEnd) {
-        var now = LocalDateTime.now(ZoneOffset.UTC);
-        if (timeStart.isBefore(now) && timeEnd.isBefore(now)) {
-            return GroupStatus.OUTDATED;
-        }
-        if (timeStart.isAfter(now) && timeEnd.isAfter(now)) {
-            return GroupStatus.ACTIVE;
-        }
-        return GroupStatus.INACTIVE;
-    }
-
-    @Override
-    public List<Group> validateTimeGroups(List<Group> groups) {
-        for (Group group : groups) {
-            if (group.getStatus() == GroupStatus.DISABLED || group.getStatus() == GroupStatus.DELETED) {
-                continue;
-            }
-
-            group.setStatus(getStatusFromTimeStartAndTimeEnd(group.getTimeStart(), group.getTimeEnd()));
-            groupRepository.save(group);
-        }
-
-        return groups;
-    }
-
     private Pair<Long, List<Group>> getGroupsByConditions(
             String emailUser,
             String name,
@@ -253,7 +228,7 @@ public class GroupServiceImpl implements GroupService {
 
         List<Group> data = groupPage.getContent();
         long count = groupPage.getTotalElements();
-        data = validateTimeGroups(data);
+        data = groupDomainService.validateTimeGroups(data);
         return new Pair<>(count, data);
     }
 
@@ -562,20 +537,6 @@ public class GroupServiceImpl implements GroupService {
             response.setGroupCategory(groupCategory.getName());
         }
 
-//        List<MessageResponse> messages = new ArrayList<>();
-//
-//        if (response.getPinnedMessageIds() != null && !response.getPinnedMessageIds().isEmpty()) {
-//            messages = response.getPinnedMessageIds().stream()
-//                    .map(messageRepository::findById)
-//                    .filter(Optional::isPresent)
-//                    .map(Optional::get)
-//                    .filter(message -> !message.isDeleted())
-//                    .map(message -> {
-//                        User user = message.getSender();
-//                        return MessageResponse.from(message, ProfileResponse.from(user));
-//                    })
-//                    .toList();
-//        }
         response.setPinnedMessages(messageService.mappingToMessageDetailResponse(
                 messageRepository.findByIdIn(response.getPinnedMessageIds()), userId));
         response.setTotalMember(channel.getUsers().size());
@@ -707,7 +668,7 @@ public class GroupServiceImpl implements GroupService {
             groups = groupRepository.findAllByCreatorIdOrderByCreatedDate(creatorId);
         }
 
-        return validateTimeGroups(groups);
+        return groupDomainService.validateTimeGroups(groups);
     }
 
     private List<List<String>> generateExportData(List<Group> groups) {
@@ -859,17 +820,7 @@ public class GroupServiceImpl implements GroupService {
                 .domain(DomainType.CHANNEL)
                 .entityId(channelId)
                 .user(userRepository.findById(userId).orElse(null))
-                .detail(String.format("Ghim: %s", switch (message.getType()) {
-                    case TEXT -> message.getContent();
-                    case FILE -> "Tệp đính kèm";
-                    case IMAGE -> "Ảnh đính kèm";
-                    case VIDEO -> "Video đính kèm";
-                    case MEETING -> "Lịch hẹn đính kèm";
-                    case TASK -> "Công việc đính kèm";
-                    case VOTE -> "Cuộc bình chọn đính kèm";
-                    case NOTIFICATION -> "Thông báo đính kèm";
-                    case SYSTEM -> "";
-                }))
+                .detail(String.format("Ghim: %s", Message.Type.getDetailContent(message.getType(), message.getContent())))
                 .build());
 
         MessageDetailResponse messageDetail = messageService.mappingToMessageDetailResponse(message, null);
@@ -894,145 +845,11 @@ public class GroupServiceImpl implements GroupService {
                 .domain(DomainType.CHANNEL)
                 .entityId(channelId)
                 .user(userRepository.findById(userId).orElse(null))
-                .detail(String.format("Bỏ ghim: %s", switch (message.getType()) {
-                    case TEXT -> message.getContent();
-                    case FILE -> "Tệp đính kèm";
-                    case IMAGE -> "Ảnh đính kèm";
-                    case VIDEO -> "Video đính kèm";
-                    case MEETING -> "Lịch hẹn đính kèm";
-                    case TASK -> "Công việc đính kèm";
-                    case VOTE -> "Cuộc bình chọn đính kèm";
-                    case NOTIFICATION -> "Thông báo đính kèm";
-                    case SYSTEM -> "";
-                }))
+                .detail(String.format("Bỏ ghim: %s", Message.Type.getDetailContent(message.getType(), message.getContent())))
                 .build());
         socketIOService.sendNewUnpinMessage(channelId, messageId);
 
         User pinnerMessage = userRepository.findById(userId).orElseThrow(() -> new DomainException("Pinner not found"));
         notificationService.sendForTogglePin(message, pinnerMessage, false);
     }
-
-//    @Override
-//    public void updateLastMessageId(String groupId, String messageId) {
-//        Optional<Group> groupWrapper = groupRepository.findById(groupId);
-//        if (groupWrapper.isEmpty()) {
-//            return;
-//        }
-//
-//        Group group = groupWrapper.get();
-//        group.setLastMessage(messageRepository.findById(messageId).orElse(null));
-//        groupRepository.save(group);
-//    }
-
-//    @Override
-//    public GroupDetailResponse getGroupWorkspace(CustomerUserDetails user, String groupId) {
-//        if (!permissionService.isUserIdInGroup(user.getId(), groupId)) {
-//            return null;
-//        }
-//
-//        List<GroupDetailResponse> groupDetailResponses = groupRepository.getGroupDetail(groupId);
-//        if (groupDetailResponses.isEmpty()) {
-//            return null;
-//        }
-//
-//        Group group = groupRepository.findById(groupId).orElse(null);
-//        if (group == null) {
-//            return null;
-//        }
-//
-//        GroupDetailResponse detail = fulfillGroupDetail(user.getId(), groupDetailResponses.getFirst());
-//
-//        List<Channel> channelIds = group.getChannels();
-//        List<GroupDetailResponse.GroupChannel> channels = channelIds.stream()
-//                .filter(channel -> channel.isMember(user.getId()) && channel.getType() ==ChannelType.PUBLIC)
-//                .map(GroupDetailResponse.GroupChannel::from)
-//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-//                .toList();
-//        channels.forEach(ch -> {
-//            if (ch.getNewMessageId() != null) {
-//                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
-//            } else {
-//                ch.setNewMessage(null);
-//            }
-//        });
-//        detail.setChannels(channels);
-//
-//        List<GroupDetailResponse.GroupChannel> privates = channelIds.stream()
-//                .filter(channel -> channel.isMember(user.getId()) && channel.getType() ==ChannelType.PUBLIC)
-//                .map(channel -> {
-//                    var userTemp = channel.getUsers().stream()
-//                            .filter(u -> !u.getId().equals(user.getId()))
-//                            .findFirst()
-//                            .orElse(null);
-//                    if (userTemp == null) {
-//                        return null;
-//                    }
-//                    ShortProfile penpal = new ShortProfile(userTemp);
-//                    channel.setName(penpal.getName());
-//                    channel.setImageUrl(penpal.getImageUrl());
-//
-//                    List<String> markedMentees = group.getGroupUsers().stream()
-//                            .filter(GroupUser::isMarked)
-//                            .map(gu -> gu.getUser().getId())
-//                            .toList();
-//                    return GroupDetailResponse.GroupChannel.from(channel, markedMentees.contains(penpal.getId()));
-//                })
-//                .filter(Objects::nonNull)
-//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getUpdatedDate).reversed())
-//                .sorted(Comparator.comparing(GroupDetailResponse.GroupChannel::getMarked).reversed())
-//                .toList();
-//        privates.forEach(ch -> {
-//            if (ch.getNewMessageId() != null) {
-//                ch.setNewMessage(messageService.getMessageContentById(ch.getNewMessageId()));
-//            } else {
-//                ch.setNewMessage(null);
-//            }
-//        });
-//
-//        detail.setPrivates(privates);
-//
-//        return detail;
-//    }
-
-//    @Override
-//    public void markMentee(CustomerUserDetails user, String groupId, String menteeId) {
-//        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-//        if (!group.isMentor(user.getId())) {
-//            throw new ForbiddenException("You are not mentor");
-//        }
-//
-//        var groupUser = group.getGroupUsers().stream().filter(gu -> gu.getUser().getId().equals(menteeId)).findFirst().orElse(null);
-//        if (groupUser == null) {
-//            throw new DomainException("Mentee not found");
-//        }
-//        groupUser.setMarked(true);
-//        groupUserRepository.save(groupUser);
-//    }
-//
-//    @Override
-//    public void unmarkMentee(CustomerUserDetails user, String groupId, String menteeId) {
-//        Group group = groupRepository.findById(groupId).orElseThrow(() -> new DomainException("Group not found"));
-//        if (!group.isMentor(user.getId())) {
-//            throw new ForbiddenException("You are not mentor");
-//        }
-//
-//        group.unmarkMentee(menteeId);
-//        groupRepository.save(group);
-//    }
-
-//    /**
-//     * @param user UserPrincipal
-//     * @param name Optional name of groups.
-//     * @return List<GroupForwardResponse>
-//     */
-//    @Override
-//    public List<ChannelForwardResponse> getGroupForwards(CustomerUserDetails user, Optional<String> name) {
-//        List<Group> groups = groupRepository.findByMenteesContainsOrMentorsContainsAndStatusIs(user.getId(), user.getId(), GroupStatus.ACTIVE);
-//
-//        var listChannelIds = groups.stream().map(g -> g.getChannels().stream().map(Channel::getId).toList()).toList();
-//        List<String> lstChannelIds = Stream.concat(listChannelIds.stream().flatMap(Collection::stream), groups.stream().map(g -> g.getDefaultChannel().getId())).toList();
-//
-//
-//        return channelRepository.getListChannelForward(lstChannelIds, user.getId(), ChannelStatus.ACTIVE);
-//    }
 }

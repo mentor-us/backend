@@ -168,7 +168,34 @@ public class Message implements Serializable {
         TASK,
         VOTE,
         NOTIFICATION,
-        SYSTEM
+        SYSTEM;
+
+        public static String getDetailContent(Type type, String content) {
+            return switch (type) {
+                case TEXT -> content;
+                case FILE -> "Tệp đính kèm";
+                case IMAGE -> "Ảnh đính kèm";
+                case VIDEO -> "Video đính kèm";
+                case MEETING -> "Lịch hẹn đính kèm";
+                case TASK -> "Công việc đính kèm";
+                case VOTE -> "Cuộc bình chọn đính kèm";
+                case NOTIFICATION -> "Thông báo đính kèm";
+                case SYSTEM -> "";
+            };
+        }
+
+        public static String getShortContent(Type type) {
+            return switch (type) {
+                case IMAGE -> "ảnh.";
+                case FILE -> "tệp đính kèm.";
+                case VIDEO -> "đa phương tiện.";
+                case MEETING -> "lịch hẹn.";
+                case TASK -> "công việc.";
+                case VOTE -> "cuộc bình chọn.";
+                case SYSTEM -> "thông báo hệ thống.";
+                default -> "";
+            };
+        }
     }
 
     public enum Status {

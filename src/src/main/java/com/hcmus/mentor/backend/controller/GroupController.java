@@ -87,8 +87,7 @@ public class GroupController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> getAllGroup(
-            GetAllGroupsQuery query) {
+    public ApiResponseDto<Map<String, Object>> getAllGroup(GetAllGroupsQuery query) {
         var groups = pipeline.send(query);
 
         return ApiResponseDto.success(pagingResponse(groups));
