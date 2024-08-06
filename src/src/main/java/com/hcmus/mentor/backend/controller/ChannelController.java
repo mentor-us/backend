@@ -21,6 +21,7 @@ import com.hcmus.mentor.backend.domain.Channel;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -150,15 +151,14 @@ public class ChannelController {
     @PostMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<Channel> addChannel(
-            @RequestBody AddChannelCommand request) {
+    public ResponseEntity<Channel> addChannel(@Valid @RequestBody AddChannelCommand request) {
         return ResponseEntity.ok(pipeline.send(request));
     }
 
     /**
      * Updates a channel by ID.
      *
-     * @param id      the ID of the channel to update
+     * @param id      the ID of the channel to updates
      * @param command the command to update the channel
      * @return ResponseEntity containing the updated channel
      */

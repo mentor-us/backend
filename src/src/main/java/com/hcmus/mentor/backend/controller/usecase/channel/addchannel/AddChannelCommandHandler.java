@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.channel.addchannel;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ValidationException;
 import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.User;
@@ -36,6 +37,10 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
      */
     @Override
     public Channel handle(AddChannelCommand command) {
+        if (command.getType() == null) {
+            throw new ValidationException("Loại kênh không chính xác");
+        }
+
         var creatorId = loggedUserAccessor.getCurrentUserId();
         var creator = userRepository.findById(creatorId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng"));
 
@@ -51,6 +56,7 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
                 .group(group)
                 .creator(creator)
                 .build();
+
         if (ChannelType.PRIVATE_MESSAGE.equals(command.getType())) {
             var ch = group.getChannels().stream().filter(channel -> channel.getType().equals(ChannelType.PRIVATE_MESSAGE))
                     .filter(channel -> new HashSet<>(channel.getUsers().stream().map(User::getId).toList()).containsAll(command.getUserIds()))
@@ -63,7 +69,7 @@ public class AddChannelCommandHandler implements Command.Handler<AddChannelComma
             data.setName(String.join("|", command.getUserIds()) + "|" + group.getId());
         } else {
             if (channelRepository.existsByGroupIdAndName(group.getId(), command.getChannelName())) {
-                return null;
+                throw new DomainException(String.format("Kênh %s đã tồn tại trong nhóm %s", command.getChannelName(), group.getName()));
             }
             data.setName(command.getChannelName());
         }
