@@ -270,8 +270,7 @@ public class UserController {
             @Valid @RequestBody AddUserRequest request) {
         String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.addUser(emailUser, request);
-        return new ApiResponseDto(
-                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+        return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**

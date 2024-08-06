@@ -23,6 +23,5 @@ public class AddUserRequest {
     @Size(max = 50, message = "Độ dài email không quá 50 ký tự")
     String emailAddress;
 
-    @NotBlank(message = "Vai trò không được để trống")
     UserRole role;
 }
