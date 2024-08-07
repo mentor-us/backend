@@ -4,6 +4,7 @@ import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
@@ -225,7 +226,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, ex.getMessage());
         }
     }
 
@@ -255,7 +256,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, ex.getMessage());
         }
     }
 

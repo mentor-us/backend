@@ -5,9 +5,9 @@ import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.AuditRecord;
-import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.GroupUser;
 import com.hcmus.mentor.backend.domain.constant.ActionType;
+import com.hcmus.mentor.backend.domain.constant.ChannelType;
 import com.hcmus.mentor.backend.domain.constant.DomainType;
 import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
@@ -23,6 +23,7 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -43,6 +44,7 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
     private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public GroupDetailDto handle(AddMemberToGroupCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
@@ -57,6 +59,12 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
                 .map(email -> userService.getOrCreateUserByEmail(email, group.getName()))
                 .filter(user -> group.getGroupUsers().stream().noneMatch(gu -> gu.getUser().getId().equals(user.getId())))
                 .toList();
+
+        users.forEach(user -> {
+            if (!user.isStatus()) {
+                throw new DomainException(String.format("Tài khoản %s đã bị khoá, xin dùng tài khoản khác", user.getEmail()));
+            }
+        });
 
         // The user is not exists in group
         if (!users.isEmpty()) {
@@ -77,13 +85,10 @@ public class AddMemberToGroupCommandHandler implements Command.Handler<AddMember
                     .build()
             );
 
-            Channel channel = channelRepository.findById(group.getDefaultChannel().getId()).orElse(null);
-            if (channel == null) {
-                throw new DomainException("Không tìm thấy kênh mặc định của nhóm");
-            }
-
-            channel.getUsers().addAll(users);
-            channelRepository.save(channel);
+            group.getChannels().stream().filter(c -> c.getType() == ChannelType.PUBLIC).forEach(c -> {
+                c.getUsers().addAll(users);
+                channelRepository.save(c);
+            });
 
             for (String email : command.getEmails()) {
                 mailService.sendInvitationToGroupMail(email, group);

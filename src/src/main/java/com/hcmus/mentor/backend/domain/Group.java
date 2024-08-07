@@ -100,7 +100,7 @@ public class Group extends BaseDomain implements Serializable {
      * Default channel identifier
      */
     @BatchSize(size = 10)
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "default_channel_id")
     private Channel defaultChannel;
 
