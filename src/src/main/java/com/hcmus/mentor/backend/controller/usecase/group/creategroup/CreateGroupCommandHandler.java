@@ -26,6 +26,7 @@ import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -62,6 +63,7 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
      * @return The group service DTO.
      */
     @Override
+    @Transactional
     public GroupServiceDto handle(CreateGroupCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
@@ -81,26 +83,16 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
         }
 
         for (var email : command.getMentorEmails()) {
-            var status = userService.isAccountActivate(email);
-            if (status == -1) {
-                continue;
-            }
-
-            if (status == 0) {
+            if (userService.isAccountActivate(email) == 0) {
                 return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentor %s đã bị khoá, xin dùng tài khoản khác", email), null);
             }
         }
 
         for (var email : command.getMenteeEmails()) {
-            var status = userService.isAccountActivate(email);
-            if (status == -1) {
-                continue;
-            }
-            if (status == 0) {
+            if (userService.isAccountActivate(email) == 0) {
                 return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentee %s đã bị khoá, xin dùng tài khoản khác", email), null);
             }
         }
-
         var group = modelMapper.map(command, Group.class);
 
         group.setCreator(creator);
@@ -120,23 +112,27 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
         groupRepository.save(group);
 
         Set<GroupUser> groupUsers = new HashSet<>();
-        var mentors = command.getMentorEmails().stream()
-                .filter(Objects::nonNull)
-                .filter(Predicate.not(String::isEmpty))
-                .map(email -> userService.importUser(email, command.getName())).toList();
-        var mentees = command.getMenteeEmails().stream()
-                .filter(Objects::nonNull)
-                .filter(Predicate.not(String::isEmpty))
-                .map(email -> userService.importUser(email, command.getName())).toList();
-
         Group finalGroup = group;
-        groupUsers.addAll(mentors.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(true).build()).toList());
-        groupUsers.addAll(mentees.stream().map(user -> GroupUser.builder().user(user).group(finalGroup).isMentor(false).build()).toList());
+        groupUsers.addAll(command.getMentorEmails().stream()
+                .filter(Objects::nonNull)
+                .filter(Predicate.not(String::isEmpty))
+                .map(email -> GroupUser.builder()
+                        .user(userService.importUser(email, command.getName()))
+                        .group(finalGroup)
+                        .isMentor(true).build())
+                .toList());
+        groupUsers.addAll(command.getMenteeEmails().stream()
+                .filter(Objects::nonNull)
+                .filter(Predicate.not(String::isEmpty))
+                .map(email -> GroupUser.builder()
+                        .user(userService.importUser(email, command.getName()))
+                        .group(finalGroup)
+                        .isMentor(false).build())
+                .toList());
         group.setGroupUsers(groupUsers);
-
         group = groupRepository.save(group);
 
-        var channel = channelRepository.save(Channel.builder()
+        var channel = Channel.builder()
                 .creator(creator)
                 .group(group)
                 .name("Cuộc trò chuyện chung")
@@ -144,14 +140,14 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .type(ChannelType.PUBLIC)
                 .status(ChannelStatus.ACTIVE)
                 .users(groupUsers.stream().map(GroupUser::getUser).toList())
-                .build());
+                .build();
         group.setDefaultChannel(channel);
 
         groupRepository.save(group);
         var menteesEmail = new StringBuffer();
         var mentorsEmail = new StringBuffer();
-        mentees.forEach(mentee -> menteesEmail.append("\n").append(mentee.getEmail()));
-        mentors.forEach(mentor -> mentorsEmail.append("\n").append(mentor.getEmail()));
+        command.getMenteeEmails().forEach(mentee -> menteesEmail.append("\n").append(mentee));
+        command.getMentorEmails().forEach(mentor -> mentorsEmail.append("\n").append(mentor));
 
         auditRecordService.save(AuditRecord.builder()
                 .user(creator)
@@ -161,7 +157,8 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
                 .detail(String.format("Tạo nhóm mới %s: \n Mentors: %s \n Mentees: %s", group.getName(), mentorsEmail, menteesEmail))
                 .build());
 
-        logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}", group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
+        logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}",
+                group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
 
         return new GroupServiceDto(SUCCESS, null, group);
     }

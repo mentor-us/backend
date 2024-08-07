@@ -775,11 +775,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public int isAccountActivate(String email) {
-        if (Boolean.FALSE.equals(userRepository.existsByEmail(email))) {
-            return -1;
-        }
-
-        return userRepository.existsByEmailAndStatusTrue(email) ? 0 : 1;
+        return userRepository.findByEmail(email).map(user -> user.isStatus() ? 1 : 0).orElse(-1);
     }
 
 //    /**
