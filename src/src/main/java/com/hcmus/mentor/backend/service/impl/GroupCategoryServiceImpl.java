@@ -169,7 +169,6 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             }
         }
 
-
         var detail = new StringBuilder();
         if (!groupCategory.getName().equals(request.getName())) {
             detail.append("\n").append("Tên: ").append(groupCategory.getName());

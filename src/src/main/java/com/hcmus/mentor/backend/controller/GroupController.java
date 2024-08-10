@@ -840,15 +840,19 @@ public class GroupController {
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GroupWorkspaceDto> getWorkspace(
+    public Object getWorkspace(
             @PathVariable String groupId) {
-        var query = GetGroupWorkSpaceQuery.builder()
-                .groupId(groupId)
-                .build();
+        try {
+            var query = GetGroupWorkSpaceQuery.builder()
+                    .groupId(groupId)
+                    .build();
 
-        var response = pipeline.send(query);
+            var response = pipeline.send(query);
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, Integer.valueOf(ex.getCode()), ex.getMessage());
+        }
     }
 
     /**

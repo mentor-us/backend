@@ -62,11 +62,9 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 public class UserController {
 
     private final LoggedUserAccessor loggedUserAccessor;
-    private final AuditRecordService auditRecordService;
     private final UserRepository userRepository;
     private final UserService userService;
     private final Pipeline pipeline;
-    private final ModelMapper modelMapper;
 
     /**
      * Retrieve all users.

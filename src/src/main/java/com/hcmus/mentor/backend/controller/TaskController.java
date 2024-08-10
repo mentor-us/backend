@@ -184,8 +184,7 @@ public class TaskController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails) {
         String emailUser = customerUserDetails.getEmail();
         TaskServiceImpl.TaskReturnService taskReturn = taskService.getTasksByEmailUser(emailUser);
-        return new ApiResponseDto(
-                taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
+        return new ApiResponseDto(taskReturn.getData(), taskReturn.getReturnCode(), taskReturn.getMessage());
     }
 
     /**
