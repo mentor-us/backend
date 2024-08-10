@@ -58,11 +58,13 @@ public class UpdateGradeCommandHandler implements Command.Handler<UpdateGradeCom
             isUpdateScore = true;
         }
 
-        if (command.getStudent() != null && !grade.getStudent().getId().equals(command.getStudent())) {
-            var student = userRepository.findById(command.getStudent()).orElseThrow(()
-                    -> new DomainException(String.format("Không tìm thấy sinh viên với id %s", command.getStudent())));
+        if (command.getStudentId() != null && !grade.getStudent().getId().equals(command.getStudentId())) {
+            var student = userRepository
+                    .findById(command.getStudentId())
+                    .orElseThrow(() -> new DomainException(String.format("Không tìm thấy sinh viên với id %s", command.getStudentId())));
             grade.setStudent(student);
             detail.append("\n").append(String.format("Sinh viên: %s", student.getName()));
+            isUpdateScore = true;
         }
 
         if (command.getSemester() != null && !grade.getSemester().equals(command.getSemester())) {
