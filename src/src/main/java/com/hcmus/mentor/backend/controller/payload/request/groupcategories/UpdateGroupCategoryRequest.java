@@ -20,7 +20,7 @@ public class UpdateGroupCategoryRequest {
     @Size(min = 1, max = 100, message = "Tên loại nhóm không được không quá 100 ký tự")
     private String name;
 
-    @Size(min = 1, max = 200, message = "Mô tả không được không quá 200 ký tự")
+    @Size(max = 200, message = "Mô tả không được không quá 200 ký tự")
     private String description;
 
     private Boolean status;
