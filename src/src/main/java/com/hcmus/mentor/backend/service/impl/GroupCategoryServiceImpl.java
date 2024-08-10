@@ -151,6 +151,10 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
 
+        if (request.getPermissions().contains(null)){
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Quyền không đúng", null);
+        }
+
         if (groupCategoryRepository.existsByName(request.getName()) && !request.getName().equals(groupCategory.getName())) {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
