@@ -176,13 +176,16 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         var detail = new StringBuilder();
         if (!groupCategory.getName().equals(request.getName())) {
             detail.append("\n").append("Tên: ").append(groupCategory.getName());
+            groupCategory.setName(request.getName());
         }
         if (!groupCategory.getDescription().equals(request.getDescription())) {
             detail.append("\n").append("Mô tả: ").append(groupCategory.getDescription());
+            groupCategory.setDescription(request.getDescription());
         }
 
         if (!groupCategory.getIconUrl().equals(request.getIconUrl())) {
             detail.append("\n").append("Icon: ").append(groupCategory.getIconUrl());
+            groupCategory.setIconUrl(request.getIconUrl());
         }
 
         if (!groupCategory.getPermissions().equals(request.getPermissions())) {
@@ -191,6 +194,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 permissions.append(permission.getDescription()).append(", ");
             }
             detail.append("\n").append("Quyền: ").append(permissions);
+
+            groupCategory.setPermissions(request.getPermissions());
         }
 
         groupCategoryRepository.save(groupCategory);
