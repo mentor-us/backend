@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.getgroupworkspace;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.response.users.ShortProfile;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupWorkspaceDto;
 import com.hcmus.mentor.backend.controller.usecase.group.common.WorkspaceChannelDto;
@@ -15,6 +16,7 @@ import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.ss.formula.constant.ErrorConstant;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -47,10 +49,10 @@ public class GetGroupWorkspaceQueryHandler implements Command.Handler<GetGroupWo
     public GroupWorkspaceDto handle(GetGroupWorkSpaceQuery command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        Group group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tim thấy nhóm"));
+        Group group = groupRepository.findById(command.getGroupId()).orElseThrow(() -> new DomainException("Không tim thấy nhóm", ReturnCodeConstants.GROUP_NOT_FOUND));
 
         if (!group.isMember(currentUserId)) {
-            throw new DomainException("Bạn không thể xem nhóm này");
+            throw new DomainException("Bạn không thể xem nhóm này", ReturnCodeConstants.INVALID_PERMISSION);
         }
 
         var groupWorkspace = modelMapper.map(group, GroupWorkspaceDto.class);
