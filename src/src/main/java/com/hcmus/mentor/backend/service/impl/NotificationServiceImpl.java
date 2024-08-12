@@ -351,31 +351,7 @@ public class NotificationServiceImpl implements NotificationService {
                 shortMessage = Jsoup.parse(message.getContent().substring(0, Math.min(message.getContent().length(), 25)))
                         .text();
             } else {
-                switch (message.getType()) {
-                    case IMAGE:
-                        shortMessage = "ảnh.";
-                        break;
-                    case FILE:
-                        shortMessage = "tệp đính kèm.";
-                        break;
-                    case VIDEO:
-                        shortMessage = "đa phương tiện.";
-                        break;
-                    case MEETING:
-                        shortMessage = "lịch hẹn.";
-                        break;
-                    case TASK:
-                        shortMessage = "công việc.";
-                        break;
-                    case VOTE:
-                        shortMessage = "cuộc bình chọn.";
-                        break;
-                    case SYSTEM:
-                        shortMessage = "thông báo hệ thống.";
-                        break;
-                    default:
-                        break;
-                }
+               shortMessage = Message.Type.getShortContent(message.getType());
             }
             body = prefixBody + shortMessage + "\"";
         }

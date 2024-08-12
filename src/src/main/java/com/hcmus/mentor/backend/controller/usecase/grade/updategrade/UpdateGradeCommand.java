@@ -18,7 +18,7 @@ public class UpdateGradeCommand implements Command<GradeDto> {
     private String id;
     private Double score;
     private String value;
-    private String student;
+    private String studentId;
     private Integer semester;
     private String year;
     private String courseName;

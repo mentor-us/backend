@@ -44,7 +44,17 @@ public interface MessageRepository extends JpaRepository<Message, String>, Messa
 
     List<Message> findByChannelIdAndTypeInAndStatusInOrderByCreatedDateDesc(String groupId, List<Message.Type> type, List<Message.Status> statuses);
 
-    List<Message> getAllGroupMessagesByChannelId(String groupId);
+    @Query("""
+            SELECT m
+            FROM Message m
+            JOIN FETCH m.sender s
+            JOIN FETCH m.channel c
+            JOIN FETCH c.group g
+            WHERE g.id = ?1
+            AND m.status != 'DELETED'
+            ORDER BY m.createdDate DESC
+            """)
+    List<Message> getAllMessagesByGroupId(String groupId);
 
     @Query(value = "SELECT DISTINCT me.* " +
             "FROM messages me " +

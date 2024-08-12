@@ -2,6 +2,7 @@ package com.hcmus.mentor.backend.controller.usecase.group.updategroupbyid;
 
 import an.awesome.pipelinr.Command;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
+import com.hcmus.mentor.backend.controller.exception.ValidationException;
 import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.AuditRecord;
@@ -52,9 +53,11 @@ public class UpdateGroupByIdCommandHandler implements Command.Handler<UpdateGrou
             throw new DomainException("Thời gian không hợp lệ", ReturnCodeConstants.GROUP_TIME_START_TOO_FAR_FROM_NOW);
         }
 
+        if (command.getStatus() == null) {
+            throw new ValidationException("Trạng thái không hợp lệ", ReturnCodeConstants.GROUP_NOT_ENOUGH_FIELDS);
+        }
+
         var detailUpdate = new StringBuilder();
-
-
         if (!command.getName().equals(group.getName())) {
             group.setName(command.getName());
             detailUpdate.append("\n").append("Tên nhóm: ").append(command.getName());
@@ -87,7 +90,6 @@ public class UpdateGroupByIdCommandHandler implements Command.Handler<UpdateGrou
         }
 
         group = groupRepository.save(group);
-
 
         if (!detailUpdate.isEmpty()) {
             auditRecordService.save(AuditRecord.builder()

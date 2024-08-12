@@ -33,7 +33,7 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional(readOnly = true)
     public List<EventDto> getAllOwnEvents(String userId) {
-        var channelIds = channelRepository.findOwnChannelsByUserId(userId).stream().map(Channel::getId).toList();
+        var channelIds = channelRepository.findOwnActivateChannelsByUserId(userId).stream().map(Channel::getId).toList();
         List<Meeting> meetings = meetingService.getAllOwnMeetings(userId, channelIds);
         List<Task> tasks = taskService.getAllOwnTasks(userId, channelIds);
 

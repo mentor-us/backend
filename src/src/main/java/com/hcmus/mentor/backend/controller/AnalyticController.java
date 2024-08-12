@@ -495,8 +495,7 @@ public class AnalyticController {
             @RequestParam String groupId,
             @RequestParam String[] query)
             throws IOException {
-        List<AnalyticAttribute> attributes =
-                Stream.of(query).map(AnalyticAttribute::valueOf).toList();
+        List<AnalyticAttribute> attributes = Stream.of(query).map(AnalyticAttribute::valueOf).toList();
         byte[] content = analyticService.getGroupLog(customerUserDetails.getEmail(), groupId, attributes);
         if (content == null) {
             return ResponseEntity.badRequest().build();

@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.security.principal.userdetails;
 
+import com.hcmus.mentor.backend.controller.exception.UnauthorizedException;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,10 @@ public class CustomUserDetailService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository
                 .findByEmail(username)
-                .or(() -> userRepository.findByAdditionalEmailsContains(username))
                 .orElseThrow(() -> new UsernameNotFoundException(String.format("User not found with email: %s", username)));
+
+        if(!user.isStatus())
+            throw new UnauthorizedException("User is not active");
 
         List<GrantedAuthority> authorities = new ArrayList<>();
         var roles = user.getRoles();

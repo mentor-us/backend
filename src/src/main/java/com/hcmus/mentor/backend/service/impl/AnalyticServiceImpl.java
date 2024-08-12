@@ -57,6 +57,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -79,6 +80,7 @@ public class AnalyticServiceImpl implements AnalyticService {
     private final GroupCategoryRepository groupCategoryRepository;
     private final SpringTemplateEngine templateEngine;
     private final ModelMapper modelMapper;
+    private final ChannelRepository channelRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -566,7 +568,7 @@ public class AnalyticServiceImpl implements AnalyticService {
         Date lastTimeActive = getLastTimeActive(channelIds);
 
         long totalMessages = messageRepository.countByChannelIdIn(channelIds);
-        List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
+        List<Task> tasks = taskRepository.findAllByGroupId(group.getId());
         long totalTasks = getTotalTasks(tasks);
         long totalMeetings = meetingRepository.countByGroupIdIn(channelIds);
 
@@ -1188,34 +1190,34 @@ public class AnalyticServiceImpl implements AnalyticService {
         if (!permissionService.isAdminByEmail(exporterEmail)) {
             return null;
         }
+
+        var localDateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        var dateFormatter = new SimpleDateFormat("dd/MM/yyyy");
+
         GroupAnalyticResponse data = getGeneralGroupAnalytic(group);
         Map<GroupStatus, String> statusMap = Group.getStatusMap();
         String status = statusMap.get(group.getStatus());
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        String groupTime = dateFormat.format(group.getTimeStart()) + " - " + dateFormat.format((group.getTimeEnd()));
         context.setVariable("GROUP_NAME", data.getName());
         context.setVariable("GROUP_CATEGORY", data.getCategory());
         context.setVariable("GROUP_STATUS", status);
-        context.setVariable("GROUP_TIME", groupTime);
+        context.setVariable("GROUP_TIME", String.format("%s - %s", group.getTimeStart().format(localDateTimeFormatter), group.getTimeEnd().format(localDateTimeFormatter)));
         if (data.getLastTimeActive() != null) {
-            context.setVariable("LAST_TIME", dateFormat.format(data.getLastTimeActive()));
+            context.setVariable("LAST_TIME", dateFormatter.format(data.getLastTimeActive()));
         }
-
         context.setVariable("TOTAL_MEMBERS", data.getMembers().size());
         context.setVariable("TOTAL_MENTORS", data.getTotalMentors());
         context.setVariable("TOTAL_MENTEES", data.getTotalMentees());
-
         context.setVariable("TOTAL_MESSAGES", data.getTotalMessages());
         context.setVariable("TOTAL_MEETINGS", data.getTotalMeetings());
         context.setVariable("TOTAL_TASK", data.getTotalTasks());
-
         context.setVariable("MEMBERS", data.getMembers());
 
         return templateEngine.process("reports/group-report", context);
     }
 
     @Override
-    public byte[] getGroupLog(String exporterEmail, String groupId, List<AnalyticAttribute> attributes) throws IOException {
+    public byte[] getGroupLog(String exporterEmail, String groupId, List<AnalyticAttribute> attributes)
+            throws IOException {
         if (attributes.isEmpty()) {
             return null;
         }
@@ -1229,23 +1231,25 @@ public class AnalyticServiceImpl implements AnalyticService {
         Workbook workbook = new XSSFWorkbook();
 
         if (attributes.contains(AnalyticAttribute.MEETINGS)) {
-            Sheet meetingsSheet = workbook.createSheet("Lịch hẹn");
-            List<MeetingResponse> meetings = meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
-                Group group = meeting.getGroup().getGroup();
-                User organizer = meeting.getOrganizer();
-                return MeetingResponse.from(meeting, organizer, group);
-            }).toList();
+            var meetingsSheet = workbook.createSheet("Lịch hẹn");
+            var meetings = meetingRepository.findAllByGroupId(groupId).stream()
+                    .map(meeting -> {
+                        Group group = meeting.getGroup().getGroup();
+                        User organizer = meeting.getOrganizer();
+                        return MeetingResponse.from(meeting, organizer, group);
+                    }).toList();
             addMeetingsData(meetingsSheet, meetings);
         }
+
         if (attributes.contains(AnalyticAttribute.TASKS)) {
             Sheet tasksSheet = workbook.createSheet("Công việc");
             List<Task> tasks = taskRepository.findAllByGroupId(groupId);
             addTasksData(tasksSheet, tasks);
         }
+
         if (attributes.contains(AnalyticAttribute.MESSAGES)) {
             Sheet messagesSheet = workbook.createSheet("Tin nhắn");
-            List<MessageResponse> messages = messageRepository
-                    .getAllGroupMessagesByChannelId(groupId).stream()
+            List<MessageResponse> messages = messageRepository.getAllMessagesByGroupId(groupId).stream()
                     .map(message -> modelMapper.map(message, MessageResponse.class))
                     .toList();
             addMessagesData(messagesSheet, messages);

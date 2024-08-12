@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface GradeRepository extends JpaRepository<Grade, String>, GradeRepositoryCustom {
     @Query(value = "SELECT exists ( " +
@@ -23,5 +25,6 @@ public interface GradeRepository extends JpaRepository<Grade, String>, GradeRepo
             nativeQuery = true)
     boolean canAccessGrade(String gradeId, String viewerId);
 
-    Grade findByYearAndSemesterAndCourseCodeAndStudentId(String year, Integer semester, String courseCode, String studentId);
+    Optional<Grade> findByYearAndSemesterAndCourseCodeAndStudentId(String year, Integer semester, String courseCode, String studentId);
+
 }

@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.service.impl;
 
+import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.groupcategories.FindGroupCategoryRequest;
@@ -67,14 +68,21 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
     @Override
     public GroupCategoryServiceDto create(String emailUser, CreateGroupCategoryRequest request) {
         if (!permissionService.isAdminByEmail(emailUser)) {
-            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+            return new GroupCategoryServiceDto(INVALID_PERMISSION, "Không có quyền thêm loại nhóm.", null);
         }
-        if (request.getName() == null
-                || request.getName().isEmpty()
-                || request.getIconUrl() == null
-                || request.getIconUrl().isEmpty()) {
-            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+        if (Strings.isNullOrEmpty(request.getName())) {
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Tên không được để trống", null);
         }
+        if (Strings.isNullOrEmpty(request.getIconUrl())) {
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Icon không được để trống", null);
+        }
+        if (request.getPermissions() == null || request.getPermissions().isEmpty()) {
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Quyền không được để trống", null);
+        }
+        if (request.getPermissions().stream().anyMatch(Objects::isNull)) {
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Quyền không đúng", null);
+        }
+
         if (groupCategoryRepository.existsByName(request.getName())) {
             GroupCategory groupCategory = groupCategoryRepository.findByName(request.getName());
 
@@ -143,6 +151,10 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
 
+        if (request.getPermissions().contains(null)){
+            return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Quyền không đúng", null);
+        }
+
         if (groupCategoryRepository.existsByName(request.getName()) && !request.getName().equals(groupCategory.getName())) {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_DUPLICATE_GROUP_CATEGORY, "Duplicate group category", null);
         }
@@ -161,17 +173,19 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             }
         }
 
-
         var detail = new StringBuilder();
         if (!groupCategory.getName().equals(request.getName())) {
             detail.append("\n").append("Tên: ").append(groupCategory.getName());
+            groupCategory.setName(request.getName());
         }
         if (!groupCategory.getDescription().equals(request.getDescription())) {
             detail.append("\n").append("Mô tả: ").append(groupCategory.getDescription());
+            groupCategory.setDescription(request.getDescription());
         }
 
         if (!groupCategory.getIconUrl().equals(request.getIconUrl())) {
             detail.append("\n").append("Icon: ").append(groupCategory.getIconUrl());
+            groupCategory.setIconUrl(request.getIconUrl());
         }
 
         if (!groupCategory.getPermissions().equals(request.getPermissions())) {
@@ -180,6 +194,8 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 permissions.append(permission.getDescription()).append(", ");
             }
             detail.append("\n").append("Quyền: ").append(permissions);
+
+            groupCategory.setPermissions(request.getPermissions());
         }
 
         groupCategoryRepository.save(groupCategory);

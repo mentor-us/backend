@@ -26,4 +26,12 @@ public class AuditRecordService {
     public AuditRecord save(AuditRecord auditRecord) {
         return auditRecordRepository.save(auditRecord);
     }
+
+    public void delete(AuditRecord record) {
+        auditRecordRepository.delete(record);
+    }
+
+    public void delete(List<AuditRecord> records) {
+        auditRecordRepository.deleteAll(records);
+    }
 }

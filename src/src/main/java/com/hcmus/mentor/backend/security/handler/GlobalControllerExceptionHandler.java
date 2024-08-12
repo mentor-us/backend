@@ -41,6 +41,19 @@ public class GlobalControllerExceptionHandler {
             );
     private final Environment environment;
 
+    /**
+     * Global exception handler.
+     *
+     * @param ex exception.
+     * @return The {@link ProblemDetail}.
+     */
+    @ExceptionHandler(
+            {Exception.class}
+    )
+    public ResponseEntity<ProblemDetail> handlerDomainException(Exception ex) {
+        return new ResponseEntity<>(getObjectByException(ex), getStatusCodeByExceptionType(ex.getClass()));
+    }
+
     private static void addExceptionInfoToProblemDetails(ProblemDetail problemDetail, DomainException exception) {
         problemDetail.setTitle(exception.getMessage());
         problemDetail.setType(URI.create(exception.getClass().getSimpleName()));
@@ -69,19 +82,6 @@ public class GlobalControllerExceptionHandler {
             }
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
-    }
-
-    /**
-     * Global exception handler.
-     *
-     * @param ex exception.
-     * @return The {@link ProblemDetail}.
-     */
-    @ExceptionHandler(
-            {Exception.class}
-    )
-    public ResponseEntity<ProblemDetail> handlerDomainException(Exception ex) {
-        return new ResponseEntity<>(getObjectByException(ex), getStatusCodeByExceptionType(ex.getClass()));
     }
 
     private ProblemDetail getObjectByException(Exception exception) {

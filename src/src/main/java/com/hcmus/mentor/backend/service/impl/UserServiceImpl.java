@@ -186,10 +186,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserServiceDto addUser(String emailUser, AddUserRequest request) {
         if (!permissionService.isAdminByEmail(emailUser)) {
-            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+            return new UserServiceDto(INVALID_PERMISSION, "Bạn không có quyền tạo người dùng mới", null);
         }
         if (!permissionService.isSuperAdminByEmail(emailUser) && request.getRole() == SUPER_ADMIN) {
-            return new UserServiceDto(INVALID_PERMISSION, "Invalid permission", null);
+            return new UserServiceDto(INVALID_PERMISSION, "Bạn không có quyền tạo người dùng mới", null);
         }
 
         var result = addUser(request);
@@ -209,18 +209,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserServiceDto addUser(AddUserRequest request) {
-        if (request.getName() == null
-                || request.getName().isEmpty()
-                || request.getEmailAddress() == null
-                || request.getEmailAddress().isEmpty()
-                || request.getRole() == null) {
-            return new UserServiceDto(ReturnCodeConstants.USER_NOT_ENOUGH_FIELDS, "Not enough required fields", null);
+        if (Strings.isNullOrEmpty(request.getName())) {
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_ENOUGH_FIELDS, "Tên không được để trống", null);
+        }
+        if (Strings.isNullOrEmpty(request.getEmailAddress())) {
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_ENOUGH_FIELDS, "Email không được để trống", null);
+        }
+        if (request.getRole() == null) {
+            return new UserServiceDto(ReturnCodeConstants.USER_NOT_ENOUGH_FIELDS, "Vai trò không đúng.", null);
         }
 
         String email = request.getEmailAddress();
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
-            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_USER, "Duplicate user", null);
+            return new UserServiceDto(ReturnCodeConstants.USER_DUPLICATE_USER, String.format("Người dùng %s đã có tài khoản.", email), null);
         }
 
         User user = User.builder().name(request.getName()).email(email).roles(Collections.singletonList(request.getRole())).build();
@@ -769,6 +771,11 @@ public class UserServiceImpl implements UserService {
                 .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
                 .contentLength(resource.getFile().length())
                 .body(resource);
+    }
+
+    @Override
+    public int isAccountActivate(String email) {
+        return userRepository.findByEmail(email).map(user -> user.isStatus() ? 1 : 0).orElse(-1);
     }
 
 //    /**

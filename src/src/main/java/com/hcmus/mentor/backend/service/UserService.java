@@ -77,6 +77,5 @@ public interface UserService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException;
 
-//    UserServiceDto addAdditionalEmail(String userId, String email);
-
+    int isAccountActivate(String email);
 }

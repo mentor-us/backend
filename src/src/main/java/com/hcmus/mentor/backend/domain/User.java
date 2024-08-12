@@ -202,6 +202,22 @@ public class User extends BaseDomain implements Serializable {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
     private Set<GradeUserAccess> userCanAccessGrade = new HashSet<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<GradeVersion> gradeVersions = new HashSet<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<Grade> grades = new HashSet<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<Grade> gradesCreations = new HashSet<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
+    private Set<GradeVersion> gradeVersionsCreations = new HashSet<>();
+
     public boolean isPinnedGroup(String groupId) {
         return groupUsers.stream().anyMatch(groupUser -> groupUser.getGroup().getId().equals(groupId) && groupUser.isPinned());
     }

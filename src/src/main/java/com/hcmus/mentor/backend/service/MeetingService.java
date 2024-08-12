@@ -50,7 +50,7 @@ public class MeetingService implements IRemindableService {
 
     @Transactional(readOnly = true)
     public List<MeetingResponse> getMeetingGroup(String groupId) {
-        return meetingRepository.findAllByGroupId(groupId).stream().map(meeting -> {
+        return meetingRepository.findAllByChannelId(groupId).stream().map(meeting -> {
             Group group = meeting.getGroup().getGroup();
             User organizer = meeting.getOrganizer();
             return MeetingResponse.from(meeting, organizer, group);

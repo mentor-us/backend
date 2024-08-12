@@ -47,6 +47,12 @@ public interface ChannelRepository extends CrudRepository<Channel, String> {
             "from Channel c " +
             "join fetch c.users u " +
             "where u.id = ?1 and c.group.status = 'ACTIVE' and c.status = 'ACTIVE'")
+    List<Channel> findOwnActivateChannelsByUserId(String userId);
+
+    @Query("select c,u " +
+            "from Channel c " +
+            "join fetch c.users u " +
+            "where u.id = ?1")
     List<Channel> findOwnChannelsByUserId(String userId);
 
     @Query("select exists (select c " +

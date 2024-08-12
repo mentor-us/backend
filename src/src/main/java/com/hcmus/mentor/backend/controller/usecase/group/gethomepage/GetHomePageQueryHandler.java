@@ -43,7 +43,7 @@ public class GetHomePageQueryHandler implements Command.Handler<GetHomePageQuery
     public HomePageDto handle(GetHomePageQuery command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
-        var channelIds = channelRepository.findOwnChannelsByUserId(currentUserId).stream().map(Channel::getId).toList();
+        var channelIds = channelRepository.findOwnActivateChannelsByUserId(currentUserId).stream().map(Channel::getId).toList();
         var now = LocalDateTime.now(ZoneOffset.UTC);
 
         var meetings = meetingRepository.findAllAndHasUserAndStartBefore(channelIds, currentUserId, now).stream()

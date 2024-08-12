@@ -3,12 +3,15 @@ package com.hcmus.mentor.backend.controller;
 import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeDto;
 import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeUserDto;
+import com.hcmus.mentor.backend.controller.usecase.grade.common.GradeVersionDto;
 import com.hcmus.mentor.backend.controller.usecase.grade.creategrade.CreateGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.deletegrade.DeleteGradeCommand;
+import com.hcmus.mentor.backend.controller.usecase.grade.deleteversion.DeleteVersionCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgrade.SearchGradeResult;
 import com.hcmus.mentor.backend.controller.usecase.grade.getgradebyid.GetGradeByIdQuery;
 import com.hcmus.mentor.backend.controller.usecase.grade.getshareinfobyuserid.GetShareInfoByUserQuery;
+import com.hcmus.mentor.backend.controller.usecase.grade.getversionsbystudentid.GetVersionsByStudentIdCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.importgrade.ImportGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.sharegrade.ShareGradeCommand;
 import com.hcmus.mentor.backend.controller.usecase.grade.updategrade.UpdateGradeCommand;
@@ -110,8 +113,20 @@ public class GradeController {
 
     @PostMapping(value = "/import/{userId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<List<GradeDto>> importGrade(@RequestParam("file") MultipartFile file, @PathVariable String userId) {
-
         var command = ImportGradeCommand.builder().file(file).userId(userId).build();
+
         return ResponseEntity.ok(pipeline.send(command));
+    }
+
+    @GetMapping("versions/student/{studentId}")
+    public ResponseEntity<List<GradeVersionDto>> getStudentVersions(@PathVariable String studentId) {
+        return ResponseEntity.ok(pipeline.send(GetVersionsByStudentIdCommand.builder().studentId(studentId).build()));
+    }
+
+    @DeleteMapping("versions/{versionId}")
+    public ResponseEntity<Void> deleteVersion(@PathVariable String versionId) {
+        pipeline.send(DeleteVersionCommand.builder().versionId(versionId).build());
+
+        return ResponseEntity.ok().build();
     }
 }

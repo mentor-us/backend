@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.modelmapper.ModelMapper;
@@ -61,11 +62,9 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
 public class UserController {
 
     private final LoggedUserAccessor loggedUserAccessor;
-    private final AuditRecordService auditRecordService;
     private final UserRepository userRepository;
     private final UserService userService;
     private final Pipeline pipeline;
-    private final ModelMapper modelMapper;
 
     /**
      * Retrieve all users.
@@ -250,8 +249,7 @@ public class UserController {
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails, @PathVariable String id) {
         String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.deleteUser(emailUser, id);
-        return new ApiResponseDto(
-                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+        return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**
@@ -266,11 +264,10 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Need authentication")
     public ApiResponseDto<User> add(
             @Parameter(hidden = true) @CurrentUser CustomerUserDetails customerUserDetails,
-            @RequestBody AddUserRequest request) {
+            @Valid @RequestBody AddUserRequest request) {
         String emailUser = customerUserDetails.getEmail();
         UserServiceDto userReturn = userService.addUser(emailUser, request);
-        return new ApiResponseDto(
-                userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
+        return new ApiResponseDto(userReturn.getData(), userReturn.getReturnCode(), userReturn.getMessage());
     }
 
     /**

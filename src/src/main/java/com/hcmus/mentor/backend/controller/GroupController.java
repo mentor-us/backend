@@ -4,6 +4,7 @@ import an.awesome.pipelinr.Pipeline;
 import com.hcmus.mentor.backend.controller.exception.DomainException;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.payload.ApiResponseDto;
+import com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants;
 import com.hcmus.mentor.backend.controller.payload.request.groups.AddMembersRequest;
 import com.hcmus.mentor.backend.controller.payload.response.ShortMediaMessage;
 import com.hcmus.mentor.backend.controller.payload.response.groups.GroupMembersResponse;
@@ -41,6 +42,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -66,6 +68,7 @@ import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.US
  * Group controller.
  */
 @Tag(name = "groups")
+@Valid
 @RestController
 @RequestMapping("api/groups")
 @SecurityRequirement(name = "bearer")
@@ -85,8 +88,7 @@ public class GroupController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> getAllGroup(
-            GetAllGroupsQuery query) {
+    public ApiResponseDto<Map<String, Object>> getAllGroup(GetAllGroupsQuery query) {
         var groups = pipeline.send(query);
 
         return ApiResponseDto.success(pagingResponse(groups));
@@ -192,8 +194,7 @@ public class GroupController {
     @GetMapping("find")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ApiResponseDto<Map<String, Object>> searchGroup(
-            SearchGroupsQuery query) {
+    public ApiResponseDto<Map<String, Object>> searchGroup(@Valid SearchGroupsQuery query) {
         var groups = pipeline.send(query);
 
         return ApiResponseDto.success(pagingResponse(groups));
@@ -225,7 +226,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, ex.getMessage());
         }
     }
 
@@ -255,7 +256,7 @@ public class GroupController {
         } catch (ForbiddenException ex) {
             return new ApiResponseDto<>(null, INVALID_PERMISSION, ex.getMessage());
         } catch (DomainException ex) {
-            return new ApiResponseDto<>(null, USER_NOT_FOUND, ex.getMessage());
+            return new ApiResponseDto<>(null, ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, ex.getMessage());
         }
     }
 
@@ -839,15 +840,19 @@ public class GroupController {
     @GetMapping("{groupId}/workspace")
     @ApiResponse(responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Need authentication")
-    public ResponseEntity<GroupWorkspaceDto> getWorkspace(
+    public Object getWorkspace(
             @PathVariable String groupId) {
-        var query = GetGroupWorkSpaceQuery.builder()
-                .groupId(groupId)
-                .build();
+        try {
+            var query = GetGroupWorkSpaceQuery.builder()
+                    .groupId(groupId)
+                    .build();
 
-        var response = pipeline.send(query);
+            var response = pipeline.send(query);
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (DomainException ex) {
+            return new ApiResponseDto<>(null, Integer.valueOf(ex.getCode()), ex.getMessage());
+        }
     }
 
     /**

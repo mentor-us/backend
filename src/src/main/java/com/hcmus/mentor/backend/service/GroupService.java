@@ -23,8 +23,6 @@ public interface GroupService {
 
     Slice<Group> findMostRecentGroupsOfUser(String userId, int page, int pageSize);
 
-    List<Group> validateTimeGroups(List<Group> groups);
-
     InputStream loadTemplate(String pathToTemplate) throws Exception;
 
     GroupServiceDto deleteGroup(String emailUser, String groupId);

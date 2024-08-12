@@ -12,18 +12,12 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GradeDto {
+public class GradeVersionDto {
 
     private String id;
-    private Double score;
-    private String value;
-    private Boolean isRetake;
-    private ShortProfile student;
-    private ShortProfile creator;
-    private Integer semester;
-    private String year;
-    private String courseCode;
-    private String courseName;
+    private String name;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
+    private ShortProfile creator;
+    private ShortProfile user;
 }

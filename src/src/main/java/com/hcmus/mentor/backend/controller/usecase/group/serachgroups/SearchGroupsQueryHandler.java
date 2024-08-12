@@ -5,6 +5,7 @@ import com.google.common.base.Strings;
 import com.hcmus.mentor.backend.controller.exception.ForbiddenException;
 import com.hcmus.mentor.backend.controller.usecase.group.common.GroupDetailDto;
 import com.hcmus.mentor.backend.domain.Group;
+import com.hcmus.mentor.backend.domainservice.GroupDomainService;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.PermissionService;
@@ -31,10 +32,11 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
     private final LoggedUserAccessor loggedUserAccessor;
     private final PermissionService permissionService;
     private final GroupRepository groupRepository;
+    private final GroupDomainService groupDomainService;
 
     /**
-     * @param query
-     * @return
+     * @param query SearchGroupsQuery
+     * @return Page<GroupDetailDto>
      */
     @Override
     public Page<GroupDetailDto> handle(SearchGroupsQuery query) {
@@ -51,14 +53,20 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
                 predicates.add(builder.like(builder.lower(root.get("name")), "%" + query.getName().toLowerCase() + "%"));
             }
 
-            if (!Strings.isNullOrEmpty(query.getMentorEmail())) {
-                predicates.add(builder.equal(root.join("groupUsers").join("user").get("email"), query.getMentorEmail()));
-                predicates.add(builder.equal(root.join("groupUsers").get("isMentor"), true));
-            }
+            if (!Strings.isNullOrEmpty(query.getMentorEmail()) || !Strings.isNullOrEmpty(query.getMenteeEmail())) {
+                var join = root.join("groupUsers");
 
-            if (!Strings.isNullOrEmpty(query.getMenteeEmail())) {
-                predicates.add(builder.equal(root.join("groupUsers").join("user").get("email"), query.getMentorEmail()));
-                predicates.add(builder.equal(root.join("groupUsers").get("isMentor"), false));
+                if (!Strings.isNullOrEmpty(query.getMentorEmail())) {
+                    predicates.add(builder.and(
+                            builder.equal(join.join("user").get("email"), query.getMentorEmail()),
+                            builder.equal(join.get("isMentor"), true)));
+                }
+
+                if (!Strings.isNullOrEmpty(query.getMenteeEmail())) {
+                    predicates.add(builder.and(
+                            builder.equal(join.join("user").get("email"), query.getMenteeEmail()),
+                            builder.equal(join.get("isMentor"), false)));
+                }
             }
 
             if (!Strings.isNullOrEmpty(query.getGroupCategory())) {
@@ -83,6 +91,9 @@ public class SearchGroupsQueryHandler implements Command.Handler<SearchGroupsQue
         var pageRequest = PageRequest.of(query.getPage(), query.getPageSize());
         var groups = groupRepository.findAll(specification, pageRequest);
 
-        return new PageImpl<>(groups.getContent().stream().map(group -> modelMapper.map(group, GroupDetailDto.class)).toList(), pageRequest, groups.getTotalElements());
+        groupDomainService.validateTimeGroups(groups.getContent());
+
+        return new PageImpl<>(groups.getContent().stream()
+                .map(group -> modelMapper.map(group, GroupDetailDto.class)).toList(), pageRequest, groups.getTotalElements());
     }
 }

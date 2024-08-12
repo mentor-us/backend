@@ -1,5 +1,6 @@
 package com.hcmus.mentor.backend.controller;
 
+import com.hcmus.mentor.backend.controller.exception.NotFoundException;
 import com.hcmus.mentor.backend.controller.payload.request.FileStorage.DeleteFileRequest;
 import com.hcmus.mentor.backend.controller.payload.request.FileStorage.DownloadFileReq;
 import com.hcmus.mentor.backend.controller.payload.request.FileStorage.ShareFileRequest;
@@ -44,17 +45,17 @@ public class FileController {
     @GetMapping("")
     @ApiResponse(responseCode = "200")
     public ResponseEntity<Resource> getFile(@ParameterObject DownloadFileReq request) {
-        try{
+        try {
             var stream = blobStorage.get(request.getKey());
             var contentType = new Tika().detect(request.getKey());
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.valueOf(contentType))
-                .body(new InputStreamResource(stream));
-        }
-        catch (Exception e) {
-            logger.error(e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.valueOf(contentType))
+                    .body(new InputStreamResource(stream));
+        } catch (Exception ex) {
+            logger.error(ex);
+
+            throw new NotFoundException(String.format("Không tìm thấy file với key: %s", request.getKey()), ex);
         }
     }
 

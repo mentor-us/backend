@@ -35,7 +35,7 @@ public class Group extends BaseDomain implements Serializable {
             Map.entry(GroupStatus.ACTIVE, "Đang hoạt động"),
             Map.entry(GroupStatus.DISABLED, "Bị khoá"),
             Map.entry(GroupStatus.OUTDATED, "Hết thời hạn"),
-            Map.entry(GroupStatus.INACTIVE, "Chưa hoạt động"),
+            Map.entry(GroupStatus.INACTIVE, "Chưa bắt đầu"),
             Map.entry(GroupStatus.DELETED, "Đã xóa")
     );
 
@@ -100,7 +100,7 @@ public class Group extends BaseDomain implements Serializable {
      * Default channel identifier
      */
     @BatchSize(size = 10)
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "default_channel_id")
     private Channel defaultChannel;
 
