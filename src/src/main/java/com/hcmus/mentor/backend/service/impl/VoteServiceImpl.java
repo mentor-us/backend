@@ -283,7 +283,7 @@ public class VoteServiceImpl implements VoteService {
             throw new ForbiddenException("Bạn không có quyền truy cập bình chọn");
         }
 
-        vote.close();
+        vote.reopen();
         voteRepository.save(vote);
     }
 }
