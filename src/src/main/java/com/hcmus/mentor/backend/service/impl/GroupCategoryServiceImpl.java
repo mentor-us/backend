@@ -151,7 +151,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found group category", null);
         }
 
-        if (request.getPermissions().contains(null)){
+        if (request.getPermissions().contains(null)) {
             return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_ENOUGH_FIELDS, "Quyền không đúng", null);
         }
 
@@ -222,13 +222,13 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
         }
 
         List<Group> groups = groupRepository.findAllByGroupCategoryId(id);
-        if (!newGroupCategoryId.isEmpty()) {
-            groupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
-            if (groupCategory == null) {
+        if (!Strings.isNullOrEmpty(newGroupCategoryId)) {
+            var newGroupCategory = groupCategoryRepository.findById(newGroupCategoryId).orElse(null);
+            if (newGroupCategory == null) {
                 return new GroupCategoryServiceDto(ReturnCodeConstants.GROUP_CATEGORY_NOT_FOUND, "Not found new group category", newGroupCategoryId);
             }
             for (Group group : groups) {
-                group.setGroupCategory(groupCategory);
+                group.setGroupCategory(newGroupCategory);
                 groupRepository.save(group);
             }
         } else {
@@ -240,6 +240,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
 
         groupCategory.setStatus(GroupCategoryStatus.DELETED);
         groupCategoryRepository.save(groupCategory);
+
         auditRecordService.save(AuditRecord.builder()
                 .action(ActionType.DELETED)
                 .domain(DomainType.GROUP_CATEGORY)
@@ -247,6 +248,7 @@ public class GroupCategoryServiceImpl implements GroupCategoryService {
                 .detail(String.format("Xoá loại nhóm %s", groupCategory.getName()))
                 .user(userRepository.findByEmail(emailUser).orElse(null))
                 .build());
+
         return new GroupCategoryServiceDto(SUCCESS, "", groupCategory);
     }
 
