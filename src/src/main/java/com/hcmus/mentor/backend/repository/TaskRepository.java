@@ -37,8 +37,8 @@ public interface TaskRepository extends JpaRepository<Task, String>, TaskReposit
     @Query("""
             SELECT t
             FROM Task t
-            JOIN t.group ch
-            JOIN ch.group gr
+                JOIN t.group ch
+                JOIN ch.group gr
             WHERE gr.id = :groupId
             ORDER BY t.deadline DESC
             """)
@@ -58,7 +58,7 @@ public interface TaskRepository extends JpaRepository<Task, String>, TaskReposit
     Boolean existsByIdAndAssigneeIdsUserId(String taskId, String userId);
 
     @Query("SELECT t FROM Task t " +
-            "INNER JOIN t.assignees assignees " +
+            "JOIN t.assignees assignees " +
             "WHERE t.group.id IN ?1 " +
             "AND assignees.id IN ?2 ")
     List<Task> findAllByGroupIdInAndAssigneeIdsUserIdIn(List<String> groupIds, List<String> id);
@@ -68,25 +68,24 @@ public interface TaskRepository extends JpaRepository<Task, String>, TaskReposit
 
     @Query("SELECT count(t) " +
             "FROM Task t " +
-            "INNER JOIN t.assignees assignees " +
-            "WHERE t.group.id IN ?1 AND assignees.id = ?2 AND assignees.status = ?3")
+            "JOIN t.assignees assignees " +
+            "WHERE t.group.id IN ?1 AND assignees.user.id = ?2 AND assignees.status = ?3")
     long countAllOwnTaskOfGroupWithStatus(List<String> groupId, String userId, TaskStatus status);
 
     @Query("SELECT t " +
             "FROM Task t " +
-            "INNER JOIN fetch t.assignees assignees " +
-            "WHERE (t.assigner.id = ?2 or assignees.id = ?2)" +
-            "and t.group.id in ?1")
+            "JOIN FETCH t.assignees assignees " +
+            "WHERE (t.assigner.id = ?2 or assignees.user.id = ?2) AND t.group.id IN ?1")
     List<Task> findAllByOwn(List<String> channelIds, String userId);
 
     @Query("SELECT t FROM Task t " +
-            "INNER JOIN fetch t.assignees a " +
-            "INNER JOIN fetch a.user u " +
-            "INNER JOIN fetch t.assigner assigner " +
+            "JOIN fetch t.assignees a " +
+            "JOIN fetch a.user u " +
+            "JOIN fetch t.assigner assigner " +
             "WHERE t.isDeleted = false " +
-            "AND t.group.id IN ?1 " +
-            "AND (u.id = ?2 OR assigner.id = ?2) " +
-            "AND t.deadline > ?3 " +
+            "   AND t.group.id IN ?1 " +
+            "   AND (u.id = ?2 OR assigner.id = ?2) " +
+            "   AND t.deadline > ?3 " +
             "ORDER BY t.deadline ASC")
     List<Task> findAllAndHasUserAndDeadlineAfter(List<String> channelIds, String userId, LocalDateTime current);
 }
