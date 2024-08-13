@@ -72,6 +72,4 @@ public interface GroupService {
     void pinChannelMessage(String userId, String channelId, String messageId);
 
     void unpinChannelMessage(String userId, String channelId, String messageId);
-
-    GroupServiceDto validateListMentorsMentees(List<String> mentors, List<String> mentees);
 }

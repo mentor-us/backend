@@ -123,51 +123,6 @@ public class GroupServiceImpl implements GroupService {
         return groupRepository.findByIsMemberAndStatus(userId, GroupStatus.ACTIVE, pageRequest);
     }
 
-    private List<String> validateInvalidMails(List<String> mentors, List<String> mentees) {
-        return Stream.concat(mentors.stream(), mentees.stream())
-                .filter(email -> !MailUtils.isValidEmail(email))
-                .toList();
-    }
-
-    private List<String> validateDuplicatedMails(List<String> mentors, List<String> mentees) {
-        List<String> invalidEmails = new ArrayList<>();
-        Set<String> emailSet = new HashSet<>();
-        for (String mentor : mentors) {
-            if (!emailSet.add(mentor)) {
-                invalidEmails.add(mentor);
-            }
-        }
-        for (String mentee : mentees) {
-            if (!emailSet.add(mentee)) {
-                invalidEmails.add(mentee);
-            }
-        }
-        return invalidEmails;
-    }
-
-    private List<String> validateDomainMails(List<String> mentors, List<String> mentees) {
-        return Stream.concat(mentors.stream(), mentees.stream())
-                .filter(email -> !mailUtils.isValidDomain(email))
-                .toList();
-    }
-
-    public GroupServiceDto validateListMentorsMentees(
-            List<String> mentors, List<String> mentees) {
-        List<String> invalidEmails = validateInvalidMails(mentors, mentees);
-        if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_EMAILS, "Invalid emails", invalidEmails);
-        }
-        invalidEmails = validateDomainMails(mentors, mentees);
-        if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_DOMAINS, "Invalid domains", invalidEmails);
-        }
-        invalidEmails = validateDuplicatedMails(mentors, mentees);
-        if (!invalidEmails.isEmpty()) {
-            return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
-        }
-        return new GroupServiceDto(SUCCESS, "", null);
-    }
-
     private Pair<Long, List<Group>> getGroupsByConditions(
             String emailUser,
             String name,

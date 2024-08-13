@@ -39,6 +39,7 @@ public class DeleteNoteCommandHandler implements Command.Handler<DeleteNoteComma
 
         noteRepository.delete(note);
         auditRecordService.save(AuditRecord.builder()
+                .user(user)
                 .action(ActionType.DELETED)
                 .domain(DomainType.NOTE)
                 .entityId(note.getId())
