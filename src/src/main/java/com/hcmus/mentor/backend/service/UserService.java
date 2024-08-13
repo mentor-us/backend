@@ -6,6 +6,7 @@ import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserForAd
 import com.hcmus.mentor.backend.controller.payload.request.users.UpdateUserRequest;
 import com.hcmus.mentor.backend.domain.User;
 import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
+import com.hcmus.mentor.backend.domain.constant.UserStatus;
 import com.hcmus.mentor.backend.service.dto.UserServiceDto;
 import io.minio.errors.*;
 import org.springframework.core.io.Resource;
@@ -25,7 +26,7 @@ public interface UserService {
 
     void addNewAccount(String emailAddress);
 
-    User importUser(String emailAddress, String groupName);
+    User importUser(String emailAddress);
 
     UserServiceDto listByEmail(String emailUser, String email, Pageable pageable);
 
@@ -77,5 +78,5 @@ public interface UserService {
     ResponseEntity<Resource> generateExportTableMembers(
             String emailUser, List<String> remainColumns, String userId, GroupUserRole groupUserRole) throws IOException;
 
-    int isAccountActivate(String email);
+    UserStatus isAccountActivate(String email);
 }

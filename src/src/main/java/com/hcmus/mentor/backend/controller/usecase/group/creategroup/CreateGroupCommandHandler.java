@@ -6,22 +6,19 @@ import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Channel;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupUser;
-import com.hcmus.mentor.backend.domain.constant.ActionType;
-import com.hcmus.mentor.backend.domain.constant.ChannelStatus;
-import com.hcmus.mentor.backend.domain.constant.ChannelType;
-import com.hcmus.mentor.backend.domain.constant.DomainType;
+import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.domainservice.GroupDomainService;
-import com.hcmus.mentor.backend.repository.ChannelRepository;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.UserRepository;
 import com.hcmus.mentor.backend.security.principal.LoggedUserAccessor;
 import com.hcmus.mentor.backend.service.AuditRecordService;
-import com.hcmus.mentor.backend.service.GroupService;
 import com.hcmus.mentor.backend.service.PermissionService;
 import com.hcmus.mentor.backend.service.UserService;
 import com.hcmus.mentor.backend.service.dto.GroupServiceDto;
+import com.hcmus.mentor.backend.util.MailUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.INVALID_PERMISSION;
 import static com.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
@@ -49,14 +47,13 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     private final ModelMapper modelMapper;
     private final LoggedUserAccessor loggedUserAccessor;
     private final PermissionService permissionService;
-    private final GroupService groupService;
     private final GroupRepository groupRepository;
     private final GroupCategoryRepository groupCategoryRepository;
     private final UserService userService;
     private final UserRepository userRepository;
-    private final ChannelRepository channelRepository;
     private final GroupDomainService groupDomainService;
     private final AuditRecordService auditRecordService;
+    private final MailUtils mailUtils;
 
     /**
      * @param command The command to create a new group.
@@ -65,105 +62,6 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
     @Override
     @Transactional
     public GroupServiceDto handle(CreateGroupCommand command) {
-        var currentUserId = loggedUserAccessor.getCurrentUserId();
-
-        GroupServiceDto groupServiceDto = validate(command);
-        if (groupServiceDto != null) {
-            return groupServiceDto;
-        }
-
-        var creator = userRepository.findById(currentUserId).orElse(null);
-        if (creator == null) {
-            return new GroupServiceDto(INVALID_PERMISSION, "Invalid permission", null);
-        }
-
-        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElse(null);
-        if (groupCategory == null) {
-            return new GroupServiceDto(ReturnCodeConstants.GROUP_GROUP_CATEGORY_NOT_FOUND, "Group category not found", null);
-        }
-
-        for (var email : command.getMentorEmails()) {
-            if (userService.isAccountActivate(email) == 0) {
-                return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentor %s đã bị khoá, xin dùng tài khoản khác", email), null);
-            }
-        }
-
-        for (var email : command.getMenteeEmails()) {
-            if (userService.isAccountActivate(email) == 0) {
-                return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, String.format("Tài khoản mentee %s đã bị khoá, xin dùng tài khoản khác", email), null);
-            }
-        }
-        var group = modelMapper.map(command, Group.class);
-
-        group.setCreator(creator);
-        group.setGroupCategory(groupCategory);
-        group.setImageUrl(groupCategory.getIconUrl());
-
-        var timeStart = command.getTimeStart().with(LocalTime.of(0, 0, 0));
-        var timeEnd = command.getTimeEnd().with(LocalTime.of(23, 59, 59));
-        var duration = Duration.between(timeStart, timeEnd);
-        var groupStatus = groupDomainService.getGroupStatus(timeStart, timeEnd);
-
-        group.setTimeStart(timeStart);
-        group.setTimeEnd(timeEnd);
-        group.setDuration(duration);
-        group.setStatus(groupStatus);
-
-        groupRepository.save(group);
-
-        Set<GroupUser> groupUsers = new HashSet<>();
-        Group finalGroup = group;
-        groupUsers.addAll(command.getMentorEmails().stream()
-                .filter(Objects::nonNull)
-                .filter(Predicate.not(String::isEmpty))
-                .map(email -> GroupUser.builder()
-                        .user(userService.importUser(email, command.getName()))
-                        .group(finalGroup)
-                        .isMentor(true).build())
-                .toList());
-        groupUsers.addAll(command.getMenteeEmails().stream()
-                .filter(Objects::nonNull)
-                .filter(Predicate.not(String::isEmpty))
-                .map(email -> GroupUser.builder()
-                        .user(userService.importUser(email, command.getName()))
-                        .group(finalGroup)
-                        .isMentor(false).build())
-                .toList());
-        group.setGroupUsers(groupUsers);
-        group = groupRepository.save(group);
-
-        var channel = Channel.builder()
-                .creator(creator)
-                .group(group)
-                .name("Cuộc trò chuyện chung")
-                .description("Cuộc trò chuyện chung của nhóm")
-                .type(ChannelType.PUBLIC)
-                .status(ChannelStatus.ACTIVE)
-                .users(groupUsers.stream().map(GroupUser::getUser).toList())
-                .build();
-        group.setDefaultChannel(channel);
-
-        groupRepository.save(group);
-        var menteesEmail = new StringBuffer();
-        var mentorsEmail = new StringBuffer();
-        command.getMenteeEmails().forEach(mentee -> menteesEmail.append("\n").append(mentee));
-        command.getMentorEmails().forEach(mentor -> mentorsEmail.append("\n").append(mentor));
-
-        auditRecordService.save(AuditRecord.builder()
-                .user(creator)
-                .action(ActionType.CREATED)
-                .domain(DomainType.GROUP)
-                .entityId(group.getId())
-                .detail(String.format("Tạo nhóm mới %s: \n Mentors: %s \n Mentees: %s", group.getName(), mentorsEmail, menteesEmail))
-                .build());
-
-        logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}",
-                group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
-
-        return new GroupServiceDto(SUCCESS, null, group);
-    }
-
-    private GroupServiceDto validate(CreateGroupCommand command) {
         var currentUserId = loggedUserAccessor.getCurrentUserId();
 
         if (!permissionService.isAdmin(currentUserId, 0)) {
@@ -179,11 +77,114 @@ public class CreateGroupCommandHandler implements Command.Handler<CreateGroupCom
             return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_GROUP, "Group name already exists", null);
         }
 
-        var isValidateMemberEmail = groupService.validateListMentorsMentees(command.getMentorEmails(), command.getMenteeEmails());
-        if (!Objects.equals(isValidateMemberEmail.getReturnCode(), SUCCESS)) {
-            return isValidateMemberEmail;
+        // Validate emails
+        var mentorEmails = command.getMentorEmails().stream().filter(StringUtils::isNotBlank).toList();
+        var menteeEmails = command.getMenteeEmails().stream().filter(StringUtils::isNotBlank).toList();
+        var invalidEmails = Stream.concat(mentorEmails.stream(), menteeEmails.stream())
+                .filter(email -> !MailUtils.isValidEmail(email))
+                .toList();
+        if (!invalidEmails.isEmpty()) {
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_EMAILS, "Invalid emails", invalidEmails);
         }
 
-        return null;
+        var invalidDomainEmails = Stream.concat(mentorEmails.stream(), menteeEmails.stream())
+                .filter(email -> !mailUtils.isValidDomain(email))
+                .toList();
+        if (!invalidDomainEmails.isEmpty()) {
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_INVALID_DOMAINS, "Invalid domains", invalidEmails);
+        }
+
+        var duplicateEmails = Stream.concat(mentorEmails.stream(), menteeEmails.stream())
+                .collect(Collectors.groupingBy(email -> email, Collectors.counting()))
+                .entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (!duplicateEmails.isEmpty()) {
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_DUPLICATE_EMAIL, "Duplicate emails", invalidEmails);
+        }
+
+        // validate active account
+        var mentorEmailInactive = mentorEmails.stream()
+                .filter(email -> userService.isAccountActivate(email) == UserStatus.INACTIVE)
+                .toList();
+        var menteeEmailInactive = menteeEmails.stream()
+                .filter(email -> userService.isAccountActivate(email) == UserStatus.INACTIVE)
+                .toList();
+
+        if (!mentorEmailInactive.isEmpty() || !menteeEmailInactive.isEmpty()) {
+            String message = "Tài khoản bị khoá bị khoá, vui lòng dùng tài khoản khác:";
+            if (!mentorEmailInactive.isEmpty()) {
+                message += "\nMentor: " + String.join("\n\t", mentorEmailInactive) + " ";
+            }
+            if (!menteeEmailInactive.isEmpty()) {
+                message += "\nMentee: " + String.join("\n\t", menteeEmailInactive) + " ";
+            }
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_USER_NOT_ACTIVATE, message, Stream.concat(mentorEmailInactive.stream(), menteeEmailInactive.stream()).toList());
+        }
+
+        var groupCategory = groupCategoryRepository.findById(command.getGroupCategory()).orElse(null);
+        if (groupCategory == null) {
+            return new GroupServiceDto(ReturnCodeConstants.GROUP_GROUP_CATEGORY_NOT_FOUND, "Group category not found", null);
+        }
+
+        var group = modelMapper.map(command, Group.class);
+        var creator = userRepository.findById(currentUserId).orElse(null);
+        var timeStart = command.getTimeStart().with(LocalTime.of(0, 0, 0));
+        var timeEnd = command.getTimeEnd().with(LocalTime.of(23, 59, 59));
+        var duration = Duration.between(timeStart, timeEnd);
+        var groupStatus = groupDomainService.getGroupStatus(timeStart, timeEnd);
+
+        group.setCreator(creator);
+        group.setGroupCategory(groupCategory);
+        group.setImageUrl(groupCategory.getIconUrl());
+        group.setTimeStart(timeStart);
+        group.setTimeEnd(timeEnd);
+        group.setDuration(duration);
+        group.setStatus(groupStatus);
+
+        group = groupRepository.save(group);
+
+        Set<GroupUser> groupUsers = new HashSet<>();
+        Group finalGroup = group;
+        groupUsers.addAll(mentorEmails.stream()
+                .map(email -> GroupUser.builder()
+                        .user(userService.importUser(email))
+                        .group(finalGroup)
+                        .isMentor(true).build())
+                .toList());
+        groupUsers.addAll(menteeEmails.stream()
+                .map(email -> GroupUser.builder()
+                        .user(userService.importUser(email))
+                        .group(finalGroup)
+                        .isMentor(false).build())
+                .toList());
+        group.setGroupUsers(groupUsers);
+
+        var channel = Channel.builder()
+                .creator(creator)
+                .group(group)
+                .name("Cuộc trò chuyện chung")
+                .description("Cuộc trò chuyện chung của nhóm")
+                .type(ChannelType.PUBLIC)
+                .status(ChannelStatus.ACTIVE)
+                .users(groupUsers.stream().map(GroupUser::getUser).toList())
+                .build();
+        group.setDefaultChannel(channel);
+
+        auditRecordService.save(AuditRecord.builder()
+                .user(creator)
+                .action(ActionType.CREATED)
+                .domain(DomainType.GROUP)
+                .entityId(group.getId())
+                .detail(String.format("Tạo nhóm mới %s: \n Mentors: %s \n Mentees: %s", group.getName(),
+                        String.join("\n", mentorEmails),
+                        String.join("\n", menteeEmails)))
+                .build());
+
+        logger.info("CreateGroupHandler: Create new group with name {}, category {}, status {}, timeStart {}, timeEnd {}, duration {}, size {}",
+                group.getName(), groupCategory.getName(), groupStatus, timeStart, timeEnd, duration, groupUsers.size());
+
+        return new GroupServiceDto(SUCCESS, null, group);
     }
 }
