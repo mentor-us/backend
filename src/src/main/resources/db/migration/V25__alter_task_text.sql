@@ -1,0 +1,11 @@
+ALTER TABLE tasks
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE tasks
+    ALTER COLUMN description TYPE TEXT;
+
+ALTER TABLE meetings
+    ALTER COLUMN title TYPE TEXT;
+
+ALTER TABLE meetings
+    ALTER COLUMN description TYPE TEXT;

@@ -12,10 +12,7 @@ import com.hcmus.mentor.backend.domain.AuditRecord;
 import com.hcmus.mentor.backend.domain.Group;
 import com.hcmus.mentor.backend.domain.GroupCategory;
 import com.hcmus.mentor.backend.domain.User;
-import com.hcmus.mentor.backend.domain.constant.ActionType;
-import com.hcmus.mentor.backend.domain.constant.DomainType;
-import com.hcmus.mentor.backend.domain.constant.GroupUserRole;
-import com.hcmus.mentor.backend.domain.constant.UserRole;
+import com.hcmus.mentor.backend.domain.constant.*;
 import com.hcmus.mentor.backend.repository.GroupCategoryRepository;
 import com.hcmus.mentor.backend.repository.GroupRepository;
 import com.hcmus.mentor.backend.repository.GroupUserRepository;
@@ -97,7 +94,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User importUser(String emailAddress, String groupName) {
+    public User importUser(String emailAddress) {
         if (Boolean.FALSE.equals(userRepository.existsByEmail(emailAddress))) {
             addNewAccount(emailAddress);
         }
@@ -774,8 +771,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public int isAccountActivate(String email) {
-        return userRepository.findByEmail(email).map(user -> user.isStatus() ? 1 : 0).orElse(-1);
+    public UserStatus isAccountActivate(String email) {
+        return userRepository.findByEmail(email).map(user -> user.isStatus() ? UserStatus.ACTIVE : UserStatus.INACTIVE).orElse(UserStatus.NOT_FOUND);
     }
 
 //    /**

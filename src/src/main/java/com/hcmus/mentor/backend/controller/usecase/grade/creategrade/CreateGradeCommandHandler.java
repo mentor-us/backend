@@ -49,13 +49,15 @@ public class CreateGradeCommandHandler implements Command.Handler<CreateGradeCom
 
         var grade = gradeRepository.findByYearAndSemesterAndCourseCodeAndStudentId(command.getYear(), command.getSemester(), command.getCourseCode(), command.getStudentId())
                 .orElse(Grade.builder()
+                        .score(command.getScore())
+                        .value(command.getValue())
                         .student(student)
-                        .creator(creator)
-                        .semester(command.getSemester())
-                        .year(command.getYear())
                         .courseCode(command.getCourseCode())
                         .courseName(command.getCourseName())
+                        .semester(command.getSemester())
+                        .year(command.getYear())
                         .isRetake(command.getIsRetake())
+                        .creator(creator)
                         .build());
         GradeDto gradeDto;
 

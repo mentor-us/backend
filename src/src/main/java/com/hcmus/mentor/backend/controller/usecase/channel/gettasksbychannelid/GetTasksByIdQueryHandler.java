@@ -59,6 +59,7 @@ public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQue
         List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
 
         return tasks.stream()
+                .filter(task -> !task.getIsDeleted())
                 .map(task -> generateTaskDetailFromTask(currentUserId, task))
                 .sorted(Comparator.comparing(TaskDetailResult::getCreatedDate).reversed())
                 .toList();
