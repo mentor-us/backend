@@ -19,7 +19,6 @@ import java.util.List;
 public class UpdateMeetingRequest {
 
     @NotBlank
-    @Size(min = 0, max = 20)
     private String title;
 
     private String description;

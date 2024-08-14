@@ -19,10 +19,8 @@ import java.util.List;
 public class CreateMeetingRequest {
 
     @NotBlank
-    @Size(min = 0, max = 255, message="Tiêu đề không được vượt quá 256 ký tự")
     private String title;
 
-    @Size(min = 0, max = 255, message = "Mô tả không được vượt quá 256 ký tự")
     private String description;
 
     @NotNull
