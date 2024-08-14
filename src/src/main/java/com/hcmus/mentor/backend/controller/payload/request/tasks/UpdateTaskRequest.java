@@ -16,10 +16,7 @@ import java.util.List;
 @Setter
 public class UpdateTaskRequest {
 
-    @Length(min = 1, max = 255, message = "Tiêu đề không được để trống và tối đa 255 ký tự")
     private String title;
-
-    @Length(min = 1, max = 255, message = "Tiêu đề không được để trống và tối đa 255 ký tự")
     private String description;
     private Date deadline;
     private List<String> userIds = new ArrayList<>();
