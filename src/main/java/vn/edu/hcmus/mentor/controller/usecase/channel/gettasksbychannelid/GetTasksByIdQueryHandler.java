@@ -1,0 +1,89 @@
+package vn.edu.hcmus.mentor.controller.usecase.channel.gettasksbychannelid;
+
+import an.awesome.pipelinr.Command;
+import vn.edu.hcmus.mentor.controller.exception.ForbiddenException;
+import vn.edu.hcmus.mentor.controller.payload.response.tasks.TaskDetailResponseAssigner;
+import vn.edu.hcmus.mentor.controller.payload.response.tasks.TaskDetailResponseRole;
+import vn.edu.hcmus.mentor.controller.usecase.task.common.TaskDetailResult;
+import vn.edu.hcmus.mentor.controller.usecase.task.common.TaskDetailResultChannel;
+import vn.edu.hcmus.mentor.domain.Assignee;
+import vn.edu.hcmus.mentor.domain.Channel;
+import vn.edu.hcmus.mentor.domain.Task;
+import vn.edu.hcmus.mentor.domain.User;
+import vn.edu.hcmus.mentor.domain.constant.ChannelStatus;
+import vn.edu.hcmus.mentor.domain.constant.TaskStatus;
+import vn.edu.hcmus.mentor.repository.GroupRepository;
+import vn.edu.hcmus.mentor.repository.TaskRepository;
+import vn.edu.hcmus.mentor.repository.UserRepository;
+import vn.edu.hcmus.mentor.security.principal.LoggedUserAccessor;
+import vn.edu.hcmus.mentor.service.PermissionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class GetTasksByIdQueryHandler implements Command.Handler<GetTasksByIdQuery, List<TaskDetailResult>> {
+
+    private final LoggedUserAccessor loggedUserAccessor;
+    private final TaskRepository taskRepository;
+    private final PermissionService permissionService;
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<TaskDetailResult> handle(GetTasksByIdQuery query) {
+        var currentUserId = loggedUserAccessor.getCurrentUserId();
+
+        List<String> channelIds = new ArrayList<>();
+        if (permissionService.isMemberInChannel(query.getId(), currentUserId)) {
+            channelIds.add(query.getId());
+
+        } else {
+            if (!permissionService.isMemberInGroup(currentUserId, query.getId())) {
+                throw new ForbiddenException("Bạn không có quyền truy cập");
+            }
+            var group = groupRepository.findById(query.getId()).orElseThrow();
+            channelIds = group.getChannels().stream()
+                    .filter(channel -> channel.getStatus() == ChannelStatus.ACTIVE)
+                    .map(Channel::getId).toList();
+        }
+
+        List<Task> tasks = taskRepository.findAllByGroupIdIn(channelIds);
+
+        return tasks.stream()
+                .filter(task -> !task.getIsDeleted())
+                .map(task -> generateTaskDetailFromTask(currentUserId, task))
+                .sorted(Comparator.comparing(TaskDetailResult::getCreatedDate).reversed())
+                .toList();
+    }
+
+    private TaskDetailResult generateTaskDetailFromTask(String userId, Task task) {
+        TaskDetailResponseAssigner assigner = TaskDetailResponseAssigner.from(task.getAssigner());
+
+        TaskDetailResultChannel groupInfo = TaskDetailResultChannel.from(task.getGroup());
+
+        TaskDetailResponseRole role = permissionService.isMentorByEmailOfGroup(userId, task.getGroup().getGroup().getId())
+                ? TaskDetailResponseRole.MENTOR
+                : TaskDetailResponseRole.MENTEE;
+
+        Optional<User> userWrapper = userRepository.findById(userId);
+        if (userWrapper.isEmpty()) {
+            return TaskDetailResult.from(task, assigner, groupInfo, role, null);
+        }
+
+        TaskStatus status = task.getAssignees().stream()
+                .filter(assignee -> assignee.getUser().getId().equals(userWrapper.get().getId()))
+                .findFirst()
+                .map(Assignee::getStatus)
+                .orElse(null);
+        return TaskDetailResult.from(task, assigner, groupInfo, role, status);
+    }
+}

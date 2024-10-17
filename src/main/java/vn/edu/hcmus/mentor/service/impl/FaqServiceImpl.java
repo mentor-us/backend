@@ -1,0 +1,148 @@
+package vn.edu.hcmus.mentor.service.impl;
+
+import vn.edu.hcmus.mentor.controller.exception.DomainException;
+import vn.edu.hcmus.mentor.controller.exception.ForbiddenException;
+import vn.edu.hcmus.mentor.controller.payload.request.faqs.CreateFaqRequest;
+import vn.edu.hcmus.mentor.controller.payload.request.faqs.ImportFAQsRequest;
+import vn.edu.hcmus.mentor.controller.payload.request.faqs.UpdateFaqRequest;
+import vn.edu.hcmus.mentor.controller.payload.response.FAQDetail;
+import vn.edu.hcmus.mentor.controller.payload.response.groups.GroupDetailResponse;
+import vn.edu.hcmus.mentor.controller.payload.response.users.ShortProfile;
+import vn.edu.hcmus.mentor.domain.Faq;
+import vn.edu.hcmus.mentor.domain.Group;
+import vn.edu.hcmus.mentor.repository.FaqRepository;
+import vn.edu.hcmus.mentor.repository.GroupRepository;
+import vn.edu.hcmus.mentor.repository.UserRepository;
+import vn.edu.hcmus.mentor.security.principal.userdetails.CustomerUserDetails;
+import vn.edu.hcmus.mentor.service.FaqService;
+import vn.edu.hcmus.mentor.util.DateUtils;
+import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class FaqServiceImpl implements FaqService {
+
+    private final FaqRepository faqRepository;
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
+
+    @Override
+    public List<Faq> getByGroupId(String userId, String groupId) {
+        var group = groupRepository.findById(groupId).orElse(null);
+        if (group == null || !group.isMember(userId)) {
+            return Collections.emptyList();
+        }
+
+        return group.getFaqs().stream().sorted(Comparator.comparing(Faq::getRating).reversed()).toList();
+    }
+
+    @Override
+    public FAQDetail getById(String userId, String faqId) {
+        var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
+
+        var group = new GroupDetailResponse(faq.getGroup());
+        group.setRole(userId);
+        ShortProfile creator = modelMapper.map(faq.getCreator(), ShortProfile.class);
+        return FAQDetail.from(faq, creator, group);
+    }
+
+    @Override
+    public Faq createFaq(String userId, CreateFaqRequest request) {
+        var user = userRepository.findById(userId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + userId));
+        Group group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + request.getGroupId()));
+        if (!group.isMentor(userId)) {
+            throw new ForbiddenException("Chỉ có mentor được tạo câu hỏi mới");
+        }
+
+        return faqRepository.save(Faq.builder()
+                .question(request.getQuestion())
+                .answer(request.getAnswer())
+                .creator(user)
+                .group(group)
+                .build());
+    }
+
+    @Override
+    public Faq updateFAQ(String userId, String faqId, UpdateFaqRequest request) {
+        var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
+
+        if (request.getAnswer() != null && !request.getAnswer().isEmpty()) {
+            faq.setAnswer(request.getAnswer());
+            faq.setUpdatedDate(DateUtils.getDateNowAtUTC() );
+        }
+        if (!request.getQuestion().isEmpty()) {
+            faq.setQuestion(request.getQuestion());
+            faq.setUpdatedDate(DateUtils.getDateNowAtUTC() );
+        }
+        return faqRepository.save(faq);
+    }
+
+    @Override
+    public void deleteFaq(String deleter, String faqId) {
+        Faq faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
+        if (!faq.getGroup().isMentor(deleter)) {
+            throw new ForbiddenException("Chỉ có mentor được xoá câu hỏi");
+        }
+
+        faqRepository.deleteById(faqId);
+    }
+
+    @Override
+    public void importFaqs(String creatorId, String toGroupId, ImportFAQsRequest request) {
+        Group group = groupRepository.findById(toGroupId).orElseThrow(() -> new DomainException("Không tìm thấy nhóm với id " + toGroupId));
+        if (!group.isMentor(creatorId)) {
+            throw new ForbiddenException("Chỉ có mentor được tạo câu hỏi mới");
+        }
+
+        var creator = userRepository.findById(creatorId).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + creatorId));
+        List<Faq> faqs = faqRepository.findByIdIn(request.getFaqIds()).stream()
+                .map(faq -> Faq.builder()
+                        .question(faq.getQuestion())
+                        .answer(faq.getAnswer())
+                        .creator(creator)
+                        .group(group)
+                        .build())
+                .toList();
+
+        faqRepository.saveAll(faqs);
+    }
+
+    @Override
+    public void upvote(CustomerUserDetails userDetails, String faqId) {
+        var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
+        if (faq.getGroup().isMember(userDetails.getId())) {
+            throw new ForbiddenException("Chỉ có thành viên của nhóm mới được vote");
+        }
+        var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + userDetails.getId()));
+        var voters = faq.getVoters();
+        voters.add(user);
+        faq.setVoters(voters);
+
+        faqRepository.save(faq);
+    }
+
+    @Override
+    public boolean downVote(CustomerUserDetails userDetails, String faqId) {
+        var faq = faqRepository.findById(faqId).orElseThrow(() -> new DomainException("Không tìm thấy câu hỏi với id " + faqId));
+        if (faq.getGroup().isMember(userDetails.getId())) {
+            throw new ForbiddenException("Chỉ có thành viên của nhóm mới bỏ vote");
+        }
+        var user = userRepository.findById(userDetails.getId()).orElseThrow(() -> new DomainException("Không tìm thấy người dùng với id " + userDetails.getId()));
+
+        var voters = faq.getVoters();
+        voters.remove(user);
+        faq.setVoters(voters);
+        faqRepository.save(faq);
+
+        return true;
+    }
+}
