@@ -11,7 +11,7 @@
     </parent>
 
     <groupId>com.hcmus.mentor</groupId>
-    <artifactId>backend</artifactId>
+    <artifactId>mentor</artifactId>
     <version>0.5.3</version>
     <packaging>jar</packaging>
 

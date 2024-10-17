@@ -1,0 +1,59 @@
+package vn.edu.hcmus.mentor.security.jwt;
+
+import vn.edu.hcmus.mentor.controller.usecase.user.authenticateuser.AuthenticateConstant;
+import vn.edu.hcmus.mentor.controller.usecase.user.authenticateuser.AuthenticationTokenService;
+import vn.edu.hcmus.mentor.util.DateUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Date;
+import java.util.Map;
+
+/**
+ * {@inheritDoc}
+ */
+@Service
+@RequiredArgsConstructor
+public class SystemJwtTokenService implements AuthenticationTokenService {
+
+    private final AuthenticateConstant constants;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String generateToken(Map<String, Object> claims, Duration expirationTime) {
+        return Jwts.builder()
+                .header()
+                .type("JWT")
+                .and()
+                .claims(claims)
+                .issuer(constants.issuer)
+                .issuedAt(DateUtils.getDateNowAtUTC() )
+                .expiration(new Date(DateUtils.getDateNowAtUTC() .getTime() + expirationTime.toMillis()))
+                .signWith(getSigningKey(), Jwts.SIG.HS512)
+                .compact();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Claims getTokenClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(constants.secretKey.getBytes(StandardCharsets.UTF_8));
+    }
+}
