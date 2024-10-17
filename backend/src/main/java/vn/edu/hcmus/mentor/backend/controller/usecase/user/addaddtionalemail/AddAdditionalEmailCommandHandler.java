@@ -1,0 +1,63 @@
+package vn.edu.hcmus.mentor.backend.controller.usecase.user.addaddtionalemail;
+
+
+import an.awesome.pipelinr.Command;
+import vn.edu.hcmus.mentor.backend.domain.AuditRecord;
+import vn.edu.hcmus.mentor.backend.domain.User;
+import vn.edu.hcmus.mentor.backend.domain.constant.ActionType;
+import vn.edu.hcmus.mentor.backend.domain.constant.DomainType;
+import vn.edu.hcmus.mentor.backend.repository.UserRepository;
+import vn.edu.hcmus.mentor.backend.service.AuditRecordService;
+import vn.edu.hcmus.mentor.backend.service.dto.UserServiceDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+import static vn.edu.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.SUCCESS;
+import static vn.edu.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_DUPLICATE_EMAIL;
+import static vn.edu.hcmus.mentor.backend.controller.payload.ReturnCodeConstants.USER_NOT_FOUND;
+
+/**
+ * Handler for {@link AddAdditionalEmailCommand}.
+ */
+@Component
+@RequiredArgsConstructor
+public class AddAdditionalEmailCommandHandler implements Command.Handler<AddAdditionalEmailCommand, UserServiceDto> {
+
+    private final UserRepository userRepository;
+    private final AuditRecordService auditRecordService;
+
+    /**
+     * @param command command to add additional email to user account.
+     * @return result of adding additional email to user account.
+     */
+    @Override
+    public UserServiceDto handle(AddAdditionalEmailCommand command) {
+        if (userRepository.findByAdditionalEmailsContains(command.getAdditionalEmail()).isPresent() || userRepository.findByEmail(command.getAdditionalEmail()).isPresent()) {
+            return new UserServiceDto(USER_DUPLICATE_EMAIL, "Duplicate email", null);
+        }
+
+        Optional<User> userOptional = userRepository.findById(command.getUserId());
+        if (userOptional.isEmpty()) {
+            return new UserServiceDto(USER_NOT_FOUND, "Not found user", null);
+        }
+
+        var user = userOptional.get();
+        var additionEmails = user.getAdditionalEmails();
+        additionEmails.add(command.getAdditionalEmail());
+        user.setAdditionalEmails(additionEmails);
+        userRepository.save(user);
+
+        auditRecordService.save(AuditRecord.builder()
+                .entityId(user.getId())
+                .user(user)
+                .action(ActionType.UPDATED)
+                .domain(DomainType.USER)
+                .detail("Người dùng %s đã thêm email phụ: " + command.getAdditionalEmail())
+                .build());
+
+        return new UserServiceDto(SUCCESS, "Add addition email success", user);
+    }
+
+}

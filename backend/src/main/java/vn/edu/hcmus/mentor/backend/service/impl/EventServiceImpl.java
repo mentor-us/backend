@@ -1,0 +1,64 @@
+package vn.edu.hcmus.mentor.backend.service.impl;
+
+import vn.edu.hcmus.mentor.backend.domain.Channel;
+import vn.edu.hcmus.mentor.backend.domain.Meeting;
+import vn.edu.hcmus.mentor.backend.domain.Task;
+import vn.edu.hcmus.mentor.backend.repository.ChannelRepository;
+import vn.edu.hcmus.mentor.backend.service.EventService;
+import vn.edu.hcmus.mentor.backend.service.MeetingService;
+import vn.edu.hcmus.mentor.backend.service.TaskServiceImpl;
+import vn.edu.hcmus.mentor.backend.service.dto.EventDto;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Stream;
+
+
+/**
+ * EventServiceImpl
+ */
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class EventServiceImpl implements EventService {
+
+    private final MeetingService meetingService;
+    private final TaskServiceImpl taskService;
+    private final ChannelRepository channelRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventDto> getAllOwnEvents(String userId) {
+        var channelIds = channelRepository.findOwnActivateChannelsByUserId(userId).stream().map(Channel::getId).toList();
+        List<Meeting> meetings = meetingService.getAllOwnMeetings(userId, channelIds);
+        List<Task> tasks = taskService.getAllOwnTasks(userId, channelIds);
+
+        return mergeEvents(meetings, tasks);
+    }
+
+    @Override
+    public List<EventDto> mergeEvents(List<Meeting> meetings, List<Task> tasks) {
+        return Stream.concat(meetings.stream().map(EventDto::from), tasks.stream().map(EventDto::from))
+                .filter(event -> event.getUpcomingTime() != null)
+                .sorted(Comparator.comparing(EventDto::getUpcomingTime))
+                .toList();
+    }
+
+    @Override
+    public List<EventDto> getAllEventsByDate(String userId, Date date) {
+        List<Meeting> meetings = meetingService.getAllOwnMeetingsByDate(userId, date);
+        List<Task> tasks = taskService.getAllOwnTaskByDate(userId, date);
+        return mergeEvents(meetings, tasks);
+    }
+
+    @Override
+    public List<EventDto> getAllEventsByMonth(String userId, Date date) {
+        List<Meeting> meetings = meetingService.getAllOwnMeetingsByMonth(userId, date);
+        List<Task> tasks = taskService.getAllOwnTasksByMonth(userId, date);
+        return mergeEvents(meetings, tasks);
+    }
+}

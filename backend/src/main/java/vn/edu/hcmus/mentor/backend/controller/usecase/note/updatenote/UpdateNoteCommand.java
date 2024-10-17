@@ -1,0 +1,22 @@
+package vn.edu.hcmus.mentor.backend.controller.usecase.note.updatenote;
+
+import an.awesome.pipelinr.Command;
+import vn.edu.hcmus.mentor.backend.controller.usecase.note.common.NoteDetailDto;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class UpdateNoteCommand implements Command<NoteDetailDto> {
+
+    private String noteId;
+    private String title;
+    private String content;
+    private List<String> userIds;
+}

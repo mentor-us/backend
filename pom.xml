@@ -13,10 +13,13 @@
     <groupId>com.hcmus.mentor</groupId>
     <artifactId>mentor</artifactId>
     <version>0.5.3</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>mentor-backend</name>
     <description>Demo project for Spring Boot</description>
+    <modules>
+        <module>backend</module>
+    </modules>
 
     <properties>
 
